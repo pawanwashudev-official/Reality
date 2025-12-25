@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Cyberpunk / Reality Theme Colors -->
+    <color name="md_theme_primary">#00FFC2</color>
+    <color name="md_theme_onPrimary">#000000</color>
+    <color name="md_theme_primaryContainer">#004D40</color>
+    <color name="md_theme_onPrimaryContainer">#E0F2F1</color>
+    
+    <color name="md_theme_secondary">#BB86FC</color>
+    <color name="md_theme_onSecondary">#000000</color>
+    <color name="md_theme_secondaryContainer">#4A148C</color>
+    <color name="md_theme_onSecondaryContainer">#F3E5F5</color>
+    
+    <color name="md_theme_tertiary">#FF6B6B</color>
+    <color name="md_theme_onTertiary">#000000</color>
+    <color name="md_theme_tertiaryContainer">#920023</color>
+    <color name="md_theme_onTertiaryContainer">#FFDDAE</color>
+    
+    <color name="md_theme_error">#FF5252</color>
+    <color name="md_theme_onError">#000000</color>
+    <color name="md_theme_errorContainer">#93000A</color>
+    <color name="md_theme_onErrorContainer">#FFDAD6</color>
+    
+    <color name="md_theme_background">#050510</color>
+    <color name="md_theme_onBackground">#E0E0E0</color>
+    
+    <color name="md_theme_surface">#0A0E22</color>
+    <color name="md_theme_onSurface">#E0E0E0</color>
+    
+    <color name="md_theme_surfaceVariant">#1A1F2C</color>
+    <color name="md_theme_onSurfaceVariant">#B0B0B0</color>
+    <color name="md_theme_outline">#33FFFFFF</color>
+    <color name="md_theme_outlineVariant">#44474F</color>
+    
+    <color name="md_theme_scrim">#000000</color>
+    <color name="md_theme_inverseSurface">#E0E0E0</color>
+    <color name="md_theme_inverseOnSurface">#050510</color>
+    <color name="md_theme_inversePrimary">#00695C</color>
+    
+    <!-- Fixed Colors -->
+    <color name="md_theme_primaryFixed">#00FFC2</color>
+    <color name="md_theme_onPrimaryFixed">#00201B</color>
+    <color name="md_theme_primaryFixedDim">#00E5AE</color>
+    <color name="md_theme_onPrimaryFixedVariant">#004D40</color>
+    
+    <color name="md_theme_secondaryFixed">#BB86FC</color>
+    <color name="md_theme_onSecondaryFixed">#2A0054</color>
+    <color name="md_theme_secondaryFixedDim">#9E60E6</color>
+    <color name="md_theme_onSecondaryFixedVariant">#4A148C</color>
+    
+    <color name="md_theme_tertiaryFixed">#FF6B6B</color>
+    <color name="md_theme_onTertiaryFixed">#3F000D</color>
+    <color name="md_theme_tertiaryFixedDim">#E65050</color>
+    <color name="md_theme_onTertiaryFixedVariant">#920023</color>
+    
+    <!-- Surface Containers -->
+    <color name="md_theme_surfaceDim">#050510</color>
+    <color name="md_theme_surfaceBright">#1A1F2C</color>
+    <color name="md_theme_surfaceContainerLowest">#000000</color>
+    <color name="md_theme_surfaceContainerLow">#080A18</color>
+    <color name="md_theme_surfaceContainer">#0A0E22</color>
+    <color name="md_theme_surfaceContainerHigh">#1A1F2C</color>
+    <color name="md_theme_surfaceContainerHighest">#252A3A</color>
+
+    <!-- Legacy Colors (kept to avoid breakage) -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="ic_launcher_background">#050510</color>
+
+    <!-- Restored Legacy Colors -->
+    <color name="purple_200">#BB86FC</color>
+    <color name="purple_500">#6200EE</color>
+    <color name="purple_700">#3700B3</color>
+    <color name="teal_200">#03DAC6</color>
+    <color name="teal_700">#018786</color>
+    <color name="gray_light">#808080</color>
+    <color name="gray_dark">#424242</color>
+    <color name="error_color">#CF6679</color>
+    <color name="text_color">#FFFFFF</color>
+</resources>

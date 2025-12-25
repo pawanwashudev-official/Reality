@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp">
+    
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Lock Duration"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF" 
+        android:layout_marginBottom="16dp"/>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Days"
+                android:textColor="#BB86FC"/>
+            <NumberPicker
+                android:id="@+id/np_days"
+                android:layout_width="wrap_content"
+                android:layout_height="120dp"
+                android:theme="@style/Theme.Reality"/>
+        </LinearLayout>
+        
+        <Space
+            android:layout_width="32dp"
+            android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hours"
+                android:textColor="#BB86FC"/>
+            <NumberPicker
+                android:id="@+id/np_hours"
+                android:layout_width="wrap_content"
+                android:layout_height="120dp"
+                android:theme="@style/Theme.Reality"/>
+        </LinearLayout>
+    </LinearLayout>
+    
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Strict Mode will be LOCKED until this time passes."
+        android:textColor="#808080"
+        android:textSize="12sp"
+        android:layout_marginTop="16dp" 
+        android:gravity="center"/>
+</LinearLayout>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="16dp"
+    android:gravity="center"
+    android:orientation="vertical"
+    tools:context=".ui.fragments.anti_uninstall.SetupTimedModeFragment">
+
+
+    <TextView
+        android:id="@+id/textView3"
+        style="@style/TextAppearance.Material3.TitleMedium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/timed_mode"
+        android:textSize="24sp" />
+
+    <TextView
+        android:id="@+id/textView6"
+        style="@style/TextAppearance.Material3.BodyMedium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="8dp"
+        android:paddingBottom="8dp"
+        android:text="@string/timed_mode_desc" />
+
+    <CalendarView
+        android:id="@+id/calendarView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <CheckBox
+        android:id="@+id/block_changes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Block making changes to blockers during this period." />
+
+    <Button
+        android:id="@+id/turn_on_timed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/turn_on_anti_uninstall" />
+</LinearLayout>
