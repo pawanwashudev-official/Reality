@@ -300,9 +300,11 @@ class AppBlockerService : BaseBlockingService() {
         kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
             try {
                 // 1. Fetch Accurate Usage Stats
+                com.neubofy.reality.utils.TerminalLogger.log("  [1/3] Syncing Usage Stats...")
                 val usageMap = com.neubofy.reality.utils.UsageUtils.getUsageSinceMidnight(applicationContext)
                 
                 // 2. Fetch Active Calendar Events
+                com.neubofy.reality.utils.TerminalLogger.log("  [2/3] Checking Calendar Events...")
                 val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(applicationContext)
                 val currentTime = System.currentTimeMillis()
                 val events = db.calendarEventDao().getCurrentEvents(currentTime)
@@ -326,11 +328,15 @@ class AppBlockerService : BaseBlockingService() {
                     }
                     blocker.usageLimitData.usedTimeInMillis = totalDistracting
                     
+                    // SAVE DATA so UI can read it
+                    savedPreferencesLoader.saveUsageLimitData(blocker.usageLimitData)
+                    
                     // Update Calendar Events
                     blocker.refreshCalendarEvents(eventPairs)
                 
                 
                     updateBlockingStatus()
+                    com.neubofy.reality.utils.TerminalLogger.log("  [3/3] Background Logic Complete.")
                 }
             } catch (e: Exception) {}
         }

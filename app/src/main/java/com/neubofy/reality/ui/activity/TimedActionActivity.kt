@@ -233,12 +233,34 @@ class TimedActionActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
+            val now = Calendar.getInstance()
+            val currentMins = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+            val currentDay = now.get(Calendar.DAY_OF_WEEK)
+
             when(item) {
                 is UnifiedScheduleItem.Manual -> {
                     holder.binding.cheatHourTitle.text = item.item.title
                     val start = TimeTools.convertMinutesTo24Hour(item.item.startTimeInMins)
                     val end = TimeTools.convertMinutesTo24Hour(item.item.endTimeInMins)
-                    holder.binding.cheatTimings.text = String.format("%02d:%02d to %02d:%02d", start.first, start.second, end.first, end.second)
+                    
+                    // Check Active Status
+                    val runsToday = item.item.repeatDays.contains(currentDay)
+                    val isActiveTime = if (item.item.startTimeInMins <= item.item.endTimeInMins) {
+                        currentMins in item.item.startTimeInMins until item.item.endTimeInMins
+                    } else {
+                        currentMins >= item.item.startTimeInMins || currentMins < item.item.endTimeInMins
+                    }
+                    
+                    if (runsToday && isActiveTime) {
+                        holder.binding.cheatTimings.text = "ACTIVE NOW • Ends ${String.format("%02d:%02d", end.first, end.second)}"
+                        holder.binding.cheatTimings.setTextColor(holder.itemView.context.getColor(R.color.teal_200))
+                        holder.binding.cheatHourTitle.setTextColor(holder.itemView.context.getColor(R.color.teal_200))
+                    } else {
+                        holder.binding.cheatTimings.text = String.format("%02d:%02d to %02d:%02d", start.first, start.second, end.first, end.second)
+                        holder.binding.cheatTimings.setTextColor(holder.itemView.context.getColor(R.color.gray_light))
+                        holder.binding.cheatHourTitle.setTextColor(holder.itemView.context.getColor(R.color.white))
+                    }
+
                     holder.binding.selectedApps.text = "Repeat: ${getDaysString(item.item.repeatDays)}"
                     holder.binding.removeCheatHour.visibility = View.VISIBLE
                     holder.binding.removeCheatHour.setOnClickListener {
@@ -249,7 +271,15 @@ class TimedActionActivity : AppCompatActivity() {
                     holder.binding.cheatHourTitle.text = item.event.title
                     val dateFormat = java.text.SimpleDateFormat("MMM dd, HH:mm", java.util.Locale.getDefault())
                     val endFormat = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                    holder.binding.cheatTimings.text = "${dateFormat.format(java.util.Date(item.event.startTime))} - ${endFormat.format(java.util.Date(item.event.endTime))}"
+                    
+                    if (System.currentTimeMillis() in item.event.startTime..item.event.endTime) {
+                         holder.binding.cheatTimings.text = "ACTIVE NOW • Ends ${endFormat.format(java.util.Date(item.event.endTime))}"
+                         holder.binding.cheatTimings.setTextColor(holder.itemView.context.getColor(R.color.teal_200))
+                    } else {
+                         holder.binding.cheatTimings.text = "${dateFormat.format(java.util.Date(item.event.startTime))} - ${endFormat.format(java.util.Date(item.event.endTime))}"
+                         holder.binding.cheatTimings.setTextColor(holder.itemView.context.getColor(R.color.gray_light))
+                    }
+
                     holder.binding.selectedApps.text = "Synced from Calendar"
                     holder.binding.removeCheatHour.visibility = View.GONE
                 }
