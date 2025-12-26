@@ -61,8 +61,15 @@ class BedtimeActivity : AppCompatActivity() {
         }
         
         binding.btnSelectApps.setOnClickListener {
-            // Bedtime now uses the same blocklist as Focus Mode
-            Toast.makeText(this, "Bedtime uses your Focus Mode blocklist", Toast.LENGTH_LONG).show()
+            if (isLocked) {
+                showLockedToast()
+                return@setOnClickListener
+            }
+            // Launch Universal Blocklist Selection
+            val intent = Intent(this, SelectAppsActivity::class.java)
+            val currentUniversalList = ArrayList(prefsLoader.getFocusModeSelectedApps())
+            intent.putStringArrayListExtra("PRE_SELECTED_APPS", currentUniversalList)
+            startActivityForResult(intent, 101)
         }
 
         if (isLocked) {
@@ -79,7 +86,15 @@ class BedtimeActivity : AppCompatActivity() {
     
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        // No longer handling app selection - using universal blocklist
+        if (requestCode == 101 && resultCode == RESULT_OK) {
+             val selected = data?.getStringArrayListExtra("SELECTED_APPS") ?: ArrayList()
+             prefsLoader.saveFocusModeSelectedApps(selected)
+             updateAppsCountUI()
+             
+             // Also sync to BedtimeData just in case, though logic uses Focus List
+             bedtimeData.blockedApps = HashSet(selected)
+             prefsLoader.saveBedtimeData(bedtimeData)
+        }
     }
     
     private fun updateUI() {
@@ -93,8 +108,13 @@ class BedtimeActivity : AppCompatActivity() {
         val endMin = bedtimeData.endTimeInMins % 60
         binding.btnEndTime.text = String.format("%02d:%02d", endHour, endMin)
         
-        // Show info about universal blocklist
-        binding.tvAppsCount.text = "Uses Focus Mode blocklist"
+        updateAppsCountUI()
+    }
+
+    private fun updateAppsCountUI() {
+        // Universal Blocklist Count
+        val count = prefsLoader.getFocusModeSelectedApps().size
+        binding.tvAppsCount.text = "$count Apps Selected (Universal)"
     }
     
     private fun showTimePicker(isStartTime: Boolean) {
