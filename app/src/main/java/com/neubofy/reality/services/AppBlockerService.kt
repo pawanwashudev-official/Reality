@@ -531,11 +531,11 @@ class AppBlockerService : BaseBlockingService() {
                            blocker.hasConfiguredLimits()
                            
         // 2. DND Logic (Modes Only)
-        // DND should ONLY trigger for "Global Focus Modes", not for individual app limits.
-        val shouldEnableDnd = blocker.focusModeData.isTurnedOn ||
-                              blocker.hasActiveSchedules() ||
-                              blocker.hasActiveCalendarEvents() || // Calendar events are treated like schedules
-                              blocker.bedtimeData.isEnabled
+        // 2. DND Logic (Modes Only)
+        // FIX: Check if we are ACTUALLY in a blocking time window
+        val shouldEnableDnd = (blocker.focusModeData.isTurnedOn) || 
+                              (blocker.bedtimeData.isEnabled && blocker.isBedtime()) ||
+                              blocker.isAnyScheduleActive()
                               
         // Only toggle DND if the "DND-worthy" state changed
         // We track DND state separately or just check current state? 

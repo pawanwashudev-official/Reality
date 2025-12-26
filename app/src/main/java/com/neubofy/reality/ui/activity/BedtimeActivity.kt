@@ -94,6 +94,11 @@ class BedtimeActivity : AppCompatActivity() {
              // Also sync to BedtimeData just in case, though logic uses Focus List
              bedtimeData.blockedApps = HashSet(selected)
              prefsLoader.saveBedtimeData(bedtimeData)
+             
+             // BUGFIX v1.0.9: Notify Service to reload settings immediately
+             val intent = Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE)
+             intent.setPackage(packageName)
+             sendBroadcast(intent)
         }
     }
     

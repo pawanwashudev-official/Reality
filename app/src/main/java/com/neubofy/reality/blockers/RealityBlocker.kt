@@ -271,6 +271,30 @@ class RealityBlocker {
     
     fun hasActiveSchedules(): Boolean = schedules.isNotEmpty()
     fun hasActiveCalendarEvents(): Boolean = calendarEvents.isNotEmpty()
+    
+    fun isAnyScheduleActive(): Boolean {
+        val currentTime = Calendar.getInstance()
+        val currentMinutes = TimeTools.convertToMinutesFromMidnight(
+            currentTime.get(Calendar.HOUR_OF_DAY),
+            currentTime.get(Calendar.MINUTE)
+        )
+        schedules.forEach { item ->
+            val start = item.startTimeInMins
+            val end = item.endTimeInMins
+            val isActive = (start <= end && currentMinutes in start until end) ||
+                          (start > end && (currentMinutes >= start || currentMinutes < end))
+            if (isActive) return true
+        }
+        
+        // Also check Calendar Events
+        val nowMs = System.currentTimeMillis()
+        calendarEvents.forEach { (start, end) ->
+            if (nowMs in start..end) return true
+        }
+        
+        return false
+    }
+
     fun hasConfiguredLimits(): Boolean = appLimits.isNotEmpty() || appGroups.isNotEmpty()
     
     private fun getMidnightBlockResult(reason: String): BlockerResult {
