@@ -100,11 +100,15 @@ class AppBlockerService : BaseBlockingService() {
         
         if (isBrowser && isWebsiteBlockActive()) {
              // OPTIMIZATION: Removed immediate event-based checks to save battery.
-             // We rely 100% on the 60-second Watchdog timer below.
+             // We rely 100% on the Adaptive Watchdog timer below.
              
              // ENSURE WATCHDOG IS RUNNING
-             // We start it once, and it runs periodically (Wake & Check)
              startBrowserCheckTimer()
+             
+             // CRITICAL: Reset ramp-up to be aggressive (15s) whenever user interacts
+             // This handles the "Recent Apps" blocking loophole perfectly.
+             resetWatchdogRampUp()
+             
              currentBrowserPackage = packageName 
         }
         
@@ -128,22 +132,43 @@ class AppBlockerService : BaseBlockingService() {
             performBackgroundUpdates()
         }
         
-        // ANTI-UNINSTALL PROTECTION
+        // SECURITY SHIELD: Anti-Uninstall & Anti-TimeCheat
+        // Only runs when Settings is open (Efficient)
         if (packageName == "com.android.settings") {
             try {
-               val strictData = savedPreferencesLoader.getStrictModeData()
-               if (strictData.isEnabled && strictData.isAntiUninstallEnabled && !packageManager.isSafeMode) {
+               // Use Cached Data (Access O(1)) - removed IO call
+               val strictData = blocker.strictModeData
+               
+               if (strictData.isEnabled && !packageManager.isSafeMode) {
                    val root = rootInActiveWindow
                    if (root != null) {
                         val text = extractText(root).lowercase()
-                       val hasDeactivate = text.contains("deactivate") || text.contains("remove") || text.contains("uninstall")
-                       val hasContext = text.contains("device admin") || text.contains("reality") || text.contains("admin app")
-                       
-                       if ((hasDeactivate && hasContext) || text.contains("activate device admin help")) {
-                            performGlobalAction(GLOBAL_ACTION_HOME)
-                            Toast.makeText(this, "Action blocked by Reality Strict Mode", Toast.LENGTH_SHORT).show()
-                            return
-                       }
+                        
+                        // 1. Time Protection (Prevents changing time to bypass locks)
+                        // Trigger: "Date & time" or "Automatic date" visible on screen
+                        if (strictData.isTimeCheatProtectionEnabled) {
+                            val isTimeSettings = text.contains("date & time") || 
+                                               text.contains("automatic date") || 
+                                               text.contains("set time")
+                            
+                            if (isTimeSettings) {
+                                 performGlobalAction(GLOBAL_ACTION_BACK)
+                                 Toast.makeText(this, "Time Settings locked by Strict Mode", Toast.LENGTH_SHORT).show()
+                                 return
+                            }
+                        }
+
+                        // 2. Anti-Uninstall (Prevents removing Admin/App)
+                        if (strictData.isAntiUninstallEnabled) {
+                           val hasDeactivate = text.contains("deactivate") || text.contains("remove") || text.contains("uninstall")
+                           val hasContext = text.contains("device admin") || text.contains("reality") || text.contains("admin app")
+                           
+                           if ((hasDeactivate && hasContext) || text.contains("activate device admin help")) {
+                                performGlobalAction(GLOBAL_ACTION_HOME)
+                                Toast.makeText(this, "Action blocked by Reality Strict Mode", Toast.LENGTH_SHORT).show()
+                                return
+                           }
+                        }
                    }
                }
             } catch (e: Exception) {}
@@ -355,6 +380,10 @@ class AppBlockerService : BaseBlockingService() {
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onServiceConnected() {
         super.onServiceConnected()
+        
+        // Initialize Dynamic Browser Detection
+        com.neubofy.reality.utils.UrlDetector.init(this)
+        
         refreshSettings()
         val filter = IntentFilter().apply {
             addAction(INTENT_ACTION_REFRESH_FOCUS_MODE)
@@ -446,13 +475,34 @@ class AppBlockerService : BaseBlockingService() {
     }
 
     private fun updateBlockingStatus() {
+        val wasActive = isBlockingActive
+        // Only trigger Global Blocking State (and DND) for Time-based "Modes".
+        // Usage Limits interact individually and shouldn't trigger global DND.
         isBlockingActive = blocker.focusModeData.isTurnedOn ||
-                           blocker.appLimits.isNotEmpty() ||
                            blocker.hasActiveSchedules() ||
                            blocker.hasActiveCalendarEvents() ||
                            blocker.bedtimeData.isEnabled ||
-                           blocker.appGroups.isNotEmpty() ||
                            (blocker.strictModeData.isEnabled && blocker.strictModeData.isAntiUninstallEnabled)
+                           
+        // Auto DND Logic
+        if (isBlockingActive != wasActive) {
+            if (savedPreferencesLoader.isAutoDndEnabled()) {
+                toggleDnd(isBlockingActive)
+            }
+        }
+    }
+    
+    private fun toggleDnd(enable: Boolean) {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        if (notificationManager.isNotificationPolicyAccessGranted) {
+            if (enable) {
+                notificationManager.setInterruptionFilter(android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY)
+                com.neubofy.reality.utils.TerminalLogger.log("DND: Enabled (Blocking Active)")
+            } else {
+                notificationManager.setInterruptionFilter(android.app.NotificationManager.INTERRUPTION_FILTER_ALL)
+                com.neubofy.reality.utils.TerminalLogger.log("DND: Disabled (Blocking Ended)")
+            }
+        }
     }
 
     private fun setUpForcedRefreshChecker(packageName: String, endMillis: Long) {
@@ -486,6 +536,11 @@ class AppBlockerService : BaseBlockingService() {
     // ==========================================
 
     private fun isWebsiteBlockActive(): Boolean {
+        // GLOBAL EMERGENCY BYPASS: If Emergency Mode is active, bypass ALL website blocks
+        if (blocker.emergencyData.currentSessionEndTime > System.currentTimeMillis()) {
+             return false
+        }
+
         // Get blocked websites from saved preferences (works for all modes)
         val blockedWebsites = savedPreferencesLoader.getFocusModeData().blockedWebsites
         
@@ -616,10 +671,18 @@ class AppBlockerService : BaseBlockingService() {
     }
     
     // THE WATCHDOG: Runs continuously while Session is Active
+    // Adaptive Polling Variables
+    private var currentPollInterval = 15_000L // Start aggressive
+    private val POLL_STEPS = listOf(15_000L, 30_000L, 60_000L, 90_000L)
+    private var pollStepIndex = 0
+
     private fun startBrowserCheckTimer() {
         if (browserCheckRunnable != null) return // Already running
         
-        com.neubofy.reality.utils.TerminalLogger.log("WATCHDOG: Started (60s Interval)")
+        // Reset to aggressive start
+        resetWatchdogRampUp()
+        
+        com.neubofy.reality.utils.TerminalLogger.log("WATCHDOG: Started (Adaptive)")
         browserCheckRunnable = object : Runnable {
             override fun run() {
                 // STOP CONDITION: Only if the entire Blocking Session Ends
@@ -634,18 +697,33 @@ class AppBlockerService : BaseBlockingService() {
                      checkUrl(currentBrowserPackage!!)
                 } else {
                      // Try to find if a browser is active even if we missed the event
-                     // (This part relies on rootInActiveWindow if we lost track)
                      if (rootInActiveWindow?.packageName?.let { com.neubofy.reality.utils.UrlDetector.isBrowser(it.toString()) } == true) {
                          currentBrowserPackage = rootInActiveWindow.packageName.toString()
                          checkUrl(currentBrowserPackage!!)
                      }
                 }
                 
-                // Re-run in 60s
-                handler.postDelayed(this, BROWSER_CHECK_INTERVAL)
+                // Adaptive Interval Logic
+                // 15s -> 30s -> 60s -> 90s (Hold at 90s)
+                if (pollStepIndex < POLL_STEPS.size - 1) {
+                    pollStepIndex++
+                }
+                currentPollInterval = POLL_STEPS[pollStepIndex]
+                
+                // Re-run with new interval
+                handler.postDelayed(this, currentPollInterval)
             }
         }
         handler.post(browserCheckRunnable!!) // Run immediately first
+    }
+    
+    private fun resetWatchdogRampUp() {
+        pollStepIndex = 0
+        currentPollInterval = POLL_STEPS[0]
+        // If runnable is running, we don't restart it, but the next loop will use the reset index/interval
+        // However, to be instant, we can verify if we need to force a quick check? 
+        // For now, next cycle catches it. To be purely instant on touch, we rely on the immediate post in start()
+        // or the fact that this is called from onAccessibilityEvent.
     }
     
     private fun stopBrowserCheckTimer() {

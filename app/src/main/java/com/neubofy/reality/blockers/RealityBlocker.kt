@@ -28,12 +28,28 @@ class RealityBlocker {
     var whitelistedPackages = hashSetOf<String>()
     var strictModeData = Constants.StrictModeData()
 
+    // Optimized Data Structures (O(1) Access)
+    private var appLimitsMap: Map<String, com.neubofy.reality.data.db.AppLimitEntity> = emptyMap()
+    private var packageToGroupsMap: Map<String, List<com.neubofy.reality.data.db.AppGroupEntity>> = emptyMap()
+
     fun refreshAppGroups(groups: List<com.neubofy.reality.data.db.AppGroupEntity>) {
         appGroups = groups
+        // Pre-process groups into a Reverse Index Map (Package -> List of Groups it belongs to)
+        // This eliminates string splitting and iteration during the critical blocking check.
+        val newMap = mutableMapOf<String, MutableList<com.neubofy.reality.data.db.AppGroupEntity>>()
+        for (group in groups) {
+            val packages = parsePackages(group.packageNamesJson)
+            for (pkg in packages) {
+                newMap.getOrPut(pkg) { mutableListOf() }.add(group)
+            }
+        }
+        packageToGroupsMap = newMap
     }
     
     fun refreshAppLimits(limits: List<com.neubofy.reality.data.db.AppLimitEntity>) {
         appLimits = limits
+        // Pre-index limits by package name for O(1) lookup
+        appLimitsMap = limits.associateBy { it.packageName }
     }
     
     private fun parsePackages(json: String): List<String> {
@@ -52,6 +68,7 @@ class RealityBlocker {
         }
 
         // 3. Check Emergency Mode (Temporary Unblock)
+        // Global Bypass: If Emergency Mode is active, NO app is blocked.
         if (emergencyData.currentSessionEndTime > System.currentTimeMillis()) {
             return BlockerResult(isBlocked = false, endTime = emergencyData.currentSessionEndTime, isEmergency = true)
         }
@@ -102,34 +119,45 @@ class RealityBlocker {
             return BlockerResult(isBlocked = true, endTime = scheduleEndTime, reason = "Scheduled Block")
         }
         
-        // 9. Check App Limits (Only when limit is exceeded)
-        val appLimit = appLimits.find { it.packageName == packageName }
+        // 9. Check App Limits (O(1) Lookup)
+        val appLimit = appLimitsMap[packageName]
         if (appLimit != null && appLimit.limitInMinutes > 0) {
-            if (isActivePeriod(appLimit.activePeriodsJson)) {
-                val limitMs = appLimit.limitInMinutes * 60 * 1000L
-                val used = usageLimitData.appUsages.getOrDefault(packageName, 0L)
-                if (used >= limitMs) {
-                    return getMidnightBlockResult("Daily limit reached")
-                }
+            
+            // Rule A: Strict Active Session (Standalone Rule)
+            if (!isActivePeriod(appLimit.activePeriodsJson)) {
+                return BlockerResult(isBlocked = true, reason = "Outside Active Session")
+            }
+
+            // Rule B: Usage Limit (Standalone Rule)
+            val limitMs = appLimit.limitInMinutes * 60 * 1000L
+            val used = usageLimitData.appUsages.getOrDefault(packageName, 0L)
+            if (used >= limitMs) {
+                return getMidnightBlockResult("Daily limit reached")
             }
         }
         
-        // 10. Check App Group Limits
-        for (group in appGroups) {
-            if (group.limitInMinutes <= 0) continue
-            
-            val packages = parsePackages(group.packageNamesJson) 
-            if (packages.contains(packageName)) {
-                if (isActivePeriod(group.activePeriodsJson)) {
-                    var totalGroupUsage = 0L
-                    for (pkg in packages) {
-                        totalGroupUsage += usageLimitData.appUsages.getOrDefault(pkg, 0L)
-                    }
-                    
-                    val limitMs = group.limitInMinutes * 60 * 1000L
-                    if (totalGroupUsage >= limitMs) {
-                        return getMidnightBlockResult("Group limit reached")
-                    }
+        // 10. Check App Group Limits (O(1) Linked Lookup)
+        val relevantGroups = packageToGroupsMap[packageName]
+        if (relevantGroups != null) {
+            for (group in relevantGroups) {
+                if (group.limitInMinutes <= 0) continue
+                
+                // Rule A: Group Active Session (Standalone Rule)
+                if (!isActivePeriod(group.activePeriodsJson)) {
+                    return BlockerResult(isBlocked = true, reason = "Outside Group Session")
+                }
+
+                // Rule B: Group Usage Limit (Standalone Rule)
+                // We still need to sum usage here, but only for groups strictly containing this app
+                val packages = parsePackages(group.packageNamesJson) // Cached string split could be optimized further but list size is usually small
+                var totalGroupUsage = 0L
+                for (pkg in packages) {
+                    totalGroupUsage += usageLimitData.appUsages.getOrDefault(pkg, 0L)
+                }
+                
+                val limitMs = group.limitInMinutes * 60 * 1000L
+                if (totalGroupUsage >= limitMs) {
+                    return getMidnightBlockResult("Group limit reached")
                 }
             }
         }

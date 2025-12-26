@@ -249,8 +249,10 @@ class AppLimitsFragment : Fragment() {
         }
         
         // Bind UI
-        dialogBinding.seekBarLimit.max = 480 // 8 hours max
-        dialogBinding.seekBarLimit.progress = currentLimit
+        dialogBinding.seekBarLimit.valueFrom = 0f
+        dialogBinding.seekBarLimit.valueTo = 480f
+        dialogBinding.seekBarLimit.stepSize = 15f
+        dialogBinding.seekBarLimit.value = currentLimit.toFloat()
         dialogBinding.tvLimitValue.text = "${currentLimit / 60}h ${currentLimit % 60}m"
         dialogBinding.cbStrict.isChecked = isStrict
         
@@ -269,14 +271,10 @@ class AppLimitsFragment : Fragment() {
             }
         }
         
-        dialogBinding.seekBarLimit.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                currentLimit = progress
-                dialogBinding.tvLimitValue.text = "${progress / 60}h ${progress % 60}m"
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
+        dialogBinding.seekBarLimit.addOnChangeListener { _, value, _ ->
+            currentLimit = value.toInt()
+            dialogBinding.tvLimitValue.text = "${currentLimit / 60}h ${currentLimit % 60}m"
+        }
         
         // Chips Logic
         fun refreshChips() {

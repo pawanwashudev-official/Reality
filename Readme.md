@@ -1,189 +1,219 @@
-# Reality - Digital Wellbeing App
+<div align="center">
 
-<p align="center">
-  <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="120" alt="Reality Logo">
-</p>
+# 🛡️ Reality
 
-<p align="center">
-  <b>Take control of your digital life</b>
-</p>
+## The #1 Digital Wellbeing & Focus App for Android
 
-<p align="center">
-  <a href="https://github.com/pawanwashudev-official/Reality/releases">
-    <img src="https://img.shields.io/github/v/release/pawanwashudev-official/Reality?style=for-the-badge" alt="Release">
-  </a>
-  <a href="https://github.com/pawanwashudev-official/Reality/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/pawanwashudev-official/Reality?style=for-the-badge" alt="License">
-  </a>
-</p>
+### *Your Privacy. Your Focus. Your Reality.*
 
----
+[![Android](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://android.com)
+[![Kotlin](https://img.shields.io/badge/Kotlin-1.9-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Material3](https://img.shields.io/badge/Material%20You-Design-6750A4?style=for-the-badge&logo=material-design&logoColor=white)](https://m3.material.io)
+[![Privacy](https://img.shields.io/badge/Privacy-100%25-00C853?style=for-the-badge&logo=shield&logoColor=white)](.)
+[![No Ads](https://img.shields.io/badge/Ads-ZERO-FF5722?style=for-the-badge)](.)
+[![Offline](https://img.shields.io/badge/Works-Offline-2196F3?style=for-the-badge)](.)
 
-## � 100% Private & Secure
+<br/>
 
-> **Your data stays on YOUR device. Always.**
+<img src="app/src/main/ic_launcher-playstore.png" alt="Reality Logo" width="180"/>
 
-| Privacy Feature | Reality |
-|----------------|---------|
-| Data Collection | ❌ **NONE** |
-| Analytics/Tracking | ❌ **NONE** |
-| Internet Permission | ❌ **NOT REQUIRED** |
-| Account/Login | ❌ **NOT REQUIRED** |
-| Cloud Sync | ❌ **NONE** |
-| Ads | ❌ **NONE** |
-| User Tracking | ❌ **NONE** |
+<br/>
 
-### Why Reality is the Most Private Digital Wellbeing App:
-
-🛡️ **Completely Offline** - Works without internet. No data leaves your device.
-
-🔐 **Zero Data Collection** - We don't know who you are, what apps you use, or when you use them. We literally cannot see anything.
-
-📵 **No Internet Permission** - The app doesn't even have permission to access the internet. It's physically impossible for us to collect data.
-
-👤 **No Accounts** - No signup, no login, no email required. Just install and use.
-
-📊 **No Analytics** - No Firebase, no Google Analytics, no crash reporting services. Nothing.
-
-💯 **Open Source** - Don't trust us? Read the code yourself. Every line is public.
-
-> *"The most secure data is the data that's never collected."*
+### 🏆 **The Most Powerful Focus App That Respects Your Privacy**
 
 ---
 
-## �📱 About
+## 🔐 **ZERO Data Collection. ZERO Tracking. ZERO Compromises.**
 
-**Reality** is a powerful digital wellbeing app that helps you stay focused and reduce screen time. Block distracting apps and websites during focus sessions, schedules, or bedtime mode.
-
----
-
-## ✨ Features
-
-### 🎯 Focus Mode
-- Block distracting apps during focus sessions
-- Customizable duration (15 mins - 8 hours)
-- Block selected apps OR block all except selected
-
-### 🌐 Website Blocking
-- Block distracting websites across ALL browsers
-- Works during Focus Mode, Schedules, and Bedtime
-- 60-second Watchdog ensures no bypass
-
-### 📅 Scheduled Focus
-- Set automatic focus times for work/study hours
-- Repeats on selected days of the week
-- No manual activation needed
-
-### 🌙 Bedtime Mode
-- Limit late-night phone usage
-- Customizable start/end times
-- Block apps and websites during sleep hours
-
-### 📊 Usage Tracking
-- Monitor your daily screen time (stored locally only!)
-- Track usage per app
-- Visual charts and statistics
-
-### ⏱️ App Limits
-- Set daily time limits for individual apps
-- Block apps when limit is reached
-- Resets at midnight
-
-### 🛡️ Anti-Bypass Protection
-- Anti-uninstall protection
-- Strict Mode with password/timer lock
-- Emergency unlock (limited uses)
+Unlike other apps that harvest your data, **Reality** operates 100% offline. Your usage data, passwords, and settings **NEVER leave your device**. We don't have servers. We don't want your data. We just want you to **focus**.
 
 ---
 
-## 📥 Download
+</div>
 
-Download the latest release from [GitHub Releases](https://github.com/pawanwashudev-official/Reality/releases).
+## � Why Reality is Different
+
+| Other Apps | Reality |
+|------------|---------|
+| ❌ Collect your usage data | ✅ **100% Offline - No data leaves your device** |
+| ❌ Require account creation | ✅ **No sign-up required** |
+| ❌ Show annoying ads | ✅ **Zero ads, forever** |
+| ❌ Easy to bypass | ✅ **Military-grade Strict Mode** |
+| ❌ Basic features | ✅ **Every feature you could ever need** |
+| ❌ Ugly interfaces | ✅ **Beautiful Material You design** |
+| ❌ Need internet to work | ✅ **Works completely offline** |
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Complete Feature List
 
-### Prerequisites
+### 📱 **App Blocking**
+| Feature | Description |
+|---------|-------------|
+| 🚫 **Block Apps** | Block specific distracting apps |
+| ✅ **Allowlist Mode** | Block everything except selected apps |
+| 📊 **Usage Tracking** | See exactly how much time you spend |
+| ⏰ **Per-App Limits** | Set daily time limits for each app |
+| 👥 **App Groups** | Create groups with shared time pools |
 
-- Android Studio Arctic Fox or newer
-- Android SDK 26+ (Android 8.0)
-- JDK 8+
+### 🌐 **Website Blocking**
+| Feature | Description |
+|---------|-------------|
+| 🌍 **Universal Blocking** | Works across ALL browsers |
+| 🔍 **Smart Detection** | Detects URLs in any browser automatically |
+| ⚡ **Instant Block** | Blocks appear immediately |
+| 📝 **Custom Blocklist** | Add any website you want to block |
 
-### Building
+### 🌙 **Smart Scheduling**
+| Feature | Description |
+|---------|-------------|
+| 😴 **Bedtime Mode** | Auto-blocking during sleep hours |
+| 📅 **Calendar Sync** | Sync with Google Calendar events |
+| 🎯 **Focus Sessions** | Create custom focus schedules |
+| 🔁 **Repeat Days** | Set which days each schedule applies |
 
-1. Clone the repository:
+### 🔒 **Strict Mode - Unbreakable Protection**
+
+**The most advanced anti-cheat system in any focus app.**
+
+| Protection Level | How It Works |
+|-----------------|--------------|
+| 🔓 **Standard** | Easy deactivation - for casual use |
+| ⏱️ **Timer Lock** | Lock yourself for up to **20 days + 23 hours** |
+| 🔑 **Password Lock** | Require password to disable |
+| ⏳ **24hr Forgot Password** | Forgot your password? Wait 24 hours |
+| 🛡️ **Anti-Uninstall** | Prevents app removal entirely |
+| ⏰ **Anti-Time Cheat** | Blocks system time manipulation |
+| � **Emergency Lock** | Even disables emergency bypass |
+
+### ✨ **Premium Features (All Included FREE)**
+
+| Feature | Description |
+|---------|-------------|
+| 🔔 **Auto DND** | Automatically enables Do Not Disturb |
+| 🚨 **Emergency Access** | 3 bypasses per day, 5 minutes each |
+| 📈 **Usage Analytics** | Beautiful charts and statistics |
+| 🎨 **Material You** | Dynamic theming with your wallpaper |
+| 🌓 **Dark/Light Mode** | Perfect visibility in any lighting |
+
+---
+
+## �️ Privacy Promise
+
+<div align="center">
+
+### We Will **NEVER**:
+
+🚫 Collect your usage data  
+🚫 Track which apps you use  
+🚫 Store your passwords on servers  
+🚫 Sell your information  
+🚫 Show you advertisements  
+🚫 Require an account  
+🚫 Need internet connection  
+
+### We **ALWAYS**:
+
+✅ Keep everything on YOUR device  
+✅ Hash passwords with SHA-256  
+✅ Work 100% offline  
+✅ Respect your privacy  
+✅ Give you full control  
+
+</div>
+
+---
+
+## 📦 Installation
+
+### Download
+
+Get the latest APK from [Releases](https://github.com/pawanwashudev-official/Reality/releases)
+
+### Build from Source
+
 ```bash
+# Clone the repository
 git clone https://github.com/pawanwashudev-official/Reality.git
-```
+cd Reality
 
-2. Open in Android Studio
+# Create local.properties with your signing config
+echo "sdk.dir=/path/to/android/sdk" > local.properties
+echo "KEYSTORE_FILE=your_keystore.jks" >> local.properties
+echo "KEYSTORE_PASSWORD=your_password" >> local.properties
+echo "KEY_ALIAS=your_alias" >> local.properties
+echo "KEY_PASSWORD=your_key_password" >> local.properties
 
-3. Create `local.properties` in the project root with your signing config:
-```properties
-sdk.dir=YOUR_SDK_PATH
-
-# Signing (optional for debug builds)
-KEYSTORE_FILE=path/to/your/keystore.jks
-KEYSTORE_PASSWORD=your_password
-KEY_ALIAS=your_key_alias
-KEY_PASSWORD=your_key_password
-```
-
-4. Build the project:
-```bash
-./gradlew assembleDebug
+# Build release APK
+./gradlew assembleRelease
 ```
 
 ---
 
-## � Permissions Explained
+## 🏗️ Technical Excellence
 
-| Permission | Why Needed | Data Sent? |
-|------------|-----------|------------|
-| Accessibility Service | To detect and block apps/websites | ❌ NO |
-| Usage Stats | To track your screen time locally | ❌ NO |
-| Display Over Apps | To show warning overlays | ❌ NO |
-| Device Admin | For anti-uninstall (optional) | ❌ NO |
+### Architecture
+- **Clean Architecture** with separated concerns
+- **Room Database** for reliable local storage
+- **Kotlin Coroutines** for smooth performance
+- **Material 3** components throughout
+- **WorkManager** for reliable background tasks
 
-**Note:** NO INTERNET PERMISSION = We physically cannot send your data anywhere.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+### Requirements
+- Android 8.0 (API 26) or higher
+- Accessibility Service permission
+- Device Admin (optional, for anti-uninstall)
 
 ---
 
-## 📧 Contact & Support
+## 🛣️ Roadmap
 
-- **Developer:** Pawan Washudev
-- **Email:** pawanwashudev@gmail.com
-- **GitHub:** [@pawanwashudev-official](https://github.com/pawanwashudev-official)
-- **Telegram:** [@pawanwashudev](https://t.me/pawanwashudev)
-- **Instagram:** [@pawanwashudev](https://instagram.com/pawanwashudev)
+### ✅ v1.0 - Complete (Current)
+- [x] Full app blocking system
+- [x] Website blocking across all browsers
+- [x] Usage limits (per-app & groups)
+- [x] Bedtime mode
+- [x] Focus mode
+- [x] Strict Mode (Timer/Password)
+- [x] Anti-uninstall protection
+- [x] Auto DND
+- [x] Material 3 UI
+
+### 🔮 Coming Soon
+- [ ] Home screen widgets
+- [ ] Wear OS companion
+- [ ] Focus sounds & music
+- [ ] Pomodoro timer
+- [ ] Weekly challenges
+- [ ] Statistics export
+- [ ] Multiple profiles
 
 ---
 
-## 📄 Privacy Policy
+## �‍💻 About Us
 
-Read our privacy policy at [realityprivicypolicy.vercel.app](https://realityprivicypolicy.vercel.app)
+**Reality** is developed by **Neubofy** - a team passionate about digital wellbeing and privacy.
 
-**TL;DR:** We collect nothing. Zero. Nada. Your data stays on your device.
-
----
-
-## 📜 License
-
-This project is open source and available under the [MIT License](LICENSE).
+We believe that focus apps should help you, not spy on you. That's why we built Reality with privacy as the **foundation**, not an afterthought.
 
 ---
 
-<p align="center">
-  Made with ❤️ in India by <a href="https://github.com/pawanwashudev-official">Neubofy</a>
-</p>
+<div align="center">
 
-<p align="center">
-  <i>Privacy is not a feature. It's a right.</i>
-</p>
+## ⭐ Love Reality? Give us a star!
+
+**Your star helps others discover the app and motivates us to keep improving.**
+
+---
+
+### 🌟 Reality - Because Your Focus Deserves Privacy 🌟
+
+**No Data Collection. No Ads. No Compromises.**
+
+*Take back control of your digital life.*
+
+---
+
+Made with ❤️ by [Neubofy](https://github.com/pawanwashudev-official)
+
+</div>

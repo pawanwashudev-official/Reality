@@ -14,7 +14,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="Strict Mode Configuration"
+            app:title="Strict Mode"
             app:titleCentered="true"
             app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge"
             app:navigationIcon="@drawable/baseline_arrow_back_24" />
@@ -33,7 +33,7 @@
             android:orientation="vertical"
             android:padding="24dp">
 
-            <!-- Status Header -->
+            <!-- Status Header Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardStatus"
                 android:layout_width="match_parent"
@@ -50,12 +50,12 @@
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="24dp">
+                    android:padding="32dp">
 
                     <ImageView
                         android:id="@+id/imgStatusIcon"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
                         android:layout_marginBottom="16dp"
                         app:tint="?attr/colorOutline"
                         android:src="@drawable/baseline_lock_open_24" />
@@ -65,7 +65,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Strict Mode Inactive"
-                        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                        android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
                         android:textColor="?attr/colorOnSurface" />
 
                     <TextView
@@ -74,229 +74,167 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:gravity="center"
-                        android:text="Configure your protection settings below."
+                        android:text="Prevents you from disabling your blocks"
                         android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <!-- Timer Display (only shown when timer active) -->
+                    <TextView
+                        android:id="@+id/tvTimerRemaining"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:visibility="gone"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+                        android:textColor="?attr/colorPrimary" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Protection Settings Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="What to Lock"
+                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                android:textColor="?attr/colorPrimary"
+                android:layout_marginBottom="16dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchBlocklistLock"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Lock Blocklist"
+                        android:checked="true"
+                        android:layout_marginBottom="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchBedtimeLock"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Lock Bedtime"
+                        android:checked="true"
+                        android:layout_marginBottom="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchAppLimitLock"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Lock App Limits"
+                        android:checked="true"
+                        android:layout_marginBottom="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchGroupLimitLock"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Lock Group Limits"
+                        android:checked="true"
+                        android:layout_marginBottom="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchEmergencyLock"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Disable Emergency Access"
+                        android:checked="true"
+                        android:layout_marginBottom="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchAutoDndLock"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Lock Auto DND"
+                        android:checked="true"
+                        android:layout_marginBottom="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchAntiTimeCheat"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Block Time Changes"
+                        android:checked="true"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Anti-Uninstall Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchAntiUninstall"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Anti-Uninstall Protection"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Requires Device Admin. Prevents app removal."
+                        android:layout_marginTop="4dp"
+                        android:paddingStart="16dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Protection Method"
-                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                android:textColor="?attr/colorPrimary"
-                android:layout_marginBottom="16dp" />
-
-            <!-- Protection Options -->
-            <RadioGroup
-                android:id="@+id/radioGroupProtection"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:cardCornerRadius="16dp"
-                    app:strokeColor="?attr/colorOutlineVariant"
-                    app:strokeWidth="1dp"
-                    app:cardElevation="0dp"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainer">
-
-                    <com.google.android.material.radiobutton.MaterialRadioButton
-                        android:id="@+id/radioNone"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="16dp"
-                        android:text="None (Standard)"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:cardCornerRadius="16dp"
-                    app:strokeColor="?attr/colorOutlineVariant"
-                    app:strokeWidth="1dp"
-                    app:cardElevation="0dp"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainer">
-
-                    <com.google.android.material.radiobutton.MaterialRadioButton
-                        android:id="@+id/radioTimer"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="16dp"
-                        android:text="Timer Lock"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:cardCornerRadius="16dp"
-                    app:strokeColor="?attr/colorOutlineVariant"
-                    app:strokeWidth="1dp"
-                    app:cardElevation="0dp"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainer">
-
-                    <com.google.android.material.radiobutton.MaterialRadioButton
-                        android:id="@+id/radioPassword"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="16dp"
-                        android:text="Password Lock"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-                </com.google.android.material.card.MaterialCardView>
-            </RadioGroup>
-
-            <!-- Protection Config Area -->
-            <LinearLayout
-                android:id="@+id/layoutTimer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone"
-                android:layout_marginBottom="24dp">
-                
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSetTimer"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:text="Set Duration"
-                    app:icon="@drawable/baseline_access_time_24"
-                    style="@style/Widget.Material3.Button.TonalButton" />
-
-                <TextView
-                    android:id="@+id/tvTimerEndTime"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                    android:textColor="?attr/colorPrimary" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/layoutPassword"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone"
-                android:layout_marginBottom="24dp">
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:endIconMode="password_toggle"
-                    app:boxBackgroundColor="?attr/colorSurfaceContainer"
-                    app:boxCornerRadiusTopStart="16dp"
-                    app:boxCornerRadiusTopEnd="16dp"
-                    app:boxCornerRadiusBottomStart="16dp"
-                    app:boxCornerRadiusBottomEnd="16dp"
-                    app:boxStrokeWidth="0dp">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etPassword"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Create Password"
-                        android:inputType="textPassword" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSetPassword"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="Save Password"
-                    style="@style/Widget.Material3.Button.TonalButton" />
-            </LinearLayout>
-            
-            <com.google.android.material.divider.MaterialDivider
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Feature Limits"
-                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                android:textColor="?attr/colorPrimary"
-                android:layout_marginBottom="16dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnManageLimits"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Select Specific Limits to Lock"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_marginBottom="16dp" 
-                app:icon="@drawable/baseline_edit_24" />
-
-            <!-- Switches -->
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/switchBlocklistLock"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Lock Blocklist Editing"
-                android:layout_marginBottom="12dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-                
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/switchBedtimeLock"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Lock Bedtime Editing"
-                android:layout_marginBottom="12dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/switchAppLimitLock"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Lock App Limits"
-                android:layout_marginBottom="12dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-                
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/switchGroupLimitLock"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Lock Group Limits"
-                android:layout_marginBottom="12dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-                
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/switchAntiUninstall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Anti-Uninstall Protection"
-                android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-                
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Prevents app uninstallation. Recommended for maximum security."
-                android:paddingStart="16dp"
-                android:layout_marginBottom="24dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                android:textColor="?attr/colorOnSurfaceVariant" />
-
-            <!-- Action Button -->
+            <!-- Main Action Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnActivate"
                 android:layout_width="match_parent"
                 android:layout_height="64dp"
-                android:text="Save &amp; Activate"
+                android:text="Activate Strict Mode"
                 android:textSize="18sp"
                 app:cornerRadius="32dp"
-                android:layout_marginBottom="24dp" />
+                android:layout_marginBottom="16dp" />
+
+            <!-- Forgot Password Button (only visible when password mode active) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnForgotPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Forgot Password?"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:visibility="gone" />
 
         </LinearLayout>
 

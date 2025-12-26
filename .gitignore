@@ -1,35 +1,54 @@
+# Gradle
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+.gradle/
+gradle.properties.backup
+
+# Local configuration (CONTAINS SECRETS - NEVER COMMIT!)
 local.properties
-
-# Keystore files (NEVER COMMIT!)
-*.jks
-*.keystore
-reality_keystore.jks
-reality_release.jks
-
-# Build outputs
-app/build_v4/
-app/build/
-build/
-
-# Log files
-*.log
-*.txt
+/local.properties
 
 # IDE
+/.idea/
 .idea/
 *.ipr
 *.iws
+.DS_Store
+
+# Build outputs
+/build/
+build/
+/app/build/
+app/build/
+/app/build_v4/
+app/build_v4/
+/captures/
+.externalNativeBuild/
+.cxx/
+
+# Keystore files (CONTAINS SECRETS - NEVER COMMIT!)
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+reality_keystore.jks
+reality_release.jks
+signing/
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# APK files (optional - uncomment if you don't want APKs in repo)
+# *.apk
+
+# Secrets / API Keys
+secrets.properties
+api_keys.properties
+google-services.json
+

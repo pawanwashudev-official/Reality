@@ -68,6 +68,9 @@ class Constants {
         var passwordHash: String = "",
         var lastVerifyDate: Long = 0,
         
+        // Forgot Password: 24hr waiting period
+        var forgotPasswordTimerEndTime: Long = 0,
+        
         // Granular Control
         var isBlocklistLocked: Boolean = true,
         var isBedtimeLocked: Boolean = true,
@@ -75,7 +78,16 @@ class Constants {
         var isGroupLimitLocked: Boolean = true,
         
         // Anti-Uninstall Protection
-        var isAntiUninstallEnabled: Boolean = false
+        var isAntiUninstallEnabled: Boolean = false,
+        
+        // Anti-Time Cheat
+        var isTimeCheatProtectionEnabled: Boolean = true,
+        
+        // Lock Emergency Access
+        var isEmergencyLocked: Boolean = true,
+        
+        // Lock Auto DND
+        var isAutoDndLocked: Boolean = true
     ) {
         companion object {
             const val MODE_NONE = "NONE"

@@ -4,15 +4,15 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#050510">
+    android:background="?attr/colorSurface">
 
     <TextView
         android:id="@+id/tv_empty_state"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="No app limits set.\nTap + to add one."
-        android:textColor="#80FFFFFF"
-        android:textSize="16sp"
+        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:gravity="center"
         android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
@@ -34,9 +34,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:src="@drawable/baseline_add_24"
-        app:tint="@android:color/white"
-        app:backgroundTint="#7C4DFF"
+        app:srcCompat="@drawable/baseline_add_24"
+        app:tint="?attr/colorOnPrimaryContainer"
+        app:backgroundTint="?attr/colorPrimaryContainer"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 

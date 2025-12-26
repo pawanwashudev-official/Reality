@@ -53,6 +53,8 @@ class TimedActionActivity : AppCompatActivity() {
         binding = ActivityAddTimedActionActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
+        binding.topAppBar.setNavigationOnClickListener { finish() }
+        
         selectUnblockedAppsLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
                 val apps = result.data?.getStringArrayListExtra("SELECTED_APPS")
@@ -95,11 +97,14 @@ class TimedActionActivity : AppCompatActivity() {
             val temp = mutableListOf<UnifiedScheduleItem>()
             calendarEvents.forEach { temp.add(UnifiedScheduleItem.CalendarItem(it)) }
             
+            // Add Manual Items
+            manualList.forEach { temp.add(UnifiedScheduleItem.Manual(it)) }
+            
             // Sort by start time
             temp.sortBy { 
                 when(it) {
                     is UnifiedScheduleItem.CalendarItem -> it.event.startTime
-                    else -> Long.MAX_VALUE
+                    is UnifiedScheduleItem.Manual -> getNextTimeInMillis(it.item.startTimeInMins)
                 }
             }
               
@@ -127,10 +132,10 @@ class TimedActionActivity : AppCompatActivity() {
     
     private fun checkEmptyState() {
         if (unifiedList.isEmpty()) {
-            binding.tvEmpty.visibility = View.VISIBLE
+            binding.layoutEmptyState.visibility = View.VISIBLE
             binding.recyclerView2.visibility = View.GONE
         } else {
-            binding.tvEmpty.visibility = View.GONE
+            binding.layoutEmptyState.visibility = View.GONE
             binding.recyclerView2.visibility = View.VISIBLE
         }
     }

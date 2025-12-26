@@ -21,9 +21,44 @@ object UrlDetector {
         "com.android.browser"
     )
 
-    fun isBrowser(packageName: String): Boolean {
-        return BROWSER_PACKAGES.contains(packageName)
+    // Dynamic list populated at runtime
+    private var dynamicBrowserPackages: Set<String> = emptySet()
+
+    fun init(context: android.content.Context) {
+        try {
+            val pm = context.packageManager
+            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com"))
+            val list = pm.queryIntentActivities(intent, android.content.pm.PackageManager.MATCH_ALL)
+            
+            val detected = mutableSetOf<String>()
+            for (resolveInfo in list) {
+                detected.add(resolveInfo.activityInfo.packageName)
+            }
+            
+            // Add known browsers that might not catch the intent for some reason (Fallbacks)
+            detected.addAll(BROWSER_PACKAGES)
+            
+            dynamicBrowserPackages = detected
+            com.neubofy.reality.utils.TerminalLogger.log("UrlDetector: Discovered ${detected.size} browser apps.")
+        } catch (e: Exception) {
+            // Fallback to static list if query fails
+            dynamicBrowserPackages = BROWSER_PACKAGES
+        }
     }
+
+    fun isBrowser(packageName: String): Boolean {
+        return if (dynamicBrowserPackages.isNotEmpty()) {
+            dynamicBrowserPackages.contains(packageName)
+        } else {
+            BROWSER_PACKAGES.contains(packageName)
+        }
+    }
+
+    // Pre-compiled Regex for performance
+    private val DOMAIN_REGEX = Regex(".*[a-zA-Z0-9-]+\\.[a-z]{2,}.*")
+    
+    // Static list to avoid allocation on every scan
+    private val KNOWN_DOMAINS = listOf("youtube", "facebook", "instagram", "twitter", "tiktok", "reddit", "twitch")
 
     fun getUrl(rootNode: AccessibilityNodeInfo?, packageName: String): String? {
         if (rootNode == null) return null
@@ -74,12 +109,6 @@ object UrlDetector {
         queue.add(rootNode)
         var count = 0
         
-        // Relaxed regex - matches domain.xxx patterns
-        val domainRegex = Regex(".*[a-zA-Z0-9-]+\\.[a-z]{2,}.*")
-        
-        // Known domains to detect even without full URL format
-        val knownDomains = listOf("youtube", "facebook", "instagram", "twitter", "tiktok", "reddit", "twitch")
-        
         while (!queue.isEmpty() && count < 300) {
             val node = queue.poll()
             if (node == null) continue
@@ -104,13 +133,13 @@ object UrlDetector {
                      }
                      
                      // Check if it looks like a URL or contains a known domain
-                     if (domainRegex.matches(cleanText)) {
+                     if (DOMAIN_REGEX.matches(cleanText)) {
                          com.neubofy.reality.utils.TerminalLogger.log("URL (Scan): $cleanText")
                          return cleanText
                      }
                      
                      // Fallback: Check for known domain keywords
-                     for (domain in knownDomains) {
+                     for (domain in KNOWN_DOMAINS) {
                          if (cleanText.contains(domain)) {
                              com.neubofy.reality.utils.TerminalLogger.log("URL (Keyword): $cleanText")
                              return cleanText

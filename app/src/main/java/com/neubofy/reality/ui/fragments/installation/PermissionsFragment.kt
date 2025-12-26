@@ -99,14 +99,30 @@ class PermissionsFragment : Fragment() {
         }
 
         binding.btnNext.setOnClickListener {
-            val sharedPreferences = requireContext().getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
-            sharedPreferences.edit().putBoolean("first_launch_complete", true).apply()
-
-            requireActivity().supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_holder, AccessibilityGuide())
-                .addToBackStack(null)
-                .commit()
+            val allGranted = notificationGranted && batteryGranted && usageStatsGranted
+            
+            if (allGranted) {
+                moveToNextScreen()
+            } else {
+                // Show Warning Dialog before skipping
+                androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle("Permissions Missing")
+                    .setMessage("Without these permissions, some blocking features will not work correctly. You can grant them later in Settings.\n\nProceed anyway?")
+                    .setPositiveButton("Proceed") { _, _ -> moveToNextScreen() }
+                    .setNegativeButton("Go Back", null)
+                    .show()
+            }
         }
+    }
+    
+    private fun moveToNextScreen() {
+        val sharedPreferences = requireContext().getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putBoolean("first_launch_complete", true).apply()
+
+        requireActivity().supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_holder, AccessibilityGuide())
+            .addToBackStack(null)
+            .commit()
     }
     
     private fun applyPremiumTheme() {
@@ -122,9 +138,6 @@ class PermissionsFragment : Fragment() {
         binding.bgPermRoot.setCardBackgroundColor(deepBlue)
         binding.usagePermRoot.setCardBackgroundColor(deepBlue)
         
-        // Icons Tint (Applying manually if needed, or via XML usage but XML uses static)
-        // We will update icons state in updateUI with GOLD if done, or RED if not.
-        
         // Button
         binding.btnNext.backgroundTintList = ColorStateList.valueOf(solidGold)
         binding.btnNext.setTextColor(Color.BLACK)
@@ -135,7 +148,9 @@ class PermissionsFragment : Fragment() {
         updatePermissionIcon(batteryGranted, binding.bgPermIcon)
         updatePermissionIcon(usageStatsGranted, binding.usagePermIcon)
         
-        binding.btnNext.isEnabled = notificationGranted && batteryGranted && usageStatsGranted
+        // Allow proceeding even if not all granted ("On the go" permission model)
+        binding.btnNext.isEnabled = true
+        binding.btnNext.text = if (notificationGranted && batteryGranted && usageStatsGranted) "Next" else "Skip for Now"
     }
 
     private fun updatePermissionIcon(isEnabled: Boolean, icon: android.widget.ImageView) {

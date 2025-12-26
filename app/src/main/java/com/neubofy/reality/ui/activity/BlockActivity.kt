@@ -41,15 +41,18 @@ class BlockActivity : AppCompatActivity() {
     
     private fun handleEmergencyAccess() {
         val strictData = prefs.getStrictModeData()
-        
-        // strictData.isEnabled doesn't necessarily block emergency access, 
-        // but if "Strict Mode" is conceptually "No Escape", maybe?
-        // For now, we allow it with a delay (penalty).
+
+        if (strictData.isEnabled && strictData.isEmergencyLocked) {
+             MaterialAlertDialogBuilder(this)
+                .setTitle("Emergency Access Locked")
+                .setMessage("Emergency access is disabled because Strict Mode is active with the Lock enabled.")
+                .setPositiveButton("OK", null)
+                .show()
+             return
+        }
         
         if (strictData.isEnabled && strictData.modeType != com.neubofy.reality.Constants.StrictModeData.MODE_NONE) {
-            // Strict Mode: Harder penalty or disabled?
-            // "Emergency Access Page won't open" -> User wants it.
-            // Let's show a dialog with 60 sec wait.
+            // Strict Mode (Unloacked): 60 sec wait.
              showEmergencyDialog(60)
         } else {
              // Normal Mode: 15 sec wait.

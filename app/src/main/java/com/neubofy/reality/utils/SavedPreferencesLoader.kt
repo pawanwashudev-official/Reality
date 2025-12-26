@@ -122,4 +122,15 @@ class SavedPreferencesLoader(private val context: Context) {
         val type = object : TypeToken<Constants.StrictModeData>() {}.type
         return gson.fromJson(json, type)
     }
+    
+    // Auto DND
+    fun saveAutoDndEnabled(enabled: Boolean) {
+        val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putBoolean("auto_dnd_enabled", enabled).apply()
+    }
+    
+    fun isAutoDndEnabled(): Boolean {
+        val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        return sharedPreferences.getBoolean("auto_dnd_enabled", false)
+    }
 }
