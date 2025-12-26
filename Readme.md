@@ -15,7 +15,7 @@
 
 <br/>
 
-<img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png" alt="Reality Logo" width="150"/>
+<img src="https://res.cloudinary.com/dnh4fonis/image/upload/v1766739559/vo00wuhi1u7hftkmkobe.webp" alt="Reality Logo" width="150"/>
 
 <br/>
 
