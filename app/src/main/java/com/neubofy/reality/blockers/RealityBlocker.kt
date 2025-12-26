@@ -53,7 +53,18 @@ class RealityBlocker {
     }
     
     private fun parsePackages(json: String): List<String> {
-        return if (json.isEmpty()) emptyList() else json.split(",")
+        if (json.isEmpty()) return emptyList()
+        try {
+            if (json.trim().startsWith("[")) {
+                val list = mutableListOf<String>()
+                val arr = org.json.JSONArray(json)
+                for (i in 0 until arr.length()) {
+                    list.add(arr.getString(i))
+                }
+                return list
+            }
+        } catch (e: Exception) {}
+        return json.split(",")
     }
 
     fun doesAppNeedToBeBlocked(packageName: String): BlockerResult {
@@ -260,6 +271,7 @@ class RealityBlocker {
     
     fun hasActiveSchedules(): Boolean = schedules.isNotEmpty()
     fun hasActiveCalendarEvents(): Boolean = calendarEvents.isNotEmpty()
+    fun hasConfiguredLimits(): Boolean = appLimits.isNotEmpty() || appGroups.isNotEmpty()
     
     private fun getMidnightBlockResult(reason: String): BlockerResult {
         val cal = Calendar.getInstance()

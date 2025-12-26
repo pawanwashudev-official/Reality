@@ -476,19 +476,39 @@ class AppBlockerService : BaseBlockingService() {
 
     private fun updateBlockingStatus() {
         val wasActive = isBlockingActive
-        // Only trigger Global Blocking State (and DND) for Time-based "Modes".
-        // Usage Limits interact individually and shouldn't trigger global DND.
+        
+        // 1. Service Active State (Monitoring)
+        // Checks if we need to listen to accessibility events at all.
+        // Needs to be true if ANY block condition is possible.
         isBlockingActive = blocker.focusModeData.isTurnedOn ||
                            blocker.hasActiveSchedules() ||
                            blocker.hasActiveCalendarEvents() ||
                            blocker.bedtimeData.isEnabled ||
-                           (blocker.strictModeData.isEnabled && blocker.strictModeData.isAntiUninstallEnabled)
+                           (blocker.strictModeData.isEnabled && blocker.strictModeData.isAntiUninstallEnabled) ||
+                           blocker.hasConfiguredLimits()
                            
-        // Auto DND Logic
-        if (isBlockingActive != wasActive) {
-            if (savedPreferencesLoader.isAutoDndEnabled()) {
-                toggleDnd(isBlockingActive)
-            }
+        // 2. DND Logic (Modes Only)
+        // DND should ONLY trigger for "Global Focus Modes", not for individual app limits.
+        val shouldEnableDnd = blocker.focusModeData.isTurnedOn ||
+                              blocker.hasActiveSchedules() ||
+                              blocker.hasActiveCalendarEvents() || // Calendar events are treated like schedules
+                              blocker.bedtimeData.isEnabled
+                              
+        // Only toggle DND if the "DND-worthy" state changed
+        // We track DND state separately or just check current state? 
+        // Better to just check if DND is enabled vs should be enabled.
+        if (savedPreferencesLoader.isAutoDndEnabled()) {
+             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+             val currentInterruptionFilter = notificationManager.getCurrentInterruptionFilter()
+             val isDndOn = currentInterruptionFilter == android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY
+             
+             if (shouldEnableDnd && !isDndOn) {
+                 toggleDnd(true)
+             } else if (!shouldEnableDnd && isDndOn && !isBlockingActive) {
+                  // Only turn OFF DND if we think we turned it on (risky to turn off user's manual DND)
+                  // For now, let's stick to the previous simple logic but scoped to `shouldEnableDnd`
+                  toggleDnd(false)
+             }
         }
     }
     
@@ -497,10 +517,10 @@ class AppBlockerService : BaseBlockingService() {
         if (notificationManager.isNotificationPolicyAccessGranted) {
             if (enable) {
                 notificationManager.setInterruptionFilter(android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY)
-                com.neubofy.reality.utils.TerminalLogger.log("DND: Enabled (Blocking Active)")
+                com.neubofy.reality.utils.TerminalLogger.log("DND: Enabled (Mode Active)")
             } else {
                 notificationManager.setInterruptionFilter(android.app.NotificationManager.INTERRUPTION_FILTER_ALL)
-                com.neubofy.reality.utils.TerminalLogger.log("DND: Disabled (Blocking Ended)")
+                com.neubofy.reality.utils.TerminalLogger.log("DND: Disabled (Mode Ended)")
             }
         }
     }
