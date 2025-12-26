@@ -547,9 +547,8 @@ class AppBlockerService : BaseBlockingService() {
              
              if (shouldEnableDnd && !isDndOn) {
                  toggleDnd(true)
-             } else if (!shouldEnableDnd && isDndOn && !isBlockingActive) {
-                  // Only turn OFF DND if we think we turned it on (risky to turn off user's manual DND)
-                  // For now, let's stick to the previous simple logic but scoped to `shouldEnableDnd`
+             } else if (!shouldEnableDnd && isDndOn) {
+                  // FIX v1.0.7: Turn OFF DND if global modes ended, regardless of App Limits
                   toggleDnd(false)
              }
         }
