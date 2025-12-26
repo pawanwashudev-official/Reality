@@ -99,6 +99,8 @@ class MainActivity : AppCompatActivity() {
                 binding.tvTerminalLog.text = logText
             }
         }
+        
+        scheduleKeepAliveWorker()
     }
 
     override fun onResume() {
@@ -459,7 +461,28 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // 4. Notification Permission (Android 13+)
+        // 4. Battery Optimization (Critical for Stability)
+        val pm = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+             MaterialAlertDialogBuilder(this)
+                .setTitle("Unrestricted Battery Access")
+                .setMessage("To prevent the blocker from stopping randomly, Reality needs 'Unrestricted' battery access.\n\nTap 'Grant' -> Select 'All apps' -> Find 'Reality' -> Choose 'Don't optimize'.")
+                .setPositiveButton("Grant") { _, _ ->
+                     val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                     intent.data = android.net.Uri.parse("package:$packageName")
+                     try {
+                        startActivity(intent)
+                     } catch(e: Exception) {
+                        // Fallback to generic settings if direct request fails
+                        startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                     }
+                }
+                .setCancelable(false)
+                .show()
+            return
+        }
+
+        // 5. Notification Permission (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
              if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                  notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS, options)
@@ -641,6 +664,20 @@ class MainActivity : AppCompatActivity() {
         }
         
         return false
+    }
+
+    private fun scheduleKeepAliveWorker() {
+        val request = androidx.work.PeriodicWorkRequest.Builder(
+            com.neubofy.reality.workers.KeepAliveWorker::class.java,
+            15,
+            java.util.concurrent.TimeUnit.MINUTES
+        ).build()
+
+        androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "RealityKeepAlive",
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
     }
     
 

@@ -98,18 +98,20 @@ class AppBlockerService : BaseBlockingService() {
         // 1. Browser Special Handling (Watchdog Trigger)
         val isBrowser = com.neubofy.reality.utils.UrlDetector.isBrowser(packageName)
         
-        if (isBrowser && isWebsiteBlockActive()) {
-             // OPTIMIZATION: Removed immediate event-based checks to save battery.
-             // We rely 100% on the Adaptive Watchdog timer below.
-             
-             // ENSURE WATCHDOG IS RUNNING
-             startBrowserCheckTimer()
-             
-             // CRITICAL: Reset ramp-up to be aggressive (15s) whenever user interacts
-             // This handles the "Recent Apps" blocking loophole perfectly.
-             resetWatchdogRampUp()
-             
-             currentBrowserPackage = packageName 
+        if (isBrowser) {
+             // Only run watchdog if we are actually in a browser AND blocking is needed
+             if (isWebsiteBlockActive()) {
+                 currentBrowserPackage = packageName 
+                 startBrowserCheckTimer()
+                 resetWatchdogRampUp()
+             }
+        } else {
+             // We left the browser - STOP the watchdog to save battery
+             if (browserCheckRunnable != null) {
+                 com.neubofy.reality.utils.TerminalLogger.log("WATCHDOG: Paused (Non-browser app: $packageName)")
+                 stopBrowserCheckTimer()
+                 currentBrowserPackage = null
+             }
         }
         
         // Strict Optimization: Ignore high-frequency events below this line
