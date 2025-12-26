@@ -15,7 +15,7 @@
 
 <br/>
 
-<img src="https://res.cloudinary.com/dnh4fonis/image/upload/v1766739559/vo00wuhi1u7hftkmkobe.webp" alt="Reality Logo" width="150"/>
+<img src="https://res.cloudinary.com/dnh4fonis/image/upload/v1766755541/gk1gp3sf5ihygmo9wfv8.png" alt="Reality Logo" width="150"/>
 
 <br/>
 
