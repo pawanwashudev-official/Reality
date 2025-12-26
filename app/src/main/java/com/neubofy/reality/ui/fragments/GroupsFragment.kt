@@ -294,6 +294,21 @@ class GroupsFragment : Fragment() {
         }
     }
 
+    private fun parsePackages(json: String): List<String> {
+        if (json.isEmpty()) return emptyList()
+        try {
+            if (json.trim().startsWith("[")) {
+                val list = mutableListOf<String>()
+                val arr = JSONArray(json)
+                for (i in 0 until arr.length()) {
+                    list.add(arr.getString(i))
+                }
+                return list
+            }
+        } catch (e: Exception) {}
+        return json.split(",")
+    }
+
     inner class AppGroupAdapter(private val list: List<AppGroupEntity>) : RecyclerView.Adapter<AppGroupAdapter.VH>() {
         inner class VH(val binding: ItemAppGroupBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -327,7 +342,7 @@ class GroupsFragment : Fragment() {
             }
 
             // Calculate usage
-            val packages = item.packageNamesJson.split(",")
+            val packages = parsePackages(item.packageNamesJson)
             var totalUsageMs = 0L
             packages.forEach { pkg ->
                 totalUsageMs += usageData.appUsages.getOrDefault(pkg, 0L)
