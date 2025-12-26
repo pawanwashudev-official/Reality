@@ -480,6 +480,31 @@ class AppBlockerService : BaseBlockingService() {
         updateBlockingStatus()
                            
         com.neubofy.reality.utils.TerminalLogger.log("KERNEL: Config Loaded. Blocklist: ${data.blockedWebsites.size}. Active: $isBlockingActive")
+        
+        // LOOPHOLE FIX v1.0.5: Force check the current window
+        // This catches "Passive Watching" (e.g., Movie) where no touch events occur
+        checkCurrentWindow()
+    }
+    
+    private fun checkCurrentWindow() {
+        // Only run if service is capable of blocking
+        if (!isBlockingActive) return
+        
+        try {
+            val root = rootInActiveWindow ?: return
+            val pkg = root.packageName?.toString() ?: return
+            
+            // Avoid self-blocking system apps
+            if (pkg == packageName || pkg == "com.android.systemui") return
+            
+            val result = blocker.doesAppNeedToBeBlocked(pkg)
+            if (result.isBlocked) {
+                com.neubofy.reality.utils.TerminalLogger.log("WATCHDOG: Periodic Check Caught $pkg")
+                handleBlock(pkg, result.reason)
+            }
+        } catch (e: Exception) {
+            // Ignore - accessibility node might be invalid
+        }
     }
 
     private fun updateBlockingStatus() {
