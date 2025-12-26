@@ -87,7 +87,17 @@ class AppBlockerService : BaseBlockingService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (!isScreenOn) return
-        if (!isBlockingActive) return
+        if (!isBlockingActive) {
+            // FIX v1.0.6: Even if blocking is OFF, we must check occasionally (every 30s)
+            // if a new schedule (e.g. Bedtime) has started while using the phone.
+            val now = System.currentTimeMillis()
+            if (now - lastBackgroundUpdate > 30_000) {
+                lastBackgroundUpdate = now
+                performBackgroundUpdates()
+            }
+            // If still inactive after update, THEN return
+            if (!isBlockingActive) return
+        }
         scanEventsCount++
         
         if (event == null) return
