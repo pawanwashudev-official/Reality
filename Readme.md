@@ -130,6 +130,23 @@ Unlike other apps that harvest your data, **Reality** operates 100% offline. You
 
 Get the latest APK from [Releases](https://github.com/pawanwashudev-official/Reality/releases)
 
+### ⚠️ Play Protect Warning
+
+When installing, Google Play Protect may show a warning. This is normal for apps installed outside the Play Store, especially those using Accessibility Service.
+
+**To install:**
+1. Download the APK
+2. When Play Protect shows a warning, tap **"More details"**
+3. Tap **"Install anyway"**
+
+**Or temporarily disable Play Protect:**
+1. Open **Google Play Store** → **Profile** → **Play Protect** → **Settings** ⚙️
+2. Turn off **"Scan apps with Play Protect"**
+3. Install Reality
+4. Turn Play Protect back on
+
+> 💡 **Why the warning?** Reality uses Accessibility Service to detect apps/websites and Device Admin for anti-uninstall protection. These permissions trigger Play Protect warnings, but Reality is 100% safe and open source - you can verify the code yourself!
+
 ### Build from Source
 
 ```bash
