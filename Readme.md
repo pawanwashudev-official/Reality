@@ -15,7 +15,7 @@
 
 <br/>
 
-<img src="app/src/main/ic_launcher-playstore.png" alt="Reality Logo" width="180"/>
+<img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png" alt="Reality Logo" width="150"/>
 
 <br/>
 
