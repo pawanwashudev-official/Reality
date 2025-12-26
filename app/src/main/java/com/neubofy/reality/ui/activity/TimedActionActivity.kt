@@ -156,20 +156,37 @@ class TimedActionActivity : AppCompatActivity() {
 
         var startTimeMins = 390
         var endTimeMins = 1320
-        dialogBinding.picker.startTimeMinutes = startTimeMins
-        dialogBinding.picker.endTimeMinutes = endTimeMins
         
-        dialogBinding.picker.setOnTimeChangeListener(object : TimeRangePicker.OnTimeChangeListener {
-            override fun onStartTimeChange(startTime: TimeRangePicker.Time) {
-                dialogBinding.fromTime.text = startTime.toString()
-                startTimeMins = dialogBinding.picker.startTimeMinutes
+        // Use Material Picker instead of Circular Slider
+        dialogBinding.picker.visibility = View.GONE
+        
+        // Initial Text
+        val startH = startTimeMins / 60
+        val startM = startTimeMins % 60
+        dialogBinding.fromTime.text = String.format("%02d:%02d", startH, startM)
+        
+        val endH = endTimeMins / 60
+        val endM = endTimeMins % 60
+        dialogBinding.endTime.text = String.format("%02d:%02d", endH, endM)
+        
+        // Click Listeners
+        dialogBinding.fromTime.setOnClickListener {
+            val h = startTimeMins / 60
+            val m = startTimeMins % 60
+            showMaterialTimePicker("Start Time", h, m) { newH, newM ->
+                startTimeMins = newH * 60 + newM
+                dialogBinding.fromTime.text = String.format("%02d:%02d", newH, newM)
             }
-            override fun onEndTimeChange(endTime: TimeRangePicker.Time) {
-                dialogBinding.endTime.text = endTime.toString()
-                endTimeMins = dialogBinding.picker.endTimeMinutes
+        }
+        
+        dialogBinding.endTime.setOnClickListener {
+            val h = endTimeMins / 60
+            val m = endTimeMins % 60
+            showMaterialTimePicker("End Time", h, m) { newH, newM ->
+                endTimeMins = newH * 60 + newM
+                dialogBinding.endTime.text = String.format("%02d:%02d", newH, newM)
             }
-            override fun onDurationChange(duration: TimeRangePicker.TimeDuration) {}
-        })
+        }
 
         MaterialAlertDialogBuilder(this)
             .setView(dialogBinding.root)
@@ -291,5 +308,16 @@ class TimedActionActivity : AppCompatActivity() {
     private fun getDaysString(days: List<Int>): String {
         val allDays = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
         return days.sorted().joinToString(", ") { allDays[it - 1] }
+    }
+
+    private fun showMaterialTimePicker(title: String, initialHour: Int, initialMinute: Int, onTimeSet: (Int, Int) -> Unit) {
+        val picker = com.google.android.material.timepicker.MaterialTimePicker.Builder()
+            .setTimeFormat(com.google.android.material.timepicker.TimeFormat.CLOCK_12H)
+            .setHour(initialHour)
+            .setMinute(initialMinute)
+            .setTitleText(title)
+            .build()
+        picker.addOnPositiveButtonClickListener { onTimeSet(picker.hour, picker.minute) }
+        picker.show(supportFragmentManager, "time_picker")
     }
 }

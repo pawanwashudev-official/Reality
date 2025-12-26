@@ -178,12 +178,27 @@ class CalendarSettingsActivity : AppCompatActivity() {
     }
 
     private fun syncCalendarManually() {
-        lifecycleScope.launch {
-            Toast.makeText(this@CalendarSettingsActivity, "Syncing...", Toast.LENGTH_SHORT).show()
-            WorkManager.getInstance(applicationContext).enqueue(
-                androidx.work.OneTimeWorkRequestBuilder<CalendarSyncWorker>().build()
-            )
-        }
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle("Syncing Calendar")
+            .setMessage("Please wait...")
+            .setCancelable(false)
+            .create()
+        dialog.show()
+
+        val workRequest = androidx.work.OneTimeWorkRequestBuilder<CalendarSyncWorker>().build()
+        WorkManager.getInstance(applicationContext).enqueue(workRequest)
+        
+        WorkManager.getInstance(applicationContext).getWorkInfoByIdLiveData(workRequest.id)
+            .observe(this) { workInfo ->
+                if (workInfo != null && (workInfo.state.isFinished)) {
+                    dialog.dismiss()
+                    if (workInfo.state == androidx.work.WorkInfo.State.SUCCEEDED) {
+                        Toast.makeText(this, "Sync Complete!", Toast.LENGTH_SHORT).show()
+                    } else {
+                         Toast.makeText(this, "Sync Failed", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
     }
 
     private fun saveSettings() {
