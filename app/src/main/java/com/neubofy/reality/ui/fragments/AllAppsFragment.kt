@@ -188,7 +188,7 @@ class AllAppsFragment : Fragment() {
 
         override fun onBindViewHolder(holder: VH, position: Int) {
             val item = appList[position]
-            holder.binding.appName.text = item.appName
+            holder.binding.tvAppName.text = item.appName
             
             // Format usage time
             val usedMins = TimeUnit.MILLISECONDS.toMinutes(item.usedMs)
@@ -212,22 +212,22 @@ class AllAppsFragment : Fragment() {
                 } else {
                     "${item.limitMins}m"
                 }
-                holder.binding.appTime.text = "$usageText / $limitText"
+                holder.binding.tvUsageTime.text = "$usageText / $limitText"
                 
                 // Color based on usage vs limit
                 val usagePercent = (usedMins.toFloat() / item.limitMins * 100).toInt()
                 when {
-                    usagePercent >= 100 -> holder.binding.appTime.setTextColor(0xFFFF6B6B.toInt())
-                    usagePercent >= 80 -> holder.binding.appTime.setTextColor(0xFFFFB74D.toInt())
-                    else -> holder.binding.appTime.setTextColor(0xFF81C784.toInt())
+                    usagePercent >= 100 -> holder.binding.tvUsageTime.setTextColor(0xFFFF6B6B.toInt())
+                    usagePercent >= 80 -> holder.binding.tvUsageTime.setTextColor(0xFFFFB74D.toInt())
+                    else -> holder.binding.tvUsageTime.setTextColor(0xFF81C784.toInt())
                 }
                 
                 // Progress bar
                 holder.binding.progressBar.max = item.limitMins
                 holder.binding.progressBar.progress = usedMins.toInt().coerceAtMost(item.limitMins)
             } else {
-                holder.binding.appTime.text = usageText
-                holder.binding.appTime.setTextColor(0xFFFFFFFF.toInt())
+                holder.binding.tvUsageTime.text = usageText
+                holder.binding.tvUsageTime.setTextColor(0xFFFFFFFF.toInt())
                 holder.binding.progressBar.max = 100
                 holder.binding.progressBar.progress = 0
             }
@@ -235,10 +235,10 @@ class AllAppsFragment : Fragment() {
             // Load icon with caching
             val cachedIcon = iconCache.get(item.packageName)
             if (cachedIcon != null) {
-                holder.binding.appIcon.setImageDrawable(cachedIcon)
+                holder.binding.ivIcon.setImageDrawable(cachedIcon)
             } else {
                 // Placeholder or clear
-                holder.binding.appIcon.setImageDrawable(null) 
+                holder.binding.ivIcon.setImageDrawable(null) 
                 
                 scope.launch(Dispatchers.IO) {
                     try {
@@ -247,7 +247,7 @@ class AllAppsFragment : Fragment() {
                         withContext(Dispatchers.Main) { 
                             // Verify holder is still bound to the same item
                             if (appList.getOrNull(holder.adapterPosition)?.packageName == item.packageName) {
-                                holder.binding.appIcon.setImageDrawable(icon) 
+                                holder.binding.ivIcon.setImageDrawable(icon) 
                             }
                         }
                     } catch(e: Exception) {}

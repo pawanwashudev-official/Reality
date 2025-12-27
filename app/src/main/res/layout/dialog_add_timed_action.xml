@@ -164,6 +164,14 @@
             style="@style/Widget.MaterialComponents.Chip.Choice"/>
     </com.google.android.material.chip.ChipGroup>
 
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/cbReminder"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Remind me 5 minutes before start"
+        android:checked="true"
+        android:layout_marginTop="8dp"/>
+
     <Button
         android:id="@+id/btn_select_end_time"
         android:layout_width="wrap_content"

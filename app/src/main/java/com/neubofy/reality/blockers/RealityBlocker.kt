@@ -21,7 +21,7 @@ class RealityBlocker {
     var emergencyData = Constants.EmergencyModeData()
     var usageLimitData = Constants.UsageLimitData()
     private var schedules: MutableList<Constants.AutoTimedActionItem> = mutableListOf()
-    private var cooldowns: MutableMap<String, Long> = mutableMapOf()
+    // REMOVED: Cooldown bypass logic removed as per user request
     private var calendarEvents: List<Pair<Long, Long>> = emptyList()
     var appGroups: List<com.neubofy.reality.data.db.AppGroupEntity> = emptyList()
     var appLimits: List<com.neubofy.reality.data.db.AppLimitEntity> = emptyList()
@@ -84,14 +84,8 @@ class RealityBlocker {
             return BlockerResult(isBlocked = false, endTime = emergencyData.currentSessionEndTime, isEmergency = true)
         }
         
-        // 4. Check Cooldown (Temporary Unblock) - Use System.currentTimeMillis for consistency
-        if (cooldowns.containsKey(packageName)) {
-            if (cooldowns[packageName]!! < System.currentTimeMillis()) {
-                cooldowns.remove(packageName)
-            } else {
-                return BlockerResult(isBlocked = false, endTime = cooldowns[packageName]!!)
-            }
-        }
+        // NOTE: Cooldown (Proceed Anyway) logic REMOVED - apps will always be blocked when in blocking mode
+
 
         // === BLOCKING MODES (Only block if one of these is active) ===
 
@@ -177,7 +171,7 @@ class RealityBlocker {
         return BlockerResult(isBlocked = false)
     }
     
-    private fun isBedtime(): Boolean {
+    fun isBedtime(): Boolean {
         val cal = Calendar.getInstance()
         val currentMins = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
         val start = bedtimeData.startTimeInMins
@@ -256,9 +250,7 @@ class RealityBlocker {
         return null
     }
 
-    fun putCooldown(packageName: String, endTime: Long) {
-        cooldowns[packageName] = endTime
-    }
+    // REMOVED: putCooldown function removed - no more Proceed Anyway bypass
 
     fun refreshSchedules(newList: List<Constants.AutoTimedActionItem>) {
         schedules.clear()

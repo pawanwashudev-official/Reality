@@ -210,7 +210,8 @@ class TimedActionActivity : AppCompatActivity() {
                          return@setPositiveButton
                     }
                 
-                    val newItem = Constants.AutoTimedActionItem(title, startTimeMins, endTimeMins, tempSelectedApps, repeatDays = days)
+                    val isReminder = dialogBinding.cbReminder.isChecked
+                    val newItem = Constants.AutoTimedActionItem(title, startTimeMins, endTimeMins, tempSelectedApps, repeatDays = days, isReminderEnabled = isReminder)
                     manualList.add(newItem)
                     savedPreferencesLoader.saveAutoFocusHoursList(manualList)
                     sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))

@@ -33,7 +33,8 @@ class Constants {
         val endTimeInMins: Int,
         val packages: ArrayList<String>,
         val isProceedHidden: Boolean = false,
-        var repeatDays: List<Int> = listOf(1,2,3,4,5,6,7)
+        var repeatDays: List<Int> = listOf(1,2,3,4,5,6,7),
+        var isReminderEnabled: Boolean = true
     )
     
     data class BedtimeData(
@@ -95,4 +96,9 @@ class Constants {
             const val MODE_PASSWORD = "PASSWORD"
         }
     }
+    data class BlockMessage(
+        val id: String = java.util.UUID.randomUUID().toString(),
+        val message: String,
+        val tags: List<String> = listOf("ALL") // "FOCUS", "BEDTIME", "LIMIT", "STRICT"
+    )
 }

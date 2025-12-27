@@ -1,66 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:paddingVertical="12dp"
-    android:gravity="center_vertical"
-    android:paddingHorizontal="4dp">
+    android:padding="12dp"
+    android:gravity="center_vertical">
 
-    <com.google.android.material.imageview.ShapeableImageView
-        android:id="@+id/app_icon"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:src="@mipmap/ic_launcher"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium" />
+    <ImageView
+        android:id="@+id/ivIcon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/app_logo" />
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:layout_marginStart="16dp"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:layout_marginStart="12dp">
 
-        <RelativeLayout
+        <TextView
+            android:id="@+id/tvAppName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="6dp">
-
-            <TextView
-                android:id="@+id/app_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="App Name"
-                android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
-                android:textColor="?attr/colorOnSurface"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:layout_alignParentStart="true"
-                android:layout_toStartOf="@+id/app_time"
-                android:layout_marginEnd="8dp"/>
-
-            <TextView
-                android:id="@+id/app_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0m"
-                android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
-                android:textColor="?attr/colorPrimary"
-                android:layout_alignParentEnd="true"/>
-
-        </RelativeLayout>
+            android:text="App Name"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
         <ProgressBar
-            android:id="@+id/progress_bar"
+            android:id="@+id/progressBar"
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
             android:layout_height="4dp"
-            android:progressTint="?attr/colorPrimary"
-            android:progressBackgroundTint="?attr/colorSurfaceVariant"
-            android:progress="0"
-            android:max="100"/>
-            
+            android:layout_marginTop="4dp"
+            android:progressTint="#BB86FC"
+            android:progressBackgroundTint="#33FFFFFF" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvUsageTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0m"
+        android:textColor="#BB86FC"
+        android:textSize="12sp"
+        android:layout_marginStart="12dp" />
 
 </LinearLayout>

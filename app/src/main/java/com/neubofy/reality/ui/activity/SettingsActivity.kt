@@ -56,6 +56,11 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(Intent(this, BedtimeActivity::class.java))
         }
         
+        // Block Messages
+        binding.cardBlockMessages.setOnClickListener {
+            startActivity(Intent(this, BlockMessagesActivity::class.java))
+        }
+
         // Strict Mode Navigation
         binding.cardStrictMode.setOnClickListener {
             startActivity(Intent(this, StrictModeActivity::class.java))

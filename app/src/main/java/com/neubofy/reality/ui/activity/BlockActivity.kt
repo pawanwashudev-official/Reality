@@ -3,14 +3,14 @@ package com.neubofy.reality.ui.activity
 import android.content.Intent
 import android.os.Bundle
 import android.os.CountDownTimer
-import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.neubofy.reality.databinding.ActivityBlockBinding
-import com.neubofy.reality.services.AppBlockerService
 import com.neubofy.reality.utils.SavedPreferencesLoader
-import com.neubofy.reality.utils.StrictLockUtils
 
 class BlockActivity : AppCompatActivity() {
 
@@ -20,8 +20,17 @@ class BlockActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        
         binding = ActivityBlockBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(0, insets.top, 0, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         
         prefs = SavedPreferencesLoader(this)
         
@@ -29,6 +38,24 @@ class BlockActivity : AppCompatActivity() {
         val reason = intent.getStringExtra("reason") ?: "Blocked by Reality"
         
         binding.tvReason.text = reason
+        
+        // Custom Message Logic
+        val messages = prefs.getBlockMessages()
+        val tag = when {
+            reason.contains("Focus", ignoreCase = true) -> "FOCUS"
+            reason.contains("Bedtime", ignoreCase = true) -> "BEDTIME"
+            reason.contains("Limit", ignoreCase = true) -> "LIMIT"
+            else -> "ALL"
+        }
+        
+        val validMessages = messages.filter { it.tags.contains("ALL") || it.tags.contains(tag) }
+        
+        if (validMessages.isNotEmpty()) {
+            binding.tvMessage.text = validMessages.random().message
+        } else {
+            // Default fallbacks if list is empty (shouldn't be if prefs loads defaults, but just in case)
+            binding.tvMessage.text = "Stay Focused."
+        }
         
         binding.btnHome.setOnClickListener {
             goHome()
@@ -41,18 +68,11 @@ class BlockActivity : AppCompatActivity() {
     
     private fun handleEmergencyAccess() {
         val strictData = prefs.getStrictModeData()
-
-        if (strictData.isEnabled && strictData.isEmergencyLocked) {
-             MaterialAlertDialogBuilder(this)
-                .setTitle("Emergency Access Locked")
-                .setMessage("Emergency access is disabled because Strict Mode is active with the Lock enabled.")
-                .setPositiveButton("OK", null)
-                .show()
-             return
-        }
+        
+        // Strict Lock check removed as per user request ("remove enable/disable by strict mode")
         
         if (strictData.isEnabled && strictData.modeType != com.neubofy.reality.Constants.StrictModeData.MODE_NONE) {
-            // Strict Mode (Unloacked): 60 sec wait.
+             // Strict Mode (Unlocked): 60 sec wait.
              showEmergencyDialog(60)
         } else {
              // Normal Mode: 15 sec wait.
@@ -90,16 +110,16 @@ class BlockActivity : AppCompatActivity() {
     }
     
     private fun unblockFor5Mins() {
-        if (blockedPackage.isNotEmpty()) {
-            val intent = Intent(AppBlockerService.INTENT_ACTION_BLOCK_APP_COOLDOWN).apply {
-                putExtra("result_id", blockedPackage)
-                putExtra("selected_time", 5 * 60 * 1000) // 5 Mins
-                setPackage(packageName)
-            }
-            sendBroadcast(intent)
-            Toast.makeText(this, "Unblocked for 5 minutes", Toast.LENGTH_SHORT).show()
-            finish()
-        }
+        val emergencyData = prefs.getEmergencyData()
+        emergencyData.currentSessionEndTime = System.currentTimeMillis() + (5 * 60 * 1000) // 5 mins
+        prefs.saveEmergencyData(emergencyData)
+        
+        val refreshIntent = Intent("com.neubofy.reality.refresh.focus_mode")
+        refreshIntent.setPackage(packageName)
+        sendBroadcast(refreshIntent)
+        
+        Toast.makeText(this, "Emergency access: 5 minutes", Toast.LENGTH_SHORT).show()
+        finish()
     }
 
     private fun goHome() {

@@ -176,6 +176,9 @@ class MainActivity : AppCompatActivity() {
                  binding.focusMode.text = "Start Focusing"
                  binding.focusMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.teal_200))
              }
+             
+             // Sync widget with current status
+             com.neubofy.reality.widget.FocusWidgetProvider.updateAllWidgets(this@MainActivity)
         }
     }
 
@@ -230,11 +233,9 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, SettingsActivity::class.java), options.toBundle())
         }
         
-        // Digital Life - Statistics Only
+        // Digital Life - Statistics with 7-Day Graphs
         binding.cardUsageLimit.setOnClickListener {
-             val intent = Intent(this, AppGroupsActivity::class.java)
-             intent.putExtra("TAB_INDEX", 2) // Statistics tab
-             startActivity(intent, options.toBundle())
+             startActivity(Intent(this, StatisticsActivity::class.java), options.toBundle())
         }
         
         // App Limits Card - Separate Page
@@ -347,20 +348,38 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun showRulesDialog() {
-        val message = """
-            1. Strict Mode: While active (Timed/Password), critical settings are LOCKED.
-            
-            2. Maintenance Window (00:00 - 00:10): This is the ONLY time you can change strict settings or uninstall.
-            
-            3. Daily Usage Limit: You can set a global limit for all distracting apps, or specific limits per app. Once reached, apps are blocked until midnight.
-            
-            4. Emergency Mode: Grants 5 minutes of total freedom (unblocks usage limits and settings).
-        """.trimIndent()
+        val strictData = savedPreferencesLoader.getStrictModeData()
+        val emergencyData = savedPreferencesLoader.getEmergencyData()
         
+        val sb = StringBuilder()
+        
+        sb.append("Current Status:\n\n")
+
+        // Strict Mode
+        sb.append("• Strict Mode: ")
+        if (strictData.isEnabled) {
+            sb.append("Active (${strictData.modeType})\n")
+            if (strictData.timerEndTime > System.currentTimeMillis()) {
+               val remaining = (strictData.timerEndTime - System.currentTimeMillis()) / 60000
+               sb.append("  (Locked for ${remaining}m)\n")
+            }
+        } else {
+            sb.append("Inactive\n")
+        }
+        sb.append("  (Anti-Uninstall: ${if (strictData.isAntiUninstallEnabled) "ON" else "OFF"})\n\n")
+        
+        // Emergency Access
+        sb.append("• Emergency Access: ")
+        sb.append("${emergencyData.usesRemaining} / ${Constants.EMERGENCY_MAX_USES} uses remaining today\n\n")
+        
+        sb.append("Quick Tips:\n")
+        sb.append("• Maintenance Window: 00:00 - 00:10 daily (Settings unlocked)\n")
+        sb.append("• Emergency Mode: Grants 5 minutes of access.\n")
+
         com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-            .setTitle("Rules of Reality")
-            .setMessage(message)
-            .setPositiveButton("Understood", null)
+            .setTitle("Reality Status")
+            .setMessage(sb.toString())
+            .setPositiveButton("OK", null)
             .show()
     }
     
@@ -621,38 +640,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun isBlockingActive(): Boolean {
-        val now = System.currentTimeMillis()
-        val cal = java.util.Calendar.getInstance()
-        val currMins = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
-
-        // 1. Manual Focus
-        val focusData = savedPreferencesLoader.getFocusModeData()
-        if (focusData.isTurnedOn && focusData.endTime > now) return true
+        // 1. Check Main Blocking Modes (Focus, Schedule, Calendar, Bedtime)
+        // using FocusStatusManager which simplifies and includes Calendar (Fixing missing check)
+        val focusStatus = com.neubofy.reality.utils.FocusStatusManager(this).getCurrentStatus()
+        if (focusStatus.isActive) return true
         
-        // 2. Manual Schedules
-        val schedules = savedPreferencesLoader.loadAutoFocusHoursList()
-        val currentDay = cal.get(java.util.Calendar.DAY_OF_WEEK)
-        
-        for (sched in schedules) {
-             if (sched.repeatDays.contains(currentDay)) {
-                 if (sched.startTimeInMins < sched.endTimeInMins) {
-                     if (currMins in sched.startTimeInMins until sched.endTimeInMins) return true
-                 } else {
-                     if (currMins >= sched.startTimeInMins || currMins < sched.endTimeInMins) return true
-                 }
-             }
-        }
-        
-        val bedtime = savedPreferencesLoader.getBedtimeData()
-        if (bedtime.isEnabled) {
-             if (bedtime.startTimeInMins < bedtime.endTimeInMins) {
-                 if (currMins in bedtime.startTimeInMins until bedtime.endTimeInMins) return true
-             } else {
-                 if (currMins >= bedtime.startTimeInMins || currMins < bedtime.endTimeInMins) return true
-             }
-        }
-        
-        // 4. Check DB Limits / Groups
+        // 2. Check DB Limits / Groups (Time-based active periods)
         val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(applicationContext)
         val groups = db.appGroupDao().getAllGroups()
         groups.forEach { 

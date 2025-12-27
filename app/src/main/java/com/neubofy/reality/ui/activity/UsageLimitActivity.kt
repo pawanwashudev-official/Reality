@@ -233,30 +233,30 @@ class UsageLimitActivity : AppCompatActivity() {
         
         override fun onBindViewHolder(holder: VH, position: Int) {
             val item = list[position]
-            holder.binding.appName.text = item.appName
+            holder.binding.tvAppName.text = item.appName
             
             val usedMins = TimeUnit.MILLISECONDS.toMinutes(item.usageMs)
             if (item.limitMins > 0) {
-                 holder.binding.appTime.text = "${usedMins}m / ${item.limitMins}m"
+                 holder.binding.tvUsageTime.text = "${usedMins}m / ${item.limitMins}m"
                  holder.binding.progressBar.max = item.limitMins
                  holder.binding.progressBar.progress = usedMins.toInt()
                  if (usedMins >= item.limitMins) {
-                     holder.binding.appTime.setTextColor(getColor(android.R.color.holo_red_light))
+                     holder.binding.tvUsageTime.setTextColor(getColor(android.R.color.holo_red_light))
                  } else {
-                     holder.binding.appTime.setTextColor(getColor(android.R.color.white))
+                     holder.binding.tvUsageTime.setTextColor(getColor(android.R.color.white))
                  }
             } else {
-                 holder.binding.appTime.text = "${usedMins}m"
+                 holder.binding.tvUsageTime.text = "${usedMins}m"
                  holder.binding.progressBar.max = 60 
                  holder.binding.progressBar.progress = usedMins.toInt()
-                 holder.binding.appTime.setTextColor(getColor(android.R.color.white))
+                 holder.binding.tvUsageTime.setTextColor(getColor(android.R.color.white))
             }
             
-            holder.binding.appIcon.setImageDrawable(null)
+            holder.binding.ivIcon.setImageDrawable(null)
             scope.launch(Dispatchers.IO) {
                 try {
                     val icon = item.appInfo.loadIcon(packageManager)
-                    withContext(Dispatchers.Main) { holder.binding.appIcon.setImageDrawable(icon) }
+                    withContext(Dispatchers.Main) { holder.binding.ivIcon.setImageDrawable(icon) }
                 } catch(e: Exception) {}
             }
             

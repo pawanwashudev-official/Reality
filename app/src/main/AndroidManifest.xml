@@ -76,6 +76,12 @@
             android:exported="false" />
         
         <activity
+            android:name=".ui.activity.StatisticsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait" />
+        
+        <activity
             android:name=".ui.activity.UsageLimitActivity"
             android:exported="false"
             android:theme="@style/Theme.Reality"
@@ -107,6 +113,12 @@
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
             
+        <activity
+            android:name=".ui.activity.BlockMessagesActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait" />
+
         <activity
             android:name=".ui.activity.BlockActivity"
             android:exported="false"
@@ -200,6 +212,20 @@
 
         <meta-data android:name="android.app.shortcuts"
             android:resource="@xml/shortcuts" />
+
+        <!-- Focus Mode Widget -->
+        <receiver
+            android:name=".widget.FocusWidgetProvider"
+            android:exported="true"
+            android:label="Focus Mode">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.neubofy.reality.widget.TOGGLE_FOCUS" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/focus_widget_info" />
+        </receiver>
 
     </application>
 

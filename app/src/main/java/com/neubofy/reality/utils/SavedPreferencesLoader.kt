@@ -133,4 +133,26 @@ class SavedPreferencesLoader(private val context: Context) {
         val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
         return sharedPreferences.getBoolean("auto_dnd_enabled", false)
     }
+
+    // Custom Block Messages
+    fun saveBlockMessages(messages: List<Constants.BlockMessage>) {
+        val sharedPreferences = context.getSharedPreferences("block_messages", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putString("messages_list", gson.toJson(messages)).apply()
+    }
+
+    fun getBlockMessages(): MutableList<Constants.BlockMessage> {
+        val sharedPreferences = context.getSharedPreferences("block_messages", Context.MODE_PRIVATE)
+        val json = sharedPreferences.getString("messages_list", null)
+        if (json.isNullOrEmpty()) {
+            // Return default messages if empty
+            return mutableListOf(
+                Constants.BlockMessage(message = "Stay focused on your goals.", tags = listOf("ALL")),
+                Constants.BlockMessage(message = "You can do this!", tags = listOf("ALL")),
+                Constants.BlockMessage(message = "Is this really important?", tags = listOf("FOCUS")),
+                Constants.BlockMessage(message = "Go to sleep, tomorrow is a new day.", tags = listOf("BEDTIME"))
+            )
+        }
+        val type = object : TypeToken<MutableList<Constants.BlockMessage>>() {}.type
+        return gson.fromJson(json, type)
+    }
 }

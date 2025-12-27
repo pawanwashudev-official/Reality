@@ -31,7 +31,7 @@
                 android:id="@+id/iv_app_icon"
                 android:layout_width="100dp"
                 android:layout_height="100dp"
-                android:src="@mipmap/ic_launcher"
+                android:src="@drawable/app_logo"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium"
                 android:elevation="8dp"
                 android:layout_marginBottom="16dp" />

@@ -77,7 +77,7 @@ class StrictModeActivity : AppCompatActivity() {
         binding.switchBedtimeLock.isChecked = strictData.isBedtimeLocked
         binding.switchAppLimitLock.isChecked = strictData.isAppLimitLocked
         binding.switchGroupLimitLock.isChecked = strictData.isGroupLimitLocked
-        binding.switchEmergencyLock.isChecked = strictData.isEmergencyLocked
+
         binding.switchAutoDndLock.isChecked = strictData.isAutoDndLocked
         binding.switchAntiTimeCheat.isChecked = strictData.isTimeCheatProtectionEnabled
     }
@@ -161,7 +161,7 @@ class StrictModeActivity : AppCompatActivity() {
         binding.switchBedtimeLock.isEnabled = true
         binding.switchAppLimitLock.isEnabled = true
         binding.switchGroupLimitLock.isEnabled = true
-        binding.switchEmergencyLock.isEnabled = true
+
         binding.switchAutoDndLock.isEnabled = true
         binding.switchAntiTimeCheat.isEnabled = true
         binding.switchAntiUninstall.isEnabled = true
@@ -174,7 +174,7 @@ class StrictModeActivity : AppCompatActivity() {
             binding.switchBedtimeLock to { v: Boolean -> strictData.isBedtimeLocked = v },
             binding.switchAppLimitLock to { v: Boolean -> strictData.isAppLimitLocked = v },
             binding.switchGroupLimitLock to { v: Boolean -> strictData.isGroupLimitLocked = v },
-            binding.switchEmergencyLock to { v: Boolean -> strictData.isEmergencyLocked = v },
+
             binding.switchAutoDndLock to { v: Boolean -> strictData.isAutoDndLocked = v },
             binding.switchAntiTimeCheat to { v: Boolean -> strictData.isTimeCheatProtectionEnabled = v }
         )

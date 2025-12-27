@@ -44,6 +44,8 @@ object UsageUtils {
         
         val result = mutableMapOf<String, Long>()
         for ((pkg, stats) in statsMap) {
+            if (pkg == "com.android.systemui" || pkg.contains("launcher")) continue
+            
             if (stats.totalTimeInForeground > 0) {
                 result[pkg] = stats.totalTimeInForeground
             }
@@ -66,7 +68,8 @@ object UsageUtils {
         val midnight = calendar.timeInMillis
         val now = System.currentTimeMillis()
         
-        val events = usm.queryEvents(midnight - (10 * 60 * 1000L), now)
+        // Query events from 2 hours before midnight to capture ongoing sessions
+        val events = usm.queryEvents(midnight - (120 * 60 * 1000L), now)
         
         var totalScreenTime = 0L
         var lastOnTime = 0L

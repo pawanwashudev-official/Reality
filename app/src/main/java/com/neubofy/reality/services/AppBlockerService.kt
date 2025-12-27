@@ -27,7 +27,7 @@ class AppBlockerService : BaseBlockingService() {
 
     companion object {
         const val INTENT_ACTION_REFRESH_FOCUS_MODE = "com.neubofy.reality.refresh.focus_mode"
-        const val INTENT_ACTION_BLOCK_APP_COOLDOWN = "com.neubofy.reality.refresh.appblocker.cooldown"
+        // REMOVED: INTENT_ACTION_BLOCK_APP_COOLDOWN - Proceed Anyway bypass removed
     }
 
     private var warningConfig = Constants.WarningData()
@@ -57,15 +57,7 @@ class AppBlockerService : BaseBlockingService() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 INTENT_ACTION_REFRESH_FOCUS_MODE -> refreshSettings()
-                INTENT_ACTION_BLOCK_APP_COOLDOWN -> {
-                    val packageName = intent.getStringExtra("result_id") ?: return
-                    val duration = intent.getIntExtra("selected_time", 0)
-                    if (duration > 0) {
-                        val endTime = System.currentTimeMillis() + duration
-                        blocker.putCooldown(packageName, endTime)
-                        setUpForcedRefreshChecker(packageName, System.currentTimeMillis() + duration)
-                    }
-                }
+                // REMOVED: Cooldown handler - Proceed Anyway bypass removed
                 Intent.ACTION_SCREEN_OFF -> {
                     isScreenOn = false
                     stopBrowserCheckTimer() // Save battery when screen off
@@ -108,20 +100,32 @@ class AppBlockerService : BaseBlockingService() {
         // 1. Browser Special Handling (Watchdog Trigger)
         val isBrowser = com.neubofy.reality.utils.UrlDetector.isBrowser(packageName)
         
+        // Check if any blocking mode is active (Focus/Schedule/Calendar/Bedtime)
+        val isAnyBlockingModeActive = isWebsiteBlockActive()
+        
         if (isBrowser) {
-             // Only run watchdog if we are actually in a browser AND blocking is needed
-             if (isWebsiteBlockActive()) {
+             // Browser is active - start/keep watchdog running if blocking is needed
+             if (isAnyBlockingModeActive) {
                  currentBrowserPackage = packageName 
                  startBrowserCheckTimer()
                  resetWatchdogRampUp()
+                 
+                 // FIX: IMMEDIATE URL check on any browser event (catches URL/tab changes)
+                 // Check on content changes, text changes, focus changes, window state changes
+                 if (eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED ||
+                     eventType == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED ||
+                     eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED ||
+                     eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+                     checkUrl(packageName)
+                 }
              }
         } else {
-             // We left the browser - STOP the watchdog to save battery
-             if (browserCheckRunnable != null) {
-                 com.neubofy.reality.utils.TerminalLogger.log("WATCHDOG: Paused (Non-browser app: $packageName)")
-                 stopBrowserCheckTimer()
-                 currentBrowserPackage = null
-             }
+             // Left the browser
+             currentBrowserPackage = null
+             // FIX: DON'T stop watchdog if any blocking mode is active
+             // Watchdog stays alive so it can detect when browser is opened again (even from recents)
+             // The watchdog has its own stop condition: isWebsiteBlockActive() returns false
+             // This ensures blocking works even when opening browser from recent apps
         }
         
         // Strict Optimization: Ignore high-frequency events below this line
@@ -144,8 +148,6 @@ class AppBlockerService : BaseBlockingService() {
             performBackgroundUpdates()
         }
         
-        // SECURITY SHIELD: Anti-Uninstall & Anti-TimeCheat
-        // Only runs when Settings is open (Efficient)
         if (packageName == "com.android.settings") {
             try {
                // Use Cached Data (Access O(1)) - removed IO call
@@ -346,6 +348,10 @@ class AppBlockerService : BaseBlockingService() {
                 
                 
                     updateBlockingStatus()
+                    
+                    // Check for upcoming schedules (Reminders)
+                    checkUpcomingSchedules()
+                    
                     com.neubofy.reality.utils.TerminalLogger.log("  [3/3] Background Logic Complete.")
                 }
             } catch (e: Exception) {}
@@ -405,7 +411,7 @@ class AppBlockerService : BaseBlockingService() {
         refreshSettings()
         val filter = IntentFilter().apply {
             addAction(INTENT_ACTION_REFRESH_FOCUS_MODE)
-            addAction(INTENT_ACTION_BLOCK_APP_COOLDOWN)
+            // REMOVED: addAction(INTENT_ACTION_BLOCK_APP_COOLDOWN) - Proceed Anyway bypass removed
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_SCREEN_ON)
         }
@@ -523,10 +529,17 @@ class AppBlockerService : BaseBlockingService() {
         // 1. Service Active State (Monitoring)
         // Checks if we need to listen to accessibility events at all.
         // Needs to be true if ANY block condition is possible.
+        // BLOCKING STATUS: True if ANY blocking reason exists
+        // 1. Manual Focus Mode (custom focus)
+        // 2. Active Schedules (custom schedule) 
+        // 3. Calendar Events (calendar synced events)
+        // 4. Bedtime Mode (enabled AND currently in bedtime time)
+        // 5. Strict Mode with Anti-Uninstall
+        // 6. App Limits (per-app or grouped - for active sessions and usage limits)
         isBlockingActive = blocker.focusModeData.isTurnedOn ||
                            blocker.hasActiveSchedules() ||
                            blocker.hasActiveCalendarEvents() ||
-                           blocker.bedtimeData.isEnabled ||
+                           (blocker.bedtimeData.isEnabled && blocker.isBedtime()) ||
                            (blocker.strictModeData.isEnabled && blocker.strictModeData.isAntiUninstallEnabled) ||
                            blocker.hasConfiguredLimits()
                            
@@ -744,7 +757,7 @@ class AppBlockerService : BaseBlockingService() {
         // Reset to aggressive start
         resetWatchdogRampUp()
         
-        com.neubofy.reality.utils.TerminalLogger.log("WATCHDOG: Started (Adaptive)")
+        com.neubofy.reality.utils.TerminalLogger.log("WATCHDOG: Started (Smart Hibernation)")
         browserCheckRunnable = object : Runnable {
             override fun run() {
                 // STOP CONDITION: Only if the entire Blocking Session Ends
@@ -754,25 +767,36 @@ class AppBlockerService : BaseBlockingService() {
                     return
                 }
                 
-                // Active Scan: Check the current window
-                if (currentBrowserPackage != null) {
-                     checkUrl(currentBrowserPackage!!)
+                // Check if browser is currently the active window
+                val activeWindow = rootInActiveWindow
+                val activePackage = activeWindow?.packageName?.toString()
+                val isBrowserActive = activePackage != null && com.neubofy.reality.utils.UrlDetector.isBrowser(activePackage)
+                
+                if (isBrowserActive) {
+                    // ACTIVE MODE: Browser is in foreground - do full URL check
+                    currentBrowserPackage = activePackage
+                    checkUrl(currentBrowserPackage!!)
+                    
+                    // Use adaptive polling when browser is active (15s -> 30s -> 60s -> 90s)
+                    if (pollStepIndex < POLL_STEPS.size - 1) {
+                        pollStepIndex++
+                    }
+                    currentPollInterval = POLL_STEPS[pollStepIndex]
+                    
                 } else {
-                     // Try to find if a browser is active even if we missed the event
-                     if (rootInActiveWindow?.packageName?.let { com.neubofy.reality.utils.UrlDetector.isBrowser(it.toString()) } == true) {
-                         currentBrowserPackage = rootInActiveWindow.packageName.toString()
-                         checkUrl(currentBrowserPackage!!)
-                     }
+                    // HIBERNATE MODE: Browser is NOT active - check less frequently
+                    // Just check if browser appeared (from recents, etc.)
+                    currentBrowserPackage = null
+                    
+                    // Use longer interval when hibernating (5 seconds - just to detect browser opening)
+                    // This saves battery vs constantly checking URL when not in browser
+                    currentPollInterval = 5000L  // 5 second hibernate check
+                    
+                    // If browser detected from recents, wake up immediately next cycle
+                    // (handled above when isBrowserActive becomes true)
                 }
                 
-                // Adaptive Interval Logic
-                // 15s -> 30s -> 60s -> 90s (Hold at 90s)
-                if (pollStepIndex < POLL_STEPS.size - 1) {
-                    pollStepIndex++
-                }
-                currentPollInterval = POLL_STEPS[pollStepIndex]
-                
-                // Re-run with new interval
+                // Re-run with calculated interval
                 handler.postDelayed(this, currentPollInterval)
             }
         }
@@ -793,5 +817,65 @@ class AppBlockerService : BaseBlockingService() {
             handler.removeCallbacks(it) 
         }
         browserCheckRunnable = null
+    }
+
+    // ==========================================
+    // REMINDER SYSTEM
+    // ==========================================
+    
+    private fun checkUpcomingSchedules() {
+        try {
+            val now = java.util.Calendar.getInstance()
+            val currentMins = now.get(java.util.Calendar.HOUR_OF_DAY) * 60 + now.get(java.util.Calendar.MINUTE)
+            val currentDay = now.get(java.util.Calendar.DAY_OF_WEEK)
+            
+            // Reload schedules to ensure fresh data
+            val schedules = savedPreferencesLoader.loadAutoFocusHoursList()
+            val prefs = getSharedPreferences("reminders", Context.MODE_PRIVATE)
+            
+            for (sched in schedules) {
+                // Check if runs today and reminders enabled
+                if (sched.isReminderEnabled && (sched.repeatDays.isEmpty() || sched.repeatDays.contains(currentDay))) {
+                    val diff = sched.startTimeInMins - currentMins
+                    
+                    // Reminder Window: 4 to 6 minutes before start (targets "5 min" request)
+                    if (diff in 4..6) {
+                        val key = "${sched.title}_${sched.startTimeInMins}"
+                        val lastTime = prefs.getLong(key, 0L)
+                        // Verify we haven't notified for this specific session recently (12h cooldown)
+                        if (System.currentTimeMillis() - lastTime > 12 * 60 * 60 * 1000) { 
+                             sendReminderNotification(sched.title, diff)
+                             prefs.edit().putLong(key, System.currentTimeMillis()).apply()
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun sendReminderNotification(title: String, mins: Int) {
+        val channelId = "reality_reminders"
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = android.app.NotificationChannel(channelId, "Reminders", android.app.NotificationManager.IMPORTANCE_HIGH)
+            manager.createNotificationChannel(channel)
+        }
+        
+        val intent = Intent(this, com.neubofy.reality.ui.activity.MainActivity::class.java)
+        val pendingIntent = android.app.PendingIntent.getActivity(this, 101, intent, android.app.PendingIntent.FLAG_IMMUTABLE)
+        
+        val builder = androidx.core.app.NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm) 
+            .setContentTitle("Upcoming Focus Session")
+            .setContentText("$title starts in $mins minutes.")
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setDefaults(androidx.core.app.NotificationCompat.DEFAULT_ALL)
+            
+        manager.notify(title.hashCode(), builder.build())
     }
 }
