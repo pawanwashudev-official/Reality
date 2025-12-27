@@ -177,7 +177,7 @@ class RealityBlocker {
         return BlockerResult(isBlocked = false)
     }
     
-    private fun isBedtime(): Boolean {
+    fun isBedtime(): Boolean {
         val cal = Calendar.getInstance()
         val currentMins = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
         val start = bedtimeData.startTimeInMins

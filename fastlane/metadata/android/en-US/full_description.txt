@@ -19,3 +19,10 @@ Need serious focus? Activate Strict Mode to lock your settings. Choose from Time
 *   **Battery Friendly:** Optimized for minimal battery consumption.
 
 Download Reality today and turn your focus into reality.
+
+---
+**Permissions Transparency:**
+*   **Query All Packages:** Required to list your installed apps so you can select which ones to block.
+*   **Accessibility Service:** Used solely to detect when a blocked app or website is opened.
+*   **Usage Stats:** Used to calculate and display your screen time statistics.
+**Note:** All of this happens locally on your device. Your privacy is our priority.
