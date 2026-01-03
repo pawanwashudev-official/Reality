@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/scrollview"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/timed_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:padding="8dp"
+        android:text="Setup Auto-Focus"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp">
+
+        <nl.joery.timerangepicker.TimeRangePicker
+            android:id="@+id/picker"
+            android:layout_width="wrap_content"
+            android:layout_height="300dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:trp_thumbIconEnd="@drawable/baseline_stop_24"
+            app:trp_thumbIconStart="@drawable/baseline_start_24" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/from_time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="4dp"
+                android:text="6:30"
+                android:textStyle="bold"
+                tools:ignore="HardcodedText" />
+
+            <TextView
+                android:id="@+id/textView8"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="4dp"
+                android:text="@string/to" />
+
+            <TextView
+                android:id="@+id/end_time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="4dp"
+                android:text="22:00"
+                android:textStyle="bold"
+                tools:ignore="HardcodedText" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/textInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/cheat_hour_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/title"
+            android:singleLine="true" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Repeat Days"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/chip_days"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:singleSelection="false">
+        
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_mon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mon"
+            android:checkable="true"
+            android:checked="true"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_tue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tue"
+            android:checkable="true"
+            android:checked="true"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_wed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Wed"
+            android:checkable="true"
+            android:checked="true"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_thu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Thu"
+            android:checkable="true"
+            android:checked="true"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_fri"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Fri"
+            android:checkable="true"
+            android:checked="true"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_sat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sat"
+            android:checkable="true"
+            android:checked="true"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_sun"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sun"
+            android:checkable="true"
+            android:checked="true"
+            style="@style/Widget.MaterialComponents.Chip.Choice"/>
+    </com.google.android.material.chip.ChipGroup>
+
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/cbReminder"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Remind me 5 minutes before start"
+        android:checked="true"
+        android:layout_marginTop="8dp"/>
+
+    <Button
+        android:id="@+id/btn_select_end_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:visibility="gone"
+        android:text="@string/select_end_time" />
+
+        <Button
+        android:id="@+id/btn_select_unblocked_apps"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/select_apps_to_unblock" />
+
+</LinearLayout>
+</ScrollView>

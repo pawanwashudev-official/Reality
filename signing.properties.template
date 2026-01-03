@@ -1,0 +1,14 @@
+# Signing Configuration (DO NOT COMMIT TO GIT!)
+# Copy this file as 'local.properties' and fill in your values
+
+# Keystore location (relative to project root, or absolute path)
+KEYSTORE_FILE=../reality_keystore.jks
+
+# Your keystore password (KEEP THIS SECRET!)
+KEYSTORE_PASSWORD=YOUR_PASSWORD_HERE
+
+# Key alias name
+KEY_ALIAS=reality_key
+
+# Key password (KEEP THIS SECRET!)
+KEY_PASSWORD=YOUR_PASSWORD_HERE

@@ -1,0 +1,108 @@
+<resources>
+    <string name="app_name" translatable="false">Reality</string>
+    <string name="focus_mode">Focus Mode</string>
+    <string name="app_blocker">App Blocker</string>
+    <string name="anti_uninstall">Anti Uninstall</string>
+    <string name="disabled">Disabled</string>
+    <string name="select_pinned_apps">Select pinned apps</string>
+    <string name="select_blocked_apps">Select blocked apps</string>
+    <string name="start_focus_mode">Start focus mode</string>
+    <string name="warning_general_settings">Enable General Accessibility Service to access this option</string>
+    <string name="manage_warning_screen">Manage Warning Screen</string>
+    <string name="warning_app_blocker_settings">Enable App Blocker Accessibility Service to manage app blocking</string>
+    <string name="remove_anti_uninstall">Remove Anti-Uninstall</string>
+    <string name="add">Add</string>
+    <string name="save">Save</string>
+    <string name="apps">Apps:</string>
+    <string name="remove">Remove</string>
+    <string name="select_start_time">Select Start Time</string>
+    <string name="select_end_time">Select End Time</string>
+    <string name="select_apps_to_unblock">Select Apps to unblock</string>
+    <string name="disable_proceed_button">Disable Proceed Button </string>
+    <string name="specify_duration_of_focus_mode_in_mins">Specify duration of focus mode in mins</string>
+    <string name="password">Password</string>
+    <string name="specify_cooldown_interval_in_minutes">Specify cooldown interval in minutes</string>
+    <string name="warning_message">Warning message</string>
+    <string name="in_warning_changeable_cooldown">in-warning changeable cooldown</string>
+    <string name="timed_mode">Timed Mode</string>
+    <string name="block_all_uninstall_attempts_for_a_set_amount_of_days">Block all uninstall attempts for a specified number of days.</string>
+    <string name="password_mode">Password Mode</string>
+    <string name="block_all_uninstall_attempts_until_you_remove_anti_uninstall_with_a_password">Block all uninstall attempts until the anti-uninstall protection is removed with a password</string>
+    <string name="next">Next</string>
+    <string name="password_mode_desc">Make sure not to forget this password. You may not be able to exit anti-uninstall without it.</string>
+    <string name="turn_on">Turn On</string>
+    <string name="timed_mode_desc">How long would you like to keep anti-uninstall enabled?</string>
+    <string name="turn_on_anti_uninstall">Turn on Anti Uninstall</string>
+    <string name="minutes">minutes</string>
+    <string name="app_icon">app_icon</string>
+
+    <string name="accessibility_permission_app_blocker">
+        Enabling this would unlock the following in Reality:\n1. App Blocking\n2. Focus Mode \n\n
+        Reality needs access to accessibility data to know when you open a specific feature within an app.
+        This lets Reality block those features for you based on your preferences, helping you stay focused and reduce screen distractions.\n\n
+        Rest assured, all accessibility data stays securely on your device—we never share or transmit your data, ensuring your privacy is always protected.
+        \n\n
+    </string>
+    
+    <string name="accessibility_permission_general_features">"         Enabling this would unlock the following in Reality: 1. Anti-Uninstall (Setup required to run)           Reality needs access to accessibility data to know when you open a specific feature within an app.         This lets Reality block those features for you based on your preferences, helping you stay focused and reduce screen distractions.           Rest assured, all accessibility data stays securely on your device—we never share or transmit your data, ensuring your privacy is always protected.                "</string>
+    <string name="admin_permission_desc">Reality Anti-Uninstall</string>
+    <string name="title">Title</string>
+    <string name="close">Close</string>
+    <string name="proceed">Proceed</string>
+    <string name="please_enable_device_admin">Please provide device admin permission to access this feature</string>
+    <string name="setup_complete">Setup Complete</string>
+    <string name="enter_setup">Enter Setup</string>
+    <string name="enabled">Enabled</string>
+    <string name="start">Start</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="anti_uninstall_removed">Anti Uninstall removed</string>
+    <string name="failed">Failed</string>
+    <string name="incorrect_password_please_try_again">"Incorrect password. Please try again. "</string>
+    <string name="retry">Retry</string>
+    <string name="start_time">Start Time: %1$d:%2$d</string>
+    <string name="end_time_must_be_after_start_time_has_passed">End time must be after start time has passed!</string>
+    <string name="end_time">End Time: %1$02d:%2$02d</string>
+    <string name="start_time_02d_02d">Start Time: %1$02d:%2$02d</string>
+    <string name="remaining_time_anti_uninstall">You still have %1$d days to go before unlocking anti-uninstall</string>
+    <string name="app_s_selected">%1$d app(s) selected</string>
+    <string name="please_specify_start_time_first">Please Specify Start Time first</string>
+    <string name="please_type_a_title">Please type a title</string>
+    <string name="please_select_a_start_time">Please Select a start time</string>
+    <string name="please_select_an_end_time">Please Select an end time</string>
+    <string name="please_select_a_few_apps">Please select a few apps</string>
+    <string name="configure_warning_screen">Warning Screen</string>
+    <string name="proceed_in">Please wait %1$d seconds before pressing proceed</string>
+    <string name="to">To</string>
+    <string name="please_specify_time">Please specify time</string>
+    <string name="from">From</string>
+    <string name="end">End</string>
+    <string name="accept">Accept</string>
+    <string name="accessibility_perm_desc">Reality uses the Accessibility permission to provide features like app monitoring to enhance your experience. This permission allows Reality to detect app activities and help manage device usage effectively. Rest assured, all data is processed locally on your device and is never sent to any server or third party. Your privacy and data security are our top priorities.     By pressing Accept, you acknowledge and agree to the above .</string>
+    <string name="reject">Reject</string>
+    <string name="fix_your_life">Fix your life</string>
+    <string name="perform_actions_like_a_back_press">Perform actions like a back press</string>
+    <string name="read_content_on_screen">Read content on screen</string>
+    <string name="this_will_allow_Reality_to">This will allow Reality to:</string>
+    <string name="enable_2">"Enable %1$s"</string>
+    <string name="device_admin_perm">Reality uses Device Admin permission to enhance security and block uninstalling Reality until a specific period. All data remains securely stored on your device and is never shared externally.</string>
+    <string name="prevent_uninstallation_attempts_until_a_set_condition_is_met">Prevent uninstallation attempts until a set condition is met</string>
+
+    <string name="find_Reality_and_press_enable">Find Reality and press enable</string>
+    <string name="discard_changes">Discard Changes?</string>
+    <string name="are_you_sure_you_want_to_discard_all_changes_and_exit">Are you sure you want to discard all changes and exit?</string>
+    <string name="yes">Yes</string>
+    <string name="if_you_enable_this_you_won_t_be_able_to_change_configurations_such_as_adding_blocked_apps_keywords_and_more">If you enable this, you won\'t be able to change configurations such as adding blocked apps, keywords, and more until you remove anti-uninstall. Your existing changes will be used for the entire period.</string>
+    <string name="alert">Alert!!</string>
+    <string name="i_understand">I Understand</string>
+    <string name="are_you_sure_you_want_to_turn_on_anti_uninstall_there_is_no_turning_back">ARE YOU SURE YOU WANT TO TURN ON ANTI UNINSTALL? There is no turning back...</string>
+    <string name="configure_blocker">Configure Blocker</string>
+    <string name="select_apps">Select Apps</string>
+    <string name="setup_auto_focus">Setup Auto-Focus</string>
+    <string name="select_all">Select all</string>
+    <string name="clear_all"> Clear all</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="guide">Guide</string>
+    <string name="go_back">Go back</string>
+    <string name="widget_description">Quick toggle Focus Mode from your home screen</string>
+</resources>

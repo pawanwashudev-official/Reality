@@ -1,0 +1,626 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/md_theme_background">
+
+    <!-- Gradient Background Element (Top) -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#121212"/>
+
+    <!-- Pattern Overlay -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_pattern_zen"
+        android:alpha="0.6"/>
+
+    <!-- Gradient Gradient (Top Glow) -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:background="@drawable/dialog_gradient_background"
+        app:layout_constraintTop_toTopOf="parent"
+        android:alpha="0.2"/>
+
+    <!-- Header -->
+    <LinearLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="32dp"
+        android:paddingBottom="16dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_greeting"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Welcome Back,"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tv_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Reality"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"/>
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/btn_active_blocks"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:src="@drawable/baseline_shield_24"
+            app:tint="?attr/colorOnSurface"
+            android:background="@drawable/rounded_button_bg"
+            android:layout_marginEnd="12dp"
+            android:contentDescription="Active Blocks"/>
+
+        <ImageView
+            android:id="@+id/btn_reminders"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:src="@drawable/baseline_notifications_24"
+            app:tint="?attr/colorOnSurface"
+            android:background="@drawable/rounded_button_bg"
+            android:layout_marginEnd="12dp"/>
+
+        <ImageView
+            android:id="@+id/btn_settings"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:src="@drawable/baseline_settings_24"
+            app:tint="?attr/colorOnSurface"
+            android:background="@drawable/rounded_button_bg"
+            android:layout_marginEnd="12dp"/>
+
+        <ImageView
+            android:id="@+id/btn_info"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:src="@drawable/baseline_info_24"
+            app:tint="?attr/colorOnSurface"
+            android:background="@drawable/rounded_button_bg"/>
+
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/header"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:paddingHorizontal="16dp"
+        android:clipToPadding="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="32dp">
+
+            <!-- Emergency Card (Conditional) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_emergency"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="24dp"
+                app:cardBackgroundColor="?attr/colorErrorContainer"
+                app:strokeColor="?attr/colorError"
+                app:strokeWidth="1dp"
+                android:layout_marginTop="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="20dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/ic_emergency"
+                        app:tint="?attr/colorError"/>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Emergency Mode"
+                            android:textColor="?attr/colorOnErrorContainer"
+                            android:textStyle="bold"
+                            android:textSize="16sp"/>
+                        
+                        <TextView
+                             android:id="@+id/tv_emergency_remaining"
+                             android:layout_width="wrap_content"
+                             android:layout_height="wrap_content"
+                             android:text="Tap to activate break"
+                             android:textColor="?attr/colorOnErrorContainer"
+                             android:alpha="0.8"
+                             android:textSize="12sp"/>
+                    </LinearLayout>
+                    
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/baseline_arrow_forward_24"
+                        app:tint="?attr/colorError"/>
+                </LinearLayout>
+                <!-- Clickable overlay -->
+                <View
+                    android:id="@+id/btn_emergency_click"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?selectableItemBackground"/>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Focus Status / Start Focus -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardFocusMode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="32dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeWidth="1dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="24dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            
+                            <TextView
+                                android:id="@+id/tv_focus_card_title"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Focus Session"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:textSize="14sp"
+                                android:letterSpacing="0.05"/>
+
+                            <TextView
+                                android:id="@+id/tv_focus_card_status"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Ready to Start"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textSize="24sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="4dp"/>
+                        </LinearLayout>
+
+                        <!-- Lottie Animation for 3D Feel -->
+                        <com.airbnb.lottie.LottieAnimationView
+                            android:id="@+id/lottie_focus"
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            app:lottie_rawRes="@raw/anim_placeholder"
+                            app:lottie_autoPlay="true"
+                            app:lottie_loop="true"
+                            android:scaleType="centerCrop"/>
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/focusMode"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:text="Start Focusing"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#000000"
+                        app:backgroundTint="#00FFC2"
+                        app:cornerRadius="28dp"
+                        android:layout_marginTop="24dp"/>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Grid for Actions -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp"
+                android:weightSum="2">
+
+                <!-- Usage Limit -> Digital Life -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_usage_limit"
+                    android:layout_width="0dp"
+                    android:layout_height="110dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardBackgroundColor="?attr/colorSurface"
+                    app:strokeColor="?attr/colorOutlineVariant"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="20dp"
+                        android:gravity="center">
+                        
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/baseline_query_stats_24"
+                            app:tint="#6C63FF"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Digital Life"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textStyle="bold"
+                            android:textSize="16sp"/>
+                        
+                        <TextView
+                            android:id="@+id/tv_usage_status"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Dashboard"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="12sp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Blocklist -> Focus Wall -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/blocklistCard"
+                    android:layout_width="0dp"
+                    android:layout_height="110dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardBackgroundColor="?attr/colorSurface"
+                    app:strokeColor="?attr/colorOutlineVariant"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="20dp"
+                        android:gravity="center">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/baseline_block_24"
+                            app:tint="#FF9F43"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Focus Wall"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textStyle="bold"
+                            android:textSize="16sp"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Blocked Apps"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="12sp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+            <!-- Grid Row 2 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp">
+
+                <!-- App Limits -> App Constraints -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_app_limits"
+                    android:layout_width="0dp"
+                    android:layout_height="110dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardBackgroundColor="?attr/colorSurface"
+                    app:strokeColor="#33FF6B6B"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:gravity="center">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/baseline_timer_24"
+                            app:tint="#FF6B6B"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="App Constraints"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textStyle="bold"
+                            android:textSize="13sp"
+                            android:layout_marginTop="8dp"/>
+                            
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Time Limits"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="11sp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Group Limits -> Category Limits -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_group_limits"
+                    android:layout_width="0dp"
+                    android:layout_height="110dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardBackgroundColor="?attr/colorSurface"
+                    app:strokeColor="#3300CEC9"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:gravity="center">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@drawable/baseline_group_work_24"
+                            app:tint="#00CEC9"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Category Limits"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textStyle="bold"
+                            android:textSize="13sp"
+                            android:layout_marginTop="8dp"/>
+                            
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Group Limits"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="11sp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+            <!-- Row 3: Schedules & Bedtime -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp">
+
+                <!-- Schedules -> Auto-Focus -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/schedules"
+                    android:layout_width="0dp"
+                    android:layout_height="80dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardBackgroundColor="?attr/colorSurface"
+                    app:strokeColor="#332ECC71"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:padding="16dp"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/baseline_schedule_24"
+                            app:tint="#2ECC71"/>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginStart="12dp">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Auto-Focus"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textStyle="bold"
+                                android:textSize="13sp"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Schedules"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:textSize="11sp"/>
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Bedtime -> Sleep Mode -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_bedtime"
+                    android:layout_width="0dp"
+                    android:layout_height="80dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardBackgroundColor="?attr/colorSurface"
+                    app:strokeColor="#33A55EEA"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:padding="16dp"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/baseline_bedtime_24"
+                            app:tint="#A55EEA"/>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginStart="12dp">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Sleep Mode"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textStyle="bold"
+                                android:textSize="13sp"/>
+                            <TextView
+                                android:id="@+id/tv_bedtime_status"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Bedtime"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:textSize="11sp"/>
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+
+            <!-- Terminal Log -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="240dp"
+                android:layout_marginTop="24dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:strokeColor="?attr/colorOutline"
+                app:strokeWidth="1dp"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Header -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="REALITY KERNEL"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.1"/>
+
+                        <TextView
+                            android:id="@+id/btn_terminal_clear"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="CLEAR"
+                            android:textColor="?attr/colorError"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:background="?selectableItemBackground"
+                            android:padding="4dp"/>
+                    </LinearLayout>
+
+                    <ScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:fillViewport="true">
+
+                        <TextView
+                            android:id="@+id/tv_terminal_log"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="> System Ready..."
+                            android:textColor="#00FF00"
+                            android:fontFamily="monospace"
+                            android:textSize="12sp"
+                            android:lineSpacingExtra="4dp"/>
+                    </ScrollView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

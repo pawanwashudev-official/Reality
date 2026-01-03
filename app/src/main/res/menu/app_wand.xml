@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/select_social_media"
+        android:title="Auto Select Social Media" />
+    <item
+        android:id="@+id/select_productive_apps"
+        android:title="Auto Select Productive Apps" />
+
+    <item
+        android:id="@+id/add_a_custom_package"
+        android:title="Add a custom android package" />
+</menu>

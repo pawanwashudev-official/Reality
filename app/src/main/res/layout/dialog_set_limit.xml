@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Daily Usage Limit"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+            android:textColor="?attr/colorOnSurface"/>
+
+        <TextView
+            android:id="@+id/tvLimitValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1h 0m"
+            android:layout_marginTop="16dp"
+            android:layout_gravity="center_horizontal"
+            android:textAppearance="@style/TextAppearance.Material3.DisplaySmall"
+            android:textColor="?attr/colorPrimary"/>
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/seekBarLimit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:valueFrom="0"
+            android:valueTo="300"
+            android:stepSize="15"
+            android:value="60"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Active Periods"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+            android:textColor="?attr/colorOnSurface"
+            android:layout_marginTop="24dp"/>
+            
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="App will only be blocked during these times (if limit exceeded). Leave empty for always active."
+            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupPeriods"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <Button
+            android:id="@+id/btnAddPeriod"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add Period"
+            style="@style/Widget.Material3.Button.TextButton"/>
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/cbStrict"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Strict Mode"
+            android:layout_marginTop="16dp"/>
+            
+        <TextView
+            android:id="@+id/tvStrictHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="If enabled, you cannot edit or delete this limit while it is active."
+            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+            android:layout_marginStart="32dp"
+            android:textColor="?attr/colorOnSurfaceVariant"/>
+
+    </LinearLayout>
+</ScrollView>

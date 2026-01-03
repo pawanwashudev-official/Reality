@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/colorSurface">
+    
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Title Input -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Reminder Title"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapSentences"
+                android:textColor="?attr/colorOnSurface"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Time Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⏰ Time"
+            android:layout_marginTop="20dp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"/>
+
+        <TimePicker
+            android:id="@+id/timePicker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:timePickerMode="spinner"
+            android:layout_marginTop="8dp"/>
+
+        <!-- Repeat Days -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔄 Repeat"
+            android:layout_marginTop="16dp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"/>
+            
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:scrollbars="none">
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group_days"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleLine="true">
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_sun"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sun"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:checkable="true"/>
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_mon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mon"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:checkable="true"/>
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_tue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tue"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:checkable="true"/>
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_wed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Wed"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:checkable="true"/>
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_thu"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Thu"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:checkable="true"/>
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_fri"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Fri"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:checkable="true"/>
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_sat"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sat"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:checkable="true"/>
+            </com.google.android.material.chip.ChipGroup>
+        </HorizontalScrollView>
+
+        <!-- URL Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔗 Redirect (Optional)"
+            android:layout_marginTop="16dp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"/>
+
+        <Spinner
+            android:id="@+id/spinner_url_source"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/spinner_theme_background"
+            android:entries="@array/url_source_options"
+            android:padding="12dp"/>
+
+        <LinearLayout
+            android:id="@+id/layout_custom_url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginTop="8dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Custom URL"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_url"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textUri"
+                    android:textColor="?attr/colorOnSurface"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- Advanced Settings Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+            app:cardCornerRadius="12dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⚙️ Advanced"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="13sp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Remind before (min)"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="13sp"/>
+
+                    <EditText
+                        android:id="@+id/et_offset"
+                        android:layout_width="60dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/input_theme_background"
+                        android:gravity="center"
+                        android:inputType="number"
+                        android:textColor="?attr/colorOnSurface"
+                        android:hint="0"
+                        android:textSize="14sp"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Retry interval (min)"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="13sp"/>
+
+                    <EditText
+                        android:id="@+id/et_retry"
+                        android:layout_width="60dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/input_theme_background"
+                        android:gravity="center"
+                        android:inputType="number"
+                        android:textColor="?attr/colorOnSurface"
+                        android:hint="0"
+                        android:textSize="14sp"/>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+</ScrollView>

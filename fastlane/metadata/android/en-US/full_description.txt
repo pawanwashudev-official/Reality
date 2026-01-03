@@ -1,0 +1,28 @@
+Take control of your digital life with Reality, the most powerful and private focus app for Android.
+
+Do you find yourself scrolling endlessly? Struggling to focus on work or study? Reality is designed to help you break free from phone addiction without compromising your privacy. Unlike other blockers, Reality works 100% offline—your data never leaves your device.
+
+**🛡️ Unbreakable Strict Mode**
+Need serious focus? Activate Strict Mode to lock your settings. Choose from Timer Lock (lock for up to 20 days), Password Lock, or standard mode. Once locked, it’s impossible to cheat—Reality even prevents uninstalling or changing the system time!
+
+**✨ Key Features:**
+*   **App & Website Blocking:** Block distracting apps and websites (works with all browsers).
+*   **Usage Limits:** Set daily time limits for specific apps or groups of apps.
+*   **Schedule Blocking:** Automatically block apps during work, study, or sleep hours.
+*   **100% Privacy:** No tracking, no ads, and no account required. Everything stays on your phone.
+*   **Anti-Cheat Protection:** Prevents bypassing blocks by changing time or uninstalling.
+*   **Detailed Statistics:** View your screen time usage with beautiful charts.
+
+**Why Choose Reality?**
+*   **Zero Ads:** A clean, premium experience for everyone.
+*   **Offline First:** No internet permission required for blocking features.
+*   **Battery Friendly:** Optimized for minimal battery consumption.
+
+Download Reality today and turn your focus into reality.
+
+---
+**Permissions Transparency:**
+*   **Query All Packages:** Required to list your installed apps so you can select which ones to block.
+*   **Accessibility Service:** Used solely to detect when a blocked app or website is opened.
+*   **Usage Stats:** Used to calculate and display your screen time statistics.
+**Note:** All of this happens locally on your device. Your privacy is our priority.

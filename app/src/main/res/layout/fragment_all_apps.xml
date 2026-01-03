@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:colorBackground">
+
+    <LinearLayout
+        android:id="@+id/contentLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        
+        <!-- Header Spacer -->
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="16dp" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="28dp"
+            app:cardBackgroundColor="#1F1B24"
+            app:strokeColor="#33FFFFFF"
+            app:strokeWidth="1dp"
+            app:cardElevation="4dp">
+    
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+    
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Screen time"
+                    android:textColor="#BBBBBB"
+                    android:fontFamily="sans-serif-medium"
+                    android:textSize="14sp"/>
+    
+                <TextView
+                    android:id="@+id/tvTotalUsage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Loading..."
+                    android:textSize="42sp"
+                    android:letterSpacing="-0.02"
+                    android:fontFamily="sans-serif-medium"
+                    android:textColor="@android:color/white"
+                    android:layout_marginTop="4dp"/>
+                    
+                <TextView
+                    android:id="@+id/tvDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Today"
+                    android:textColor="#808080"
+                    android:textSize="12sp"
+                    android:layout_marginTop="8dp"/>
+    
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+        
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Most used apps"
+            android:fontFamily="sans-serif-medium"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"
+            android:paddingHorizontal="24dp"
+            android:paddingBottom="12dp"/>
+    
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerAllApps"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="80dp"/> 
+    </LinearLayout>
+
+    <!-- Permission Request Card (Overlay) -->
+    <LinearLayout
+        android:id="@+id/layoutPermission"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:background="#DD000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        android:padding="32dp">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="24dp"
+            app:cardBackgroundColor="#2D2D2D"
+            app:cardElevation="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="32dp"
+                android:gravity="center">
+
+                <ImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:src="@android:drawable/ic_dialog_info"
+                    app:tint="@android:color/holo_blue_light"
+                    android:layout_marginBottom="16dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Permission Required"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="To show usage statistics and manage limits, this app needs access to your usage data."
+                    android:gravity="center"
+                    android:textColor="#BBBBBB"
+                    android:layout_marginBottom="24dp"/>
+
+                <Button
+                    android:id="@+id/btnGrantPermission"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Grant Permission"
+                    android:backgroundTint="@android:color/holo_blue_light"
+                    android:textColor="@android:color/black"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+
+</FrameLayout>
