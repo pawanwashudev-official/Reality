@@ -357,6 +357,6 @@ We believe focus apps should **help you, not spy on you**. That's why we built R
 
 Made with ❤️ by [Neubofy](https://neubofyreality.vercel.app/) | [Privacy Policy](https://realityprivicypolicy.vercel.app/)
 
-**© 2025 Neubofy. All rights reserved.**
+**© 2026 Neubofy. All rights reserved.**
 
 </div>
