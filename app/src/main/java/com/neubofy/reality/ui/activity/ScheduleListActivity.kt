@@ -372,68 +372,79 @@ class ScheduleListActivity : AppCompatActivity() {
     
     @android.annotation.SuppressLint("SetTextI18n")
     private fun showAddScheduleDialog() {
-        dialogBinding = com.neubofy.reality.databinding.DialogAddTimedActionBinding.inflate(layoutInflater)
-        dialogBinding.timedTitle.text = "Add Schedule"
-        dialogBinding.btnSelectUnblockedApps.visibility = View.GONE
-        dialogBinding.picker.visibility = View.GONE
-        
-        var startTimeMins = 540 // 9:00 AM
-        var endTimeMins = 1020 // 5:00 PM
-        
-        dialogBinding.fromTime.text = String.format("%02d:%02d", startTimeMins / 60, startTimeMins % 60)
-        dialogBinding.endTime.text = String.format("%02d:%02d", endTimeMins / 60, endTimeMins % 60)
-        dialogBinding.cbReminder.isChecked = true
-        
-        dialogBinding.fromTime.setOnClickListener {
-            showMaterialTimePicker("Start Time", startTimeMins / 60, startTimeMins % 60) { h, m ->
-                startTimeMins = h * 60 + m
-                dialogBinding.fromTime.text = String.format("%02d:%02d", h, m)
+        try {
+            // Check Strict Mode first
+            if (!com.neubofy.reality.utils.StrictLockUtils.isModificationAllowedFor(this, com.neubofy.reality.utils.StrictLockUtils.FeatureType.SCHEDULE)) {
+                android.widget.Toast.makeText(this, "🔒 Locked by Strict Mode. Edit allowed 00:00-00:10 daily.", android.widget.Toast.LENGTH_LONG).show()
+                return
             }
-        }
-        
-        dialogBinding.endTime.setOnClickListener {
-            showMaterialTimePicker("End Time", endTimeMins / 60, endTimeMins % 60) { h, m ->
-                endTimeMins = h * 60 + m
-                dialogBinding.endTime.text = String.format("%02d:%02d", h, m)
-            }
-        }
+            
+            dialogBinding = com.neubofy.reality.databinding.DialogAddTimedActionBinding.inflate(layoutInflater)
+            dialogBinding.timedTitle.text = "Add Schedule"
+            dialogBinding.btnSelectUnblockedApps.visibility = View.GONE
 
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-            .setView(dialogBinding.root)
-            .setPositiveButton("Add") { dialog, _ ->
-                val title = dialogBinding.cheatHourTitle.text.toString()
-                if (title.isEmpty()) {
-                    android.widget.Toast.makeText(this, "Enter a title", android.widget.Toast.LENGTH_SHORT).show()
-                } else {
-                    val days = ArrayList<Int>()
-                    val chipGroup = dialogBinding.root.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chip_days)
-                    if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_sun).isChecked) days.add(1)
-                    if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_mon).isChecked) days.add(2)
-                    if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_tue).isChecked) days.add(3)
-                    if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_wed).isChecked) days.add(4)
-                    if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_thu).isChecked) days.add(5)
-                    if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_fri).isChecked) days.add(6)
-                    if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_sat).isChecked) days.add(7)
-                    
-                    if (days.isEmpty()) {
-                         android.widget.Toast.makeText(this, "Select days", android.widget.Toast.LENGTH_SHORT).show()
-                         return@setPositiveButton
-                    }
-                
-                    val isReminder = dialogBinding.cbReminder.isChecked
-                    val newItem = Constants.AutoTimedActionItem(title, startTimeMins, endTimeMins, arrayListOf(), repeatDays = days, isReminderEnabled = isReminder)
-                    
-                    manualList = prefs.loadAutoFocusHoursList()
-                    manualList.add(newItem)
-                    prefs.saveAutoFocusHoursList(manualList)
-                    
-                    sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
-                    loadSchedules()
-                    dialog.dismiss()
+            
+            var startTimeMins = 540 // 9:00 AM
+            var endTimeMins = 1020 // 5:00 PM
+            
+            dialogBinding.fromTime.text = String.format("%02d:%02d", startTimeMins / 60, startTimeMins % 60)
+            dialogBinding.endTime.text = String.format("%02d:%02d", endTimeMins / 60, endTimeMins % 60)
+            dialogBinding.cbReminder.isChecked = true
+            
+            dialogBinding.fromTime.setOnClickListener {
+                showMaterialTimePicker("Start Time", startTimeMins / 60, startTimeMins % 60) { h, m ->
+                    startTimeMins = h * 60 + m
+                    dialogBinding.fromTime.text = String.format("%02d:%02d", h, m)
                 }
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+            
+            dialogBinding.endTime.setOnClickListener {
+                showMaterialTimePicker("End Time", endTimeMins / 60, endTimeMins % 60) { h, m ->
+                    endTimeMins = h * 60 + m
+                    dialogBinding.endTime.text = String.format("%02d:%02d", h, m)
+                }
+            }
+
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.GlassDialog)
+                .setView(dialogBinding.root)
+                .setPositiveButton("Add") { dialog, _ ->
+                    val title = dialogBinding.cheatHourTitle.text.toString()
+                    if (title.isEmpty()) {
+                        android.widget.Toast.makeText(this, "Enter a title", android.widget.Toast.LENGTH_SHORT).show()
+                    } else {
+                        val days = ArrayList<Int>()
+                        val chipGroup = dialogBinding.root.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chip_days)
+                        if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_sun).isChecked) days.add(1)
+                        if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_mon).isChecked) days.add(2)
+                        if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_tue).isChecked) days.add(3)
+                        if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_wed).isChecked) days.add(4)
+                        if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_thu).isChecked) days.add(5)
+                        if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_fri).isChecked) days.add(6)
+                        if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_sat).isChecked) days.add(7)
+                        
+                        if (days.isEmpty()) {
+                             android.widget.Toast.makeText(this, "Select days", android.widget.Toast.LENGTH_SHORT).show()
+                             return@setPositiveButton
+                        }
+                    
+                        val isReminder = dialogBinding.cbReminder.isChecked
+                        val newItem = Constants.AutoTimedActionItem(title, startTimeMins, endTimeMins, arrayListOf(), repeatDays = days, isReminderEnabled = isReminder)
+                        
+                        manualList = prefs.loadAutoFocusHoursList()
+                        manualList.add(newItem)
+                        prefs.saveAutoFocusHoursList(manualList)
+                        
+                        sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
+                        loadSchedules()
+                        dialog.dismiss()
+                    }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        } catch (e: Exception) {
+            android.util.Log.e("ScheduleList", "Error opening dialog", e)
+            android.widget.Toast.makeText(this, "Error opening dialog: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+        }
     }
 
     @android.annotation.SuppressLint("SetTextI18n")
@@ -447,7 +458,7 @@ class ScheduleListActivity : AppCompatActivity() {
         dialogBinding = com.neubofy.reality.databinding.DialogAddTimedActionBinding.inflate(layoutInflater)
         dialogBinding.timedTitle.text = "Edit Schedule"
         dialogBinding.btnSelectUnblockedApps.visibility = View.GONE
-        dialogBinding.picker.visibility = View.GONE
+
         
         // Pre-fill with existing values
         dialogBinding.cheatHourTitle.setText(existing.title)

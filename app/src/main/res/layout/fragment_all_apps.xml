@@ -22,8 +22,8 @@
             android:layout_marginHorizontal="16dp"
             android:layout_marginBottom="24dp"
             app:cardCornerRadius="28dp"
-            app:cardBackgroundColor="#1F1B24"
-            app:strokeColor="#33FFFFFF"
+            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+            app:strokeColor="?attr/colorOutline"
             app:strokeWidth="1dp"
             app:cardElevation="4dp">
     
@@ -37,7 +37,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Screen time"
-                    android:textColor="#BBBBBB"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:fontFamily="sans-serif-medium"
                     android:textSize="14sp"/>
     
@@ -49,7 +49,7 @@
                     android:textSize="42sp"
                     android:letterSpacing="-0.02"
                     android:fontFamily="sans-serif-medium"
-                    android:textColor="@android:color/white"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_marginTop="4dp"/>
                     
                 <TextView
@@ -57,7 +57,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Today"
-                    android:textColor="#808080"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:textSize="12sp"
                     android:layout_marginTop="8dp"/>
     
@@ -70,7 +70,7 @@
             android:text="Most used apps"
             android:fontFamily="sans-serif-medium"
             android:textSize="18sp"
-            android:textColor="#FFFFFF"
+            android:textColor="?attr/colorOnSurface"
             android:paddingHorizontal="24dp"
             android:paddingBottom="12dp"/>
     
@@ -90,7 +90,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
-        android:background="#DD000000"
+        android:background="?attr/colorSurface"
         android:clickable="true"
         android:focusable="true"
         android:visibility="gone"
@@ -100,7 +100,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardCornerRadius="24dp"
-            app:cardBackgroundColor="#2D2D2D"
+            app:cardBackgroundColor="?attr/colorSurfaceVariant"
             app:cardElevation="8dp">
 
             <LinearLayout
@@ -114,7 +114,7 @@
                     android:layout_width="64dp"
                     android:layout_height="64dp"
                     android:src="@android:drawable/ic_dialog_info"
-                    app:tint="@android:color/holo_blue_light"
+                    app:tint="?attr/colorPrimary"
                     android:layout_marginBottom="16dp"/>
 
                 <TextView
@@ -123,7 +123,7 @@
                     android:text="Permission Required"
                     android:textSize="20sp"
                     android:textStyle="bold"
-                    android:textColor="@android:color/white"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_marginBottom="8dp"/>
 
                 <TextView
@@ -131,7 +131,7 @@
                     android:layout_height="wrap_content"
                     android:text="To show usage statistics and manage limits, this app needs access to your usage data."
                     android:gravity="center"
-                    android:textColor="#BBBBBB"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:layout_marginBottom="24dp"/>
 
                 <Button
@@ -139,8 +139,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Grant Permission"
-                    android:backgroundTint="@android:color/holo_blue_light"
-                    android:textColor="@android:color/black"/>
+                    android:backgroundTint="?attr/colorPrimary"
+                    android:textColor="?attr/colorOnPrimary"/>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

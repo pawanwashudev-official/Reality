@@ -54,6 +54,12 @@
         <activity
             android:name=".ui.activity.SelectAppsActivity"
             android:exported="false" />
+            
+        <activity
+            android:name=".ui.activity.OnboardingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait" />
 
         <!-- CalendarSettingsActivity removed -->
 
@@ -65,6 +71,11 @@
             android:name=".ui.activity.UnifiedBlocklistActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.Reality" />
+        <activity
+            android:name=".ui.activity.AppearanceActivity"
+            android:exported="false"
+            android:label="Appearance"
+            android:screenOrientation="portrait" />
         <activity
             android:name=".ui.activity.SettingsActivity"
             android:exported="false"

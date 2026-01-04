@@ -38,7 +38,7 @@ class GroupsFragment : Fragment() {
     private val appGroupList = mutableListOf<AppGroupEntity>()
     private lateinit var adapter: AppGroupAdapter
     private lateinit var prefsLoader: SavedPreferencesLoader
-    private var usageData = com.neubofy.reality.Constants.UsageLimitData()
+    private var usageMap: Map<String, Long> = emptyMap()
 
     // For app selection result
     private var pendingDialogBinding: DialogAddGroupBinding? = null
@@ -78,7 +78,13 @@ class GroupsFragment : Fragment() {
     }
     
     private fun refreshUsageData() {
-        usageData = prefsLoader.getUsageLimitData()
+        scope.launch(Dispatchers.IO) {
+            val map = com.neubofy.reality.utils.UsageUtils.getUsageSinceMidnight(requireContext())
+            withContext(Dispatchers.Main) {
+                usageMap = map
+                if (::adapter.isInitialized) adapter.notifyDataSetChanged()
+            }
+        }
     }
     
     override fun onResume() {
@@ -345,7 +351,7 @@ class GroupsFragment : Fragment() {
             val packages = parsePackages(item.packageNamesJson)
             var totalUsageMs = 0L
             packages.forEach { pkg ->
-                totalUsageMs += usageData.appUsages.getOrDefault(pkg, 0L)
+                totalUsageMs += usageMap.getOrDefault(pkg, 0L)
             }
             
             val limitMs = item.limitInMinutes * 60 * 1000L
@@ -356,25 +362,28 @@ class GroupsFragment : Fragment() {
             val usedMins = TimeUnit.MILLISECONDS.toMinutes(totalUsageMs)
             holder.binding.tvUsageStats.text = "${usedMins}m / ${item.limitInMinutes}m"
             
-            // Icons
+            // Icons - Using AppIconCache for efficient loading
             holder.binding.iconContainer.removeAllViews()
-            val pm = holder.itemView.context.packageManager
+            val currentPosition = position
             scope.launch(Dispatchers.IO) {
-                 val icons = packages.take(5).mapNotNull { pkg ->
-                     try { pm.getApplicationInfo(pkg, 0).loadIcon(pm) } catch(e: Exception) { null }
-                 }
-                 withContext(Dispatchers.Main) {
-                     icons.forEach { icon ->
-                         val img = ImageView(holder.itemView.context)
-                         val size = (24 * resources.displayMetrics.density).toInt()
-                         val margin = (4 * resources.displayMetrics.density).toInt()
-                         img.layoutParams = android.widget.LinearLayout.LayoutParams(size, size).apply {
-                             marginEnd = margin
-                         }
-                         img.setImageDrawable(icon)
-                         holder.binding.iconContainer.addView(img)
-                     }
-                 }
+                val icons = packages.take(5).mapNotNull { pkg ->
+                    com.neubofy.reality.utils.AppIconCache.get(holder.itemView.context, pkg)
+                }
+                withContext(Dispatchers.Main) {
+                    // Check if ViewHolder is still showing the same item
+                    if (holder.adapterPosition == currentPosition) {
+                        icons.forEach { icon ->
+                            val img = ImageView(holder.itemView.context)
+                            val size = (24 * resources.displayMetrics.density).toInt()
+                            val margin = (4 * resources.displayMetrics.density).toInt()
+                            img.layoutParams = android.widget.LinearLayout.LayoutParams(size, size).apply {
+                                marginEnd = margin
+                            }
+                            img.setImageDrawable(icon)
+                            holder.binding.iconContainer.addView(img)
+                        }
+                    }
+                }
             }
             
             holder.itemView.setOnClickListener {

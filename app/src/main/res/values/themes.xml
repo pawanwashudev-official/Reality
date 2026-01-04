@@ -57,10 +57,49 @@
 
     <style name="Theme.Reality" parent="Base.Theme.Reality" />
     
-    <!-- Borderless Card Style - App-wide -->
+    <!-- Glassmorphism Card Style - App-wide Premium Look -->
     <style name="BorderlessCard" parent="Widget.Material3.CardView.Filled">
-        <item name="strokeWidth">0dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">@color/glass_card_stroke_color</item>
+        <item name="cardBackgroundColor">@color/glass_card_color</item>
         <item name="cardElevation">0dp</item>
+        <item name="cardCornerRadius">24dp</item>
+    </style>
+    
+    <!-- Premium Glass Card - Use for special cards -->
+    <style name="GlassCard" parent="Widget.Material3.CardView.Filled">
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">#33FFFFFF</item>
+        <item name="cardBackgroundColor">#1AFFFFFF</item>
+        <item name="cardElevation">0dp</item>
+        <item name="cardCornerRadius">24dp</item>
+    </style>
+    
+    <!-- Page Header Toolbar Style -->
+    <style name="RealityToolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="titleTextAppearance">@style/RealityToolbarTitle</item>
+        <item name="navigationIcon">@drawable/ic_arrow_back</item>
+    </style>
+    
+    <style name="RealityToolbarTitle" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+    
+    <!-- Back Button Style -->
+    <style name="RealityBackButton">
+        <item name="android:layout_width">44dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:padding">10dp</item>
+        <item name="android:background">@drawable/back_button_bg</item>
+        <item name="android:src">@drawable/ic_arrow_back</item>
+        <item name="tint">?attr/colorOnSurface</item>
     </style>
 
     <!-- Forced Dark Theme -->
@@ -127,6 +166,112 @@
     
     <style name="GlassDialogButton" parent="Widget.Material3.Button.TextButton.Dialog">
         <item name="android:textColor">?attr/colorPrimary</item>
+    </style>
+
+    <!-- ========== ACCENT COLOR THEMES (ENHANCED) ========== -->
+    
+    <!-- TEAL (Default) -->
+    <style name="Theme.Reality.Teal" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#00695C</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#A7FFEB</item>
+        <item name="colorOnPrimaryContainer">#00251A</item>
+        <item name="colorSecondary">#00897B</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#B2DFDB</item>
+        <item name="colorTertiary">#26A69A</item>
+        <item name="colorOutline">#00695C</item>
+    </style>
+    
+    <!-- PURPLE - Vibrant purple theme -->
+    <style name="Theme.Reality.Purple" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#651FFF</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#E8DAFF</item>
+        <item name="colorOnPrimaryContainer">#21005D</item>
+        <item name="colorSecondary">#7C4DFF</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#D1C4E9</item>
+        <item name="colorTertiary">#B388FF</item>
+        <item name="colorOutline">#651FFF</item>
+    </style>
+    
+    <!-- BLUE - Ocean blue theme -->
+    <style name="Theme.Reality.Blue" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#2196F3</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#D1E4FF</item>
+        <item name="colorOnPrimaryContainer">#001D36</item>
+        <item name="colorSecondary">#42A5F5</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#BBDEFB</item>
+        <item name="colorTertiary">#64B5F6</item>
+        <item name="colorOutline">#2196F3</item>
+    </style>
+    
+    <!-- PINK - Vibrant pink theme -->
+    <style name="Theme.Reality.Pink" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#E91E63</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#FFD9E2</item>
+        <item name="colorOnPrimaryContainer">#3E001D</item>
+        <item name="colorSecondary">#EC407A</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#F8BBD0</item>
+        <item name="colorTertiary">#F48FB1</item>
+        <item name="colorOutline">#E91E63</item>
+    </style>
+    
+    <!-- ORANGE - Sunset orange theme -->
+    <style name="Theme.Reality.Orange" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#FF5722</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#FFDBD0</item>
+        <item name="colorOnPrimaryContainer">#380D00</item>
+        <item name="colorSecondary">#FF7043</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#FFCCBC</item>
+        <item name="colorTertiary">#FF8A65</item>
+        <item name="colorOutline">#FF5722</item>
+    </style>
+    
+    <!-- CYAN - Electric cyan theme -->
+    <style name="Theme.Reality.Cyan" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#00BCD4</item>
+        <item name="colorOnPrimary">#003D43</item>
+        <item name="colorPrimaryContainer">#97F0FF</item>
+        <item name="colorOnPrimaryContainer">#001F24</item>
+        <item name="colorSecondary">#26C6DA</item>
+        <item name="colorOnSecondary">#003D43</item>
+        <item name="colorSecondaryContainer">#B2EBF2</item>
+        <item name="colorTertiary">#4DD0E1</item>
+        <item name="colorOutline">#00BCD4</item>
+    </style>
+    
+    <!-- GREEN - Nature green theme -->
+    <style name="Theme.Reality.Green" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#4CAF50</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#B7F2B8</item>
+        <item name="colorOnPrimaryContainer">#002106</item>
+        <item name="colorSecondary">#66BB6A</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#C8E6C9</item>
+        <item name="colorTertiary">#81C784</item>
+        <item name="colorOutline">#4CAF50</item>
+    </style>
+    
+    <!-- RED - Crimson red theme -->
+    <style name="Theme.Reality.Red" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#F44336</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#FFDAD6</item>
+        <item name="colorOnPrimaryContainer">#410002</item>
+        <item name="colorSecondary">#EF5350</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#FFCDD2</item>
+        <item name="colorTertiary">#E57373</item>
+        <item name="colorOutline">#F44336</item>
     </style>
 
 </resources>

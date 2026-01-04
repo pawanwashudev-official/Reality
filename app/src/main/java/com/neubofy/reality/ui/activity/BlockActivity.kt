@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -64,6 +65,8 @@ class BlockActivity : AppCompatActivity() {
         binding.btnEmergency.setOnClickListener {
             handleEmergencyAccess()
         }
+        
+        setupBackHandler()
     }
     
     private fun handleEmergencyAccess() {
@@ -157,8 +160,11 @@ class BlockActivity : AppCompatActivity() {
         finishAffinity()
     }
     
-    override fun onBackPressed() {
-        super.onBackPressed()
-        goHome()
+    private fun setupBackHandler() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                goHome()
+            }
+        })
     }
 }

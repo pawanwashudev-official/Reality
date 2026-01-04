@@ -32,8 +32,15 @@ class WelcomeFragment : Fragment() {
                 prefs.edit().putString("user_name", name).apply()
             }
             
+            // Navigate to the new comprehensive permissions flow
             requireActivity().supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_holder, PermissionsFragment())
+                .setCustomAnimations(
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out,
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out
+                )
+                .replace(R.id.fragment_holder, OnboardingPermissionsFragment())
                 .addToBackStack(null)
                 .commit()
         }

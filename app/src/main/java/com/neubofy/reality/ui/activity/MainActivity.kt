@@ -49,6 +49,7 @@ import kotlinx.coroutines.*
 import com.neubofy.reality.utils.FocusStatusManager
 import com.neubofy.reality.utils.FocusType
 import com.neubofy.reality.utils.TimeTools
+import com.neubofy.reality.utils.ThemeManager
 
 class MainActivity : AppCompatActivity() {
 
@@ -74,12 +75,22 @@ class MainActivity : AppCompatActivity() {
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeManager.applyTheme(this)
+        ThemeManager.applyAccentTheme(this)
         super.onCreate(savedInstanceState)
         
         // Check for Intro (Moved from LauncherActivity)
+        // Check for Intro & Onboarding
         val prefs = getSharedPreferences("app_preferences", MODE_PRIVATE)
         if (!prefs.getBoolean("intro_shown", false)) {
             val intent = Intent(this, SecurityIntroActivity::class.java)
+            startActivity(intent)
+            finish()
+            return
+        }
+        
+        if (!prefs.getBoolean("onboarding_v2_complete", false)) {
+            val intent = Intent(this, OnboardingActivity::class.java)
             startActivity(intent)
             finish()
             return
@@ -119,6 +130,7 @@ class MainActivity : AppCompatActivity() {
         updateEmergencyUI()
         updateUsageLimitUI()
         updateGreeting()
+        updateThemeVisuals()
         
 
     }
@@ -715,4 +727,36 @@ class MainActivity : AppCompatActivity() {
     }
     
 
+    private fun updateThemeVisuals() {
+        val cards = listOf(
+            binding.cardEmergency,
+            binding.cardFocusMode,
+            binding.cardUsageLimit,
+            binding.blocklistCard,
+            binding.cardAppLimits,
+            binding.cardGroupLimits,
+            binding.schedules,
+            binding.cardBedtime
+        )
+        cards.forEach { ThemeManager.applyCardAppearance(it) }
+        
+        // Also update background pattern alpha if needed? No, handled by XML usually.
+        // But if AMOLED, pattern view should be hidden?
+        val patternView = binding.root.getChildAt(1) // Assuming 2nd view is pattern
+        if (ThemeManager.isAmoledMode(this) && isSystemNight()) {
+            patternView.visibility = View.GONE
+        } else {
+            // Restore visibility based on Pattern preference?
+            val pattern = ThemeManager.getBackgroundPattern(this)
+            patternView.visibility = if (pattern == ThemeManager.BackgroundPattern.NONE) View.GONE else View.VISIBLE
+            // Update drawable if needed
+            if (pattern != ThemeManager.BackgroundPattern.NONE) {
+                 patternView.setBackgroundResource(pattern.drawableResId)
+            }
+        }
+    }
+    
+    private fun isSystemNight(): Boolean {
+        return (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+    }
 }

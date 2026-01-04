@@ -50,4 +50,63 @@
         <item name="colorSurfaceContainerHighest">@color/md_theme_surfaceContainerHighest</item>
     </style>
 
+    <style name="Theme.Reality" parent="Base.Theme.Reality" />
+    
+    <!-- Accent Color Themes for Dark Mode -->
+    <style name="Theme.Reality.Teal" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#00BFA5</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#00695C</item>
+        <item name="colorOnPrimaryContainer">#A7FFEB</item>
+    </style>
+    
+    <style name="Theme.Reality.Purple" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#B388FF</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#311B92</item>
+        <item name="colorOnPrimaryContainer">#E8DAFF</item>
+    </style>
+    
+    <style name="Theme.Reality.Blue" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#64B5F6</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#0D47A1</item>
+        <item name="colorOnPrimaryContainer">#D1E4FF</item>
+    </style>
+    
+    <style name="Theme.Reality.Pink" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#F48FB1</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#880E4F</item>
+        <item name="colorOnPrimaryContainer">#FFD9E2</item>
+    </style>
+    
+    <style name="Theme.Reality.Orange" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#FF8A65</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#BF360C</item>
+        <item name="colorOnPrimaryContainer">#FFDBD0</item>
+    </style>
+    
+    <style name="Theme.Reality.Cyan" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#4DD0E1</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#006064</item>
+        <item name="colorOnPrimaryContainer">#97F0FF</item>
+    </style>
+    
+    <style name="Theme.Reality.Green" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#81C784</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#1B5E20</item>
+        <item name="colorOnPrimaryContainer">#B7F2B8</item>
+    </style>
+    
+    <style name="Theme.Reality.Red" parent="Base.Theme.Reality">
+        <item name="colorPrimary">#EF5350</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#C62828</item>
+        <item name="colorOnPrimaryContainer">#FFDAD6</item>
+    </style>
+
 </resources>

@@ -418,14 +418,16 @@ class AppLimitsFragment : Fragment() {
                 holder.binding.ivStrictIcon.visibility = View.GONE
             }
             
-            // Load icon
+            // Load icon using AppIconCache for better performance
+            val currentPosition = position
             scope.launch(Dispatchers.IO) {
-                try {
-                    val icon = holder.itemView.context.packageManager.getApplicationIcon(item.packageName)
-                    withContext(Dispatchers.Main) { 
-                        holder.binding.ivAppIcon.setImageDrawable(icon) 
+                val icon = com.neubofy.reality.utils.AppIconCache.get(holder.itemView.context, item.packageName)
+                withContext(Dispatchers.Main) {
+                    // Check if ViewHolder is still showing the same item
+                    if (holder.adapterPosition == currentPosition && icon != null) {
+                        holder.binding.ivAppIcon.setImageDrawable(icon)
                     }
-                } catch(e: Exception) {}
+                }
             }
             
             holder.itemView.setOnClickListener {

@@ -6,11 +6,11 @@
     android:layout_height="match_parent"
     android:background="@color/md_theme_background">
 
-    <!-- Gradient Background Element (Top) -->
+    <!-- Background Element -->
     <View
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#121212"/>
+        android:background="?android:colorBackground"/>
 
     <!-- Pattern Overlay -->
     <View
@@ -603,16 +603,20 @@
                     </LinearLayout>
 
                     <ScrollView
+                        android:id="@+id/terminal_scroll"
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:fillViewport="true">
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:scrollbars="vertical"
+                        android:fadeScrollbars="false"
+                        android:fillViewport="false">
 
                         <TextView
                             android:id="@+id/tv_terminal_log"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="> System Ready..."
-                            android:textColor="#00FF00"
+                            android:textColor="?attr/colorPrimary"
                             android:fontFamily="monospace"
                             android:textSize="12sp"
                             android:lineSpacingExtra="4dp"/>

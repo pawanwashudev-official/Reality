@@ -25,8 +25,12 @@ object BlockCache {
      * THE BOX - Map of packageName to list of reasons why it should be blocked.
      * If a package is in this map, it MUST be blocked.
      * Multiple reasons can apply to the same package.
+     * 
+     * ATOMIC SWAP IMPLEMENTATION:
+     * This variable is replaced atomically. Readers will either see the OLD box or the NEW box.
+     * They will NEVER see an empty box during a rebuild.
      */
-    private val blockedApps = mutableMapOf<String, MutableSet<String>>()
+    @Volatile private var blockedApps: Map<String, Set<String>> = emptyMap()
     
     /** Last time the cache was updated */
     var lastUpdateTime = 0L
@@ -59,7 +63,8 @@ object BlockCache {
         }
         
         // 3. Check THE BOX
-        val reasons = blockedApps[packageName]
+        val currentBox = blockedApps // Capture reference for consistency
+        val reasons = currentBox[packageName]
         return if (reasons != null && reasons.isNotEmpty()) {
             Pair(true, reasons.toList())
         } else {
@@ -70,7 +75,7 @@ object BlockCache {
     /**
      * Get all currently blocked apps with reasons.
      */
-    fun getAllBlockedApps(): Map<String, Set<String>> = blockedApps.toMap()
+    fun getAllBlockedApps(): Map<String, Set<String>> = blockedApps
     
     /**
      * Get count of blocked apps.
@@ -86,7 +91,9 @@ object BlockCache {
     suspend fun rebuildBox(context: Context) {
         mutex.withLock {
             try {
-                blockedApps.clear()
+                // ATOMIC SWAP: Create a completely new box. 
+                // The old 'blockedApps' is still active and protecting the phone while we build this.
+                val newBox = mutableMapOf<String, MutableSet<String>>()
                 
                 val prefs = SavedPreferencesLoader(context)
                 val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(context)
@@ -128,7 +135,7 @@ object BlockCache {
                         // Block selected apps
                         blocklist.forEach { pkg ->
                             if (pkg.isNotEmpty()) {
-                                addToBox(pkg, reason)
+                                addToBox(newBox, pkg, reason)
                             }
                         }
                     } else {
@@ -148,13 +155,13 @@ object BlockCache {
                     
                     // Check if limit exceeded
                     if (limitMs > 0 && usedMs >= limitMs) {
-                        addToBox(limit.packageName, "Daily Limit Reached (${limit.limitInMinutes}m)")
+                        addToBox(newBox, limit.packageName, "Daily Limit Reached (${limit.limitInMinutes}m)")
                     }
                     
                     // Check if outside active hours
                     if (limit.activePeriodsJson.isNotEmpty() && limit.activePeriodsJson.length > 5) {
                         if (!isWithinActivePeriod(limit.activePeriodsJson, currentMins)) {
-                            addToBox(limit.packageName, "Outside Active Hours")
+                            addToBox(newBox, limit.packageName, "Outside Active Hours")
                         }
                     }
                 }
@@ -175,19 +182,24 @@ object BlockCache {
                     // Check if group limit exceeded
                     if (limitMs > 0 && totalGroupUsage >= limitMs) {
                         val reason = "Group Limit Reached (${group.name})"
-                        packages.forEach { pkg -> addToBox(pkg, reason) }
+                        packages.forEach { pkg -> addToBox(newBox, pkg, reason) }
                     }
                     
                     // Check if outside group active hours
                     if (group.activePeriodsJson.isNotEmpty() && group.activePeriodsJson.length > 5) {
                         if (!isWithinActivePeriod(group.activePeriodsJson, currentMins)) {
                             val reason = "Outside Group Hours (${group.name})"
-                            packages.forEach { pkg -> addToBox(pkg, reason) }
+                            packages.forEach { pkg -> addToBox(newBox, pkg, reason) }
                         }
                     }
                 }
                 
                 lastUpdateTime = System.currentTimeMillis()
+                
+                // === ATOMIC SWAP ===
+                // We replace the old box with the new one instantly.
+                blockedApps = newBox
+                
                 TerminalLogger.log("BOX REBUILT: ${blockedApps.size} apps blocked")
                 
                 // === PERSIST TO DISK (Survives RAM cleanup) ===
@@ -207,6 +219,7 @@ object BlockCache {
             val prefs = context.getSharedPreferences("block_cache", Context.MODE_PRIVATE)
             val json = org.json.JSONObject()
             
+            // blockedApps is thread-safe to read
             for ((pkg, reasons) in blockedApps) {
                 json.put(pkg, org.json.JSONArray(reasons.toList()))
             }
@@ -236,7 +249,9 @@ object BlockCache {
             }
             
             val json = org.json.JSONObject(jsonStr)
-            blockedApps.clear()
+            
+            // Use temporary container for atomic swap compatibility
+            val newBox = mutableMapOf<String, MutableSet<String>>()
             
             for (key in json.keys()) {
                 val reasonsArr = json.getJSONArray(key)
@@ -244,8 +259,11 @@ object BlockCache {
                 for (i in 0 until reasonsArr.length()) {
                     reasonsSet.add(reasonsArr.getString(i))
                 }
-                blockedApps[key] = reasonsSet
+                newBox[key] = reasonsSet
             }
+            
+            // Atomic update
+            blockedApps = newBox
             
             lastUpdateTime = savedTime
             isAnyBlockingModeActive = prefs.getBoolean("is_active", false)
@@ -257,10 +275,10 @@ object BlockCache {
     
     /**
      * Add an app to the box with a reason.
-     * If app already exists, adds the new reason.
+     * Takes the target map as an argument for thread confinement.
      */
-    private fun addToBox(packageName: String, reason: String) {
-        blockedApps.getOrPut(packageName) { mutableSetOf() }.add(reason)
+    private fun addToBox(box: MutableMap<String, MutableSet<String>>, packageName: String, reason: String) {
+        box.getOrPut(packageName) { mutableSetOf() }.add(reason)
     }
     
     /**

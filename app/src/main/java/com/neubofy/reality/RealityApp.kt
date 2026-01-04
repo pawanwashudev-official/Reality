@@ -13,15 +13,8 @@ import android.app.Application.ActivityLifecycleCallbacks
 
 class RealityApp: Application() {
   override fun onCreate() {
-    // Apply Theme
-    val prefs = com.neubofy.reality.utils.SavedPreferencesLoader(this)
-    val themeMode = prefs.getThemeMode()
-    val mode = when (themeMode) {
-        1 -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
-        2 -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
-        else -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-    }
-    androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(mode)
+    // Apply Theme from ThemeManager
+    com.neubofy.reality.utils.ThemeManager.applyTheme(this)
 
     DynamicColors.applyToActivitiesIfAvailable(this)
     Thread.setDefaultUncaughtExceptionHandler(CrashLogger(this))
@@ -35,7 +28,10 @@ class RealityApp: Application() {
     super.onCreate()
     
     registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
-        override fun onActivityCreated(activity: android.app.Activity, savedInstanceState: Bundle?) {}
+        override fun onActivityCreated(activity: android.app.Activity, savedInstanceState: Bundle?) {
+            // Apply accent theme to EVERY activity
+            com.neubofy.reality.utils.ThemeManager.applyAccentTheme(activity)
+        }
         override fun onActivityStarted(activity: android.app.Activity) {
             // Optimize for High Refresh Rate (120Hz/144Hz)
             try {

@@ -86,4 +86,16 @@
     <!-- Glass Card (Light Mode: White on Grey) -->
     <color name="glass_card_color">#CCFFFFFF</color>
     <color name="glass_card_stroke_color">#1A000000</color>
+    
+    <!-- Onboarding Colors (Premium Dark Theme) -->
+    <color name="onboarding_bg">#0A0A0F</color>
+    <color name="onboarding_card_bg">#15151F</color>
+    <color name="onboarding_card_stroke">#252535</color>
+    <color name="onboarding_text_primary">#FFFFFF</color>
+    <color name="onboarding_text_secondary">#B0B0C0</color>
+    <color name="onboarding_text_hint">#707080</color>
+    <color name="onboarding_accent">#FFD700</color>
+    <color name="onboarding_icon_pending">#707080</color>
+    <color name="onboarding_icon_granted">#4CAF50</color>
+    <color name="onboarding_icon_required">#FF5252</color>
 </resources>

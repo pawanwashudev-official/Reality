@@ -32,7 +32,7 @@
                 android:text="Enable Accessibility"
                 android:textSize="28sp"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF"
+                android:textColor="?attr/colorOnSurface"
                 android:layout_marginBottom="16dp" />
 
             <!-- Description -->
@@ -41,7 +41,7 @@
                 android:layout_height="wrap_content"
                 android:text="Reality needs Accessibility permission to block apps when you're in focus mode"
                 android:textSize="14sp"
-                android:textColor="#B0B0B0"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:textAlignment="center"
                 android:layout_marginBottom="40dp" />
 
@@ -50,9 +50,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="32dp"
-                app:cardBackgroundColor="#1F1B24"
+                app:cardBackgroundColor="?attr/colorSurfaceVariant"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="#33FFFFFF"
+                app:strokeColor="?attr/colorOutline"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -65,7 +65,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Follow these steps:"
-                        android:textColor="#FFFFFF"
+                        android:textColor="?attr/colorOnSurface"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:layout_marginBottom="16dp" />
@@ -74,7 +74,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="1. Tap 'Open Settings' below"
-                        android:textColor="#B0B0B0"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:textSize="14sp"
                         android:layout_marginBottom="8dp" />
 
@@ -82,7 +82,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="2. Find 'Reality' in the list"
-                        android:textColor="#B0B0B0"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:textSize="14sp"
                         android:layout_marginBottom="8dp" />
 
@@ -90,7 +90,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="3. Enable the toggle"
-                        android:textColor="#B0B0B0"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:textSize="14sp"
                         android:layout_marginBottom="8dp" />
 
@@ -98,7 +98,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="4. Tap 'Allow' in the popup"
-                        android:textColor="#B0B0B0"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:textSize="14sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -111,16 +111,16 @@
                 android:text="Open Settings"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                app:backgroundTint="#BB86FC"
+                app:backgroundTint="?attr/colorPrimary"
                 app:cornerRadius="32dp"
-                android:textColor="#000000" />
+                android:textColor="?attr/colorOnPrimary" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="This permission is required for app blocking"
                 android:textSize="12sp"
-                android:textColor="#808080"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginTop="16dp" />
 
         </LinearLayout>

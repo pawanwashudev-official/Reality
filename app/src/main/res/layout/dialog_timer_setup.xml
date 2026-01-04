@@ -12,7 +12,7 @@
         android:text="Select Lock Duration"
         android:textSize="16sp"
         android:textStyle="bold"
-        android:textColor="#FFFFFF" 
+        android:textColor="?attr/colorOnSurface" 
         android:layout_marginBottom="16dp"/>
 
     <LinearLayout
@@ -29,7 +29,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Days"
-                android:textColor="#BB86FC"/>
+                android:textColor="?attr/colorPrimary"/>
             <NumberPicker
                 android:id="@+id/np_days"
                 android:layout_width="wrap_content"
@@ -50,7 +50,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Hours"
-                android:textColor="#BB86FC"/>
+                android:textColor="?attr/colorPrimary"/>
             <NumberPicker
                 android:id="@+id/np_hours"
                 android:layout_width="wrap_content"
@@ -63,7 +63,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Strict Mode will be LOCKED until this time passes."
-        android:textColor="#808080"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="12sp"
         android:layout_marginTop="16dp" 
         android:gravity="center"/>

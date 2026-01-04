@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:colorBackground">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?android:colorBackground"
+        app:elevation="4dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?android:colorBackground"
+            android:elevation="0dp"
+            app:navigationIcon="@drawable/baseline_arrow_back_24"
+            app:navigationIconTint="?attr/colorOnSurface"
+            app:title="Appearance"
+            app:menu="@null" /> 
+            <!-- navigationIconTint handled via theme or code usually, but can try app:navigationIconTint if supported -->
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- LIVE PREVIEW CARD -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_preview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/gray_light"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:id="@+id/preview_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    
+                    <TextView
+                        android:id="@+id/preview_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Live Preview"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+                        
+                    <TextView
+                        android:id="@+id/preview_body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="This is how your app looks. Adjust mode, accent, and custom colors below."
+                        android:layout_marginBottom="16dp"/>
+                        
+                    <Button
+                        android:id="@+id/preview_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Action Button"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- THEME MODE (System / Light / Dark) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Theme Mode"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+                
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group_mode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                android:layout_marginBottom="8dp">
+                <com.google.android.material.chip.Chip android:id="@+id/mode_system" android:text="System Default" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <com.google.android.material.chip.Chip android:id="@+id/mode_light" android:text="Light" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <com.google.android.material.chip.Chip android:id="@+id/mode_dark" android:text="Dark" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            </com.google.android.material.chip.ChipGroup>
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switch_amoled"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="AMOLED Dark Mode (Pure Black)"
+                android:layout_marginBottom="24dp"/>
+
+            <!-- Divider -->
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOutlineVariant" android:alpha="0.2" android:layout_marginBottom="24dp"/>
+
+            <!-- ACCENT COLOR -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Accent Color"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginBottom="24dp">
+                <LinearLayout
+                    android:id="@+id/container_accent_colors"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="4dp">
+                    <ImageView android:id="@+id/color_teal" android:src="@drawable/circle_shape" app:tint="#00695C" android:layout_width="48dp" android:layout_height="48dp" android:padding="8dp" android:layout_marginEnd="8dp"/>
+                    <ImageView android:id="@+id/color_purple" android:src="@drawable/circle_shape" app:tint="#651FFF" android:layout_width="48dp" android:layout_height="48dp" android:padding="8dp" android:layout_marginEnd="8dp"/>
+                    <ImageView android:id="@+id/color_blue" android:src="@drawable/circle_shape" app:tint="#2196F3" android:layout_width="48dp" android:layout_height="48dp" android:padding="8dp" android:layout_marginEnd="8dp"/>
+                    <ImageView android:id="@+id/color_pink" android:src="@drawable/circle_shape" app:tint="#E91E63" android:layout_width="48dp" android:layout_height="48dp" android:padding="8dp" android:layout_marginEnd="8dp"/>
+                    <ImageView android:id="@+id/color_orange" android:src="@drawable/circle_shape" app:tint="#FF5722" android:layout_width="48dp" android:layout_height="48dp" android:padding="8dp" android:layout_marginEnd="8dp"/>
+                    <ImageView android:id="@+id/color_cyan" android:src="@drawable/circle_shape" app:tint="#00BCD4" android:layout_width="48dp" android:layout_height="48dp" android:padding="8dp" android:layout_marginEnd="8dp"/>
+                    <ImageView android:id="@+id/color_green" android:src="@drawable/circle_shape" app:tint="#4CAF50" android:layout_width="48dp" android:layout_height="48dp" android:padding="8dp" android:layout_marginEnd="8dp"/>
+                    <ImageView android:id="@+id/color_red" android:src="@drawable/circle_shape" app:tint="#F44336" android:layout_width="48dp" android:layout_height="48dp" android:padding="8dp" android:layout_marginEnd="8dp"/>
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- PRO: POPUP BACKGROUND -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Popup Background"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp"/>
+                
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginBottom="8dp">
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chips_popup_bg"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true">
+                    <!-- Suggestions -->
+                    <com.google.android.material.chip.Chip android:text="#121212" android:tag="#121212" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#1E1E1E" android:tag="#1E1E1E" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#2C2C2C" android:tag="#2C2C2C" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#000000" android:tag="#000000" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#FFFFFF" android:tag="#FFFFFF" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                </com.google.android.material.chip.ChipGroup>
+            </HorizontalScrollView>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Custom Hex (e.g. #121212)"
+                android:layout_marginBottom="24dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/input_popup_bg"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- PRO: PRIMARY TEXT -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Primary Text Color"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp"/>
+                
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginBottom="8dp">
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chips_primary_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true">
+                    <com.google.android.material.chip.Chip android:text="#FFFFFF" android:tag="#FFFFFF" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#F0F0F0" android:tag="#F0F0F0" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#E0E0E0" android:tag="#E0E0E0" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#D1D1D1" android:tag="#D1D1D1" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#000000" android:tag="#000000" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                </com.google.android.material.chip.ChipGroup>
+            </HorizontalScrollView>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Custom Hex (e.g. #FFFFFF)"
+                android:layout_marginBottom="24dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/input_primary_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- PRO: SECONDARY TEXT -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Secondary Text Color"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp"/>
+                
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginBottom="8dp">
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chips_secondary_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true">
+                    <com.google.android.material.chip.Chip android:text="#808080" android:tag="#808080" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#A0A0A0" android:tag="#A0A0A0" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#757575" android:tag="#757575" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#9E9E9E" android:tag="#9E9E9E" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#616161" android:tag="#616161" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                </com.google.android.material.chip.ChipGroup>
+            </HorizontalScrollView>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Custom Hex (e.g. #B0B0B0)"
+                android:layout_marginBottom="24dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/input_secondary_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- ANIMATION SPEED -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Animation Speed"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+                
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_animation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="0.5"
+                android:valueTo="2.0"
+                android:stepSize="0.1"
+                android:value="1.0"
+                android:layout_marginBottom="24dp"/>
+
+            <!-- BACKGROUND & GLASS -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Background Effects"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+                
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group_pattern"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                android:layout_marginBottom="8dp">
+                <com.google.android.material.chip.Chip android:id="@+id/chip_pattern_zen" android:text="Zen Circles" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <com.google.android.material.chip.Chip android:id="@+id/chip_pattern_none" android:text="Solid Color" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <com.google.android.material.chip.Chip android:id="@+id/chip_pattern_gradient" android:text="Gradient" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            </com.google.android.material.chip.ChipGroup>
+            
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Glass Intensity"
+                android:textSize="12sp"
+                android:layout_marginBottom="4dp"/>
+                
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group_glass"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                android:layout_marginBottom="32dp">
+                <com.google.android.material.chip.Chip android:id="@+id/chip_glass_subtle" android:text="Subtle" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <com.google.android.material.chip.Chip android:id="@+id/chip_glass_light" android:text="Light" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <com.google.android.material.chip.Chip android:id="@+id/chip_glass_medium" android:text="Medium" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <com.google.android.material.chip.Chip android:id="@+id/chip_glass_strong" android:text="Strong" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            </com.google.android.material.chip.ChipGroup>
+
+            <!-- SAVE BUTTON -->
+            <Button
+                android:id="@+id/btn_save_appearance"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="Apply &amp; Restart"
+                android:textSize="16sp"
+                android:textStyle="bold"/>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Premium Back Button Background - Circular with glass effect -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    
+    <!-- Semi-transparent fill -->
+    <solid android:color="#1A000000"/>
+    
+    <!-- Subtle border -->
+    <stroke
+        android:width="1dp"
+        android:color="#33000000"/>
+    
+    <!-- Size -->
+    <size
+        android:width="40dp"
+        android:height="40dp"/>
+    
+</shape>

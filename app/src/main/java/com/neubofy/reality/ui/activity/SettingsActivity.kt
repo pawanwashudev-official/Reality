@@ -12,6 +12,7 @@ import com.neubofy.reality.Constants
 import com.neubofy.reality.R
 import com.neubofy.reality.databinding.ActivitySettingsBinding
 import com.neubofy.reality.utils.SavedPreferencesLoader
+import com.neubofy.reality.utils.ThemeManager
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -23,6 +24,8 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeManager.applyTheme(this)
+        ThemeManager.applyAccentTheme(this)
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -39,10 +42,8 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupToolbar() {
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.setDisplayShowTitleEnabled(false)
-        binding.toolbar.setNavigationOnClickListener { finish() }
+        // Using custom header instead of standard Toolbar
+        binding.btnBack.setOnClickListener { finish() }
     }
 
     private fun setupListeners() {
@@ -73,29 +74,14 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(Intent(this, StrictModeActivity::class.java))
         }
         
-        // About moved to Home Page info menu
+        // About Reality
+        binding.cardAbout.setOnClickListener {
+            startActivity(Intent(this, AboutActivity::class.java))
+        }
         
-        // Theme Selection
+        // Appearance (Pro Theme Picker)
         binding.cardTheme.setOnClickListener {
-            val modes = arrayOf("System Default", "Light Mode", "Dark Mode")
-            val currentMode = prefs.getThemeMode() // 0, 1, 2
-            
-            MaterialAlertDialogBuilder(this)
-                .setTitle("Select Theme")
-                .setSingleChoiceItems(modes, currentMode) { dialog, which ->
-                    prefs.saveThemeMode(which)
-                    updateUI()
-                    // Apply Theme Immediately
-                    val mode = when (which) {
-                        1 -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
-                        2 -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
-                        else -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-                    }
-                    androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(mode)
-                    dialog.dismiss()
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
+            startActivity(Intent(this, AppearanceActivity::class.java))
         }
 
         // Auto DND Logic
@@ -175,4 +161,8 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
     }
+    
+
+    
+
 }
