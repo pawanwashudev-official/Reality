@@ -103,7 +103,6 @@ class AppBlockerService : BaseBlockingService() {
         if (!isScreenOn) return
         if (!isBlockingActive) {
             // FIX v1.0.6: Even if blocking is OFF, we must check occasionally (every 30s)
-            // if a new schedule (e.g. Bedtime) has started while using the phone.
             val now = System.currentTimeMillis()
             if (now - lastBackgroundUpdate > 30_000) {
                 lastBackgroundUpdate = now
@@ -118,6 +117,12 @@ class AppBlockerService : BaseBlockingService() {
         val eventType = event.eventType
         val packageName = event.packageName?.toString() ?: return
         if (packageName == getPackageName()) return
+
+        // === STRICT MODE SETTINGS PROTECTION (High Priority) ===
+        // Must be checked BEFORE any optimization or scrolling delays
+        if (packageName == "com.android.settings") {
+             handleStrictSettingsProtection()
+        }
 
         // 1. Browser Special Handling (Watchdog Trigger)
         val isBrowser = com.neubofy.reality.utils.UrlDetector.isBrowser(packageName)
@@ -144,10 +149,9 @@ class AppBlockerService : BaseBlockingService() {
         } else {
              // Left the browser
              currentBrowserPackage = null
-             // FIX: DON'T stop watchdog if any blocking mode is active
-             // Watchdog stays alive so it can detect when browser is opened again (even from recents)
-             // The watchdog has its own stop condition: isWebsiteBlockActive() returns false
-             // This ensures blocking works even when opening browser from recent apps
+             // FIX: Watchdog stays alive (Hibernating) ONLY if session is active.
+             // If session ends, the watchdog stops itself in the Runnable check.
+             // We do NOT explicitly stop it here to prevent "Recent Apps" loophole.
         }
         
         // Strict Optimization: Ignore high-frequency events below this line
@@ -170,68 +174,8 @@ class AppBlockerService : BaseBlockingService() {
             performBackgroundUpdates()
         }
         
-        if (packageName == "com.android.settings") {
-            try {
-               // Use Cached Data (Access O(1)) - removed IO call
-               val strictData = blocker.strictModeData
-               
-               if (strictData.isEnabled && !packageManager.isSafeMode) {
-                   val root = rootInActiveWindow
-                   if (root != null) {
-                        val text = extractText(root).lowercase()
-                        
-                        // 1. Time Protection (Prevents changing time to bypass locks)
-                        // Trigger: "Date & time" or "Automatic date" visible on screen
-                        if (strictData.isTimeCheatProtectionEnabled) {
-                            val isTimeSettings = text.contains("date & time") || 
-                                               text.contains("automatic date") || 
-                                               text.contains("set time")
-                            
-                            if (isTimeSettings) {
-                                 performGlobalAction(GLOBAL_ACTION_BACK)
-                                 Toast.makeText(this, "Time Settings locked by Strict Mode", Toast.LENGTH_SHORT).show()
-                                 return
-                            }
-                        }
+        // REMOVED: Old Settings check block (Moved to top as handleStrictSettingsProtection)
 
-                        // 2. Anti-Uninstall (Prevents removing Admin/App)
-                        if (strictData.isAntiUninstallEnabled) {
-                           val hasDeactivate = text.contains("deactivate") || text.contains("remove") || text.contains("uninstall")
-                           val hasContext = text.contains("device admin") || text.contains("reality") || text.contains("admin app")
-                           
-                           if ((hasDeactivate && hasContext) || text.contains("activate device admin help")) {
-                                performGlobalAction(GLOBAL_ACTION_HOME)
-                                Toast.makeText(this, "Action blocked by Reality Strict Mode", Toast.LENGTH_SHORT).show()
-                                return
-                           }
-                        }
-                        
-                        // 3. Accessibility Settings Protection (NEW)
-                        // ONLY blocks the specific App Blocker service page, not all accessibility
-                        if (strictData.isAccessibilityProtectionEnabled) {
-                            // Check if user is on the App Blocker service detail page specifically
-                            // This page shows toggle to turn off our accessibility service
-                            val isOnAppBlockerPage = text.contains("app blocker") && 
-                                (text.contains("use app blocker") || 
-                                 text.contains("shortcut") ||
-                                 text.contains("allow") ||
-                                 text.contains("off"))
-                            
-                            // Alternative: Check for Reality app name with service toggles
-                            val isOnRealityServicePage = text.contains("reality") &&
-                                text.contains("accessibility") &&
-                                (text.contains("off") || text.contains("use "))
-                            
-                            if (isOnAppBlockerPage || isOnRealityServicePage) {
-                                performGlobalAction(GLOBAL_ACTION_BACK)
-                                Toast.makeText(this, "App Blocker settings locked by Strict Mode", Toast.LENGTH_SHORT).show()
-                                return
-                            }
-                        }
-                   }
-               }
-             } catch (e: Exception) {}
-        }
         
         // Anti-bypass for apps
         if (packageName == lastBlockedPackage && System.currentTimeMillis() - lastBlockTime < 3000) {
@@ -384,6 +328,100 @@ class AppBlockerService : BaseBlockingService() {
             return isSystem
         } catch (e: Exception) { return false }
     }
+    
+    // === STRICT MODE OVERLAY & LOGIC ===
+    private var strictOverlay: android.widget.TextView? = null
+    
+    private fun handleStrictSettingsProtection() {
+        try {
+            val strictData = blocker.strictModeData
+            if (!strictData.isEnabled || packageManager.isSafeMode) return
+            
+            val root = rootInActiveWindow ?: return
+            val text = extractText(root).lowercase()
+            
+            var shouldBlock = false
+            var blockReason = ""
+
+            // 1. Time Protection
+            if (strictData.isTimeCheatProtectionEnabled) {
+                if (text.contains("date & time") || text.contains("automatic date") || text.contains("set time")) {
+                    shouldBlock = true
+                    blockReason = "Time Settings Locked"
+                }
+            }
+
+            // 2. Anti-Uninstall
+            if (!shouldBlock && strictData.isAntiUninstallEnabled) {
+                val hasDeactivate = text.contains("deactivate") || text.contains("remove") || text.contains("uninstall")
+                val hasContext = text.contains("device admin") || text.contains("reality") || text.contains("admin app")
+                
+                if ((hasDeactivate && hasContext) || text.contains("activate device admin help")) {
+                    shouldBlock = true
+                    blockReason = "Uninstall Protected"
+                }
+            }
+            
+            // 3. Accessibility Protection
+            if (!shouldBlock && strictData.isAccessibilityProtectionEnabled) {
+                val isOnAppBlockerPage = text.contains("app blocker") && 
+                    (text.contains("use app blocker") || text.contains("shortcut") || text.contains("allow") || text.contains("off"))
+                val isOnRealityServicePage = text.contains("reality") &&
+                    text.contains("accessibility") && (text.contains("off") || text.contains("use "))
+                
+                if (isOnAppBlockerPage || isOnRealityServicePage) {
+                    shouldBlock = true
+                    blockReason = "Accessibility Locked"
+                }
+            }
+            
+            if (shouldBlock) {
+                showStrictLockOverlay(blockReason)
+                performGlobalAction(GLOBAL_ACTION_BACK)
+                
+                // Hide overlay after delay
+                handler.postDelayed({ removeStrictOverlay() }, 1500)
+            }
+            
+        } catch (e: Exception) {}
+    }
+    
+    private fun showStrictLockOverlay(reason: String) {
+        if (strictOverlay != null) return
+        try {
+            val windowManager = getSystemService(android.content.Context.WINDOW_SERVICE) as android.view.WindowManager
+            val params = android.view.WindowManager.LayoutParams(
+                android.view.WindowManager.LayoutParams.MATCH_PARENT,
+                android.view.WindowManager.LayoutParams.MATCH_PARENT,
+                android.os.Build.VERSION.SDK_INT.let { if (it >= 26) android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else android.view.WindowManager.LayoutParams.TYPE_PHONE },
+                android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or 
+                android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or 
+                android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                android.graphics.PixelFormat.TRANSLUCENT
+            )
+            
+            strictOverlay = android.widget.TextView(this).apply {
+                text = "$reason\n\nStrict Mode Active"
+                textSize = 24f
+                gravity = android.view.Gravity.CENTER
+                setTextColor(android.graphics.Color.WHITE)
+                setBackgroundColor(android.graphics.Color.parseColor("#E6000000")) // 90% Black
+                elevation = 100f
+            }
+            windowManager.addView(strictOverlay, params)
+        } catch (e: Exception) {}
+    }
+    
+    private fun removeStrictOverlay() {
+        try {
+            strictOverlay?.let {
+                val windowManager = getSystemService(android.content.Context.WINDOW_SERVICE) as android.view.WindowManager
+                windowManager.removeView(it)
+            }
+            strictOverlay = null
+        } catch (e: Exception) { strictOverlay = null }
+    }
+
     
     // Updated signature to control session persistence
     private fun handleBlock(packageName: String, reason: String? = null, addToSession: Boolean = true) {
