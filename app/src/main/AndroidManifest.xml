@@ -199,18 +199,7 @@
                 android:resource="@xml/app_blocker_service_config" />
         </service>
 
-        <service
-            android:name=".services.GeneralFeaturesService"
-            android:exported="true"
-            android:label="General Features"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/general_features_service_config" />
-        </service>
+        <!-- GeneralFeaturesService REMOVED - logic merged into AppBlockerService -->
 
         <service
             android:name=".services.AlarmService"

@@ -36,7 +36,6 @@ import com.neubofy.reality.databinding.DialogPermissionInfoBinding
 import com.neubofy.reality.databinding.DialogRemoveAntiUninstallBinding
 
 import com.neubofy.reality.services.AppBlockerService
-import com.neubofy.reality.services.GeneralFeaturesService
 import com.neubofy.reality.ui.dialogs.StartFocusMode
 import com.neubofy.reality.ui.fragments.anti_uninstall.ChooseModeFragment
 import com.neubofy.reality.ui.fragments.installation.AccessibilityGuide
@@ -492,7 +491,7 @@ class MainActivity : AppCompatActivity() {
         isDeviceAdminOn = dpm.isAdminActive(adminComponent)
 
         val isAppBlockerOn = isAccessibilityServiceEnabled(AppBlockerService::class.java)
-        isGeneralSettingsOn = isAccessibilityServiceEnabled(GeneralFeaturesService::class.java)
+        isGeneralSettingsOn = isAccessibilityServiceEnabled(AppBlockerService::class.java)
 
         val antiUninstallPrefs = getSharedPreferences("anti_uninstall", Context.MODE_PRIVATE)
         isAntiUninstallOn = antiUninstallPrefs.getBoolean("is_anti_uninstall_on", false)
@@ -651,7 +650,7 @@ class MainActivity : AppCompatActivity() {
                  // Expired - Turn Off
                  data.isEnabled = false
                  savedPreferencesLoader.saveStrictModeData(data)
-                 sendRefreshRequest(GeneralFeaturesService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL)
+                 sendRefreshRequest(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL)
                  Snackbar.make(binding.root, "Strict Mode Expired & Removed", Snackbar.LENGTH_SHORT).show()
                  checkPermissions()
             }
@@ -667,7 +666,7 @@ class MainActivity : AppCompatActivity() {
                     if (entered == data.passwordHash) {
                         data.isEnabled = false
                         savedPreferencesLoader.saveStrictModeData(data)
-                        sendRefreshRequest(GeneralFeaturesService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL)
+                        sendRefreshRequest(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL)
                         Snackbar.make(binding.root, "Strict Mode Removed", Snackbar.LENGTH_SHORT).show()
                         checkPermissions()
                     } else {
@@ -685,7 +684,7 @@ class MainActivity : AppCompatActivity() {
                          .setMessage("Strict Mode switched to 12-Hour Timer. You can unlock after 12 hours.")
                          .setPositiveButton("OK", null)
                          .show()
-                     sendRefreshRequest(GeneralFeaturesService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL)
+                     sendRefreshRequest(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL)
                 }
                 .setNegativeButton("Cancel", null)
                 .show()

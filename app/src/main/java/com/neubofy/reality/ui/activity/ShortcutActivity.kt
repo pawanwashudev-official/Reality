@@ -7,7 +7,7 @@ import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.neubofy.reality.services.GeneralFeaturesService
+import com.neubofy.reality.services.AppBlockerService
 import com.neubofy.reality.ui.dialogs.StartFocusMode
 import com.neubofy.reality.utils.SavedPreferencesLoader
 
@@ -24,10 +24,10 @@ class ShortcutActivity : AppCompatActivity() {
             finish()
         }
 
-        val isGeneralSettingsOn = isAccessibilityServiceEnabled(GeneralFeaturesService::class.java)
+        val isGeneralSettingsOn = isAccessibilityServiceEnabled(AppBlockerService::class.java)
         if(!isGeneralSettingsOn){
-            Toast.makeText(this,"Find 'General Features' and press enable",Toast.LENGTH_LONG).show()
-            openAccessibilityServiceScreen(cls = GeneralFeaturesService::class.java)
+            Toast.makeText(this,"Find 'App Blocker' and press enable",Toast.LENGTH_LONG).show()
+            openAccessibilityServiceScreen(cls = AppBlockerService::class.java)
             finish()
         }
         StartFocusMode(savedPreferencesLoader, onPositiveButtonPressed = {

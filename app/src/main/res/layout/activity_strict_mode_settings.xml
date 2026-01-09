@@ -187,9 +187,19 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Block Time Changes"
-                        android:checked="true"
-                        android:layout_marginBottom="8dp"
+                        android:checked="false"
+                        android:layout_marginBottom="4dp"
                         android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+                    
+                    <TextView
+                        android:id="@+id/tvTimeCheatStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⚠️ Learning required"
+                        android:paddingStart="16dp"
+                        android:layout_marginBottom="12dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
 
                     <com.google.android.material.materialswitch.MaterialSwitch
                         android:id="@+id/switchAccessibilityProtection"
@@ -197,7 +207,36 @@
                         android:layout_height="wrap_content"
                         android:text="Block Accessibility Settings"
                         android:checked="false"
+                        android:layout_marginBottom="4dp"
                         android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+                    
+                    <TextView
+                        android:id="@+id/tvAccessibilityStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⚠️ Learning required"
+                        android:paddingStart="16dp"
+                        android:layout_marginBottom="12dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+                        
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchAppInfoProtection"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Block App Info Page"
+                        android:checked="false"
+                        android:layout_marginBottom="4dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+                    
+                    <TextView
+                        android:id="@+id/tvAppInfoStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⚠️ Learning required"
+                        android:paddingStart="16dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

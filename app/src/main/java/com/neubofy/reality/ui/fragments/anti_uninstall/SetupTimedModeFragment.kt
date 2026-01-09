@@ -10,7 +10,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.neubofy.reality.Constants
 import com.neubofy.reality.R
 import com.neubofy.reality.databinding.FragmentSetupTimedModeBinding
-import com.neubofy.reality.services.GeneralFeaturesService
+import com.neubofy.reality.services.AppBlockerService
 import com.neubofy.reality.utils.SavedPreferencesLoader
 import android.content.Intent
 
@@ -65,7 +65,7 @@ class SetupTimedModeFragment : Fragment() {
         )
         loader.saveStrictModeData(data)
         
-        requireContext().sendBroadcast(Intent(GeneralFeaturesService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL))
+        requireContext().sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL))
         Toast.makeText(requireContext(), "Strict Mode Enabled for 12 Hours", Toast.LENGTH_SHORT).show()
         activity?.finish()
     }

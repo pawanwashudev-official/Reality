@@ -22,6 +22,9 @@ object TerminalLogger {
         val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
         val entry = "> [$time] $msg"
         
+        // Also log to Android logcat for debugging
+        android.util.Log.d("RealityDebug", msg)
+        
         synchronized(logList) {
             logList.add(entry)
             if (logList.size > 15) logList.removeFirst()

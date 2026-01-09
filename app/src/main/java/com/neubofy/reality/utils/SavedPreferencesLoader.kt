@@ -123,6 +123,24 @@ class SavedPreferencesLoader(private val context: Context) {
         return gson.fromJson(json, type)
     }
     
+    // Learned Settings Pages (for Settings Page Learning feature)
+    fun saveLearnedSettingsPages(data: Constants.LearnedSettingsPages) {
+        val sharedPreferences = context.getSharedPreferences("strict_mode", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putString("learned_pages", gson.toJson(data)).apply()
+    }
+    
+    fun getLearnedSettingsPages(): Constants.LearnedSettingsPages {
+        val sharedPreferences = context.getSharedPreferences("strict_mode", Context.MODE_PRIVATE)
+        val json = sharedPreferences.getString("learned_pages", null)
+        if (json.isNullOrEmpty()) return Constants.LearnedSettingsPages()
+        return try {
+            val type = object : TypeToken<Constants.LearnedSettingsPages>() {}.type
+            gson.fromJson(json, type)
+        } catch (e: Exception) {
+            Constants.LearnedSettingsPages()
+        }
+    }
+    
     // Auto DND
     fun saveAutoDndEnabled(enabled: Boolean) {
         val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)

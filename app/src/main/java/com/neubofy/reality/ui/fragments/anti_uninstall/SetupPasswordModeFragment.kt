@@ -11,7 +11,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.neubofy.reality.Constants
 import com.neubofy.reality.R
 import com.neubofy.reality.databinding.FragmentSetupPasswordModeBinding
-import com.neubofy.reality.services.GeneralFeaturesService
+import com.neubofy.reality.services.AppBlockerService
 
 class SetupPasswordModeFragment : Fragment() {
 
@@ -67,7 +67,7 @@ class SetupPasswordModeFragment : Fragment() {
             commit()
         }
 
-        val intent = Intent(GeneralFeaturesService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL)
+        val intent = Intent(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL)
         activity?.sendBroadcast(intent)
 
         activity?.finish()

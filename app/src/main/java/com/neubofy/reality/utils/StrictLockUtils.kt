@@ -28,6 +28,11 @@ object StrictLockUtils {
         
         if (!data.isEnabled) return false
         
+        // MODE_NONE means instant deactivation is allowed, but protection is STILL ACTIVE
+        if (data.modeType == Constants.StrictModeData.MODE_NONE) {
+            return true // <-- FIX: No-lock mode is still active!
+        }
+        
         if (data.modeType == Constants.StrictModeData.MODE_TIMER) {
              // Active if time hasn't passed
              return System.currentTimeMillis() < data.timerEndTime

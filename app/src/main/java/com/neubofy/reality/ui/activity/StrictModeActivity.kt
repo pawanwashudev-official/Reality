@@ -33,10 +33,11 @@ class StrictModeActivity : AppCompatActivity() {
     private lateinit var binding: ActivityStrictModeSettingsBinding
     private lateinit var prefsLoader: SavedPreferencesLoader
     private lateinit var strictData: Constants.StrictModeData
+    private lateinit var learnedPages: Constants.LearnedSettingsPages
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var adminComponent: ComponentName
     
-    private var countdownTimer: CountDownTimer? = null
+    private var countdownTimer: CountDownTimer?= null
     
     companion object {
         const val REQUEST_ADMIN_PERMISSION = 1001
@@ -50,6 +51,7 @@ class StrictModeActivity : AppCompatActivity() {
         
         prefsLoader = SavedPreferencesLoader(this)
         strictData = prefsLoader.getStrictModeData()
+        learnedPages = prefsLoader.getLearnedSettingsPages()
         devicePolicyManager = getSystemService(DEVICE_POLICY_SERVICE) as DevicePolicyManager
         adminComponent = ComponentName(this, AdminLockReceiver::class.java)
         
@@ -83,6 +85,38 @@ class StrictModeActivity : AppCompatActivity() {
         binding.switchCalendarLock.isChecked = strictData.isCalendarLocked
         binding.switchAntiTimeCheat.isChecked = strictData.isTimeCheatProtectionEnabled
         binding.switchAccessibilityProtection.isChecked = strictData.isAccessibilityProtectionEnabled
+        binding.switchAppInfoProtection.isChecked = strictData.isAppInfoProtectionEnabled
+        
+        updateLearningStatus()
+    }
+    
+    private fun updateLearningStatus() {
+        // Time Cheat Status
+        if (learnedPages.timeSettingsPageClass.isNotEmpty()) {
+            binding.tvTimeCheatStatus.text = "✓ Learned: ${learnedPages.timeSettingsPageClass.substringAfterLast(".")}"
+            binding.tvTimeCheatStatus.setTextColor(getColor(android.R.color.holo_green_dark))
+        } else {
+            binding.tvTimeCheatStatus.text = "⚠️ Learning required - tap to learn"
+            binding.tvTimeCheatStatus.setTextColor(getColor(android.R.color.holo_orange_dark))
+        }
+        
+        // Accessibility Status
+        if (learnedPages.accessibilityPageClass.isNotEmpty()) {
+            binding.tvAccessibilityStatus.text = "✓ Learned: ${learnedPages.accessibilityPageClass.substringAfterLast(".")}"
+            binding.tvAccessibilityStatus.setTextColor(getColor(android.R.color.holo_green_dark))
+        } else {
+            binding.tvAccessibilityStatus.text = "⚠️ Learning required - tap to learn"
+            binding.tvAccessibilityStatus.setTextColor(getColor(android.R.color.holo_orange_dark))
+        }
+        
+        // App Info Status
+        if (learnedPages.appInfoPageClass.isNotEmpty()) {
+            binding.tvAppInfoStatus.text = "✓ Learned: ${learnedPages.appInfoPageClass.substringAfterLast(".")}"
+            binding.tvAppInfoStatus.setTextColor(getColor(android.R.color.holo_green_dark))
+        } else {
+            binding.tvAppInfoStatus.text = "⚠️ Learning required - tap to learn"
+            binding.tvAppInfoStatus.setTextColor(getColor(android.R.color.holo_orange_dark))
+        }
     }
     
     private fun updateUIState() {
@@ -183,7 +217,8 @@ class StrictModeActivity : AppCompatActivity() {
             binding.switchAutoDndLock to { v: Boolean -> strictData.isAutoDndLocked = v },
             binding.switchCalendarLock to { v: Boolean -> strictData.isCalendarLocked = v },
             binding.switchAntiTimeCheat to { v: Boolean -> strictData.isTimeCheatProtectionEnabled = v },
-            binding.switchAccessibilityProtection to { v: Boolean -> strictData.isAccessibilityProtectionEnabled = v }
+            binding.switchAccessibilityProtection to { v: Boolean -> strictData.isAccessibilityProtectionEnabled = v },
+            binding.switchAppInfoProtection to { v: Boolean -> strictData.isAppInfoProtectionEnabled = v }
         )
         
         switches.forEach { (switchView, updateFunc) ->
@@ -197,7 +232,75 @@ class StrictModeActivity : AppCompatActivity() {
                 } else {
                     updateFunc(switchView.isChecked)
                     saveSettings()
+                    
+                    // Trigger learning for specific protections when turned ON
+                    if (switchView.isChecked) {
+                        when (switchView) {
+                            binding.switchAccessibilityProtection -> showLearnAccessibilityDialog()
+                            binding.switchAntiTimeCheat -> showLearnTimeSettingsDialog()
+                            binding.switchAppInfoProtection -> showLearnAppInfoDialog()
+                        }
+                    }
                 }
+            }
+        }
+        
+        // Learning status tap - show manage dialog (only if Strict Mode OFF)
+        binding.tvTimeCheatStatus.setOnClickListener {
+            if (strictData.isEnabled) {
+                Toast.makeText(this, "Cannot modify learning while Strict Mode is active!", Toast.LENGTH_SHORT).show()
+            } else {
+                showLearningManageDialog(
+                    Constants.PageType.TIME_SETTINGS,
+                    learnedPages.timeSettingsPageClass,
+                    { showLearnTimeSettingsDialog() },
+                    { 
+                        learnedPages.timeSettingsPageClass = ""
+                        prefsLoader.saveLearnedSettingsPages(learnedPages)
+                        binding.switchAntiTimeCheat.isChecked = false
+                        strictData.isTimeCheatProtectionEnabled = false
+                        saveSettings()
+                        updateLearningStatus()
+                    }
+                )
+            }
+        }
+        binding.tvAccessibilityStatus.setOnClickListener {
+            if (strictData.isEnabled) {
+                Toast.makeText(this, "Cannot modify learning while Strict Mode is active!", Toast.LENGTH_SHORT).show()
+            } else {
+                showLearningManageDialog(
+                    Constants.PageType.ACCESSIBILITY,
+                    learnedPages.accessibilityPageClass,
+                    { showLearnAccessibilityDialog() },
+                    { 
+                        learnedPages.accessibilityPageClass = ""
+                        prefsLoader.saveLearnedSettingsPages(learnedPages)
+                        binding.switchAccessibilityProtection.isChecked = false
+                        strictData.isAccessibilityProtectionEnabled = false
+                        saveSettings()
+                        updateLearningStatus()
+                    }
+                )
+            }
+        }
+        binding.tvAppInfoStatus.setOnClickListener {
+            if (strictData.isEnabled) {
+                Toast.makeText(this, "Cannot modify learning while Strict Mode is active!", Toast.LENGTH_SHORT).show()
+            } else {
+                showLearningManageDialog(
+                    Constants.PageType.APP_INFO,
+                    learnedPages.appInfoPageClass,
+                    { showLearnAppInfoDialog() },
+                    { 
+                        learnedPages.appInfoPageClass = ""
+                        prefsLoader.saveLearnedSettingsPages(learnedPages)
+                        binding.switchAppInfoProtection.isChecked = false
+                        strictData.isAppInfoProtectionEnabled = false
+                        saveSettings()
+                        updateLearningStatus()
+                    }
+                )
             }
         }
         
@@ -495,7 +598,9 @@ class StrictModeActivity : AppCompatActivity() {
     
     private fun saveSettings() {
         prefsLoader.saveStrictModeData(strictData)
+        // Send BOTH refresh broadcasts so blocker gets updated data
         sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
+        sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL))
     }
     
     private fun hashPassword(password: String): String {
@@ -536,9 +641,130 @@ class StrictModeActivity : AppCompatActivity() {
                 strictData.isAntiUninstallEnabled = true
                 saveSettings()
                 Toast.makeText(this, "Anti-Uninstall Protection Enabled", Toast.LENGTH_SHORT).show()
+                // Trigger learning for Device Admin page
+                showLearnPageDialog(
+                    pageType = Constants.PageType.DEVICE_ADMIN,
+                    title = "Learn Device Admin Page",
+                    description = "Let us learn your device's Device Admin settings page so we can block it.",
+                    settingsAction = android.provider.Settings.ACTION_SECURITY_SETTINGS
+                )
             } else {
                 binding.switchAntiUninstall.isChecked = false
             }
+        }
+    }
+    
+    // === SETTINGS PAGE LEARNING ===
+    private fun showLearnPageDialog(
+        pageType: Constants.PageType,
+        title: String,
+        description: String,
+        settingsAction: String
+    ) {
+        // Check if already learned
+        val alreadyLearned = when (pageType) {
+            Constants.PageType.ACCESSIBILITY -> learnedPages.accessibilityPageClass.isNotEmpty()
+            Constants.PageType.DEVICE_ADMIN -> learnedPages.deviceAdminPageClass.isNotEmpty()
+            Constants.PageType.APP_INFO -> learnedPages.appInfoPageClass.isNotEmpty()
+            Constants.PageType.TIME_SETTINGS -> learnedPages.timeSettingsPageClass.isNotEmpty()
+            Constants.PageType.DEVELOPER_OPTIONS -> learnedPages.developerOptionsPageClass.isNotEmpty()
+        }
+        
+        if (alreadyLearned) {
+            // Already learned, skip dialog
+            return
+        }
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle(title)
+            .setMessage("$description\n\nA floating button will appear. Navigate to the exact page you want to block, then tap 'Block This'.")
+            .setPositiveButton("Start Learning") { _, _ ->
+                // Send broadcast to start learning mode
+                val intent = Intent(AppBlockerService.INTENT_ACTION_START_LEARNING)
+                intent.putExtra(AppBlockerService.EXTRA_PAGE_TYPE, pageType.name)
+                sendBroadcast(intent)
+                
+                // Open the settings page
+                try {
+                    startActivity(Intent(settingsAction))
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Could not open Settings. Please navigate manually.", Toast.LENGTH_LONG).show()
+                }
+            }
+            .setNegativeButton("Skip") { _, _ -> }
+            .show()
+    }
+    
+    private fun showLearnAccessibilityDialog() {
+        showLearnPageDialog(
+            pageType = Constants.PageType.ACCESSIBILITY,
+            title = "Learn Accessibility Page",
+            description = "Let us learn your device's Accessibility settings page so we can protect it.",
+            settingsAction = android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS
+        )
+    }
+    
+    private fun showLearnTimeSettingsDialog() {
+        showLearnPageDialog(
+            pageType = Constants.PageType.TIME_SETTINGS,
+            title = "Learn Time Settings Page",
+            description = "Let us learn your device's Date & Time settings page to prevent time cheating.",
+            settingsAction = android.provider.Settings.ACTION_DATE_SETTINGS
+        )
+    }
+    
+    private fun showLearnAppInfoDialog() {
+        showLearnPageDialog(
+            pageType = Constants.PageType.APP_INFO,
+            title = "Learn App Info Page",
+            description = "Navigate to Reality's App Info page (Settings → Apps → Reality). This blocks Force Stop and Uninstall.",
+            settingsAction = android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+        )
+    }
+    
+    private fun showLearningManageDialog(
+        pageType: Constants.PageType,
+        currentLearning: String,
+        onRelearn: () -> Unit,
+        onDelete: () -> Unit
+    ) {
+        if (currentLearning.isEmpty()) {
+            // No learning yet - just start learning
+            onRelearn()
+            return
+        }
+        
+        // Check if toggle is ON - delete not allowed
+        val isToggleOn = when (pageType) {
+            Constants.PageType.TIME_SETTINGS -> strictData.isTimeCheatProtectionEnabled
+            Constants.PageType.ACCESSIBILITY -> strictData.isAccessibilityProtectionEnabled
+            Constants.PageType.APP_INFO -> strictData.isAppInfoProtectionEnabled
+            Constants.PageType.DEVICE_ADMIN -> strictData.isAntiUninstallEnabled
+            else -> false
+        }
+        
+        val pageName = currentLearning.substringAfterLast(".")
+        
+        if (isToggleOn) {
+            // Toggle is ON - only allow re-learn, not delete
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Page Learned")
+                .setMessage("Currently blocking: $pageName\n\nTo delete this learning, first turn OFF the protection toggle.")
+                .setPositiveButton("Re-learn") { _, _ -> onRelearn() }
+                .setNegativeButton("Cancel", null)
+                .show()
+        } else {
+            // Toggle is OFF - allow both re-learn and delete
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Manage Learned Page")
+                .setMessage("Currently learned: $pageName")
+                .setPositiveButton("Re-learn") { _, _ -> onRelearn() }
+                .setNegativeButton("Delete") { _, _ -> 
+                    onDelete()
+                    Toast.makeText(this, "Learning deleted", Toast.LENGTH_SHORT).show()
+                }
+                .setNeutralButton("Cancel", null)
+                .show()
         }
     }
 }

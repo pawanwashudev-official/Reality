@@ -79,8 +79,11 @@ class Constants {
         var isGroupLimitLocked: Boolean = true,
         var isScheduleLocked: Boolean = true,
         
-        // Anti-Uninstall Protection
+        // Anti-Uninstall Protection (Device Admin page)
         var isAntiUninstallEnabled: Boolean = false,
+        
+        // App Info Protection (Force Stop / Uninstall page)
+        var isAppInfoProtectionEnabled: Boolean = false,
         
         // Anti-Time Cheat
         var isTimeCheatProtectionEnabled: Boolean = true,
@@ -91,7 +94,7 @@ class Constants {
         // Lock Auto DND
         var isAutoDndLocked: Boolean = true,
         
-        // Accessibility Protection (NEW) - Prevents disabling accessibility service
+        // Accessibility Protection - Prevents disabling accessibility service
         var isAccessibilityProtectionEnabled: Boolean = false,
         
         // Lock Calendar Sync - Prevents disconnecting calendar when strict mode is active
@@ -107,5 +110,29 @@ class Constants {
         val id: String = java.util.UUID.randomUUID().toString(),
         val message: String,
         val tags: List<String> = listOf("ALL") // "FOCUS", "BEDTIME", "LIMIT", "STRICT"
+    )
+    
+    // Settings Page Learning - Device-specific class names
+    enum class PageType {
+        ACCESSIBILITY,
+        DEVICE_ADMIN,
+        APP_INFO,
+        TIME_SETTINGS,
+        DEVELOPER_OPTIONS
+    }
+    
+    data class LearnedSettingsPages(
+        var accessibilityPageClass: String = "",
+        var deviceAdminPageClass: String = "",
+        var appInfoPageClass: String = "",
+        var timeSettingsPageClass: String = "",
+        var developerOptionsPageClass: String = "",
+        
+        // User can add custom pages to block
+        var customBlockedPages: MutableSet<String> = mutableSetOf(),
+        
+        // Penalty tracking
+        var lastPenaltyTime: Long = 0,
+        var consecutiveAttempts: Int = 0
     )
 }

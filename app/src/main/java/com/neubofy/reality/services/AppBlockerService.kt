@@ -17,6 +17,7 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
 import android.provider.Settings
+import com.neubofy.reality.R
 import com.neubofy.reality.data.ScheduleManager
 import com.neubofy.reality.ui.overlay.ReminderOverlayManager
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +31,10 @@ class AppBlockerService : BaseBlockingService() {
 
     companion object {
         const val INTENT_ACTION_REFRESH_FOCUS_MODE = "com.neubofy.reality.refresh.focus_mode"
-        // REMOVED: INTENT_ACTION_BLOCK_APP_COOLDOWN - Proceed Anyway bypass removed
+        const val INTENT_ACTION_REFRESH_ANTI_UNINSTALL = "com.neubofy.reality.refresh.anti_uninstall"
+        const val INTENT_ACTION_START_LEARNING = "com.neubofy.reality.start.learning"
+        const val INTENT_ACTION_STOP_LEARNING = "com.neubofy.reality.stop.learning"
+        const val EXTRA_PAGE_TYPE = "page_type"
     }
 
     private var warningConfig = Constants.WarningData()
@@ -74,12 +78,50 @@ class AppBlockerService : BaseBlockingService() {
     
     // PERSISTENT blocked packages for current session (prevents 2-min bypass)
     private val sessionBlockedPackages = mutableSetOf<String>()
+    
+    // === SETTINGS PAGE LEARNING ===
+    private var isLearningMode = false
+    private var currentLearningPageType: Constants.PageType? = null
+    private var learnOverlay: android.view.View? = null
+    private var penaltyOverlay: android.view.View? = null
+    private var penaltyTimer: android.os.CountDownTimer? = null
+    private var lastWindowClassName: String = ""
+    private var lastWindowPackage: String = ""
+    var learnedSettingsPages = Constants.LearnedSettingsPages()
+
 
     private val refreshReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 INTENT_ACTION_REFRESH_FOCUS_MODE -> refreshSettings()
-                // REMOVED: Cooldown handler - Proceed Anyway bypass removed
+                INTENT_ACTION_REFRESH_ANTI_UNINSTALL -> {
+                    // Immediately reload Strict Mode data when user changes settings
+                    try {
+                        blocker.strictModeData = savedPreferencesLoader.getStrictModeData()
+                        learnedSettingsPages = savedPreferencesLoader.getLearnedSettingsPages()
+                        com.neubofy.reality.utils.TerminalLogger.log("STRICT: Reloaded settings - enabled=${blocker.strictModeData.isEnabled}")
+                    } catch (e: Exception) {
+                        com.neubofy.reality.utils.TerminalLogger.log("STRICT: Error reloading - ${e.message}")
+                    }
+                }
+                INTENT_ACTION_START_LEARNING -> {
+                    val pageTypeName = intent.getStringExtra(EXTRA_PAGE_TYPE)
+                    if (pageTypeName != null) {
+                        try {
+                            currentLearningPageType = Constants.PageType.valueOf(pageTypeName)
+                            isLearningMode = true
+                            showLearnConfirmOverlay()
+                            com.neubofy.reality.utils.TerminalLogger.log("LEARN: Started for $pageTypeName")
+                        } catch (e: Exception) {
+                            com.neubofy.reality.utils.TerminalLogger.log("LEARN: Invalid page type - $pageTypeName")
+                        }
+                    }
+                }
+                INTENT_ACTION_STOP_LEARNING -> {
+                    isLearningMode = false
+                    currentLearningPageType = null
+                    removeLearnOverlay()
+                }
                 Intent.ACTION_SCREEN_OFF -> {
                     isScreenOn = false
                     stopBrowserCheckTimer() // Save battery when screen off
@@ -101,26 +143,61 @@ class AppBlockerService : BaseBlockingService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (!isScreenOn) return
+        
+        // Capture window class for learning mode and strict mode
+        if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            val className = event.className?.toString() ?: ""
+            val pkg = event.packageName?.toString() ?: ""
+            lastWindowClassName = className
+            lastWindowPackage = pkg
+            
+            // Log only Settings-related packages to reduce noise
+            if (pkg.contains("settings") || pkg.contains("android.settings")) {
+                com.neubofy.reality.utils.TerminalLogger.log("SETTINGS: ${className.substringAfterLast(".")}")
+            }
+            
+            // Update learning overlay when user navigates
+            if (isLearningMode && learnOverlay != null) {
+                handler.post { updateLearnOverlayText() }
+            }
+        }
+        
+        // FIX for App Info: Text content often loads AFTER the window state change.
+        // We must check strict protection on content changes too, but only for Settings.
+        if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED ||
+            event?.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
+            val pkg = event.packageName?.toString() ?: ""
+            if ((pkg.contains("settings") || pkg.contains("android.settings")) && !isLearningMode) {
+                // Throttle: don't check too often (every 200ms)
+                val now = System.currentTimeMillis()
+                if (now - lastStrictBlockTime > 200) { 
+                     // We reuse handleStrictSettingsProtection logic which has its own checks
+                     handleStrictSettingsProtection()
+                     lastStrictBlockTime = now
+                }
+            }
+        }
+        
         if (!isBlockingActive) {
-            // FIX v1.0.6: Even if blocking is OFF, we must check occasionally (every 30s)
+            // Check occasionally (every 30s)
             val now = System.currentTimeMillis()
             if (now - lastBackgroundUpdate > 30_000) {
                 lastBackgroundUpdate = now
                 performBackgroundUpdates()
             }
-            // If still inactive after update, THEN return
-            if (!isBlockingActive) return
         }
         scanEventsCount++
         
         if (event == null) return
         val eventType = event.eventType
         val packageName = event.packageName?.toString() ?: return
-        if (packageName == getPackageName()) return
-
+        if (packageName == this.packageName) return
         // === STRICT MODE SETTINGS PROTECTION (High Priority) ===
         // Must be checked BEFORE any optimization or scrolling delays
-        if (packageName == "com.android.settings") {
+        // Also check related settings packages
+        val isSettingsPackage = packageName == "com.android.settings" || 
+            packageName.contains("settings") || packageName.contains("securitycenter")
+        if (isSettingsPackage && !isLearningMode) {
              handleStrictSettingsProtection()
         }
 
@@ -167,14 +244,9 @@ class AppBlockerService : BaseBlockingService() {
              return
         }
         
-        // PERIODIC BACKGROUND UPDATE
-        val now = System.currentTimeMillis()
-        if (now - lastBackgroundUpdate > 30000) {
-            lastBackgroundUpdate = now
-            performBackgroundUpdates()
-        }
-        
-        // REMOVED: Old Settings check block (Moved to top as handleStrictSettingsProtection)
+        // NOTE: Removed 30-second polling for battery optimization.
+        // Box rebuilds via: BlockCacheWorker (3 min), Screen ON, Settings changed.
+        // The O(1) Box check below runs on EVERY app switch.
 
         
         // Anti-bypass for apps
@@ -329,61 +401,135 @@ class AppBlockerService : BaseBlockingService() {
         } catch (e: Exception) { return false }
     }
     
-    // === STRICT MODE OVERLAY & LOGIC ===
+    // === STRICT MODE INSTANT BLOCKING ===
     private var strictOverlay: android.widget.TextView? = null
+    private var lastStrictBlockTime = 0L
     
     private fun handleStrictSettingsProtection() {
         try {
             val strictData = blocker.strictModeData
-            if (!strictData.isEnabled || packageManager.isSafeMode) return
             
-            val root = rootInActiveWindow ?: return
-            val text = extractText(root).lowercase()
+            if (!strictData.isEnabled) {
+                // Log only once when first checking
+                return
+            }
             
-            var shouldBlock = false
-            var blockReason = ""
-
-            // 1. Time Protection
-            if (strictData.isTimeCheatProtectionEnabled) {
-                if (text.contains("date & time") || text.contains("automatic date") || text.contains("set time")) {
-                    shouldBlock = true
-                    blockReason = "Time Settings Locked"
+            if (packageManager.isSafeMode) {
+                return
+            }
+            
+            // === LEARNED CLASS NAME BLOCKING with Content Verification ===
+            val currentClass = lastWindowClassName
+            
+            // DEBUG: Log what we're checking
+            com.neubofy.reality.utils.TerminalLogger.log("CHECK: Class=${currentClass.substringAfterLast(".")}")
+            com.neubofy.reality.utils.TerminalLogger.log("LEARNED: Acc=${learnedSettingsPages.accessibilityPageClass.substringAfterLast(".")}, Time=${learnedSettingsPages.timeSettingsPageClass.substringAfterLast(".")}")
+            
+            var fastPathBlocked = false
+            var fastPathReason = ""
+            
+            // Helper: Get screen text for verification (lazy - only when needed)
+            fun getScreenText(): String {
+                val root = rootInActiveWindow ?: return ""
+                try { root.refresh() } catch (e: Exception) {}
+                return extractText(root).lowercase()
+            }
+            
+            // 1. Accessibility Protection (ONLY for Reality's accessibility page)
+            if (strictData.isAccessibilityProtectionEnabled && 
+                currentClass.isNotEmpty() && 
+                currentClass == learnedSettingsPages.accessibilityPageClass) {
+                // Content check: verify this is Reality's accessibility page
+                // Using words visible on the actual Reality accessibility settings page
+                val screenText = getScreenText()
+                val isRealityAccessibility = screenText.contains("reality") && (
+                    screenText.contains("app blocking") ||
+                    screenText.contains("focus mode") ||
+                    screenText.contains("reality shortcut") ||
+                    screenText.contains("accessibility data") ||
+                    screenText.contains("neubofy")
+                )
+                if (isRealityAccessibility) {
+                    fastPathBlocked = true
+                    fastPathReason = "Reality Accessibility Blocked"
+                    com.neubofy.reality.utils.TerminalLogger.log("STRICT: Reality Accessibility detected via content check")
                 }
             }
-
-            // 2. Anti-Uninstall
-            if (!shouldBlock && strictData.isAntiUninstallEnabled) {
-                val hasDeactivate = text.contains("deactivate") || text.contains("remove") || text.contains("uninstall")
-                val hasContext = text.contains("device admin") || text.contains("reality") || text.contains("admin app")
-                
-                if ((hasDeactivate && hasContext) || text.contains("activate device admin help")) {
-                    shouldBlock = true
-                    blockReason = "Uninstall Protected"
+            
+            // 2. Device Admin Protection (Anti-Uninstall)
+            if (!fastPathBlocked && strictData.isAntiUninstallEnabled && 
+                currentClass.isNotEmpty() && 
+                currentClass == learnedSettingsPages.deviceAdminPageClass) {
+                fastPathBlocked = true
+                fastPathReason = "Device Admin Page Blocked"
+                com.neubofy.reality.utils.TerminalLogger.log("STRICT: Device Admin page detected - class matched")
+            }
+            
+            // 3. App Info Protection (ONLY for Reality's app info page!)
+            if (!fastPathBlocked && strictData.isAppInfoProtectionEnabled && 
+                currentClass.isNotEmpty() && 
+                currentClass == learnedSettingsPages.appInfoPageClass) {
+                // Content check: verify this is Reality's App Info page
+                // Using words visible on the actual Reality app info page
+                val screenText = getScreenText()
+                val isRealityAppInfo = (
+                    screenText.contains("reality") && (
+                        screenText.contains("uninstall") ||
+                        screenText.contains("force stop") ||
+                        screenText.contains("app info") ||
+                        screenText.contains("notifications")
+                    )
+                ) || screenText.contains("neubofy") || screenText.contains("com.neubofy.reality")
+                if (isRealityAppInfo) {
+                    fastPathBlocked = true
+                    fastPathReason = "Reality App Info Blocked"
+                    com.neubofy.reality.utils.TerminalLogger.log("STRICT: Reality App Info detected via content check")
                 }
             }
             
-            // 3. Accessibility Protection
-            if (!shouldBlock && strictData.isAccessibilityProtectionEnabled) {
-                val isOnAppBlockerPage = text.contains("app blocker") && 
-                    (text.contains("use app blocker") || text.contains("shortcut") || text.contains("allow") || text.contains("off"))
-                val isOnRealityServicePage = text.contains("reality") &&
-                    text.contains("accessibility") && (text.contains("off") || text.contains("use "))
+            // 4. Time Settings Protection
+            // FIX: "SubSettings" is used for many pages. We MUST verify content to avoid blocking wrong pages.
+            val timeClass = learnedSettingsPages.timeSettingsPageClass.trim()
+            if (!fastPathBlocked && strictData.isTimeCheatProtectionEnabled && 
+                currentClass.isNotEmpty() && 
+                currentClass.trim() == timeClass) {
                 
-                if (isOnAppBlockerPage || isOnRealityServicePage) {
-                    shouldBlock = true
-                    blockReason = "Accessibility Locked"
+                // Content Check: Verify this is actually Date & Time settings
+                val screenText = getScreenText()
+                val isTimePage = screenText.contains("date") && (
+                    screenText.contains("time") || 
+                    screenText.contains("zone") || 
+                    screenText.contains("network") ||
+                    screenText.contains("automatic") ||
+                    screenText.contains("clock")
+                )
+                
+                if (isTimePage) {
+                    fastPathBlocked = true
+                    fastPathReason = "Time Settings Blocked"
+                    com.neubofy.reality.utils.TerminalLogger.log("STRICT: Time Settings detected via content check")
+                } else {
+                     com.neubofy.reality.utils.TerminalLogger.log("DEBUG: Class matched ($timeClass) but content mismatch. Not blocking.")
                 }
             }
             
-            if (shouldBlock) {
-                showStrictLockOverlay(blockReason)
-                performGlobalAction(GLOBAL_ACTION_BACK)
-                
-                // Hide overlay after delay
-                handler.postDelayed({ removeStrictOverlay() }, 1500)
+            // 5. Check custom blocked pages
+            
+            // 5. Check custom blocked pages
+            if (!fastPathBlocked && learnedSettingsPages.customBlockedPages.contains(currentClass)) {
+                fastPathBlocked = true
+                fastPathReason = "Custom Page Blocked"
             }
             
-        } catch (e: Exception) {}
+            if (fastPathBlocked) {
+                com.neubofy.reality.utils.TerminalLogger.log("STRICT: Blocking $fastPathReason (class: ${currentClass.substringAfterLast(".")})")
+                val penaltyDuration = calculatePenaltyDuration()
+                showPenaltyOverlay(fastPathReason, penaltyDuration)
+            }
+            
+        } catch (e: Exception) {
+            com.neubofy.reality.utils.TerminalLogger.log("STRICT ERROR: ${e.message}")
+        }
     }
     
     private fun showStrictLockOverlay(reason: String) {
@@ -422,7 +568,179 @@ class AppBlockerService : BaseBlockingService() {
         } catch (e: Exception) { strictOverlay = null }
     }
 
+    // === SETTINGS PAGE LEARNING OVERLAY ===
+    private fun showLearnConfirmOverlay() {
+        if (learnOverlay != null) return
+        try {
+            val windowManager = getSystemService(android.content.Context.WINDOW_SERVICE) as android.view.WindowManager
+            val params = android.view.WindowManager.LayoutParams(
+                android.view.WindowManager.LayoutParams.WRAP_CONTENT,
+                android.view.WindowManager.LayoutParams.WRAP_CONTENT,
+                if (Build.VERSION.SDK_INT >= 26) android.view.WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY 
+                    else android.view.WindowManager.LayoutParams.TYPE_PHONE,
+                android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                android.graphics.PixelFormat.TRANSLUCENT
+            ).apply {
+                gravity = android.view.Gravity.BOTTOM or android.view.Gravity.CENTER_HORIZONTAL
+                y = 150
+            }
+            
+            val inflater = android.view.LayoutInflater.from(this)
+            learnOverlay = inflater.inflate(R.layout.overlay_learn_confirm, null)
+            
+            learnOverlay?.findViewById<android.widget.TextView>(R.id.tvCurrentPage)?.text = 
+                "Current: ${lastWindowClassName.substringAfterLast(".")}"
+            
+            learnOverlay?.findViewById<android.widget.Button>(R.id.btnConfirm)?.setOnClickListener {
+                saveLearnedPage()
+                removeLearnOverlay()
+                android.widget.Toast.makeText(this, "✓ Page recorded!", android.widget.Toast.LENGTH_SHORT).show()
+                performGlobalAction(GLOBAL_ACTION_HOME)
+                isLearningMode = false
+            }
+            
+            learnOverlay?.findViewById<android.widget.Button>(R.id.btnNavigate)?.setOnClickListener {
+                android.widget.Toast.makeText(this, "Navigate to the correct page", android.widget.Toast.LENGTH_SHORT).show()
+            }
+            
+            learnOverlay?.findViewById<android.widget.Button>(R.id.btnCancel)?.setOnClickListener {
+                removeLearnOverlay()
+                performGlobalAction(GLOBAL_ACTION_HOME)
+                isLearningMode = false
+                currentLearningPageType = null
+            }
+            
+            windowManager.addView(learnOverlay, params)
+        } catch (e: Exception) {
+            com.neubofy.reality.utils.TerminalLogger.log("LEARN: Overlay error - ${e.message}")
+        }
+    }
     
+    private fun updateLearnOverlayText() {
+        try {
+            learnOverlay?.findViewById<android.widget.TextView>(R.id.tvCurrentPage)?.text = 
+                "Current: ${lastWindowClassName.substringAfterLast(".")}"
+        } catch (e: Exception) {}
+    }
+    
+    private fun removeLearnOverlay() {
+        try {
+            learnOverlay?.let {
+                val windowManager = getSystemService(android.content.Context.WINDOW_SERVICE) as android.view.WindowManager
+                windowManager.removeView(it)
+            }
+            learnOverlay = null
+        } catch (e: Exception) { learnOverlay = null }
+    }
+    
+    private fun saveLearnedPage() {
+        val pageType = currentLearningPageType ?: return
+        val className = lastWindowClassName
+        if (className.isEmpty()) return
+        
+        when (pageType) {
+            Constants.PageType.ACCESSIBILITY -> learnedSettingsPages.accessibilityPageClass = className
+            Constants.PageType.DEVICE_ADMIN -> learnedSettingsPages.deviceAdminPageClass = className
+            Constants.PageType.APP_INFO -> learnedSettingsPages.appInfoPageClass = className
+            Constants.PageType.TIME_SETTINGS -> learnedSettingsPages.timeSettingsPageClass = className
+            Constants.PageType.DEVELOPER_OPTIONS -> learnedSettingsPages.developerOptionsPageClass = className
+        }
+        
+        savedPreferencesLoader.saveLearnedSettingsPages(learnedSettingsPages)
+        com.neubofy.reality.utils.TerminalLogger.log("LEARN: Saved $pageType = $className")
+    }
+    
+    // === PENALTY OVERLAY ===
+    private fun showPenaltyOverlay(reason: String, durationSecs: Int = 30) {
+        if (penaltyOverlay != null) return
+        try {
+            // IMMEDIATELY kill Settings and go HOME
+            try {
+                val am = getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+                am.killBackgroundProcesses("com.android.settings")
+                am.killBackgroundProcesses(lastWindowPackage) // Kill whatever settings package
+            } catch (e: Exception) {}
+            performGlobalAction(GLOBAL_ACTION_HOME)
+            
+            val windowManager = getSystemService(android.content.Context.WINDOW_SERVICE) as android.view.WindowManager
+            val params = android.view.WindowManager.LayoutParams(
+                android.view.WindowManager.LayoutParams.MATCH_PARENT,
+                android.view.WindowManager.LayoutParams.MATCH_PARENT,
+                if (Build.VERSION.SDK_INT >= 26) android.view.WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY 
+                    else android.view.WindowManager.LayoutParams.TYPE_PHONE,
+                // CRITICAL: Do NOT use FLAG_NOT_TOUCHABLE - it lets touches pass through!
+                // We want the overlay to CONSUME all touches
+                android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN or
+                android.view.WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
+                android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                android.graphics.PixelFormat.OPAQUE  // Fully opaque
+            )
+            
+            val inflater = android.view.LayoutInflater.from(this)
+            penaltyOverlay = inflater.inflate(R.layout.overlay_penalty, null)
+            
+            // Consume ALL touch events - do not let them pass through
+            penaltyOverlay?.setOnTouchListener { _, _ -> true }
+            
+            val tvTimer = penaltyOverlay?.findViewById<android.widget.TextView>(R.id.tvPenaltyTimer)
+            val tvReason = penaltyOverlay?.findViewById<android.widget.TextView>(R.id.tvPenaltyReason)
+            
+            tvReason?.text = "Reason: $reason"
+            
+            penaltyTimer = object : android.os.CountDownTimer(durationSecs * 1000L, 1000) {
+                override fun onTick(millisUntilFinished: Long) {
+                    val secs = millisUntilFinished / 1000
+                    tvTimer?.text = String.format("%02d:%02d", secs / 60, secs % 60)
+                }
+                
+                override fun onFinish() {
+                    removePenaltyOverlay()
+                    performGlobalAction(GLOBAL_ACTION_HOME)
+                }
+            }.start()
+            
+            windowManager.addView(penaltyOverlay, params)
+            com.neubofy.reality.utils.TerminalLogger.log("PENALTY: Showing ${durationSecs}s penalty for $reason")
+        } catch (e: Exception) {
+            com.neubofy.reality.utils.TerminalLogger.log("PENALTY: Overlay error - ${e.message}")
+        }
+    }
+    
+    private fun removePenaltyOverlay() {
+        try {
+            penaltyTimer?.cancel()
+            penaltyTimer = null
+            penaltyOverlay?.let {
+                val windowManager = getSystemService(android.content.Context.WINDOW_SERVICE) as android.view.WindowManager
+                windowManager.removeView(it)
+            }
+            penaltyOverlay = null
+        } catch (e: Exception) { penaltyOverlay = null }
+    }
+    
+    private fun calculatePenaltyDuration(): Int {
+        val now = System.currentTimeMillis()
+        val fiveMinutes = 5 * 60 * 1000L
+        
+        if (now - learnedSettingsPages.lastPenaltyTime < fiveMinutes) {
+            learnedSettingsPages.consecutiveAttempts++
+        } else {
+            learnedSettingsPages.consecutiveAttempts = 1
+        }
+        learnedSettingsPages.lastPenaltyTime = now
+        savedPreferencesLoader.saveLearnedSettingsPages(learnedSettingsPages)
+        
+        // Escalating penalties: 30s → 60s → 120s → 180s → 300s (5 min max)
+        return when (learnedSettingsPages.consecutiveAttempts) {
+            1 -> 30      // 30 seconds
+            2 -> 60      // 1 minute
+            3 -> 120     // 2 minutes
+            4 -> 180     // 3 minutes
+            else -> 300  // 5 minutes max
+        }
+    }
+
     // Updated signature to control session persistence
     private fun handleBlock(packageName: String, reason: String? = null, addToSession: Boolean = true) {
         com.neubofy.reality.utils.TerminalLogger.log("ACTION: Blocking $packageName. Reason: ${reason ?: "N/A"}")
@@ -467,10 +785,15 @@ class AppBlockerService : BaseBlockingService() {
         // Load BlockCache from disk (survives RAM cleanup)
         com.neubofy.reality.utils.BlockCache.loadFromDisk(this)
         
+        // Load learned settings pages
+        learnedSettingsPages = savedPreferencesLoader.getLearnedSettingsPages()
+        
         refreshSettings()
         val filter = IntentFilter().apply {
             addAction(INTENT_ACTION_REFRESH_FOCUS_MODE)
-            // REMOVED: addAction(INTENT_ACTION_BLOCK_APP_COOLDOWN) - Proceed Anyway bypass removed
+            addAction(INTENT_ACTION_REFRESH_ANTI_UNINSTALL)
+            addAction(INTENT_ACTION_START_LEARNING)
+            addAction(INTENT_ACTION_STOP_LEARNING)
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_SCREEN_ON)
         }
@@ -479,6 +802,10 @@ class AppBlockerService : BaseBlockingService() {
         } else {
             registerReceiver(refreshReceiver, filter)
         }
+        
+        // Log service startup
+        com.neubofy.reality.utils.TerminalLogger.log("SERVICE: Accessibility Service Started")
+        com.neubofy.reality.utils.TerminalLogger.log("STATUS: Blocking=$isBlockingActive, StrictMode=${blocker.strictModeData?.isEnabled ?: false}")
     }
 
     private fun refreshSettings() {
@@ -500,15 +827,25 @@ class AppBlockerService : BaseBlockingService() {
         
         try {
             blocker.bedtimeData = savedPreferencesLoader.getBedtimeData()
+        } catch (e: Exception) {
+            blocker.bedtimeData = com.neubofy.reality.Constants.BedtimeData()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: Bedtime data load failed")
+        }
+        
+        try {
             blocker.emergencyData = savedPreferencesLoader.getEmergencyData()
-            blocker.strictModeData = savedPreferencesLoader.getStrictModeData()
-            
-            // Sync Emergency to BlockCache for instant access
             com.neubofy.reality.utils.BlockCache.emergencySessionEndTime = blocker.emergencyData.currentSessionEndTime
         } catch (e: Exception) {
-             blocker.bedtimeData = com.neubofy.reality.Constants.BedtimeData()
-             blocker.emergencyData = com.neubofy.reality.Constants.EmergencyModeData()
-             blocker.strictModeData = com.neubofy.reality.Constants.StrictModeData()
+            blocker.emergencyData = com.neubofy.reality.Constants.EmergencyModeData()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: Emergency data load failed")
+        }
+        
+        try {
+            blocker.strictModeData = savedPreferencesLoader.getStrictModeData()
+            com.neubofy.reality.utils.TerminalLogger.log("STRICT: Loaded - enabled=${blocker.strictModeData.isEnabled}, mode=${blocker.strictModeData.modeType}")
+        } catch (e: Exception) {
+            blocker.strictModeData = com.neubofy.reality.Constants.StrictModeData()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: Strict mode data load failed - ${e.message}")
         }
         
         // === REBUILD THE BOX IMMEDIATELY ===
