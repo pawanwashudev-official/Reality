@@ -98,7 +98,10 @@ class Constants {
         var isAccessibilityProtectionEnabled: Boolean = false,
         
         // Lock Calendar Sync - Prevents disconnecting calendar when strict mode is active
-        var isCalendarLocked: Boolean = true
+        var isCalendarLocked: Boolean = true,
+        
+        // Grayscale Mode - Turns screen black & white during focus sessions
+        var isGrayscaleEnabled: Boolean = false
     ) {
         companion object {
             const val MODE_NONE = "NONE"

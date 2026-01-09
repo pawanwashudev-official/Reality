@@ -183,6 +183,15 @@
                         android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
                     <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchGrayscale"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Grayscale Mode (Needs ADB)"
+                        android:checked="false"
+                        android:layout_marginBottom="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
                         android:id="@+id/switchAntiTimeCheat"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"

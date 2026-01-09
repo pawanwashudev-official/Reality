@@ -385,13 +385,31 @@ class AppBlockerService : BaseBlockingService() {
                             toggleDnd(false)
                         }
                     }
+                    
+                    // === GRAYSCALE SYNC ===
+                    if (blocker.strictModeData.isGrayscaleEnabled) {
+                         toggleGrayscale(isAnyModeActive)
+                    }
                 }
             } catch (e: Exception) {
                 com.neubofy.reality.utils.TerminalLogger.log("BG UPDATE ERROR: ${e.message}")
             }
         }
     }
-    
+
+    private fun toggleGrayscale(enable: Boolean) {
+        try {
+            val hasPermission = checkSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (hasPermission) {
+                val value = if (enable) 1 else 0
+                android.provider.Settings.Secure.putInt(contentResolver, "accessibility_display_daltonizer_enabled", value)
+                if (enable) android.provider.Settings.Secure.putInt(contentResolver, "accessibility_display_daltonizer", 0) // Monochromacy
+            }
+        } catch (e: Exception) {
+             com.neubofy.reality.utils.TerminalLogger.log("GRAYSCALE ERROR: ${e.message}")
+        }
+    }
+
     private fun isSystemApp(packageName: String): Boolean {
         try {
             val appInfo = packageManager.getApplicationInfo(packageName, 0)

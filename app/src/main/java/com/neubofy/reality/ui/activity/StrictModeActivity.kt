@@ -86,6 +86,7 @@ class StrictModeActivity : AppCompatActivity() {
         binding.switchAntiTimeCheat.isChecked = strictData.isTimeCheatProtectionEnabled
         binding.switchAccessibilityProtection.isChecked = strictData.isAccessibilityProtectionEnabled
         binding.switchAppInfoProtection.isChecked = strictData.isAppInfoProtectionEnabled
+        binding.switchGrayscale.isChecked = strictData.isGrayscaleEnabled
         
         updateLearningStatus()
     }
@@ -201,6 +202,7 @@ class StrictModeActivity : AppCompatActivity() {
         binding.switchScheduleLock.isEnabled = true
 
         binding.switchAutoDndLock.isEnabled = true
+        binding.switchGrayscale.isEnabled = true
         binding.switchAntiTimeCheat.isEnabled = true
         binding.switchAntiUninstall.isEnabled = true
     }
@@ -243,6 +245,31 @@ class StrictModeActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+        
+        // Grayscale Switch (Special Logic for Permission)
+        binding.switchGrayscale.setOnClickListener {
+            val isChecked = binding.switchGrayscale.isChecked
+            
+            // Ratchet logic
+            if (strictData.isEnabled && !isChecked) {
+                binding.switchGrayscale.isChecked = true
+                Toast.makeText(this, "Cannot disable while Strict Mode is active!", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
+            // Permission logic
+            if (isChecked) {
+                val hasPermission = ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_SECURE_SETTINGS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                if (!hasPermission) {
+                    binding.switchGrayscale.isChecked = false
+                    showGrayscalePermissionDialog()
+                    return@setOnClickListener
+                }
+            }
+            
+            strictData.isGrayscaleEnabled = isChecked
+            saveSettings()
         }
         
         // Learning status tap - show manage dialog (only if Strict Mode OFF)
@@ -766,5 +793,17 @@ class StrictModeActivity : AppCompatActivity() {
                 .setNeutralButton("Cancel", null)
                 .show()
         }
+    }
+    
+    private fun showGrayscalePermissionDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Permission Required")
+            .setMessage("To use Grayscale Mode, you must grant the 'WRITE_SECURE_SETTINGS' permission via ADB:\n\nadb shell pm grant com.neubofy.reality android.permission.WRITE_SECURE_SETTINGS")
+            .setPositiveButton("OK") { d, _ -> d.dismiss() }
+            .setNeutralButton("How?") { _, _ -> 
+                val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://brevent.sh/adb"))
+                startActivity(intent)
+            }
+            .show()
     }
 }
