@@ -26,8 +26,8 @@ android {
         applicationId = "com.neubofy.reality"
         minSdk = 26
         targetSdk = 35  // Android 15
-        versionCode = 11
-        versionName = "1.0.0"
+        versionCode = 12
+        versionName = "1.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
         setProperty("archivesBaseName", "Reality-v${versionName}")
