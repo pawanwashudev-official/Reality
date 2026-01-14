@@ -125,7 +125,7 @@
                 android:id="@+id/card_emergency"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="24dp"
+                app:cardCornerRadius="@dimen/corner_radius_large"
                 app:cardBackgroundColor="?attr/colorErrorContainer"
                 app:strokeColor="?attr/colorError"
                 app:strokeWidth="1dp"
@@ -191,7 +191,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                app:cardCornerRadius="32dp"
+                app:cardCornerRadius="@dimen/corner_radius_xl"
                 app:cardBackgroundColor="?attr/colorSurface"
                 app:strokeColor="?attr/colorOutlineVariant"
                 app:strokeWidth="1dp"
@@ -253,8 +253,8 @@
                         android:text="Start Focusing"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:textColor="#000000"
-                        app:backgroundTint="#00FFC2"
+                        android:textColor="@color/black"
+                        app:backgroundTint="@color/accent_focus"
                         app:cornerRadius="28dp"
                         android:layout_marginTop="24dp"/>
 
@@ -276,7 +276,7 @@
                     android:layout_height="110dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
-                    app:cardCornerRadius="24dp"
+                    app:cardCornerRadius="@dimen/corner_radius_large"
                     app:cardBackgroundColor="?attr/colorSurface"
                     app:strokeColor="?attr/colorOutlineVariant"
                     app:strokeWidth="1dp">
@@ -292,7 +292,7 @@
                             android:layout_width="36dp"
                             android:layout_height="36dp"
                             android:src="@drawable/baseline_query_stats_24"
-                            app:tint="#6C63FF"/>
+                            app:tint="@color/accent_stats"/>
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -319,7 +319,7 @@
                     android:layout_height="110dp"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    app:cardCornerRadius="24dp"
+                    app:cardCornerRadius="@dimen/corner_radius_large"
                     app:cardBackgroundColor="?attr/colorSurface"
                     app:strokeColor="?attr/colorOutlineVariant"
                     app:strokeWidth="1dp">
@@ -335,7 +335,7 @@
                             android:layout_width="36dp"
                             android:layout_height="36dp"
                             android:src="@drawable/baseline_block_24"
-                            app:tint="#FF9F43"/>
+                            app:tint="@color/accent_block"/>
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -370,9 +370,9 @@
                     android:layout_height="110dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="6dp"
-                    app:cardCornerRadius="20dp"
+                    app:cardCornerRadius="@dimen/corner_radius_medium"
                     app:cardBackgroundColor="?attr/colorSurface"
-                    app:strokeColor="#33FF6B6B"
+                    app:strokeColor="@color/accent_limits_container"
                     app:strokeWidth="1dp">
 
                     <LinearLayout
@@ -386,7 +386,7 @@
                             android:layout_width="36dp"
                             android:layout_height="36dp"
                             android:src="@drawable/baseline_timer_24"
-                            app:tint="#FF6B6B"/>
+                            app:tint="@color/accent_limits"/>
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -415,7 +415,7 @@
                     android:layout_marginStart="6dp"
                     app:cardCornerRadius="20dp"
                     app:cardBackgroundColor="?attr/colorSurface"
-                    app:strokeColor="#3300CEC9"
+                    app:strokeColor="@color/accent_groups_container"
                     app:strokeWidth="1dp">
 
                     <LinearLayout
@@ -429,7 +429,7 @@
                             android:layout_width="36dp"
                             android:layout_height="36dp"
                             android:src="@drawable/baseline_group_work_24"
-                            app:tint="#00CEC9"/>
+                            app:tint="@color/accent_groups"/>
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -465,9 +465,9 @@
                     android:layout_height="80dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="6dp"
-                    app:cardCornerRadius="16dp"
+                    app:cardCornerRadius="@dimen/corner_radius_medium"
                     app:cardBackgroundColor="?attr/colorSurface"
-                    app:strokeColor="#332ECC71"
+                    app:strokeColor="@color/accent_schedules_container"
                     app:strokeWidth="1dp">
 
                     <LinearLayout
@@ -481,7 +481,7 @@
                             android:layout_width="28dp"
                             android:layout_height="28dp"
                             android:src="@drawable/baseline_schedule_24"
-                            app:tint="#2ECC71"/>
+                            app:tint="@color/accent_schedules"/>
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -514,7 +514,7 @@
                     android:layout_marginStart="6dp"
                     app:cardCornerRadius="16dp"
                     app:cardBackgroundColor="?attr/colorSurface"
-                    app:strokeColor="#33A55EEA"
+                    app:strokeColor="@color/accent_bedtime_container"
                     app:strokeWidth="1dp">
 
                     <LinearLayout
@@ -528,7 +528,7 @@
                             android:layout_width="28dp"
                             android:layout_height="28dp"
                             android:src="@drawable/baseline_bedtime_24"
-                            app:tint="#A55EEA"/>
+                            app:tint="@color/accent_bedtime"/>
 
                         <LinearLayout
                             android:layout_width="wrap_content"

@@ -18,20 +18,7 @@ class BootReceiver : BroadcastReceiver() {
             
             TerminalLogger.log("BOOT: Device restarted. Resurrecting Reality...")
             
-            // 1. Reschedule KeepAlive Worker immediately
-            val request = androidx.work.PeriodicWorkRequest.Builder(
-                com.neubofy.reality.workers.KeepAliveWorker::class.java,
-                15,
-                java.util.concurrent.TimeUnit.MINUTES
-            ).build()
-
-            androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                "RealityKeepAlive",
-                androidx.work.ExistingPeriodicWorkPolicy.KEEP,
-                request
-            )
-            
-            // 2. Start Heartbeat (15 min pulse)
+            // 1. Start Heartbeat Worker (unified 15-min refresh for all caches)
             com.neubofy.reality.workers.HeartbeatWorker.startHeartbeat(context)
             
             // 2. CRITICAL: Reschedule reminders (AlarmManager alarms are lost on reboot)
@@ -43,7 +30,7 @@ class BootReceiver : BroadcastReceiver() {
             }
             
             // Note: AccessibilityService cannot be started directly via startService
-            // It must be enabled by user. But KeepAliveWorker will poke it.
+            // It must be enabled by user. HeartbeatWorker will keep things running.
         }
     }
 }

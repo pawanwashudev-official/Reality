@@ -62,7 +62,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var options: ActivityOptionsCompat
     private var isDeviceAdminOn = false
     private var isAntiUninstallOn = false
-    private var isGeneralSettingsOn = false
     private var statusUpdaterJob: Job? = null
     private var currentFocusStatus: com.neubofy.reality.utils.FocusStatus? = null
 
@@ -118,8 +117,6 @@ class MainActivity : AppCompatActivity() {
                 binding.tvTerminalLog.text = logText
             }
         }
-        
-        scheduleKeepAliveWorker()
     }
 
     override fun onResume() {
@@ -130,6 +127,7 @@ class MainActivity : AppCompatActivity() {
         updateUsageLimitUI()
         updateGreeting()
         updateThemeVisuals()
+        updateTerminalLogVisibility()
         
 
     }
@@ -490,13 +488,8 @@ class MainActivity : AppCompatActivity() {
         val adminComponent = ComponentName(this, com.neubofy.reality.receivers.AdminLockReceiver::class.java)
         isDeviceAdminOn = dpm.isAdminActive(adminComponent)
 
-        val isAppBlockerOn = isAccessibilityServiceEnabled(AppBlockerService::class.java)
-        isGeneralSettingsOn = isAccessibilityServiceEnabled(AppBlockerService::class.java)
-
         val antiUninstallPrefs = getSharedPreferences("anti_uninstall", Context.MODE_PRIVATE)
         isAntiUninstallOn = antiUninstallPrefs.getBoolean("is_anti_uninstall_on", false)
-
-        // New UI doesn't have the old chips/warnings - removed updateUI call
     }
 
     private fun checkAndRequestNextPermission() {
@@ -661,9 +654,9 @@ class MainActivity : AppCompatActivity() {
                 .setView(dialogBinding.root)
                 .setPositiveButton("Unlock") { _, _ ->
                     val entered = dialogBinding.password.text.toString()
-                    // Verify hash (Simple check for now or hash logic)
-                    // Assuming data.passwordHash stores the actual password for MVP or hash
-                    if (entered == data.passwordHash) {
+                    // Hash the entered password and compare to stored hash
+                    val enteredHash = hashPassword(entered)
+                    if (enteredHash == data.passwordHash) {
                         data.isEnabled = false
                         savedPreferencesLoader.saveStrictModeData(data)
                         sendRefreshRequest(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL)
@@ -674,14 +667,14 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 .setNeutralButton("Forgot Password") { _, _ ->
-                     // Recovery: Switch to 12h Timer
+                     // Recovery: Switch to 24h Timer
                      data.modeType = Constants.StrictModeData.MODE_TIMER
-                     data.timerEndTime = System.currentTimeMillis() + (12 * 60 * 60 * 1000L)
+                     data.timerEndTime = System.currentTimeMillis() + (24 * 60 * 60 * 1000L)
                      savedPreferencesLoader.saveStrictModeData(data)
                      
                      MaterialAlertDialogBuilder(this)
                          .setTitle("Recovery Mode")
-                         .setMessage("Strict Mode switched to 12-Hour Timer. You can unlock after 12 hours.")
+                         .setMessage("Strict Mode switched to 24-Hour Timer. You can unlock after 24 hours.")
                          .setPositiveButton("OK", null)
                          .show()
                      sendRefreshRequest(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL)
@@ -711,19 +704,7 @@ class MainActivity : AppCompatActivity() {
         return false
     }
 
-    private fun scheduleKeepAliveWorker() {
-        val request = androidx.work.PeriodicWorkRequest.Builder(
-            com.neubofy.reality.workers.KeepAliveWorker::class.java,
-            15,
-            java.util.concurrent.TimeUnit.MINUTES
-        ).build()
 
-        androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "RealityKeepAlive",
-            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
-            request
-        )
-    }
     
 
     private fun updateThemeVisuals() {
@@ -757,5 +738,22 @@ class MainActivity : AppCompatActivity() {
     
     private fun isSystemNight(): Boolean {
         return (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+    }
+    
+    private fun hashPassword(password: String): String {
+        return com.neubofy.reality.utils.SecurityUtils.hashPassword(password)
+    }
+    
+    private fun updateTerminalLogVisibility() {
+        val appPrefs = getSharedPreferences("reality_prefs", MODE_PRIVATE)
+        val showTerminalLog = appPrefs.getBoolean("show_terminal_log", true) // Default ON
+        
+        // Find the terminal log card parent (it's inside ScrollView > LinearLayout)
+        // The terminal card is at the bottom of the layout
+        binding.tvTerminalLog.parent?.parent?.parent?.let { terminalCard ->
+            if (terminalCard is android.view.View) {
+                terminalCard.visibility = if (showTerminalLog) android.view.View.VISIBLE else android.view.View.GONE
+            }
+        }
     }
 }

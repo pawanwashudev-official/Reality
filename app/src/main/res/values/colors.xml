@@ -98,4 +98,48 @@
     <color name="onboarding_icon_pending">#707080</color>
     <color name="onboarding_icon_granted">#4CAF50</color>
     <color name="onboarding_icon_required">#FF5252</color>
+    
+    <!-- ============================================ -->
+    <!-- PREMIUM ACCENT COLORS (Customizable)        -->
+    <!-- These replace hardcoded colors in XML       -->
+    <!-- ============================================ -->
+    
+    <!-- Focus / Success - Bright Teal -->
+    <color name="accent_focus">#00FFC2</color>
+    <color name="accent_focus_dark">#00D4A0</color>
+    
+    <!-- Stats / Analytics - Vibrant Purple -->
+    <color name="accent_stats">#6C63FF</color>
+    <color name="accent_stats_container">#336C63FF</color>
+    
+    <!-- Blocking / Warning - Warm Orange -->
+    <color name="accent_block">#FF9F43</color>
+    <color name="accent_block_container">#33FF9F43</color>
+    
+    <!-- Time Limits - Coral Red -->
+    <color name="accent_limits">#FF6B6B</color>
+    <color name="accent_limits_container">#33FF6B6B</color>
+    
+    <!-- Groups - Turquoise -->
+    <color name="accent_groups">#00CEC9</color>
+    <color name="accent_groups_container">#3300CEC9</color>
+    
+    <!-- Schedules - Fresh Green -->
+    <color name="accent_schedules">#2ECC71</color>
+    <color name="accent_schedules_container">#332ECC71</color>
+    
+    <!-- Bedtime - Soft Purple -->
+    <color name="accent_bedtime">#A55EEA</color>
+    <color name="accent_bedtime_container">#33A55EEA</color>
+    
+    <!-- Success States -->
+    <color name="status_success">#4CAF50</color>
+    <color name="status_warning">#FFC107</color>
+    <color name="status_error">#F44336</color>
+    <color name="status_info">#2196F3</color>
+    
+    <!-- Interactive States -->
+    <color name="interactive_pressed">#1A000000</color>
+    <color name="interactive_disabled">#61000000</color>
+    
 </resources>

@@ -68,25 +68,16 @@ class RealityBlocker {
     }
 
     fun doesAppNeedToBeBlocked(packageName: String): BlockerResult {
-        // 0. THE BOX (Fast Path - O(1) Cache)
-        // Check pre-computed cache first to avoid expensive calculation on every frame
-        // This is updated every 3 minutes by BlockCacheWorker
-        val (isCachedBlocked, cachedReasons) = com.neubofy.reality.utils.BlockCache.shouldBlock(packageName)
-        val cachedReason = cachedReasons.firstOrNull()
-        if (isCachedBlocked) {
-            // Cache hits are instant. We assume cache is mostly up to date (max 3 min delay).
-            // NOTE: Emergency Mode and Maintenance Window are DYNAMIC and must be checked strictly at runtime
-            // So we continue to step 1 & 2 even if cache says blocked, just to be safe?
-            // Actually, BlockCache doesn't track Emergency Mode (it's "Blocking Reasons").
-            // So if Emergency is active, we must UNBLOCK regardless of cache.
-        }
-
+        // === THE BOX APPROACH: Single Source of Truth ===
+        // BlockCache handles: Emergency Mode, Maintenance Window, and all blocking decisions.
+        // This function only does quick whitelist checks.
+        
         // 1. Universal Whitelist (Launcher, Keyboard, Self, Settings)
         if (whitelistedPackages.contains(packageName)) {
-            return BlockerResult(isBlocked = false, isEmergency = true)
+            return BlockerResult(isBlocked = false, isEmergency = false)
         }
         
-        // 1.1 Expanded System Whitelist (Hardcoded Safety Net)
+        // 2. Expanded System Whitelist (Safety Net)
         val expandedWhitelist = setOf(
             "com.android.calculator2", "com.google.android.calculator",
             "com.android.dialer", "com.google.android.dialer",
@@ -96,121 +87,49 @@ class RealityBlocker {
             "com.google.android.packageinstaller", "com.android.packageinstaller"
         )
         if (expandedWhitelist.contains(packageName)) {
-            return BlockerResult(isBlocked = false, isEmergency = true)
-        }
-    
-        // 2. Check Maintenance Window (00:00 - 00:10) - UNIVERSAL UNBLOCK
-        if (com.neubofy.reality.utils.StrictLockUtils.isMaintenanceWindow()) {
-            return BlockerResult(isBlocked = false, isEmergency = true)
-        }
-
-        // 3. Check Emergency Mode (Temporary Unblock)
-        // Global Bypass: If Emergency Mode is active, NO app is blocked.
-        if (emergencyData.currentSessionEndTime > System.currentTimeMillis()) {
-            return BlockerResult(isBlocked = false, endTime = emergencyData.currentSessionEndTime, isEmergency = true)
+            return BlockerResult(isBlocked = false, isEmergency = false)
         }
         
-        // --- BOX EXECUTION ---
-        // If we passed all unblocking checks (Emergency, Whitelist), we now trust the cache.
+        // 3. THE BOX - Single Source of Truth
+        // BlockCache already handles: Emergency Mode, Maintenance Window
+        // If it's in the box = blocked. If not = not blocked. Period.
+        val (isCachedBlocked, cachedReasons) = com.neubofy.reality.utils.BlockCache.shouldBlock(packageName)
+        
         if (isCachedBlocked) {
-             return BlockerResult(isBlocked = true, reason = cachedReason ?: "Blocked")
+            val reason = cachedReasons.firstOrNull() ?: "Blocked"
+            // Get end time based on reason type
+            val endTime = getEndTimeForReason(reason)
+            return BlockerResult(isBlocked = true, endTime = endTime, reason = reason)
         }
         
-        // If cache says NOT blocked, we generally trust it, BUT for specific "live" features like 
-        // strict manual focus mode end-times we might want to double check? 
-        // For now, to fully enable the "Box Approach", we fall through to the deep checks 
-        // ONLY if the cache might be stale or empty (cold start).
-        // Since the User requested "no need to each time... block or not it is predefined", 
-        // we should rely on the cache.
-        
-        // However, to be safe during the transition, we keep the original logic as a "Real-time" fallback
-        // OR we can optimization: return false immediately if not in cache?
-        // Let's keep the detailed logic for now to ensure we don't accidentally unblock things
-        // that the cache missed (e.g. newly installed app before 3 min update).
-        // But the Box Cache logic is: "If it's in the box, it's blocked". 
-        
-        // === BLOCKING MODES (Only block if one of these is active) ===
-
-        // 5. Check Manual Focus Mode
-        if (focusModeData.isTurnedOn) {
-            if (focusModeData.endTime < System.currentTimeMillis()) {
-                focusModeData.isTurnedOn = false
-                return BlockerResult(isBlocked = false, isRequestingUpdate = true)
-            }
-            if (shouldBlockPackage(packageName)) {
-                return BlockerResult(isBlocked = true, endTime = focusModeData.endTime, reason = "Focus Mode")
-            }
-        }
-
-        // 6. Check Bedtime Mode (Uses UNIVERSAL blocklist - same as Focus Mode)
-        if (bedtimeData.isEnabled && isBedtime()) {
-            if (shouldBlockPackage(packageName)) {
-                val bedtimeEnd = getBedtimeEndTime()
-                return BlockerResult(isBlocked = true, endTime = bedtimeEnd, reason = "Bedtime Mode")
-            }
-        }
-
-        // 7. Check Calendar Events (Auto-Focus from Calendar)
-        val currentTime = System.currentTimeMillis()
-        calendarEvents.forEach { (start, end) ->
-            if (currentTime in start..end) {
-                if (shouldBlockPackage(packageName)) {
-                    return BlockerResult(isBlocked = true, endTime = end, reason = "Scheduled Event")
-                }
-            }
-        }
-
-        // 8. Check Manual Scheduled Focus (Auto-Focus)
-        val scheduleEndTime = getScheduleEndTime(packageName)
-        if (scheduleEndTime != null) {
-            return BlockerResult(isBlocked = true, endTime = scheduleEndTime, reason = "Scheduled Block")
-        }
-        
-        // 9. Check App Limits (O(1) Lookup)
-        val appLimit = appLimitsMap[packageName]
-        if (appLimit != null && appLimit.limitInMinutes > 0) {
-            
-            // Rule A: Strict Active Session (Standalone Rule)
-            if (!isActivePeriod(appLimit.activePeriodsJson)) {
-                return BlockerResult(isBlocked = true, reason = "Outside Active Session")
-            }
-
-            // Rule B: Usage Limit (Standalone Rule)
-            val limitMs = appLimit.limitInMinutes * 60 * 1000L
-            val used = usageLimitData.appUsages.getOrDefault(packageName, 0L)
-            if (used >= limitMs) {
-                return getMidnightBlockResult("Daily limit reached")
-            }
-        }
-        
-        // 10. Check App Group Limits (O(1) Linked Lookup)
-        val relevantGroups = packageToGroupsMap[packageName]
-        if (relevantGroups != null) {
-            for (group in relevantGroups) {
-                if (group.limitInMinutes <= 0) continue
-                
-                // Rule A: Group Active Session (Standalone Rule)
-                if (!isActivePeriod(group.activePeriodsJson)) {
-                    return BlockerResult(isBlocked = true, reason = "Outside Group Session")
-                }
-
-                // Rule B: Group Usage Limit (Standalone Rule)
-                // We still need to sum usage here, but only for groups strictly containing this app
-                val packages = parsePackages(group.packageNamesJson) // Cached string split could be optimized further but list size is usually small
-                var totalGroupUsage = 0L
-                for (pkg in packages) {
-                    totalGroupUsage += usageLimitData.appUsages.getOrDefault(pkg, 0L)
-                }
-                
-                val limitMs = group.limitInMinutes * 60 * 1000L
-                if (totalGroupUsage >= limitMs) {
-                    return getMidnightBlockResult("Group limit reached")
-                }
-            }
-        }
-
-        // === DEFAULT: NO BLOCKING (Blocker is "Dead" in normal time) ===
+        // === NOT BLOCKED ===
         return BlockerResult(isBlocked = false)
+    }
+    
+    // Helper: Get end time based on blocking reason
+    private fun getEndTimeForReason(reason: String): Long {
+        return when {
+            reason.contains("Focus Mode") -> focusModeData.endTime
+            reason.contains("Bedtime") -> getBedtimeEndTime()
+            reason.contains("Schedule") || reason.contains("Event") -> {
+                // Find next calendar/schedule end time
+                val now = System.currentTimeMillis()
+                calendarEvents.filter { now in it.first..it.second }
+                    .minOfOrNull { it.second } ?: getMidnightTimestamp()
+            }
+            reason.contains("limit") -> getMidnightTimestamp()
+            else -> getMidnightTimestamp()
+        }
+    }
+    
+    private fun getMidnightTimestamp(): Long {
+        val cal = Calendar.getInstance()
+        cal.add(Calendar.DAY_OF_YEAR, 1)
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
     }
     
     fun isBedtime(): Boolean {

@@ -1,66 +1,145 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:background="@drawable/bg_overlay_card"
-    android:padding="16dp"
-    android:elevation="8dp">
-    
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Is this the page to block?"
-        android:textSize="16sp"
-        android:textColor="@android:color/white"
-        android:textStyle="bold" />
-    
-    <TextView
-        android:id="@+id/tvCurrentPage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Current: Settings"
-        android:textSize="12sp"
-        android:textColor="#AAAAAA"
-        android:layout_marginTop="4dp"
-        android:maxWidth="280dp"
-        android:ellipsize="end"
-        android:singleLine="true" />
-    
+    android:layout_margin="16dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="8dp"
+    app:cardBackgroundColor="#E6000000">
+
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="12dp">
-        
-        <Button
-            android:id="@+id/btnConfirm"
-            style="@style/Widget.Material3.Button"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:gravity="center_horizontal"
+        android:minWidth="300dp"
+        android:maxWidth="320dp">
+
+        <!-- Title -->
+        <TextView
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:text="✓ Block This"
-            android:textSize="12sp"
-            android:backgroundTint="#4CAF50"
-            android:paddingHorizontal="12dp" />
-        
-        <Button
-            android:id="@+id/btnNavigate"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:text="Navigate"
-            android:textSize="12sp"
-            android:layout_marginStart="8dp"
-            android:paddingHorizontal="12dp" />
-            
-        <Button
-            android:id="@+id/btnCancel"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:text="✗"
+            android:layout_height="wrap_content"
+            android:text="📍 Learning Mode Active"
+            android:textColor="#FFFFFF"
             android:textSize="16sp"
-            android:textColor="#FF5252"
-            android:layout_marginStart="4dp" />
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Current Page Info -->
+        <TextView
+            android:id="@+id/tvCurrentPage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Current: Unknown"
+            android:textColor="#AAAAAA"
+            android:textSize="13sp"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Instruction -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Navigate to the page you want to block"
+            android:textColor="#CCCCCC"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:layout_marginBottom="12dp" />
+
+        <!-- SMART KEYWORDS SECTION -->
+        <LinearLayout
+            android:id="@+id/keywordsSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#20FFFFFF"
+            android:padding="8dp"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone">
+            
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🧠 Detected Keywords (tap to add):"
+                android:textColor="#00FF88"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+            
+            <!-- Extracted keywords will be added here -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none">
+                
+                <LinearLayout
+                    android:id="@+id/chipsContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+            
+            <!-- Selected keywords -->
+            <TextView
+                android:id="@+id/tvSelectedKeywords"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#88CC88"
+                android:textSize="10sp"
+                android:layout_marginTop="6dp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- Buttons Row -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <!-- Cancel Button -->
+            <Button
+                android:id="@+id/btnCancel"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="Cancel"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:backgroundTint="#555555"
+                android:layout_marginEnd="8dp"
+                android:paddingHorizontal="12dp"
+                style="@style/Widget.Material3.Button" />
+
+            <!-- Scan Keywords Button -->
+            <Button
+                android:id="@+id/btnScan"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="🔍 Scan"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:backgroundTint="#0066CC"
+                android:layout_marginEnd="8dp"
+                android:paddingHorizontal="12dp"
+                style="@style/Widget.Material3.Button" />
+
+            <!-- Confirm Button -->
+            <Button
+                android:id="@+id/btnConfirm"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="✓ Block"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:backgroundTint="#00AA44"
+                android:paddingHorizontal="12dp"
+                style="@style/Widget.Material3.Button" />
+
+        </LinearLayout>
+
     </LinearLayout>
-</LinearLayout>
+
+</androidx.cardview.widget.CardView>

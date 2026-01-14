@@ -100,8 +100,10 @@ class Constants {
         // Lock Calendar Sync - Prevents disconnecting calendar when strict mode is active
         var isCalendarLocked: Boolean = true,
         
-        // Grayscale Mode - Turns screen black & white during focus sessions
-        var isGrayscaleEnabled: Boolean = false
+        // Grayscale Mode - REMOVED (requires ADB)
+        var isGrayscaleEnabled: Boolean = false,
+        
+
     ) {
         companion object {
             const val MODE_NONE = "NONE"
@@ -125,16 +127,34 @@ class Constants {
     }
     
     data class LearnedSettingsPages(
-        var accessibilityPageClass: String = "",
-        var deviceAdminPageClass: String = "",
-        var appInfoPageClass: String = "",
-        var timeSettingsPageClass: String = "",
-        var developerOptionsPageClass: String = "",
+        // === DETECTED OEM SETTINGS PACKAGE ===
+        var detectedSettingsPackage: String = "",  // Auto-detected on first settings visit
         
-        // User can add custom pages to block
+        // === PAGE PROTECTION (Page class + optional keywords) ===
+        var accessibilityPageClass: String = "",
+        var accessibilityPagePackage: String = "",
+        var accessibilityKeywords: MutableList<String> = mutableListOf(),  // Optional: for content matching
+        
+        var deviceAdminPageClass: String = "",
+        var deviceAdminPagePackage: String = "",
+        var deviceAdminKeywords: MutableList<String> = mutableListOf(),
+        
+        var appInfoPageClass: String = "",
+        var appInfoPagePackage: String = "",
+        var appInfoKeywords: MutableList<String> = mutableListOf(),
+        
+        var timeSettingsPageClass: String = "",
+        var timeSettingsPagePackage: String = "",
+        var timeSettingsKeywords: MutableList<String> = mutableListOf(),
+        
+        var developerOptionsPageClass: String = "",
+        var developerOptionsPagePackage: String = "",
+        var developerOptionsKeywords: MutableList<String> = mutableListOf(),
+        
+        // === CUSTOM PAGES (User-defined) ===
         var customBlockedPages: MutableSet<String> = mutableSetOf(),
         
-        // Penalty tracking
+        // === PENALTY TRACKING ===
         var lastPenaltyTime: Long = 0,
         var consecutiveAttempts: Int = 0
     )

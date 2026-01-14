@@ -77,28 +77,61 @@ class SelectAppsActivity : AppCompatActivity() {
                 val query = newText ?: ""
                 val filtered = appItemList.filter { it.displayName.contains(query, ignoreCase = true) }
                 (binding.appList.adapter as? ApplicationAdapter)?.updateData(filtered)
+                
+                // Show empty state if no results
+                if (filtered.isEmpty() && query.isNotEmpty()) {
+                    binding.emptyState.visibility = View.VISIBLE
+                    binding.appList.visibility = View.GONE
+                } else {
+                    binding.emptyState.visibility = View.GONE
+                    binding.appList.visibility = View.VISIBLE
+                }
+                
                 return true
             }
         })
     }
 
     private fun loadApps() {
-        val launcherApps = getSystemService(LAUNCHER_APPS_SERVICE) as LauncherApps
-        val profiles = launcherApps.profiles
+        // Show loading
+        binding.loadingProgress.visibility = View.VISIBLE
+        binding.appList.visibility = View.GONE
+        binding.emptyState.visibility = View.GONE
         
-        for (profile in profiles) {
-            val apps = launcherApps.getActivityList(null, profile).map { it.applicationInfo }
-            apps.forEach { info ->
-                if (info.packageName != packageName) {
-                    val label = info.loadLabel(packageManager).toString()
-                    appItemList.add(AppItem(info.packageName, info, label))
+        lifecycleScope.launch(Dispatchers.IO) {
+            val launcherApps = getSystemService(LAUNCHER_APPS_SERVICE) as LauncherApps
+            val profiles = launcherApps.profiles
+            
+            for (profile in profiles) {
+                val apps = launcherApps.getActivityList(null, profile).map { it.applicationInfo }
+                apps.forEach { info ->
+                    if (info.packageName != packageName) {
+                        val label = info.loadLabel(packageManager).toString()
+                        appItemList.add(AppItem(info.packageName, info, label))
+                    }
                 }
             }
+            appItemList.sortBy { it.displayName.lowercase() }
+            val sorted = sortSelectedItemsToTop(appItemList)
+            
+            withContext(Dispatchers.Main) {
+                // Hide loading
+                binding.loadingProgress.visibility = View.GONE
+                
+                if (sorted.isEmpty()) {
+                    // Show empty state
+                    binding.emptyState.visibility = View.VISIBLE
+                    binding.appList.visibility = View.GONE
+                } else {
+                    // Show list
+                    binding.appList.visibility = View.VISIBLE
+                    binding.emptyState.visibility = View.GONE
+                }
+                
+                binding.appList.adapter = ApplicationAdapter(sorted, selectedAppList)
+                updateSelectAllButton()
+            }
         }
-        appItemList.sortBy { it.displayName.lowercase() }
-        val sorted = sortSelectedItemsToTop(appItemList)
-        binding.appList.adapter = ApplicationAdapter(sorted, selectedAppList)
-        updateSelectAllButton()
     }
 
     private fun updateSelectAllButton() {

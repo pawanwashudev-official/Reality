@@ -65,7 +65,9 @@ class StrictModeActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         strictData = prefsLoader.getStrictModeData()
+        learnedPages = prefsLoader.getLearnedSettingsPages()
         updateAntiUninstallSwitch()
+        updateLearningStatus()
         updateUIState()
     }
     
@@ -85,38 +87,73 @@ class StrictModeActivity : AppCompatActivity() {
         binding.switchCalendarLock.isChecked = strictData.isCalendarLocked
         binding.switchAntiTimeCheat.isChecked = strictData.isTimeCheatProtectionEnabled
         binding.switchAccessibilityProtection.isChecked = strictData.isAccessibilityProtectionEnabled
-        binding.switchAppInfoProtection.isChecked = strictData.isAppInfoProtectionEnabled
-        binding.switchGrayscale.isChecked = strictData.isGrayscaleEnabled
+        binding.switchAntiUninstall.isChecked = strictData.isAntiUninstallEnabled
         
         updateLearningStatus()
     }
     
     private fun updateLearningStatus() {
-        // Time Cheat Status
+        // Time Page Status
         if (learnedPages.timeSettingsPageClass.isNotEmpty()) {
-            binding.tvTimeCheatStatus.text = "✓ Learned: ${learnedPages.timeSettingsPageClass.substringAfterLast(".")}"
+            binding.tvTimeCheatStatus.text = "✓ Page: ${learnedPages.timeSettingsPageClass.substringAfterLast(".")}"
             binding.tvTimeCheatStatus.setTextColor(getColor(android.R.color.holo_green_dark))
+            
+            // Show keywords if any
+            if (learnedPages.timeSettingsKeywords.isNotEmpty()) {
+                binding.tvTimeKeywordsStatus.text = "🔑 ${learnedPages.timeSettingsKeywords.joinToString(", ")}"
+                binding.tvTimeKeywordsStatus.visibility = android.view.View.VISIBLE
+            } else {
+                binding.tvTimeKeywordsStatus.visibility = android.view.View.GONE
+            }
         } else {
-            binding.tvTimeCheatStatus.text = "⚠️ Learning required - tap to learn"
+            binding.tvTimeCheatStatus.text = "⚠️ Tap to learn page"
             binding.tvTimeCheatStatus.setTextColor(getColor(android.R.color.holo_orange_dark))
+            binding.tvTimeKeywordsStatus.visibility = android.view.View.GONE
         }
         
-        // Accessibility Status
+        // Accessibility Page Status
         if (learnedPages.accessibilityPageClass.isNotEmpty()) {
-            binding.tvAccessibilityStatus.text = "✓ Learned: ${learnedPages.accessibilityPageClass.substringAfterLast(".")}"
+            binding.tvAccessibilityStatus.text = "✓ Page: ${learnedPages.accessibilityPageClass.substringAfterLast(".")}"
             binding.tvAccessibilityStatus.setTextColor(getColor(android.R.color.holo_green_dark))
+            
+            // Show keywords if any
+            if (learnedPages.accessibilityKeywords.isNotEmpty()) {
+                binding.tvAccessibilityKeywordsStatus.text = "🔑 ${learnedPages.accessibilityKeywords.joinToString(", ")}"
+                binding.tvAccessibilityKeywordsStatus.visibility = android.view.View.VISIBLE
+            } else {
+                binding.tvAccessibilityKeywordsStatus.visibility = android.view.View.GONE
+            }
         } else {
-            binding.tvAccessibilityStatus.text = "⚠️ Learning required - tap to learn"
+            binding.tvAccessibilityStatus.text = "⚠️ Tap to learn page"
             binding.tvAccessibilityStatus.setTextColor(getColor(android.R.color.holo_orange_dark))
+            binding.tvAccessibilityKeywordsStatus.visibility = android.view.View.GONE
         }
         
-        // App Info Status
-        if (learnedPages.appInfoPageClass.isNotEmpty()) {
-            binding.tvAppInfoStatus.text = "✓ Learned: ${learnedPages.appInfoPageClass.substringAfterLast(".")}"
-            binding.tvAppInfoStatus.setTextColor(getColor(android.R.color.holo_green_dark))
+        // Admin Page Status
+        if (learnedPages.deviceAdminPageClass.isNotEmpty()) {
+            binding.tvAdminPageStatus.text = "✓ Page: ${learnedPages.deviceAdminPageClass.substringAfterLast(".")}"
+            binding.tvAdminPageStatus.setTextColor(getColor(android.R.color.holo_green_dark))
+            
+            // Show keywords if any
+            if (learnedPages.deviceAdminKeywords.isNotEmpty()) {
+                binding.tvAdminKeywordsStatus.text = "🔑 ${learnedPages.deviceAdminKeywords.joinToString(", ")}"
+                binding.tvAdminKeywordsStatus.visibility = android.view.View.VISIBLE
+            } else {
+                binding.tvAdminKeywordsStatus.visibility = android.view.View.GONE
+            }
         } else {
-            binding.tvAppInfoStatus.text = "⚠️ Learning required - tap to learn"
-            binding.tvAppInfoStatus.setTextColor(getColor(android.R.color.holo_orange_dark))
+            binding.tvAdminPageStatus.text = "⚠️ Tap to learn page"
+            binding.tvAdminPageStatus.setTextColor(getColor(android.R.color.holo_orange_dark))
+            binding.tvAdminKeywordsStatus.visibility = android.view.View.GONE
+        }
+
+        
+        // Custom pages count
+        val pageCount = learnedPages.customBlockedPages.size
+        if (pageCount > 0) {
+            binding.tvCustomPagesCount.text = "$pageCount custom pages blocked"
+        } else {
+            binding.tvCustomPagesCount.text = "No custom items added"
         }
     }
     
@@ -202,13 +239,13 @@ class StrictModeActivity : AppCompatActivity() {
         binding.switchScheduleLock.isEnabled = true
 
         binding.switchAutoDndLock.isEnabled = true
-        binding.switchGrayscale.isEnabled = true
         binding.switchAntiTimeCheat.isEnabled = true
         binding.switchAntiUninstall.isEnabled = true
     }
     
     private fun attachListeners() {
         // --- Protection Switches with Ratchet Logic ---
+        // Ratchet: Can turn ON anytime, but cannot turn OFF when strict mode is active
         val switches = listOf(
             binding.switchBlocklistLock to { v: Boolean -> strictData.isBlocklistLocked = v },
             binding.switchBedtimeLock to { v: Boolean -> strictData.isBedtimeLocked = v },
@@ -218,9 +255,11 @@ class StrictModeActivity : AppCompatActivity() {
 
             binding.switchAutoDndLock to { v: Boolean -> strictData.isAutoDndLocked = v },
             binding.switchCalendarLock to { v: Boolean -> strictData.isCalendarLocked = v },
+            
+            // Page blocking
             binding.switchAntiTimeCheat to { v: Boolean -> strictData.isTimeCheatProtectionEnabled = v },
             binding.switchAccessibilityProtection to { v: Boolean -> strictData.isAccessibilityProtectionEnabled = v },
-            binding.switchAppInfoProtection to { v: Boolean -> strictData.isAppInfoProtectionEnabled = v }
+            binding.switchAntiUninstall to { v: Boolean -> strictData.isAntiUninstallEnabled = v }
         )
         
         switches.forEach { (switchView, updateFunc) ->
@@ -231,46 +270,41 @@ class StrictModeActivity : AppCompatActivity() {
                     // RATCHET: Cannot turn OFF while active
                     switchView.isChecked = true
                     Toast.makeText(this, "Cannot disable while Strict Mode is active!", Toast.LENGTH_SHORT).show()
+                } else if (!isTryingTurnOff) {
+                    // Trying to turn ON - check if learning is required but not done
+                    val missingLearnData = when (switchView) {
+                        // Page protection switches - require learned page class
+                        binding.switchAntiTimeCheat -> learnedPages.timeSettingsPageClass.isEmpty()
+                        binding.switchAccessibilityProtection -> learnedPages.accessibilityPageClass.isEmpty()
+                        binding.switchAntiUninstall -> learnedPages.deviceAdminPageClass.isEmpty()
+                        else -> false
+                    }
+                    
+                    if (missingLearnData) {
+                        // Prevent toggle, force learning first
+                        switchView.isChecked = false
+                        Toast.makeText(this, "⚠️ Please learn the page first!", Toast.LENGTH_SHORT).show()
+                        
+                        // Auto-open learning dialog
+                        when (switchView) {
+                            binding.switchAntiTimeCheat -> showLearnTimeSettingsDialog()
+                            binding.switchAccessibilityProtection -> showLearnAccessibilityDialog()
+                            binding.switchAntiUninstall -> showLearnAdminDialog()
+                        }
+                        return@setOnClickListener
+                    }
+                    
+                    // Has learning data - allow enable
+                    updateFunc(switchView.isChecked)
+                    saveSettings()
                 } else {
                     updateFunc(switchView.isChecked)
                     saveSettings()
-                    
-                    // Trigger learning for specific protections when turned ON
-                    if (switchView.isChecked) {
-                        when (switchView) {
-                            binding.switchAccessibilityProtection -> showLearnAccessibilityDialog()
-                            binding.switchAntiTimeCheat -> showLearnTimeSettingsDialog()
-                            binding.switchAppInfoProtection -> showLearnAppInfoDialog()
-                        }
-                    }
                 }
             }
         }
         
-        // Grayscale Switch (Special Logic for Permission)
-        binding.switchGrayscale.setOnClickListener {
-            val isChecked = binding.switchGrayscale.isChecked
-            
-            // Ratchet logic
-            if (strictData.isEnabled && !isChecked) {
-                binding.switchGrayscale.isChecked = true
-                Toast.makeText(this, "Cannot disable while Strict Mode is active!", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            
-            // Permission logic
-            if (isChecked) {
-                val hasPermission = ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_SECURE_SETTINGS) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                if (!hasPermission) {
-                    binding.switchGrayscale.isChecked = false
-                    showGrayscalePermissionDialog()
-                    return@setOnClickListener
-                }
-            }
-            
-            strictData.isGrayscaleEnabled = isChecked
-            saveSettings()
-        }
+        // Grayscale Switch REMOVED - feature requires ADB
         
         // Learning status tap - show manage dialog (only if Strict Mode OFF)
         binding.tvTimeCheatStatus.setOnClickListener {
@@ -311,24 +345,31 @@ class StrictModeActivity : AppCompatActivity() {
                 )
             }
         }
-        binding.tvAppInfoStatus.setOnClickListener {
+        // App Info long-press handler REMOVED
+        
+        
+        binding.tvAdminPageStatus.setOnClickListener {
             if (strictData.isEnabled) {
                 Toast.makeText(this, "Cannot modify learning while Strict Mode is active!", Toast.LENGTH_SHORT).show()
             } else {
-                showLearningManageDialog(
-                    Constants.PageType.APP_INFO,
-                    learnedPages.appInfoPageClass,
-                    { showLearnAppInfoDialog() },
-                    { 
-                        learnedPages.appInfoPageClass = ""
-                        prefsLoader.saveLearnedSettingsPages(learnedPages)
-                        binding.switchAppInfoProtection.isChecked = false
-                        strictData.isAppInfoProtectionEnabled = false
-                        saveSettings()
-                        updateLearningStatus()
-                    }
-                )
+                showLearnAdminDialog()
             }
+        }
+
+        
+        // --- Custom Page/Button Buttons ---
+        binding.btnAddCustomPage.setOnClickListener {
+            if (strictData.isEnabled) {
+                Toast.makeText(this, "Cannot add while Strict Mode is active!", Toast.LENGTH_SHORT).show()
+            } else {
+                showLearnCustomPageDialog()
+            }
+        }
+        
+
+        
+        binding.btnManageCustomItems.setOnClickListener {
+            showManageCustomItemsDialog()
         }
         
         // --- Anti-Uninstall ---
@@ -625,14 +666,12 @@ class StrictModeActivity : AppCompatActivity() {
     
     private fun saveSettings() {
         prefsLoader.saveStrictModeData(strictData)
-        // Send BOTH refresh broadcasts so blocker gets updated data
+        // Optimization: Send single broadcast. Service handles both Strict Mode and Focus Mode updates with this.
         sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
-        sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL))
     }
     
     private fun hashPassword(password: String): String {
-        val bytes = MessageDigest.getInstance("SHA-256").digest(password.toByteArray())
-        return bytes.joinToString("") { "%02x".format(it) }
+        return com.neubofy.reality.utils.SecurityUtils.hashPassword(password)
     }
     
     private fun isAdminActive(): Boolean {
@@ -740,14 +779,7 @@ class StrictModeActivity : AppCompatActivity() {
         )
     }
     
-    private fun showLearnAppInfoDialog() {
-        showLearnPageDialog(
-            pageType = Constants.PageType.APP_INFO,
-            title = "Learn App Info Page",
-            description = "Navigate to Reality's App Info page (Settings → Apps → Reality). This blocks Force Stop and Uninstall.",
-            settingsAction = android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-        )
-    }
+    // showLearnAppInfoDialog REMOVED - App Info protection disabled
     
     private fun showLearningManageDialog(
         pageType: Constants.PageType,
@@ -765,45 +797,465 @@ class StrictModeActivity : AppCompatActivity() {
         val isToggleOn = when (pageType) {
             Constants.PageType.TIME_SETTINGS -> strictData.isTimeCheatProtectionEnabled
             Constants.PageType.ACCESSIBILITY -> strictData.isAccessibilityProtectionEnabled
-            Constants.PageType.APP_INFO -> strictData.isAppInfoProtectionEnabled
+            Constants.PageType.APP_INFO -> false // App Info REMOVED
             Constants.PageType.DEVICE_ADMIN -> strictData.isAntiUninstallEnabled
             else -> false
         }
         
+        // Get current keywords
+        val currentKeywords = when (pageType) {
+            Constants.PageType.TIME_SETTINGS -> learnedPages.timeSettingsKeywords
+            Constants.PageType.ACCESSIBILITY -> learnedPages.accessibilityKeywords
+            Constants.PageType.DEVICE_ADMIN -> learnedPages.deviceAdminKeywords
+            else -> mutableListOf()
+        }
+        
         val pageName = currentLearning.substringAfterLast(".")
+        val keywordsText = if (currentKeywords.isNotEmpty()) 
+            "\nKeywords: ${currentKeywords.joinToString(", ")}" else "\nKeywords: None"
         
         if (isToggleOn) {
             // Toggle is ON - only allow re-learn, not delete
             MaterialAlertDialogBuilder(this)
                 .setTitle("Page Learned")
-                .setMessage("Currently blocking: $pageName\n\nTo delete this learning, first turn OFF the protection toggle.")
+                .setMessage("Currently blocking: $pageName$keywordsText\n\nTo delete this learning, first turn OFF the protection toggle.")
                 .setPositiveButton("Re-learn") { _, _ -> onRelearn() }
+                .setNeutralButton("Edit Keywords") { _, _ -> showEditKeywordsDialog(pageType) }
                 .setNegativeButton("Cancel", null)
                 .show()
         } else {
             // Toggle is OFF - allow both re-learn and delete
             MaterialAlertDialogBuilder(this)
                 .setTitle("Manage Learned Page")
-                .setMessage("Currently learned: $pageName")
+                .setMessage("Currently learned: $pageName$keywordsText")
                 .setPositiveButton("Re-learn") { _, _ -> onRelearn() }
+                .setNeutralButton("Edit Keywords") { _, _ -> showEditKeywordsDialog(pageType) }
                 .setNegativeButton("Delete") { _, _ -> 
                     onDelete()
                     Toast.makeText(this, "Learning deleted", Toast.LENGTH_SHORT).show()
                 }
-                .setNeutralButton("Cancel", null)
                 .show()
         }
     }
     
-    private fun showGrayscalePermissionDialog() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Permission Required")
-            .setMessage("To use Grayscale Mode, you must grant the 'WRITE_SECURE_SETTINGS' permission via ADB:\n\nadb shell pm grant com.neubofy.reality android.permission.WRITE_SECURE_SETTINGS")
-            .setPositiveButton("OK") { d, _ -> d.dismiss() }
-            .setNeutralButton("How?") { _, _ -> 
-                val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://brevent.sh/adb"))
-                startActivity(intent)
+    private fun showEditKeywordsDialog(pageType: Constants.PageType) {
+        // Get current keywords
+        val currentKeywords = when (pageType) {
+            Constants.PageType.TIME_SETTINGS -> learnedPages.timeSettingsKeywords
+            Constants.PageType.ACCESSIBILITY -> learnedPages.accessibilityKeywords
+            Constants.PageType.DEVICE_ADMIN -> learnedPages.deviceAdminKeywords
+            Constants.PageType.APP_INFO -> learnedPages.appInfoKeywords
+            Constants.PageType.DEVELOPER_OPTIONS -> learnedPages.developerOptionsKeywords
+        }
+        
+        // Get contextual suggestions (minimal fallback hints - not hardcoded lists)
+        val suggestions = com.neubofy.reality.utils.KeywordSuggestions
+            .getContextualSuggestions(pageType, emptyList())
+            .filter { it !in currentKeywords }
+            .take(5)
+        
+        // Create container
+        val container = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(48, 32, 48, 16)
+        }
+        
+        // Input field
+        val input = EditText(this).apply {
+            hint = "Enter keywords (comma separated)"
+            setText(currentKeywords.joinToString(", "))
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        container.addView(input)
+        
+        // Only show suggestions section if we have suggestions
+        if (suggestions.isNotEmpty()) {
+            // Suggestions label
+            val suggestLabel = android.widget.TextView(this).apply {
+                text = "💡 Quick add (optional):"
+                setTextColor(getColor(android.R.color.darker_gray))
+                textSize = 12f
+                setPadding(0, 24, 0, 8)
             }
+            container.addView(suggestLabel)
+            
+            // Suggestions chips container (horizontal scroll)
+            val chipsScroll = android.widget.HorizontalScrollView(this)
+            val chipsContainer = android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.HORIZONTAL
+            }
+            
+            // Add suggestion chips
+            suggestions.forEach { suggestion ->
+                val chip = com.google.android.material.chip.Chip(this).apply {
+                    text = suggestion
+                    isClickable = true
+                    setOnClickListener {
+                        // Add to input
+                        val currentText = input.text.toString().trim()
+                        input.setText(
+                            if (currentText.isEmpty()) suggestion
+                            else "$currentText, $suggestion"
+                        )
+                        input.setSelection(input.text.length)
+                        // Remove this chip
+                        (parent as? android.view.ViewGroup)?.removeView(this)
+                    }
+                }
+                chipsContainer.addView(chip)
+            }
+            
+            chipsScroll.addView(chipsContainer)
+            container.addView(chipsScroll)
+        }
+        
+        // Max info
+        val infoText = android.widget.TextView(this).apply {
+            text = "📝 Max 10 keywords, each max 50 chars"
+            setTextColor(getColor(android.R.color.darker_gray))
+            textSize = 11f
+            setPadding(0, 16, 0, 0)
+        }
+        container.addView(infoText)
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Edit Keywords")
+            .setMessage("Enter keywords to match against page content.\nIf empty, only class name is matched.")
+            .setView(container)
+            .setPositiveButton("Save") { _, _ ->
+                // Use SecurityUtils for validation (filters empty, duplicates, too-long, max 10)
+                val newKeywords = com.neubofy.reality.utils.SecurityUtils
+                    .validateKeywords(input.text.toString())
+                    .toMutableList()
+                
+                // Save keywords
+                when (pageType) {
+                    Constants.PageType.TIME_SETTINGS -> learnedPages.timeSettingsKeywords = newKeywords
+                    Constants.PageType.ACCESSIBILITY -> learnedPages.accessibilityKeywords = newKeywords
+                    Constants.PageType.DEVICE_ADMIN -> learnedPages.deviceAdminKeywords = newKeywords
+                    Constants.PageType.APP_INFO -> learnedPages.appInfoKeywords = newKeywords
+                    Constants.PageType.DEVELOPER_OPTIONS -> learnedPages.developerOptionsKeywords = newKeywords
+                }
+                
+                prefsLoader.saveLearnedSettingsPages(learnedPages)
+                
+                // Rebuild SettingsBox immediately
+                com.neubofy.reality.utils.SettingsBox.rebuildBox(applicationContext)
+                
+                updateLearningStatus()
+                Toast.makeText(this, "✓ Keywords saved!", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancel", null)
             .show()
+    }
+    
+    // === NEW LEARNING DIALOGS ===
+    
+    private fun showLearnAdminDialog() {
+        showLearnPageDialog(
+            pageType = Constants.PageType.DEVICE_ADMIN,
+            title = "Learn Device Admin Page",
+            description = "Let us learn your device's Device Admin settings page to protect Reality.",
+            settingsAction = android.provider.Settings.ACTION_SECURITY_SETTINGS
+        )
+    }
+    
+
+    
+    private fun showLearnCustomPageDialog() {
+        // First, ask for a name
+        val inputLayout = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(48, 32, 48, 16)
+        }
+        
+        val nameInput = android.widget.EditText(this).apply {
+            hint = "e.g., Developer Options"
+            inputType = android.text.InputType.TYPE_CLASS_TEXT
+        }
+        inputLayout.addView(nameInput)
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Add Custom Page")
+            .setMessage("Name this page (for your reference):")
+            .setView(inputLayout)
+            .setPositiveButton("Next") { _, _ ->
+                val pageName = nameInput.text.toString().ifEmpty { "Custom Page" }
+                
+                MaterialAlertDialogBuilder(this)
+                    .setTitle("Learn: $pageName")
+                    .setMessage("A draggable overlay will appear.\n\n1. Navigate to the Settings page\n2. Tap 'Block This' when on the correct page")
+                    .setPositiveButton("Start") { _, _ ->
+                        val intent = Intent(AppBlockerService.INTENT_ACTION_START_CUSTOM_PAGE_LEARNING)
+                        intent.putExtra("custom_name", pageName)
+                        sendBroadcast(intent)
+                        
+                        try {
+                            startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
+                        } catch (e: Exception) {
+                            Toast.makeText(this, "Could not open Settings.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun showManageCustomItemsDialog() {
+        val scrollView = android.widget.ScrollView(this)
+        val container = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(48, 24, 48, 24)
+        }
+        scrollView.addView(container)
+        
+        // Helper to resolve theme color
+        fun getThemeColor(attrId: Int): Int {
+            val typedValue = android.util.TypedValue()
+            theme.resolveAttribute(attrId, typedValue, true)
+            return typedValue.data
+        }
+        
+        val textColor = getThemeColor(com.google.android.material.R.attr.colorOnSurface)
+        val subTextColor = getThemeColor(com.google.android.material.R.attr.colorOnSurfaceVariant)
+        
+        // Helper to add section
+        fun addSection(title: String, items: MutableSet<String>, isPage: Boolean) {
+            val titleView = android.widget.TextView(this).apply {
+                text = title
+                textSize = 18f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(textColor)
+                setPadding(0, 32, 0, 16)
+            }
+            container.addView(titleView)
+            
+            if (items.isEmpty()) {
+                val emptyView = android.widget.TextView(this).apply {
+                    text = "No items yet"
+                    setTextColor(subTextColor)
+                    setPadding(0, 0, 0, 16)
+                }
+                container.addView(emptyView)
+                return
+            }
+            
+            // Copy list to avoid concurrent modification issues during iteration/update
+            val itemList = items.toList()
+            
+            for (originalString in itemList) {
+                // Parse: ENABLED|NAME|VALUE
+                var isEnabled = true
+                var name = ""
+                var value = ""
+                
+                val parts = originalString.split("|")
+                // Check if new format: Starts with 0 or 1
+                if (parts.isNotEmpty() && (parts[0] == "0" || parts[0] == "1") && parts.size >= 3) {
+                    isEnabled = parts[0] == "1"
+                    name = parts[1]
+                    // Reconstruct value from remaining parts
+                    value = parts.drop(2).joinToString("|")
+                } else {
+                    // Legacy format
+                    isEnabled = true
+                    name = if (isPage) "Custom Page" else "Custom Button"
+                    value = originalString
+                }
+                
+                // Row View
+                val row = android.widget.LinearLayout(this).apply {
+                    orientation = android.widget.LinearLayout.HORIZONTAL
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                    setPadding(0, 16, 0, 16)
+                }
+                
+                // Text Container
+                val textContainer = android.widget.LinearLayout(this).apply {
+                    orientation = android.widget.LinearLayout.VERTICAL
+                    layoutParams = android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                }
+                
+                val nameView = android.widget.TextView(this).apply {
+                    text = name
+                    textSize = 16f
+                    setTextColor(textColor)
+                    setTypeface(null, android.graphics.Typeface.BOLD)
+                }
+                
+                val valueView = android.widget.TextView(this).apply {
+                    text = value.take(50) + if(value.length > 50) "..." else ""
+                    textSize = 12f
+                    setTextColor(subTextColor)
+                }
+                
+                textContainer.addView(nameView)
+                textContainer.addView(valueView)
+                row.addView(textContainer)
+                
+                // Switch
+                val toggle = com.google.android.material.materialswitch.MaterialSwitch(this).apply {
+                    isChecked = isEnabled
+                }
+                
+                toggle.setOnCheckedChangeListener { _, isChecked ->
+                     // Strict Mode Check: Cannot turn OFF if Strict Mode is active
+                     if (!isChecked && strictData.isEnabled) {
+                         toggle.isChecked = true // Revert
+                         Toast.makeText(this@StrictModeActivity, "🚫 Strict Mode Active: Cannot disable protection!", Toast.LENGTH_SHORT).show()
+                         return@setOnCheckedChangeListener
+                     }
+                     
+                     // Update in set
+                     items.remove(originalString)
+                     val newStatus = if (isChecked) "1" else "0"
+                     val newString = "$newStatus|$name|$value"
+                     items.add(newString)
+                     
+                     prefsLoader.saveLearnedSettingsPages(learnedPages)
+                     // Trigger service reload
+                     sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL))
+                }
+                
+                row.addView(toggle)
+                
+                // Delete Button
+                val deleteBtn = android.widget.ImageButton(this).apply {
+                    setImageResource(android.R.drawable.ic_menu_delete) // Standard delete icon
+                    background = null
+                    setColorFilter(0xFFFF4444.toInt()) // Red
+                    setPadding(24, 8, 8, 8)
+                    
+                    setOnClickListener {
+                        if (strictData.isEnabled) {
+                            Toast.makeText(this@StrictModeActivity, "🚫 Strict Mode Active: Cannot delete items!", Toast.LENGTH_SHORT).show()
+                            return@setOnClickListener
+                        }
+                        
+                        MaterialAlertDialogBuilder(this@StrictModeActivity)
+                            .setTitle("Delete Item?")
+                            .setMessage("Remove '$name' from protections?")
+                            .setPositiveButton("Delete") { _, _ ->
+                                items.remove(originalString)
+                                prefsLoader.saveLearnedSettingsPages(learnedPages)
+                                sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL))
+                                container.removeView(row) // Remove row visually
+                                updateLearningStatus() // Update count
+                            }
+                            .setNegativeButton("Cancel", null)
+                            .show()
+                    }
+                }
+                
+                row.addView(deleteBtn)
+                container.addView(row)
+                
+                // Divider
+                val divider = android.view.View(this).apply {
+                    layoutParams = android.widget.LinearLayout.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, 1)
+                    setBackgroundColor(0x33AAAAAA.toInt())
+                }
+                container.addView(divider)
+            }
+        }
+        
+        addSection("Custom Pages", learnedPages.customBlockedPages, true)
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Manage Custom Items")
+            .setView(scrollView)
+            .setPositiveButton("Done") { _, _ -> updateLearningStatus() }
+            .setNeutralButton("🗑️ Reset All Data") { _, _ -> showResetAllDataDialog() }
+            .show()
+    }
+    
+    /**
+     * Reset ALL learned data - pages, keywords
+     * Shows double confirmation to prevent accidents
+     */
+    private fun showResetAllDataDialog() {
+        if (strictData.isEnabled) {
+            Toast.makeText(this, "🚫 Cannot reset while Strict Mode is active!", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        val pageCount = listOf(
+            learnedPages.accessibilityPageClass,
+            learnedPages.deviceAdminPageClass,
+            learnedPages.appInfoPageClass,
+            learnedPages.timeSettingsPageClass,
+            learnedPages.developerOptionsPageClass
+        ).count { it.isNotEmpty() }
+        
+        val customPages = learnedPages.customBlockedPages.size
+        
+        val summary = """
+            This will DELETE all learned data:
+            
+            • $pageCount standard pages
+            • $customPages custom pages
+            • All keywords
+            
+            This cannot be undone!
+        """.trimIndent()
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("⚠️ Reset All Learned Data")
+            .setMessage(summary)
+            .setPositiveButton("Reset Everything") { _, _ ->
+                // Double confirmation
+                MaterialAlertDialogBuilder(this)
+                    .setTitle("Are you absolutely sure?")
+                    .setMessage("All pages and keywords will be permanently deleted.")
+                    .setPositiveButton("Yes, Delete All") { _, _ ->
+                        performResetAllData()
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun performResetAllData() {
+        // Clear all page learnings
+        learnedPages.accessibilityPageClass = ""
+        learnedPages.accessibilityPagePackage = ""
+        learnedPages.accessibilityKeywords.clear()
+        
+        learnedPages.deviceAdminPageClass = ""
+        learnedPages.deviceAdminPagePackage = ""
+        learnedPages.deviceAdminKeywords.clear()
+        
+        learnedPages.appInfoPageClass = ""
+        learnedPages.appInfoPagePackage = ""
+        learnedPages.appInfoKeywords.clear()
+        
+        learnedPages.timeSettingsPageClass = ""
+        learnedPages.timeSettingsPagePackage = ""
+        learnedPages.timeSettingsKeywords.clear()
+        
+        learnedPages.developerOptionsPageClass = ""
+        learnedPages.developerOptionsPagePackage = ""
+        learnedPages.developerOptionsKeywords.clear()
+        
+        // Clear custom items
+        learnedPages.customBlockedPages.clear()
+        
+        // Save
+        prefsLoader.saveLearnedSettingsPages(learnedPages)
+        
+        // Rebuild SettingsBox
+        com.neubofy.reality.utils.SettingsBox.rebuildBox(applicationContext)
+        
+        // Update UI
+        updateLearningStatus()
+        
+        Toast.makeText(this, "✓ All learned data has been reset", Toast.LENGTH_LONG).show()
     }
 }

@@ -109,6 +109,12 @@ class SettingsActivity : AppCompatActivity() {
         // Study URL moved to ReminderActivity
         
         // Sync switch with card click (Since switch is disabled/not clickable, card handles it)
+        
+        // Terminal Log Toggle
+        binding.switchTerminalLog.setOnCheckedChangeListener { _, isChecked ->
+            val appPrefs = getSharedPreferences("reality_prefs", MODE_PRIVATE)
+            appPrefs.edit().putBoolean("show_terminal_log", isChecked).apply()
+        }
     }
 
     private fun updateUI() {
@@ -160,6 +166,11 @@ class SettingsActivity : AppCompatActivity() {
                 binding.tvDndStatus.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
             }
         }
+        
+        // Terminal Log Toggle
+        val appPrefs = getSharedPreferences("reality_prefs", MODE_PRIVATE)
+        val isTerminalLogEnabled = appPrefs.getBoolean("show_terminal_log", true) // Default ON
+        binding.switchTerminalLog.isChecked = isTerminalLogEnabled
     }
     
 

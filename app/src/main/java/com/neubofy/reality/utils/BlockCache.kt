@@ -11,7 +11,8 @@ import kotlinx.coroutines.sync.withLock
  * No fallback logic. No real-time calculations. Just check the box.
  * 
  * Box is refreshed:
- * - Every 3 minutes (by BlockCacheWorker)
+ * - Every 15 minutes (by HeartbeatWorker - unified with SettingsBox)
+ * - On screen unlock (event-driven)
  * - When Focus Mode starts/stops
  * - When any Schedule starts/stops
  * - When Blocklist changes
@@ -89,16 +90,18 @@ object BlockCache {
      * Called every 3 minutes by worker, and immediately on any trigger.
      */
     suspend fun rebuildBox(context: Context) {
-        mutex.withLock {
-            try {
-                // ATOMIC SWAP: Create a completely new box. 
-                // The old 'blockedApps' is still active and protecting the phone while we build this.
-                val newBox = mutableMapOf<String, MutableSet<String>>()
-                
                 val prefs = SavedPreferencesLoader(context)
+                // Get DB reference OUTSIDE the mutex to avoid holding the lock during DB initialization
                 val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(context)
                 val now = System.currentTimeMillis()
-                val calendar = java.util.Calendar.getInstance()
+                
+                mutex.withLock {
+                    try {
+                        // ATOMIC SWAP: Create a completely new box. 
+                        // The old 'blockedApps' is still active and protecting the phone while we build this.
+                        val newBox = mutableMapOf<String, MutableSet<String>>()
+                        
+                        val calendar = java.util.Calendar.getInstance()
                 val currentMins = calendar.get(java.util.Calendar.HOUR_OF_DAY) * 60 + 
                                   calendar.get(java.util.Calendar.MINUTE)
                 val currentDay = calendar.get(java.util.Calendar.DAY_OF_WEEK)

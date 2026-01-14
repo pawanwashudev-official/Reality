@@ -33,14 +33,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="20dp">
 
             <!-- Status Header Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
+                android:layout_marginBottom="20dp"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
@@ -52,13 +52,13 @@
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="32dp">
+                    android:padding="28dp">
 
                     <ImageView
                         android:id="@+id/imgStatusIcon"
-                        android:layout_width="64dp"
-                        android:layout_height="64dp"
-                        android:layout_marginBottom="16dp"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:layout_marginBottom="12dp"
                         app:tint="?attr/colorOutline"
                         android:src="@drawable/baseline_lock_open_24" />
 
@@ -67,25 +67,24 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Strict Mode Inactive"
-                        android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+                        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
                         android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/tvStatusDesc"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="4dp"
                         android:gravity="center"
-                        android:text="Prevents you from disabling your blocks"
+                        android:text="Prevents bypassing your blocks"
                         android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
-                    <!-- Timer Display (only shown when timer active) -->
                     <TextView
                         android:id="@+id/tvTimerRemaining"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
+                        android:layout_marginTop="12dp"
                         android:visibility="gone"
                         android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
                         android:textColor="?attr/colorPrimary" />
@@ -93,19 +92,19 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Protection Settings Section -->
+            <!-- What to Lock Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="What to Lock"
+                android:text="📦 What to Lock"
                 android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                 android:textColor="?attr/colorPrimary"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="12dp" />
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="20dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
@@ -163,7 +162,6 @@
                         android:layout_marginBottom="8dp"
                         android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
-
                     <com.google.android.material.materialswitch.MaterialSwitch
                         android:id="@+id/switchAutoDndLock"
                         android:layout_width="match_parent"
@@ -179,79 +177,259 @@
                         android:layout_height="wrap_content"
                         android:text="Lock Calendar Sync"
                         android:checked="true"
-                        android:layout_marginBottom="8dp"
                         android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switchGrayscale"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Grayscale Mode (Needs ADB)"
-                        android:checked="false"
-                        android:layout_marginBottom="8dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switchAntiTimeCheat"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Block Time Changes"
-                        android:checked="false"
-                        android:layout_marginBottom="4dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-                    
-                    <TextView
-                        android:id="@+id/tvTimeCheatStatus"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="⚠️ Learning required"
-                        android:paddingStart="16dp"
-                        android:layout_marginBottom="12dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switchAccessibilityProtection"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Block Accessibility Settings"
-                        android:checked="false"
-                        android:layout_marginBottom="4dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-                    
-                    <TextView
-                        android:id="@+id/tvAccessibilityStatus"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="⚠️ Learning required"
-                        android:paddingStart="16dp"
-                        android:layout_marginBottom="12dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-                        
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switchAppInfoProtection"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Block App Info Page"
-                        android:checked="false"
-                        android:layout_marginBottom="4dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-                    
-                    <TextView
-                        android:id="@+id/tvAppInfoStatus"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="⚠️ Learning required"
-                        android:paddingStart="16dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Anti-Uninstall Card -->
+            <!-- Bypass Protection Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🛡️ Bypass Protection"
+                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                android:textColor="?attr/colorPrimary"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Time Settings Protection -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardTimeProtection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⏰ Time Settings Protection"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Page Blocking -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="📄 Block Page"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchAntiTimeCheat"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvTimeCheatStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⚠️ Tap to learn page"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:background="?attr/selectableItemBackground"
+                        android:paddingStart="24dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="2dp" />
+
+                    <TextView
+                        android:id="@+id/tvTimeKeywordsStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Keywords: None"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOutline"
+                        android:paddingStart="24dp"
+                        android:paddingBottom="8dp"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Accessibility Protection -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardAccessibilityProtection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="♿ Accessibility Protection"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Page Blocking -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="📄 Block Page"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchAccessibilityProtection"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvAccessibilityStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⚠️ Tap to learn page"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:background="?attr/selectableItemBackground"
+                        android:paddingStart="24dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="2dp" />
+
+                    <TextView
+                        android:id="@+id/tvAccessibilityKeywordsStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Keywords: None"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOutline"
+                        android:paddingStart="24dp"
+                        android:paddingBottom="8dp"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Device Admin Protection -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardAdminProtection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="🛡️ Device Admin Protection"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:id="@+id/tvAdminPermissionStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⚠️ Device Admin permission required"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Page Blocking -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="📄 Block Admin Page"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchAntiUninstall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvAdminPageStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⚠️ Tap to learn page"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:background="?attr/selectableItemBackground"
+                        android:paddingStart="24dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="2dp" />
+
+                    <TextView
+                        android:id="@+id/tvAdminKeywordsStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Keywords: None"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOutline"
+                        android:paddingStart="24dp"
+                        android:paddingBottom="8dp"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Custom Blocked Items Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📝 Custom Blocked Items"
+                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                android:textColor="?attr/colorPrimary"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardCustomPages"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
@@ -267,21 +445,36 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switchAntiUninstall"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Anti-Uninstall Protection"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
                     <TextView
+                        android:id="@+id/tvCustomPagesCount"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Requires Device Admin. Prevents app removal."
-                        android:layout_marginTop="4dp"
-                        android:paddingStart="16dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:text="No custom items added"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                         android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="12dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAddCustomPage"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="+ Custom Page"
+                            style="@style/Widget.Material3.Button.TonalButton" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnManageCustomItems"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Manage Items"
+                        style="@style/Widget.Material3.Button.OutlinedButton" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -290,13 +483,13 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnActivate"
                 android:layout_width="match_parent"
-                android:layout_height="64dp"
+                android:layout_height="56dp"
                 android:text="Activate Strict Mode"
-                android:textSize="18sp"
-                app:cornerRadius="32dp"
-                android:layout_marginBottom="16dp" />
+                android:textSize="16sp"
+                app:cornerRadius="28dp"
+                android:layout_marginBottom="12dp" />
 
-            <!-- Forgot Password Button (only visible when password mode active) -->
+            <!-- Forgot Password Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnForgotPassword"
                 android:layout_width="match_parent"
@@ -310,3 +503,5 @@
     </androidx.core.widget.NestedScrollView>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+
