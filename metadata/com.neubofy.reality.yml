@@ -1,0 +1,70 @@
+Categories:
+  - Security
+  - Time
+License: GPL-3.0-only
+AuthorName: Pawan Washudev
+AuthorEmail: pawanwashudev@gmail.com
+AuthorWebSite: https://neubofyreality.vercel.app/
+SourceCode: https://github.com/pawanwashudev-official/Reality
+IssueTracker: https://github.com/pawanwashudev-official/Reality/issues
+Changelog: https://github.com/pawanwashudev-official/Reality/releases
+
+AutoName: Reality
+
+Summary: Military-grade app blocker with unbreakable Strict Mode
+
+Description: |
+  Reality is the world's most powerful, private, and unbreakable focus app.
+  
+  Unlike other blockers that are easy to bypass, Reality features military-grade
+  protection that prevents you from cheating on yourself.
+  
+  <b>Key Features:</b>
+  
+  * <b>Unbreakable Strict Mode</b> - Timer Lock (up to 20 days), Password Lock
+    with 24-hour recovery cooldown, and anti-uninstall protection
+  * <b>Intelligent App Blocking</b> - Block any app with O(1) lookup performance,
+    per-app time limits, and smart app groups
+  * <b>Universal Website Blocking</b> - Works across all browsers including Chrome,
+    Firefox, Brave, Edge, and Samsung Internet
+  * <b>Advanced Scheduling</b> - Google Calendar sync, bedtime mode, and custom
+    focus sessions
+  * <b>Smart Reminders</b> - Full-screen alarms with deep link support
+  * <b>Usage Analytics</b> - Beautiful charts showing your screen time
+  
+  <b>Privacy First:</b>
+  
+  * No account required - we don't know who you are
+  * Zero internet permission for core blocking
+  * No analytics, no trackers, no ads
+  * 100% open source (GPLv3)
+  * All data stays on your device
+  
+  <b>Permissions Transparency:</b>
+  
+  * Accessibility Service - Required to detect and block apps/websites
+  * Usage Stats - Calculate and display screen time statistics
+  * Display Over Apps - Show block screens
+  * Device Admin - Optional, prevents uninstallation in Strict Mode
+  * Calendar - Optional, sync focus with calendar events
+
+RepoType: git
+Repo: https://github.com/pawanwashudev-official/Reality.git
+
+Builds:
+  - versionName: 1.0.1
+    versionCode: 12
+    commit: v1.0.1
+    subdir: app
+    submodules: true
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-17-jdk-headless
+      - update-java-alternatives -a
+    gradle:
+      - yes
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.1
+CurrentVersionCode: 12
