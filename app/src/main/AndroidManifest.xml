@@ -176,7 +176,38 @@
             android:theme="@style/Theme.Reality" />
 
         <activity
+            android:name=".ui.activity.AIChatActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize"/>
+
+        <activity
             android:name=".ui.activity.ProfileActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.activity.AISettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.activity.NightlyActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.activity.NightlySettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.activity.TapasyaActivity"
             android:exported="false"
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
@@ -219,6 +250,12 @@
 
         <service
             android:name=".services.AlarmService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <service
+            android:name=".services.TapasyaService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />

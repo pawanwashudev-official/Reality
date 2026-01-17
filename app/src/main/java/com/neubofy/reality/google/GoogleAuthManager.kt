@@ -31,7 +31,7 @@ import kotlinx.coroutines.withContext
 object GoogleAuthManager {
     
     // Web Client ID from Google Cloud Console
-    private const val WEB_CLIENT_ID = "163374197397-mkmhn9trpthu5f9imrkgtjo52rrnb1sh.apps.googleusercontent.com"
+    private const val WEB_CLIENT_ID = com.neubofy.reality.BuildConfig.WEB_CLIENT_ID
     
     private const val PREF_NAME = "google_auth_prefs"
     private const val KEY_USER_EMAIL = "user_email"

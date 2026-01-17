@@ -14,9 +14,14 @@
         android:id="@+id/nav_calendar"
         android:icon="@drawable/baseline_calendar_today_24"
         android:title="Calendar" />
+
+    <item
+        android:id="@+id/nav_nightly"
+        android:icon="@drawable/baseline_bedtime_24"
+        android:title="Nightly" />
         
     <item
-        android:id="@+id/nav_profile"
-        android:icon="@drawable/baseline_account_circle_24"
-        android:title="Profile" />
+        android:id="@+id/nav_tapasya"
+        android:icon="@drawable/baseline_timer_24"
+        android:title="Tapasya" />
 </menu>

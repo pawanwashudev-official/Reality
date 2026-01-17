@@ -31,6 +31,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
         setProperty("archivesBaseName", "Reality-v${versionName}")
+        
+        // Expose WEB_CLIENT_ID from local.properties to BuildConfig
+        val webClientId = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
+        buildConfigField("String", "WEB_CLIENT_ID", "\"$webClientId\"")
     }
     
     packaging {
@@ -171,4 +175,14 @@ dependencies {
 
     // Coil for Image Loading
     implementation("io.coil-kt:coil:2.6.0")
+    
+    // Markdown Rendering
+    implementation("io.noties.markwon:core:4.6.2")
+    implementation("io.noties.markwon:ext-tables:4.6.2")
+    implementation("io.noties.markwon:ext-strikethrough:4.6.2")
+    implementation("io.noties.markwon:ext-tasklist:4.6.2")
+    implementation("io.noties.markwon:html:4.6.2")
+    implementation("io.noties.markwon:image:4.6.2")
+    implementation("io.noties.markwon:image-coil:4.6.2")
+    // implementation("io.noties.markwon:image-coil:4.6.2") // Conflict with coil version often, skip for now unless requested
 }

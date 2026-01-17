@@ -88,6 +88,16 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(Intent(this, AppearanceActivity::class.java))
         }
 
+        // AI Settings
+        binding.cardAiSettings.setOnClickListener {
+            startActivity(Intent(this, AISettingsActivity::class.java))
+        }
+
+        // Nightly Settings
+        binding.cardNightlySettings.setOnClickListener {
+            startActivity(Intent(this, NightlySettingsActivity::class.java))
+        }
+
         // Auto DND Logic
         binding.cardAutoDnd.setOnClickListener {
             val notificationManager = getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
@@ -128,19 +138,8 @@ class SettingsActivity : AppCompatActivity() {
     
     private fun handleAccountClick() {
         if (com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)) {
-            // Already signed in -> Show Sign Out Dialog
-            val email = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(this)
-            
-            MaterialAlertDialogBuilder(this)
-                .setTitle("Google Account")
-                .setMessage("Signed in as $email\n\nDo you want to sign out?")
-                .setPositiveButton("Sign Out") { _, _ ->
-                    com.neubofy.reality.google.GoogleAuthManager.signOut(this)
-                    updateUI()
-                    android.widget.Toast.makeText(this, "Signed out", android.widget.Toast.LENGTH_SHORT).show()
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
+            // Already signed in -> Open Profile Activity for advanced management
+            startActivity(Intent(this, ProfileActivity::class.java))
         } else {
             // Sign In
             performGoogleSignIn()

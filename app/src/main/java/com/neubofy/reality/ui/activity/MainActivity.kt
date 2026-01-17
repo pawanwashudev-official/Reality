@@ -216,7 +216,12 @@ class MainActivity : AppCompatActivity() {
              if (status.isActive) {
                  val remaining = status.endTime - System.currentTimeMillis()
                  binding.tvFocusCardTitle.text = status.title
-                 if (remaining > 0) {
+                 
+                 // Check if Tapasya is running
+                 val data = savedPreferencesLoader.getFocusModeData()
+                 if (data.isTapasyaTriggered) {
+                     binding.tvFocusCardStatus.text = "Active until stopped"
+                 } else if (remaining > 0) {
                      val timeStr = com.neubofy.reality.utils.TimeTools.formatTime(remaining, showSeconds = true)
                      binding.tvFocusCardStatus.text = "Ends in $timeStr"
                  } else {
@@ -225,8 +230,14 @@ class MainActivity : AppCompatActivity() {
                  
                  // Button Text
                  if (status.type == FocusType.MANUAL_FOCUS) {
-                     binding.focusMode.text = "Stop Session"
-                     binding.focusMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.error_color))
+                     val data = savedPreferencesLoader.getFocusModeData()
+                     if (data.isTapasyaTriggered) {
+                         binding.focusMode.text = "Tapasya Running"
+                         binding.focusMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.purple_500)) // Use a distinct color
+                     } else {
+                         binding.focusMode.text = "Stop Session"
+                         binding.focusMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.error_color))
+                     }
                  } else {
                      binding.focusMode.text = "Locked by Schedule"
                      binding.focusMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.gray_dark))
@@ -355,6 +366,13 @@ class MainActivity : AppCompatActivity() {
                 // Stop Session
                 if (status.type == FocusType.MANUAL_FOCUS) {
                     val data = savedPreferencesLoader.getFocusModeData()
+                    
+                    // Tapasya Guard
+                    if (data.isTapasyaTriggered) {
+                        Toast.makeText(this, "Active Tapasya session running. Stop it from the Tapasya Clock.", Toast.LENGTH_LONG).show()
+                        return@setOnClickListener
+                    }
+                    
                     data.isTurnedOn = false
                     savedPreferencesLoader.saveFocusModeData(data)
                     sendRefreshRequest(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE)
@@ -399,14 +417,78 @@ class MainActivity : AppCompatActivity() {
                     }
                     false
                 }
-                R.id.nav_profile -> {
-                    startActivity(Intent(this, ProfileActivity::class.java))
-                    overridePendingTransition(0, 0)
-                    finish()
+                R.id.nav_nightly -> {
+                    val intent = Intent(this, NightlyActivity::class.java)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                    startActivity(intent)
+                    false // Don't select, let NightlyActivity handle its own nav
+                }
+                R.id.nav_tapasya -> {
+                    val intent = Intent(this, TapasyaActivity::class.java)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                    startActivity(intent)
+                    false
+                }
+                else -> false
+            }
+        }
+        
+        // Setup AI Chat FAB
+        setupAiChatFab()
+    }
+    
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupAiChatFab() {
+        var dX = 0f
+        var dY = 0f
+        var startX = 0f
+        var startY = 0f
+        val clickThreshold = 10
+        
+        binding.fabAiChat.setOnTouchListener { view, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    dX = view.x - event.rawX
+                    dY = view.y - event.rawY
+                    startX = event.rawX
+                    startY = event.rawY
+                    true
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    val newX = event.rawX + dX
+                    val newY = event.rawY + dY
+                    
+                    // Bounds checking
+                    val parent = view.parent as? android.view.View
+                    if (parent != null) {
+                        val maxX = parent.width - view.width.toFloat()
+                        val maxY = parent.height - view.height.toFloat()
+                        view.x = newX.coerceIn(0f, maxX)
+                        view.y = newY.coerceIn(0f, maxY)
+                    } else {
+                        view.x = newX
+                        view.y = newY
+                    }
+                    true
+                }
+                android.view.MotionEvent.ACTION_UP -> {
+                    val endX = event.rawX
+                    val endY = event.rawY
+                    val diffX = kotlin.math.abs(endX - startX)
+                    val diffY = kotlin.math.abs(endY - startY)
+                    
+                    if (diffX < clickThreshold && diffY < clickThreshold) {
+                        // It's a click
+                        view.performClick()
+                    }
                     true
                 }
                 else -> false
             }
+        }
+        
+        binding.fabAiChat.setOnClickListener {
+            startActivity(Intent(this, AIChatActivity::class.java))
         }
     }
     

@@ -46,7 +46,7 @@ class ProfileActivity : AppCompatActivity() {
         binding = ActivityProfileBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
-        setupBottomNav()
+        setupBackNavigation()
         setupProfileCard()
         setupConnectors()
         updateUI()
@@ -330,38 +330,9 @@ class ProfileActivity : AppCompatActivity() {
         getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit().clear().apply()
     }
     
-    private fun setupBottomNav() {
-        binding.bottomNavigation.selectedItemId = R.id.nav_profile
-        
-        binding.bottomNavigation.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home -> {
-                    startActivity(Intent(this, MainActivity::class.java))
-                    overridePendingTransition(0, 0)
-                    finish()
-                    true
-                }
-                R.id.nav_tasks -> {
-                    val launchIntent = packageManager.getLaunchIntentForPackage("com.google.android.apps.tasks")
-                    if (launchIntent != null) {
-                        startActivity(launchIntent)
-                    } else {
-                        Toast.makeText(this, "Google Tasks not installed", Toast.LENGTH_SHORT).show()
-                    }
-                    false
-                }
-                R.id.nav_calendar -> {
-                    val launchIntent = packageManager.getLaunchIntentForPackage("com.google.android.calendar")
-                    if (launchIntent != null) {
-                        startActivity(launchIntent)
-                    } else {
-                        Toast.makeText(this, "Google Calendar not installed", Toast.LENGTH_SHORT).show()
-                    }
-                    false
-                }
-                R.id.nav_profile -> true
-                else -> false
-            }
+    private fun setupBackNavigation() {
+        binding.btnBack.setOnClickListener {
+            finish()
         }
     }
     

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Session Name"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_marginBottom="16dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_session_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tapasya"
+            android:inputType="textCapWords"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Target Time Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="4dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Target Time"
+            android:textColor="?attr/colorOnSurface"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:id="@+id/tv_target_time_val"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="60m"
+            android:textColor="?attr/colorPrimary"/>
+    </LinearLayout>
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/slider_target_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="15"
+        android:valueTo="360"
+        android:stepSize="15"
+        android:value="60"
+        app:labelBehavior="floating"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Pause Limit Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="4dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Pause Limit"
+            android:textColor="?attr/colorOnSurface"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:id="@+id/tv_pause_limit_val"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="15m"
+            android:textColor="?attr/colorSecondary"/>
+    </LinearLayout>
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/slider_pause_limit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="1"
+        android:valueTo="30"
+        android:stepSize="1"
+        android:value="15"
+        app:labelBehavior="floating"/>
+
+</LinearLayout>

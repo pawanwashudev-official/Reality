@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:colorBackground">
+
+    <!-- Gradient Glow at Top -->
+    <View
+        android:id="@+id/gradient_glow"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:background="@drawable/dialog_gradient_background"
+        android:alpha="0.2"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <!-- Header -->
+    <LinearLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="16dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/btn_back"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:padding="10dp"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="?attr/colorOnSurface"
+            android:background="@drawable/back_button_bg"
+            android:contentDescription="Back"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Tapasya"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface"
+            android:layout_marginStart="16dp"/>
+
+        <ImageView
+            android:id="@+id/btn_settings"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:padding="10dp"
+            android:src="@drawable/baseline_settings_24"
+            app:tint="?attr/colorOnSurface"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Settings"
+            android:visibility="visible"/>
+    </LinearLayout>
+
+    <!-- Main Content -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/header"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:clipToPadding="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:padding="24dp">
+
+
+            <!-- 3D Water Wave Clock Container -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="24dp"
+                android:paddingBottom="48dp"
+                android:clipChildren="false"
+                android:clipToPadding="false">
+
+                <!-- Glow Behind Clock -->
+                <View
+                    android:layout_width="300dp"
+                    android:layout_height="300dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/dialog_gradient_background"
+                    android:alpha="0.15"/>
+
+                <!-- Water Wave Clock -->
+                <com.neubofy.reality.ui.view.WaterWaveView
+                    android:id="@+id/wave_view"
+                    android:layout_width="320dp"
+                    android:layout_height="320dp"
+                    android:layout_gravity="center"/>
+
+                <!-- Timer Text Overlay -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:elevation="10dp">
+
+                    <!-- Main Timer Display -->
+                    <TextView
+                        android:id="@+id/tv_timer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="00:00:00"
+                        android:textSize="48sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface"
+                        android:fontFamily="monospace"
+                        android:shadowColor="#80000000"
+                        android:shadowDx="0"
+                        android:shadowDy="2"
+                        android:shadowRadius="4"/>
+
+                    <!-- Status Text -->
+                    <TextView
+                        android:id="@+id/tv_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ready"
+                        android:textSize="16sp"
+                        android:textColor="?attr/colorOnSurface"
+                        android:alpha="0.8"
+                        android:layout_marginTop="4dp"
+                        android:shadowColor="#80000000"
+                        android:shadowDx="0"
+                        android:shadowDy="1"
+                        android:shadowRadius="2"/>
+
+                    <!-- Rest Timer (shown during rest) -->
+                    <TextView
+                        android:id="@+id/tv_rest_timer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Rest: 05:00"
+                        android:textSize="16sp"
+                        android:textColor="?attr/colorPrimary"
+                        android:layout_marginTop="4dp"
+                        android:visibility="gone"
+                        android:background="@drawable/rounded_bg_surface_transparent"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="4dp"/>
+                </LinearLayout>
+            </FrameLayout>
+
+            <!-- Control Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginBottom="24dp">
+
+                <!-- Start/Resume Button -->
+                <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+                    android:id="@+id/btn_start"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Start"
+                    app:icon="@drawable/baseline_play_arrow_24"
+                    app:backgroundTint="?attr/colorPrimary"
+                    android:textColor="@android:color/white"
+                    app:iconTint="@android:color/white"
+                    android:layout_marginEnd="12dp"/>
+
+                <!-- Pause/Rest Button -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btn_pause"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/baseline_pause_24"
+                    app:backgroundTint="?attr/colorSecondary"
+                    app:tint="@android:color/white"
+                    android:visibility="gone"/>
+
+                <!-- Stop Button -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btn_stop"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/baseline_stop_24"
+                    app:backgroundTint="@color/error_color"
+                    app:tint="@android:color/white"
+                    android:layout_marginStart="12dp"
+                    android:visibility="gone"/>
+
+                <!-- Reset Button -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btn_reset"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/baseline_refresh_24"
+                    app:backgroundTint="?attr/colorSurfaceVariant"
+                    app:tint="?attr/colorOnSurfaceVariant"
+                    android:layout_marginStart="12dp"
+                    android:visibility="gone"/>
+            </LinearLayout>
+
+            <!-- Scheduled Sessions Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="8dp">
+                
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Scheduled Sessions"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface"
+                        android:layout_marginStart="4dp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_show_events"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Show Today"
+                        app:icon="@drawable/baseline_view_list_24"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:padding="0dp"/>
+                </LinearLayout>
+
+                <!-- Permission / Empty State -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_calendar_perm"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardCornerRadius="16dp"
+                    app:strokeWidth="0dp"
+                    android:visibility="gone">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="24dp"
+                        android:gravity="center">
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/baseline_calendar_today_24"
+                            app:tint="?attr/colorOnSurfaceVariant"
+                            android:layout_marginBottom="12dp"/>
+                        <TextView
+                            android:id="@+id/tv_perm_message"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Sync with your calendar to see study blocks."
+                            android:textSize="14sp"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:gravity="center"/>
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_connect_calendar"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Connect Calendar"
+                            android:layout_marginTop="16dp"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Events List -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_calendar_events"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:visibility="gone"/>
+                    
+            </LinearLayout>
+
+            <!-- Session History Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp">
+
+                <!-- Day Navigator -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <ImageView
+                        android:id="@+id/btn_prev_day"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_arrow_back"
+                        app:tint="?attr/colorOnSurface"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Previous Day"/>
+
+                    <TextView
+                        android:id="@+id/tv_selected_date"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Today"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:gravity="center"/>
+
+                    <ImageView
+                        android:id="@+id/btn_next_day"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_arrow_forward"
+                        app:tint="?attr/colorOnSurface"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Next Day"/>
+                </LinearLayout>
+
+                <!-- Sessions List -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_sessions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"/>
+
+                <!-- Empty State -->
+                <TextView
+                    android:id="@+id/tv_no_sessions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No sessions recorded"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="14sp"
+                    android:gravity="center"
+                    android:padding="24dp"
+                    android:visibility="gone"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

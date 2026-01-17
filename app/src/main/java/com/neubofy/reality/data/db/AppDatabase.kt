@@ -5,11 +5,13 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [CalendarEvent::class, AppGroupEntity::class, AppLimitEntity::class], version = 5, exportSchema = false)
+@Database(entities = [CalendarEvent::class, AppGroupEntity::class, AppLimitEntity::class, ChatSession::class, ChatMessageEntity::class, TapasyaSession::class], version = 7, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun calendarEventDao(): CalendarEventDao
     abstract fun appGroupDao(): AppGroupDao
     abstract fun appLimitDao(): AppLimitDao
+    abstract fun chatDao(): ChatDao
+    abstract fun tapasyaSessionDao(): TapasyaSessionDao
 
     companion object {
         @Volatile

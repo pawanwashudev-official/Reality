@@ -13,7 +13,8 @@ class RealityBlocker {
         var endTime: Long = -1,
         var selectedApps: HashSet<String> = hashSetOf(""),
         var modeType: Int = Constants.FOCUS_MODE_BLOCK_SELECTED,
-        var blockedWebsites: HashSet<String> = hashSetOf()
+        var blockedWebsites: HashSet<String> = hashSetOf(),
+        var isTapasyaTriggered: Boolean = false  // True = controlled by Tapasya, can't stop from Focus UI
     )
 
     var focusModeData = FocusModeData()
@@ -109,7 +110,13 @@ class RealityBlocker {
     // Helper: Get end time based on blocking reason
     private fun getEndTimeForReason(reason: String): Long {
         return when {
-            reason.contains("Focus Mode") -> focusModeData.endTime
+            reason.contains("Focus Mode") -> {
+                if (focusModeData.isTapasyaTriggered) {
+                    Long.MAX_VALUE // Tapasya controls the stop time explicitly
+                } else {
+                    focusModeData.endTime
+                }
+            }
             reason.contains("Bedtime") -> getBedtimeEndTime()
             reason.contains("Schedule") || reason.contains("Event") -> {
                 // Find next calendar/schedule end time
