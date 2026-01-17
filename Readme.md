@@ -44,9 +44,10 @@
 | ❌ Easy bypass when tempted | ✅ **Unbreakable Strict Mode** - impossible to cheat |
 | ❌ Basic app blocking | ✅ **50+ intelligent features** |
 | ❌ Collect your usage data | ✅ **Zero data leaves your device** |
-| ❌ Require accounts & signups | ✅ **No account. We don't know you exist.** |
+| ❌ Require accounts for core use | ✅ **No account for blocking.** We don't know you exist. |
 | ❌ Annoying ads everywhere | ✅ **100% ad-free forever** |
 | ❌ Closed source | ✅ **Fully open source (GPLv3)** |
+| ❌ Manual planning only | ✅ **AI-Powered Ecosystem** - Auto-plans your life |
 
 </div>
 
@@ -130,6 +131,18 @@ Beautiful charts to understand your digital habits.
 
 </details>
 
+<details>
+<summary><h3>🌙 Reality Ecosystem - Nightly Protocol (AI)</h3></summary>
+
+Experience the world's most advanced productivity ecosystem. Reality goes beyond blocking — it helps you reconstruct your life.
+
+- **📓 AI-Driven Diary** — Write your day's journey. Reality's AI generates personalized reflection questions based on your specific digital behavior and goals.
+- **🧠 Intelligent Reflection** — Answer AI-generated questions to understand "How I spent this day" vs "How I wanted to spend it."
+- **⚡ Auto-Planning Engine** — Reality automatically creates Google Tasks and scheduled study sessions in your Google Calendar based on your nightly reflections.
+- **📄 Workspace Integration** — Securely connects to Google Tasks, Calendar, Docs, and Drive for a seamless, world-best productivity experience.
+
+</details>
+
 ---
 
 ## 🔒 Privacy Promise
@@ -161,7 +174,8 @@ Beautiful charts to understand your digital habits.
 | **Usage Stats** | Calculate screen time | 📊 100% on-device |
 | **Overlay** | Display block screens | 🖥️ No data collected |
 | **Device Admin** | Prevent uninstallation (optional) | 🔒 User-controlled |
-| **Calendar** | Sync focus with events (optional) | 📅 Read-only, local only |
+| **Google APIs** | Nightly Protocol & Sync (optional) | 🔐 Secure OAuth Login required |
+| **Calendar** | Sync focus with events (optional) | 📅 Full Read/Write for Auto-Planning |
 
 ---
 
