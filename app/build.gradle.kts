@@ -74,8 +74,9 @@ android {
     buildTypes {
         release {
             // Enable R8/ProGuard for smaller APK and better performance
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // DISABLED for debugging crashes
+            isMinifyEnabled = false
+            isShrinkResources = false
             
             // Only use release signing if credentials are available
             val releaseConfig = signingConfigs.findByName("release")
@@ -144,4 +145,30 @@ dependencies {
     implementation(libs.work.runtime.ktx)
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("com.airbnb.android:lottie:6.0.0")
+    
+    // QR Code Generation (lightweight, open-source)
+    implementation("com.google.zxing:core:3.5.2")
+    
+    // Google Sign-In & Credential Manager
+    implementation("com.google.android.gms:play-services-auth:21.0.0")
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    
+    // Google APIs Client (for Tasks, Drive, Docs)
+    // Using latest available versions
+    implementation("com.google.api-client:google-api-client-android:2.2.0") {
+        exclude(group = "org.apache.httpcomponents")
+    }
+    implementation("com.google.apis:google-api-services-tasks:v1-rev20210709-2.0.0")
+    implementation("com.google.apis:google-api-services-drive:v3-rev20230520-2.0.0")
+    implementation("com.google.apis:google-api-services-docs:v1-rev20230929-2.0.0")
+    implementation("com.google.apis:google-api-services-calendar:v3-rev20231123-2.0.0")
+    
+    // HTTP Client for Google APIs (Synchronized version)
+    implementation("com.google.http-client:google-http-client-gson:1.45.1")
+    implementation("com.google.http-client:google-http-client-android:1.45.1")
+
+    // Coil for Image Loading
+    implementation("io.coil-kt:coil:2.6.0")
 }

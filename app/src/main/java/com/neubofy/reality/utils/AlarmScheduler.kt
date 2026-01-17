@@ -21,6 +21,37 @@ object AlarmScheduler {
     
     private const val ALARM_REQUEST_CODE = 1001
     private const val SNOOZE_REQUEST_CODE = 1002
+    private const val SNOOZE_CODES_PREF = "active_snooze_codes"
+    
+    // Track active snooze request codes for proper cancellation
+    private fun getActiveSnoozeCodesPrefs(context: Context) = 
+        context.getSharedPreferences(SNOOZE_CODES_PREF, Context.MODE_PRIVATE)
+    
+    private fun addSnoozeCode(context: Context, code: Int) {
+        val prefs = getActiveSnoozeCodesPrefs(context)
+        val codes = prefs.getStringSet("codes", mutableSetOf()) ?: mutableSetOf()
+        val newCodes = codes.toMutableSet()
+        newCodes.add(code.toString())
+        prefs.edit().putStringSet("codes", newCodes).apply()
+    }
+    
+    private fun removeSnoozeCode(context: Context, code: Int) {
+        val prefs = getActiveSnoozeCodesPrefs(context)
+        val codes = prefs.getStringSet("codes", mutableSetOf()) ?: mutableSetOf()
+        val newCodes = codes.toMutableSet()
+        newCodes.remove(code.toString())
+        prefs.edit().putStringSet("codes", newCodes).apply()
+    }
+    
+    private fun getAllSnoozeCodes(context: Context): Set<Int> {
+        val prefs = getActiveSnoozeCodesPrefs(context)
+        val codes = prefs.getStringSet("codes", emptySet()) ?: emptySet()
+        return codes.mapNotNull { it.toIntOrNull() }.toSet()
+    }
+    
+    private fun clearAllSnoozeCodes(context: Context) {
+        getActiveSnoozeCodesPrefs(context).edit().clear().apply()
+    }
     
     /**
      * Schedules the next upcoming reminder from ALL sources.
@@ -82,21 +113,37 @@ object AlarmScheduler {
             if (event.source == EventSource.CALENDAR && !calendarEnabled) continue
             if (!event.isEnabled) continue
             
+            // CHECK: Has this event fired recently? (prevents same-minute re-firing)
+            if (FiredEventsCache.hasFiredRecently(context, event.originalId)) {
+                TerminalLogger.log("ALARM: Skipping '${event.title}' (fired recently)")
+                continue
+            }
+            
             val effectiveOffset = event.customOffsetMins ?: globalOffset
             val triggerMins = event.startTimeMins - effectiveOffset
             
-            // Only schedule if trigger time is in the future
-            if (triggerMins > currentMins) {
-                val triggerCal = java.util.Calendar.getInstance()
+            // Calculate when the reminder should trigger
+            // If trigger time is in the past but event start is in future, trigger NOW
+            val triggerCal = java.util.Calendar.getInstance()
+            
+            if (triggerMins >= currentMins) {
+                // Normal case: trigger time is in the future or current minute
                 triggerCal.set(java.util.Calendar.HOUR_OF_DAY, triggerMins / 60)
                 triggerCal.set(java.util.Calendar.MINUTE, triggerMins % 60)
                 triggerCal.set(java.util.Calendar.SECOND, 0)
                 triggerCal.set(java.util.Calendar.MILLISECOND, 0)
-                
-                if (triggerCal.timeInMillis < nextTriggerMillis) {
-                    nextTriggerMillis = triggerCal.timeInMillis
-                    nextEvent = event
-                }
+            } else if (event.startTimeMins > currentMins) {
+                // Edge case: trigger time passed but event hasn't started yet
+                // Schedule to trigger in 10 seconds (catch up)
+                triggerCal.add(java.util.Calendar.SECOND, 10)
+            } else {
+                // Both trigger and event are in the past, skip
+                continue
+            }
+            
+            if (triggerCal.timeInMillis < nextTriggerMillis) {
+                nextTriggerMillis = triggerCal.timeInMillis
+                nextEvent = event
             }
         }
         
@@ -132,29 +179,58 @@ object AlarmScheduler {
                 .format(java.util.Date(nextTriggerMillis))
             TerminalLogger.log("ALARM: Scheduled '${nextEvent.title}' [${nextEvent.source}] at $timeStr")
         } else {
-            TerminalLogger.log("ALARM: No upcoming events to schedule today")
+            // Midnight refresh logic removed per user request.
+            // "i had said that remove cleaning at midnight"
+            TerminalLogger.log("ALARM: No upcoming events.")
         }
+    }
+    
+    private fun getMidnightTonightMillis(): Long {
+        val cal = java.util.Calendar.getInstance()
+        cal.add(java.util.Calendar.DAY_OF_YEAR, 1)
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+        cal.set(java.util.Calendar.MINUTE, 0)
+        cal.set(java.util.Calendar.SECOND, 0)
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
     }
     
     /**
      * Schedules a snooze alarm. Uses separate request code.
+     * Now tracks snooze codes for proper cancellation and passes source for dismissal.
      */
-    fun scheduleSnooze(context: Context, id: String, title: String, url: String?, snoozeMins: Int) {
+    fun scheduleSnooze(context: Context, id: String, title: String, url: String?, snoozeMins: Int, source: String = "MANUAL") {
         try {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            
+            // Strip snooze_ prefix if present to get original ID
+            val originalId = if (id.startsWith("snooze_")) id.removePrefix("snooze_") else id
+            
             val intent = Intent(context, ReminderReceiver::class.java).apply {
-                putExtra("id", "snooze_$id")
+                putExtra("id", "snooze_$originalId")
+                putExtra("originalId", originalId)  // For dismissal lookup
                 putExtra("title", title)
                 putExtra("url", url)
                 putExtra("mins", 0) // Snooze shows "Starting now"
                 putExtra("isSnooze", true)
+                putExtra("source", source)  // CRITICAL FIX: Pass source for dismissal
+                putExtra("snoozeEnabled", true)
+                putExtra("snoozeIntervalMins", snoozeMins)
+                putExtra("autoSnoozeEnabled", true)
+                putExtra("autoSnoozeTimeoutSecs", 30)
             }
             
             val triggerTime = System.currentTimeMillis() + (snoozeMins * 60 * 1000L)
             
+            // Use unique request code based on reminder ID to avoid overwrites
+            val snoozeRequestCode = 2000 + (originalId.hashCode() and 0x7FFFFFFF) % 1000
+            
+            // Track this snooze code for later cancellation
+            addSnoozeCode(context, snoozeRequestCode)
+            
             val pIntent = PendingIntent.getBroadcast(
                 context,
-                SNOOZE_REQUEST_CODE,
+                snoozeRequestCode,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
@@ -166,7 +242,9 @@ object AlarmScheduler {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pIntent)
             }
             
-            TerminalLogger.log("SNOOZE: Scheduled '$title' in $snoozeMins minutes")
+            val timeStr = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                .format(java.util.Date(triggerTime))
+            TerminalLogger.log("SNOOZE: Scheduled '$title' at $timeStr (in $snoozeMins min)")
         } catch (e: Exception) {
             TerminalLogger.log("SNOOZE ERROR: ${e.message}")
             e.printStackTrace()
@@ -174,7 +252,31 @@ object AlarmScheduler {
     }
     
     /**
-     * Cancels all scheduled alarms (main + snooze).
+     * Cancels a specific snooze alarm by ID.
+     */
+    fun cancelSnooze(context: Context, id: String) {
+        try {
+            val originalId = if (id.startsWith("snooze_")) id.removePrefix("snooze_") else id
+            val snoozeRequestCode = 2000 + (originalId.hashCode() and 0x7FFFFFFF) % 1000
+            
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val intent = Intent(context, ReminderReceiver::class.java)
+            val pIntent = PendingIntent.getBroadcast(
+                context, snoozeRequestCode, intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            pIntent?.let { alarmManager.cancel(it) }
+            
+            // Remove from tracking
+            removeSnoozeCode(context, snoozeRequestCode)
+            TerminalLogger.log("SNOOZE: Canceled snooze for ID $originalId")
+        } catch (e: Exception) {
+            TerminalLogger.log("SNOOZE CANCEL ERROR: ${e.message}")
+        }
+    }
+    
+    /**
+     * Cancels all scheduled alarms (main + ALL tracked snoozes).
      */
     fun cancelAllAlarms(context: Context) {
         try {
@@ -188,17 +290,28 @@ object AlarmScheduler {
             )
             alarmManager.cancel(mainIntent)
             
-            // Cancel snooze alarm
-            val snoozeIntent = PendingIntent.getBroadcast(
-                context, SNOOZE_REQUEST_CODE, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            alarmManager.cancel(snoozeIntent)
+            // Cancel ALL tracked snooze alarms (CRITICAL FIX)
+            val snoozeCodes = getAllSnoozeCodes(context)
+            var canceledCount = 0
+            for (code in snoozeCodes) {
+                val snoozeIntent = PendingIntent.getBroadcast(
+                    context, code, intent,
+                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+                )
+                snoozeIntent?.let { 
+                    alarmManager.cancel(it) 
+                    canceledCount++
+                }
+            }
             
-            TerminalLogger.log("ALARM: All alarms canceled")
+            // Clear all tracked codes
+            clearAllSnoozeCodes(context)
+            
+            TerminalLogger.log("ALARM: Canceled main + $canceledCount snooze alarms")
         } catch (e: Exception) {
             TerminalLogger.log("ALARM CANCEL ERROR: ${e.message}")
             e.printStackTrace()
         }
     }
 }
+

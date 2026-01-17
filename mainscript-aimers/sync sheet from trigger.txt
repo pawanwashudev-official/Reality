@@ -1,0 +1,308 @@
+// ==========================================
+// ⚙️ CONFIGURATION
+// ==========================================
+const DOC_FOLDER_ID = "114LTprcJz-R6CQ06K_ZMJ6qroDMOD2Wb";
+const TIMEZONE = "Asia/Kolkata"; // Fixed for your location
+const TZ_OFFSET = "+05:30";     // Explicit offset to fix "Yesterday" bug
+
+function syncFromSheetTrigger() {
+  // 1. GET DATES
+  const dateData = getDateInfoFromSheet();
+  if (!dateData) return;
+
+  const { currentDayObj, currentDayString, nextDayObj, nextDayIsoString } = dateData;
+
+  Logger.log(`📄 DOC SOURCE: "Plan for ${currentDayString}"`);
+  Logger.log(`📅 TASK TARGET: ${Utilities.formatDate(nextDayObj, TIMEZONE, "yyyy-MM-dd")} (Next Day)`);
+
+  // 2. FIND THE DOC
+  const folder = DriveApp.getFolderById(DOC_FOLDER_ID);
+  const files = folder.getFilesByName(`Plan for ${currentDayString}`);
+
+  if (!files.hasNext()) {
+    Logger.log("❌ No doc found for " + currentDayString);
+    return;
+  }
+
+  const docId = files.next().getId();
+  const doc = DocumentApp.openById(docId);
+  const fullText = doc.getBody().getText();
+
+  Logger.log(`📝 Analyzing full document length: ${fullText.length} chars`);
+
+  // 3. CLEANUP: Run TWICE to ensure all old tasks are deleted
+  clearLifestyleHistoryStrong("Lifestyle", currentDayObj);
+
+  // 4. MIGRATION: Move Pending Study Tasks (Today -> Tomorrow)
+  migratePendingStudyTasks(currentDayObj, nextDayIsoString);
+
+  // 5. AI EXTRACTION (Now checks for specific Study dates)
+  const tasksToCreate = fetchTasksFromGroq(fullText);
+
+  // 6. CREATE TASKS (With Fixed Date Logic)
+  if (tasksToCreate && tasksToCreate.length > 0) {
+    processTasksIntoLists(tasksToCreate, nextDayObj);
+  } else {
+    Logger.log("⚠️ No tasks extracted.");
+  }
+}
+
+// ==========================================
+// 🧹 STRONG LIFESTYLE CLEANUP (2 PASSES)
+// ==========================================
+function clearLifestyleHistoryStrong(listName, cutoffDateObj) {
+  const cutoffDateStr = Utilities.formatDate(cutoffDateObj, TIMEZONE, "yyyy-MM-dd");
+  Logger.log(`🧹 Clearing '${listName}' tasks due on or before: ${cutoffDateStr}`);
+
+  // We run this loop 2 times to catch any tasks missed by pagination or API hiccups
+  for (let i = 1; i <= 2; i++) {
+    Logger.log(`... Cleanup Pass ${i}`);
+    
+    const taskLists = Tasks.Tasklists.list().items;
+    const targetList = taskLists && taskLists.find(l => l.title === listName);
+    if (!targetList) return;
+
+    let tasks = Tasks.Tasks.list(targetList.id).items;
+    
+    if (tasks && tasks.length > 0) {
+      tasks.forEach(t => {
+        try {
+          if (t.due) {
+            // Convert task due date to YYYY-MM-DD in our Timezone
+            let taskDateStr = Utilities.formatDate(new Date(t.due), TIMEZONE, "yyyy-MM-dd");
+            
+            if (taskDateStr <= cutoffDateStr) {
+              Tasks.Tasks.remove(targetList.id, t.id); 
+              Utilities.sleep(100); // Slow down slightly to ensure success
+            }
+          }
+        } catch(e) {
+          Logger.log("Error deleting task: " + e.message);
+        }
+      });
+    } else {
+      Logger.log("... List is empty, stopping cleanup.");
+      break;
+    }
+  }
+}
+
+// ==========================================
+// 📅 DATE LOGIC
+// ==========================================
+function getDateInfoFromSheet() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Form Responses 1");
+  const lastRow = sheet.getLastRow();
+  
+  if (lastRow < 2) {
+    Logger.log("❌ Sheet is empty.");
+    return null;
+  }
+
+  const timestampValue = sheet.getRange(lastRow, 1).getValue();
+  
+  // 1. Current Day (From Sheet)
+  const currentDayObj = new Date(timestampValue);
+  const currentDayString = Utilities.formatDate(currentDayObj, TIMEZONE, "yyyy-MM-dd");
+
+  // 2. Next Day (Timestamp + 1 Day)
+  let nextDayObj = new Date(timestampValue);
+  nextDayObj.setDate(currentDayObj.getDate() + 1);
+  const nextDayIsoString = nextDayObj.toISOString();
+
+  return { currentDayObj, currentDayString, nextDayObj, nextDayIsoString };
+}
+
+// ==========================================
+// 🔄 STUDY MIGRATION
+// ==========================================
+function migratePendingStudyTasks(cutoffDateObj, targetIsoString) {
+  const taskLists = Tasks.Tasklists.list().items;
+  const studyList = taskLists && taskLists.find(l => l.title === 'Study');
+  if (!studyList) return;
+
+  const tasks = Tasks.Tasks.list(studyList.id).items;
+  if (!tasks) return;
+
+  const cutoffDateStr = Utilities.formatDate(cutoffDateObj, TIMEZONE, "yyyy-MM-dd");
+
+  tasks.forEach(t => {
+    try {
+      if (t.status !== 'completed' && t.due) {
+        let taskDateStr = Utilities.formatDate(new Date(t.due), TIMEZONE, "yyyy-MM-dd");
+
+        if (taskDateStr <= cutoffDateStr) {
+          Logger.log(`🔄 Migrating Study Task: ${t.title}`);
+          let oldNotes = t.notes || "";
+          
+          Tasks.Tasks.insert({
+            title: t.title,
+            notes: `⚠️ Carried over from ${taskDateStr}.\n${oldNotes}`,
+            due: targetIsoString
+          }, studyList.id);
+
+          Tasks.Tasks.remove(studyList.id, t.id);
+          Utilities.sleep(100);
+        }
+      }
+    } catch (e) {}
+  });
+}
+
+// ==========================================
+// 🧠 AI EXTRACTION (SMART DATE DETECTION)
+// ==========================================
+// ==========================================
+// 🧠 AI EXTRACTION (IMPROVED PROMPT)
+// ==========================================
+function fetchTasksFromGroq(docText) {
+  const apiKey = PropertiesService.getScriptProperties().getProperty("GROQ_API_KEY");
+  const url = "https://api.groq.com/openai/v1/chat/completions";
+
+  if (docText.length < 5) return [];
+
+  // 🚀 KEY CHANGE: Much stricter instructions on Time Extraction
+  const systemPrompt = `
+You are a Schedule Parser. Your goal is to extract tasks with their specific times.
+
+INPUT FORMAT ANALYSIS:
+- Look for lines like "06:00 AM - Gym" or "Gym at 6am".
+- If a task is inside a time block (e.g., "Morning Routine" headers), infer the time from context if possible.
+- If a task has NO time explicitly stated, return null for time.
+
+OUTPUT RULES:
+1. "time": Must be in "HH:mm AM/PM" format (e.g., "06:30 AM") or null.
+2. "category": 
+   - "Lifestyle" for Gym, Meals, Sleep, Routine, Study Sessions (Session 1, 2, etc).
+   - "Study" for specific deliverables (Chapters, PYQs, Assignments).
+3. "explicit_date": Extract only if a specific date (like "Dec 12") is mentioned for a DEADLINE. Otherwise null.
+
+RETURN JSON OBJECT:
+{
+  "tasks": [
+    { "title": "Gym", "time": "06:00 AM", "category": "Lifestyle", "explicit_date": null },
+    { "title": "Math Homework", "time": null, "category": "Study", "explicit_date": "2025-12-15" }
+  ]
+}
+`;
+
+  const payload = {
+    model: "llama-3.3-70b-versatile", // Switched to Llama 3.3 for better instruction following
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: "Analyze this plan and extract tasks:\n\n" + docText }
+    ],
+    temperature: 0.1,
+    response_format: { type: "json_object" }
+  };
+
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    headers: { "Authorization": "Bearer " + apiKey },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    const json = JSON.parse(response.getContentText());
+
+    if (json.choices && json.choices.length > 0) {
+      const content = json.choices[0].message.content;
+      const parsed = JSON.parse(content);
+      return parsed.tasks || [];
+    }
+  } catch (e) {
+    Logger.log("❌ AI Error: " + e.message);
+  }
+  return [];
+}
+
+// ==========================================
+// ✅ TASK CREATION (FIXED TITLE LOGIC)
+// ==========================================
+function processTasksIntoLists(taskList, defaultNextDayObj) {
+  const taskLists = Tasks.Tasklists.list().items || [];
+  let studyListId = "@default",
+      lifestyleListId = "@default";
+
+  // Find List IDs
+  taskLists.forEach(list => {
+    if (list.title === "Study") studyListId = list.id;
+    if (list.title === "Lifestyle") lifestyleListId = list.id;
+  });
+
+  // Create Lists if missing
+  if (studyListId === "@default") studyListId = Tasks.Tasklists.insert({ title: "Study" }).id;
+  if (lifestyleListId === "@default") lifestyleListId = Tasks.Tasklists.insert({ title: "Lifestyle" }).id;
+
+  taskList.forEach(rawItem => {
+    try {
+      const item = Object.assign({}, rawItem);
+      
+      // 1. Force Category Logic
+      const titleLower = (item.title || "").toLowerCase();
+      if (titleLower.match(/study session|session\s*\d+|routine|sleep|gym|meal/)) {
+        item.category = "Lifestyle";
+      }
+
+      // 2. Set API Date (Date Only, No Time)
+      let targetDateObj = new Date(defaultNextDayObj);
+      if (item.category === "Study" && item.explicit_date) {
+        targetDateObj = new Date(item.explicit_date);
+      }
+      
+      const dueDateStr = Utilities.formatDate(targetDateObj, TIMEZONE, "yyyy-MM-dd");
+      const finalDue = dueDateStr + "T00:00:00.000Z"; // Google API requires this format for "Whole Day" tasks
+
+      // 3. Format Title with Time (Robust)
+      let timeLabel = "";
+      if (item.time) {
+        // clean up time string (remove spaces, dots)
+        let cleanTime = item.time.replace(/\./g, "").toUpperCase(); 
+        
+        // Try parsing valid time
+        // We append a dummy date to parse the time string correctly
+        let parseTime = new Date(`2000-01-01 ${cleanTime}`);
+        if (!isNaN(parseTime.getTime())) {
+             timeLabel = Utilities.formatDate(parseTime, TIMEZONE, "hh:mm a");
+        } else {
+             // Fallback: use raw string if parsing fails but it's not empty
+             timeLabel = item.time; 
+        }
+      }
+
+      const targetListId = item.category === "Study" ? studyListId : lifestyleListId;
+
+      // 🚀 KEY FIX: Smart Title Formatting
+      let newTitle;
+      if (targetListId === lifestyleListId) {
+        if (timeLabel) {
+           newTitle = `⏰ ${timeLabel} | ${item.title}`;
+        } else {
+           // If no time, DO NOT show empty clock. Just show generic icon.
+           newTitle = `⚡ ${item.title}`; 
+        }
+      } else {
+        newTitle = `📚 ${item.title}`;
+      }
+
+      // 4. Send to API
+      Tasks.Tasks.insert(
+        {
+          title: newTitle,
+          notes: item.notes || "",
+          due: finalDue 
+        },
+        targetListId
+      );
+      
+      // Slight delay to prevent rate limits
+      Utilities.sleep(150); 
+
+    } catch (e) {
+      Logger.log("⚠️ Error creating task: " + e.message);
+    }
+  });
+}

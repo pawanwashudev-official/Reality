@@ -95,6 +95,14 @@ object BlockCache {
                 val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(context)
                 val now = System.currentTimeMillis()
                 
+                // CRITICAL FIX: Reload emergency status immediately
+                val emergencyData = prefs.getEmergencyData()
+                emergencySessionEndTime = if (emergencyData.currentSessionEndTime > now && emergencyData.usesRemaining >= 0) {
+                    emergencyData.currentSessionEndTime
+                } else {
+                    0L
+                }
+                
                 mutex.withLock {
                     try {
                         // ATOMIC SWAP: Create a completely new box. 
@@ -113,6 +121,14 @@ object BlockCache {
                 val calendarEvents = db.calendarEventDao().getCurrentEvents(now)
                 
                 val isFocusActive = focusData.isTurnedOn && focusData.endTime > now
+                
+                // AUTO-CLEANUP: If Focus Mode expired, reset the flag
+                if (focusData.isTurnedOn && focusData.endTime <= now) {
+                    focusData.isTurnedOn = false
+                    prefs.saveFocusModeData(focusData)
+                    TerminalLogger.log("CLEANUP: Expired Focus Mode auto-cleared")
+                }
+                
                 val isBedtimeActive = bedtimeData.isEnabled && isBedtimeNow(bedtimeData, currentMins)
                 val isScheduleActive = isAnyScheduleActive(schedules, currentMins, currentDay)
                 val isCalendarEventActive = calendarEvents.isNotEmpty()
@@ -121,24 +137,50 @@ object BlockCache {
                                           isScheduleActive || isCalendarEventActive
                 
                 // === STEP 2: Add apps from blocklist if ANY mode is active ===
+                // Now with per-app mode filtering
                 if (isAnyBlockingModeActive) {
                     val blocklist = focusData.selectedApps
                     val modeType = focusData.modeType
                     
+                    // Load per-app mode configurations
+                    val appConfigs = prefs.loadBlockedAppConfigs()
+                    val configMap = appConfigs.associateBy { it.packageName }
+                    
+                    // Determine active mode for filtering
+                    val activeMode = when {
+                        isFocusActive -> "FOCUS"
+                        isBedtimeActive -> "BEDTIME"
+                        isScheduleActive -> "AUTO_FOCUS"
+                        isCalendarEventActive -> "CALENDAR"
+                        else -> "NONE"
+                    }
+                    
                     // Determine reason
-                    val reason = when {
-                        isFocusActive -> "Focus Mode"
-                        isBedtimeActive -> "Bedtime Mode"
-                        isScheduleActive -> "Scheduled Block"
-                        isCalendarEventActive -> "Calendar Event"
+                    val reason = when (activeMode) {
+                        "FOCUS" -> "Focus Mode"
+                        "BEDTIME" -> "Bedtime Mode"
+                        "AUTO_FOCUS" -> "Scheduled Block"
+                        "CALENDAR" -> "Calendar Event"
                         else -> "Blocked"
                     }
                     
                     if (modeType == com.neubofy.reality.Constants.FOCUS_MODE_BLOCK_SELECTED) {
-                        // Block selected apps
+                        // Block selected apps (with per-app mode filtering)
                         blocklist.forEach { pkg ->
                             if (pkg.isNotEmpty()) {
-                                addToBox(newBox, pkg, reason)
+                                // Check if this app should be blocked for the current mode
+                                val config = configMap[pkg] ?: com.neubofy.reality.Constants.BlockedAppConfig(pkg)
+                                val shouldBlock = when (activeMode) {
+                                    "FOCUS" -> config.blockInFocus
+                                    "BEDTIME" -> config.blockInBedtime
+                                    "AUTO_FOCUS" -> config.blockInAutoFocus
+                                    "CALENDAR" -> config.blockInCalendar
+                                    else -> true
+                                }
+                                
+                                if (shouldBlock) {
+                                    addToBox(newBox, pkg, reason)
+                                }
                             }
                         }
                     } else {
@@ -231,6 +273,7 @@ object BlockCache {
                 .putString("blocked_apps", json.toString())
                 .putLong("last_update", lastUpdateTime)
                 .putBoolean("is_active", isAnyBlockingModeActive)
+                .putLong("emergency_end_time", emergencySessionEndTime)
                 .apply()
         } catch (e: Exception) {
             TerminalLogger.log("DISK SAVE ERROR: ${e.message}")
@@ -270,7 +313,8 @@ object BlockCache {
             
             lastUpdateTime = savedTime
             isAnyBlockingModeActive = prefs.getBoolean("is_active", false)
-            TerminalLogger.log("BOX LOADED FROM DISK: ${blockedApps.size} apps")
+            emergencySessionEndTime = prefs.getLong("emergency_end_time", 0L)
+            TerminalLogger.log("BOX LOADED FROM DISK: ${blockedApps.size} apps, emergency=${emergencySessionEndTime > System.currentTimeMillis()}")
         } catch (e: Exception) {
             TerminalLogger.log("DISK LOAD ERROR: ${e.message}")
         }

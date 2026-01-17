@@ -143,7 +143,12 @@ class BlocklistAppsFragment : Fragment() {
              withContext(Dispatchers.Main) {
                  appItemList = tempAppList
                  val sorted = sortSelectedItemsToTop(appItemList)
-                 binding.appList.adapter = ApplicationAdapter(sorted, selectedAppList)
+                 binding.appList.adapter = ApplicationAdapter(sorted, selectedAppList) {
+                     // On Config Changed -> Send Broadcast to Refresh Service
+                     val intent = Intent(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE)
+                     intent.setPackage(requireContext().packageName)
+                     requireContext().sendBroadcast(intent)
+                 }
                  updateSelectAllButton()
              }
         }
@@ -163,19 +168,44 @@ class BlocklistAppsFragment : Fragment() {
         val icon: ImageView = v.findViewById(R.id.app_icon)
         val name: TextView = v.findViewById(R.id.app_name)
         val check: CheckBox = v.findViewById(R.id.checkbox)
+        val btnExpand: ImageView = v.findViewById(R.id.btnExpand)
+        val modeSelectionLayout: View = v.findViewById(R.id.modeSelectionLayout)
+        val cbFocus: CheckBox = v.findViewById(R.id.cbFocus)
+        val cbAutoFocus: CheckBox = v.findViewById(R.id.cbAutoFocus)
+        val cbBedtime: CheckBox = v.findViewById(R.id.cbBedtime)
+        val cbCalendar: CheckBox = v.findViewById(R.id.cbCalendar)
     }
 
-    inner class ApplicationAdapter(var apps: List<AppItem>, private val selected: HashSet<String>) : RecyclerView.Adapter<ApplicationViewHolder>() {
+    inner class ApplicationAdapter(
+        var apps: List<AppItem>, 
+        private val selected: HashSet<String>,
+        private val onConfigChanged: () -> Unit
+    ) : RecyclerView.Adapter<ApplicationViewHolder>() {
+        
+        private val expandedPositions = mutableSetOf<Int>()
+        
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ApplicationViewHolder {
-            val v = LayoutInflater.from(parent.context).inflate(R.layout.select_apps_item, parent, false)
+            val v = LayoutInflater.from(parent.context).inflate(R.layout.item_blocklist_app_expandable, parent, false)
             return ApplicationViewHolder(v)
         }
+        
         override fun onBindViewHolder(holder: ApplicationViewHolder, position: Int) {
             val item = apps[position]
+            val isSelected = selected.contains(item.packageName)
+            val isExpanded = expandedPositions.contains(position)
+            
             holder.name.text = item.displayName
             holder.check.setOnCheckedChangeListener(null)
-            holder.check.isChecked = selected.contains(item.packageName)
+            holder.check.isChecked = isSelected
             
+            // Show expand button ONLY for selected/checked apps
+            holder.btnExpand.visibility = if (isSelected) View.VISIBLE else View.GONE
+            holder.modeSelectionLayout.visibility = if (isSelected && isExpanded) View.VISIBLE else View.GONE
+            
+            // Rotate arrow based on expansion state
+            holder.btnExpand.rotation = if (isExpanded) 180f else 0f
+            
+            // Load icon
             holder.icon.setImageDrawable(null)
             item.appInfo?.let { info ->
                 lifecycleScope.launch(Dispatchers.IO) {
@@ -185,7 +215,47 @@ class BlocklistAppsFragment : Fragment() {
                     } catch (e: Exception) {}
                 }
             }
+            
+            // Load per-app mode config
+            val config = savedPreferencesLoader.getBlockedAppConfig(item.packageName)
+            holder.cbFocus.setOnCheckedChangeListener(null)
+            holder.cbAutoFocus.setOnCheckedChangeListener(null)
+            holder.cbBedtime.setOnCheckedChangeListener(null)
+            holder.cbCalendar.setOnCheckedChangeListener(null)
+            
+            holder.cbFocus.isChecked = config.blockInFocus
+            holder.cbAutoFocus.isChecked = config.blockInAutoFocus
+            holder.cbBedtime.isChecked = config.blockInBedtime
+            holder.cbCalendar.isChecked = config.blockInCalendar
+            
+            // Mode checkbox listeners - save immediately AND refresh service
+            val modeChangeListener = { _: android.widget.CompoundButton, _: Boolean ->
+                val updatedConfig = com.neubofy.reality.Constants.BlockedAppConfig(
+                    packageName = item.packageName,
+                    blockInFocus = holder.cbFocus.isChecked,
+                    blockInAutoFocus = holder.cbAutoFocus.isChecked,
+                    blockInBedtime = holder.cbBedtime.isChecked,
+                    blockInCalendar = holder.cbCalendar.isChecked
+                )
+                savedPreferencesLoader.updateBlockedAppConfig(updatedConfig)
+                onConfigChanged() // Trigger refresh
+            }
+            holder.cbFocus.setOnCheckedChangeListener(modeChangeListener)
+            holder.cbAutoFocus.setOnCheckedChangeListener(modeChangeListener)
+            holder.cbBedtime.setOnCheckedChangeListener(modeChangeListener)
+            holder.cbCalendar.setOnCheckedChangeListener(modeChangeListener)
+            
+            // Expand button click
+            holder.btnExpand.setOnClickListener {
+                if (expandedPositions.contains(position)) {
+                    expandedPositions.remove(position)
+                } else {
+                    expandedPositions.add(position)
+                }
+                notifyItemChanged(position)
+            }
 
+            // Main checkbox listener
             holder.check.setOnCheckedChangeListener { _, checked ->
                 val isAllowed = StrictLockUtils.isModificationAllowedFor(requireContext(), StrictLockUtils.FeatureType.BLOCKLIST)
 
@@ -196,16 +266,34 @@ class BlocklistAppsFragment : Fragment() {
                     return@setOnCheckedChangeListener
                 }
                 
-                if (checked) selected.add(item.packageName) else selected.remove(item.packageName)
+                if (checked) {
+                    selected.add(item.packageName)
+                } else {
+                    selected.remove(item.packageName)
+                    expandedPositions.remove(position) // Collapse when unchecked
+                }
+                
+                // Update visibility of expand button
+                holder.btnExpand.visibility = if (checked) View.VISIBLE else View.GONE
+                holder.modeSelectionLayout.visibility = View.GONE
+                
                 updateSelectAllButton()
             }
-            holder.itemView.setOnClickListener { 
+            
+            // Row click toggles checkbox
+            holder.itemView.findViewById<View>(R.id.mainRow).setOnClickListener { 
                 holder.check.isChecked = !holder.check.isChecked 
             }
         }
+        
         override fun getItemCount() = apps.size
+        
         @SuppressLint("NotifyDataSetChanged")
-        fun updateData(newList: List<AppItem>) { apps = newList; notifyDataSetChanged() }
+        fun updateData(newList: List<AppItem>) { 
+            apps = newList
+            expandedPositions.clear()
+            notifyDataSetChanged() 
+        }
     }
 
     data class AppItem(val packageName: String, val appInfo: ApplicationInfo? = null, val displayName: String = packageName)

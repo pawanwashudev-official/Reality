@@ -1,0 +1,56 @@
+function updateTaskStatsSimple() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Form Responses 1");
+  const lastRow = sheet.getLastRow();
+  const timestamp = sheet.getRange(lastRow, 1).getValue(); // Column A
+  const targetDate = new Date(timestamp);
+  targetDate.setHours(0, 0, 0, 0); // Normalize
+
+  const taskListNames = ["Study", "Lifestyle"];
+  const taskLists = Tasks.Tasklists.list().items;
+
+  let totalCompleted = 0;
+  let totalPlanned = 0;
+
+  taskListNames.forEach(name => {
+    const taskList = taskLists.find(list => list.title === name);
+    if (!taskList) {
+      Logger.log(`❌ Task list '${name}' not found.`);
+      return;
+    }
+
+    const tasks = Tasks.Tasks.list(taskList.id, {
+      showCompleted: true,
+      showDeleted: false,
+      showHidden: true,
+      maxResults: 100
+    }).items || [];
+
+    tasks.forEach(task => {
+      // ✅ Count COMPLETED tasks
+      if (task.status === "completed" && task.completed) {
+        const completedDate = new Date(task.completed);
+        completedDate.setHours(0, 0, 0, 0);
+        if (completedDate.getTime() === targetDate.getTime()) {
+          totalCompleted++;
+        }
+      }
+
+      // ✅ Count PLANNED tasks
+      if (task.due) {
+        const dueDate = new Date(task.due);
+        dueDate.setHours(0, 0, 0, 0);
+        if (dueDate.getTime() === targetDate.getTime()) {
+          totalPlanned++;
+        }
+      }
+    });
+  });
+
+  // 📝 Write to Columns C (Completed), D (Planned)
+  sheet.getRange(lastRow, 3).setValue(totalCompleted);
+  sheet.getRange(lastRow, 4).setValue(totalPlanned);
+
+  Logger.log(`📅 Target Date: ${targetDate}`);
+  Logger.log(`✅ Completed Total: ${totalCompleted}`);
+  Logger.log(`📌 Planned Total: ${totalPlanned}`);
+}

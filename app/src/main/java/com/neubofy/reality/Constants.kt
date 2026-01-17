@@ -34,7 +34,10 @@ class Constants {
         val packages: ArrayList<String>,
         val isProceedHidden: Boolean = false,
         var repeatDays: List<Int> = listOf(1,2,3,4,5,6,7),
-        var isReminderEnabled: Boolean = true
+        var isReminderEnabled: Boolean = true,
+        // New fields for state tracking
+        var lastDismissedDate: Long = 0L,
+        var isDndEnabled: Boolean = false
     )
     
     data class BedtimeData(
@@ -115,6 +118,19 @@ class Constants {
         val id: String = java.util.UUID.randomUUID().toString(),
         val message: String,
         val tags: List<String> = listOf("ALL") // "FOCUS", "BEDTIME", "LIMIT", "STRICT"
+    )
+    
+    /**
+     * Per-App Mode Selection Configuration
+     * Each app can specify which blocking modes it should be blocked in.
+     * By default, all modes are enabled for all apps.
+     */
+    data class BlockedAppConfig(
+        val packageName: String,
+        var blockInFocus: Boolean = true,       // Custom Focus Mode
+        var blockInAutoFocus: Boolean = true,   // Scheduled Auto Focus
+        var blockInBedtime: Boolean = true,     // Bedtime Mode
+        var blockInCalendar: Boolean = true     // Calendar Events
     )
     
     // Settings Page Learning - Device-specific class names

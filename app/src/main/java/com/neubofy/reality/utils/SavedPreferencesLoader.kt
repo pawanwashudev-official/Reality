@@ -208,4 +208,41 @@ class SavedPreferencesLoader(private val context: Context) {
         val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
         return sharedPreferences.getInt("theme_mode", 0) // Default to System (0)
     }
+    
+    // Per-App Mode Configuration
+    fun saveBlockedAppConfigs(configs: List<Constants.BlockedAppConfig>) {
+        val sharedPreferences = context.getSharedPreferences("blocked_app_configs", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putString("configs_list", gson.toJson(configs)).apply()
+    }
+    
+    fun loadBlockedAppConfigs(): MutableList<Constants.BlockedAppConfig> {
+        val sharedPreferences = context.getSharedPreferences("blocked_app_configs", Context.MODE_PRIVATE)
+        val json = sharedPreferences.getString("configs_list", null)
+        if (json.isNullOrEmpty()) return mutableListOf()
+        val type = object : TypeToken<MutableList<Constants.BlockedAppConfig>>() {}.type
+        return gson.fromJson(json, type)
+    }
+    
+    /**
+     * Get config for a specific package. Returns default (all modes enabled) if not found.
+     */
+    fun getBlockedAppConfig(packageName: String): Constants.BlockedAppConfig {
+        val configs = loadBlockedAppConfigs()
+        return configs.find { it.packageName == packageName }
+            ?: Constants.BlockedAppConfig(packageName)  // Default: all modes enabled
+    }
+    
+    /**
+     * Update or add config for a specific package.
+     */
+    fun updateBlockedAppConfig(config: Constants.BlockedAppConfig) {
+        val configs = loadBlockedAppConfigs()
+        val index = configs.indexOfFirst { it.packageName == config.packageName }
+        if (index >= 0) {
+            configs[index] = config
+        } else {
+            configs.add(config)
+        }
+        saveBlockedAppConfigs(configs)
+    }
 }

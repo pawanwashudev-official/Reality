@@ -7,6 +7,7 @@ import com.neubofy.reality.utils.TerminalLogger
 import android.os.PowerManager
 import com.neubofy.reality.services.AlarmService
 import com.neubofy.reality.utils.AlarmScheduler
+import com.neubofy.reality.utils.FiredEventsCache
 
 class ReminderReceiver : BroadcastReceiver() {
 
@@ -18,13 +19,23 @@ class ReminderReceiver : BroadcastReceiver() {
             return
         }
 
-        // 2. Handle Reminder Alarm Check (Main Logic)
+        // 2. Handle Midnight Refresh (Silent - just reschedule)
+        if (intent?.getBooleanExtra("isMidnightRefresh", false) == true) {
+            TerminalLogger.log("ALARM: Midnight refresh triggered - recalculating...")
+            AlarmScheduler.scheduleNextAlarm(context)
+            return
+        }
+
+        // 3. Handle Reminder Alarm Check (Main Logic)
         val id = intent?.getStringExtra("id") ?: return
         val title = intent.getStringExtra("title") ?: "Reminder"
         val url = intent.getStringExtra("url")
         val mins = intent.getIntExtra("mins", 0)
 
         TerminalLogger.log("ALARM: Waking up for reminder: $title")
+        
+        // Mark as fired to prevent same-minute re-triggering
+        FiredEventsCache.markAsFired(context, id)
 
         // Acquire WakeLock (Force Screen Wake)
         val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -39,6 +50,7 @@ class ReminderReceiver : BroadcastReceiver() {
         val snoozeIntervalMins = intent.getIntExtra("snoozeIntervalMins", 5)
         val autoSnoozeEnabled = intent.getBooleanExtra("autoSnoozeEnabled", true)
         val autoSnoozeTimeoutSecs = intent.getIntExtra("autoSnoozeTimeoutSecs", 30)
+        val source = intent.getStringExtra("source") ?: "MANUAL"
 
         // Start Alarm Service (Foreground - Guaranteed Sound)
         val serviceIntent = Intent(context, AlarmService::class.java).apply {
@@ -46,6 +58,7 @@ class ReminderReceiver : BroadcastReceiver() {
             putExtra("title", title)
             putExtra("url", url)
             putExtra("mins", mins)
+            putExtra("source", source)  // Pass source for proper dismissal handling
             putExtra("snoozeEnabled", snoozeEnabled)
             putExtra("snoozeIntervalMins", snoozeIntervalMins)
             putExtra("autoSnoozeEnabled", autoSnoozeEnabled)
@@ -73,22 +86,50 @@ class ReminderReceiver : BroadcastReceiver() {
     }
     
     private fun handleDismiss(context: Context, intent: Intent) {
-         TerminalLogger.log("ALARM: Notification Dismissed -> Auto-Snoozing...")
-         // 1. Stop Sound
+         // Stop Sound
          val stopIntent = Intent(context, AlarmService::class.java).apply {
              action = "STOP"
          }
          context.startService(stopIntent)
          
-         // 2. Schedule Snooze (Auto Snooze Logic)
-         val autoSnoozeEnabled = intent.getBooleanExtra("autoSnoozeEnabled", true)
-         if (autoSnoozeEnabled) {
-             val title = intent.getStringExtra("title") ?: "Reminder"
-             val id = intent.getStringExtra("id") ?: "0"
-             val url = intent.getStringExtra("url")
-             val snoozeIntervalMins = intent.getIntExtra("snoozeIntervalMins", 5)
+         val isUserExplicitDismiss = intent.getBooleanExtra("explicit_dismiss", false)
+         val id = intent.getStringExtra("id") ?: return
+         val sourceName = intent.getStringExtra("source") ?: "MANUAL"
+         val isSnooze = intent.getBooleanExtra("isSnooze", false) || id.startsWith("snooze_")
+         
+         // Get original ID (strip snooze_ prefix if present)
+         val originalId = intent.getStringExtra("originalId") 
+             ?: if (id.startsWith("snooze_")) id.removePrefix("snooze_") else id
+         
+         if (isUserExplicitDismiss) {
+             TerminalLogger.log("ALARM: Explicit Dismiss -> Marking as done for today")
              
-             AlarmScheduler.scheduleSnooze(context, id, title, url, snoozeIntervalMins)
+             // If this was a snooze, cancel its alarm
+             if (isSnooze) {
+                 AlarmScheduler.cancelSnooze(context, originalId)
+             }
+             
+             // Mark as dismissed in DB/Prefs using ORIGINAL ID
+             try {
+                 val source = com.neubofy.reality.data.EventSource.valueOf(sourceName)
+                 com.neubofy.reality.data.ScheduleManager.markAsDismissed(context, originalId, source)
+             } catch (e: Exception) {
+                 TerminalLogger.log("ALARM ERROR: Could not mark dismissed - ${e.message}")
+             }
+         } else {
+             // Swipe or Auto-timeout -> Auto Snooze (Safety Net)
+             TerminalLogger.log("ALARM: Notification Dismissed (Swipe) -> Auto-Snoozing...")
+             
+             val autoSnoozeEnabled = intent.getBooleanExtra("autoSnoozeEnabled", true)
+             if (autoSnoozeEnabled) {
+                 val title = intent.getStringExtra("title") ?: "Reminder"
+                 val url = intent.getStringExtra("url")
+                 val snoozeIntervalMins = intent.getIntExtra("snoozeIntervalMins", 5)
+                 
+                 // Pass source for proper dismissal handling later
+                 AlarmScheduler.scheduleSnooze(context, originalId, title, url, snoozeIntervalMins, sourceName)
+             }
          }
     }
 }
+

@@ -28,6 +28,9 @@ interface CalendarEventDao {
     @Query("DELETE FROM calendar_events WHERE endTime < :currentTime")
     suspend fun deleteOldEvents(currentTime: Long)
 
+    @Query("DELETE FROM calendar_events WHERE eventId = :eventId")
+    suspend fun deleteByEventId(eventId: String)
+
     @Query("DELETE FROM calendar_events")
     suspend fun clearAll()
 }

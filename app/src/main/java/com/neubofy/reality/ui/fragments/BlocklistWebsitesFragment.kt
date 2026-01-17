@@ -39,7 +39,12 @@ class BlocklistWebsitesFragment : Fragment() {
         loadData()
         
         binding.websiteList.layoutManager = LinearLayoutManager(requireContext())
-        binding.websiteList.adapter = WebsiteAdapter(blockedList)
+        binding.websiteList.adapter = WebsiteAdapter(blockedList) {
+            // On Config Changed -> Refresh
+            val intent = Intent(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE)
+            intent.setPackage(requireContext().packageName)
+            requireContext().sendBroadcast(intent)
+        }
         
         updateEmptyState()
         
@@ -103,23 +108,86 @@ class BlocklistWebsitesFragment : Fragment() {
         }
     }
     
-    inner class WebsiteAdapter(private val list: MutableList<String>) : RecyclerView.Adapter<WebsiteAdapter.VH>() {
-        inner class VH(val binding: ItemWebsiteBinding) : RecyclerView.ViewHolder(binding.root)
+    inner class WebsiteAdapter(
+        private val list: MutableList<String>,
+        private val onConfigChanged: () -> Unit
+    ) : RecyclerView.Adapter<WebsiteAdapter.VH>() {
+        
+        private val expandedPositions = mutableSetOf<Int>()
+        
+        inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val tvDomain: android.widget.TextView = itemView.findViewById(com.neubofy.reality.R.id.tv_domain)
+            val btnDelete: android.widget.ImageView = itemView.findViewById(com.neubofy.reality.R.id.btn_delete)
+            val btnExpand: android.widget.ImageView = itemView.findViewById(com.neubofy.reality.R.id.btnExpand)
+            val modeSelectionLayout: View = itemView.findViewById(com.neubofy.reality.R.id.modeSelectionLayout)
+            val cbFocus: android.widget.CheckBox = itemView.findViewById(com.neubofy.reality.R.id.cbFocus)
+            val cbAutoFocus: android.widget.CheckBox = itemView.findViewById(com.neubofy.reality.R.id.cbAutoFocus)
+            val cbBedtime: android.widget.CheckBox = itemView.findViewById(com.neubofy.reality.R.id.cbBedtime)
+            val cbCalendar: android.widget.CheckBox = itemView.findViewById(com.neubofy.reality.R.id.cbCalendar)
+        }
         
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-            return VH(ItemWebsiteBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+            val view = LayoutInflater.from(parent.context).inflate(com.neubofy.reality.R.layout.item_website_expandable, parent, false)
+            return VH(view)
         }
         
         override fun onBindViewHolder(holder: VH, position: Int) {
             val domain = list[position]
-            holder.binding.tvDomain.text = domain
-            holder.binding.btnDelete.setOnClickListener {
+            val isExpanded = expandedPositions.contains(position)
+            
+            holder.tvDomain.text = domain
+            holder.modeSelectionLayout.visibility = if (isExpanded) View.VISIBLE else View.GONE
+            holder.btnExpand.rotation = if (isExpanded) 180f else 0f
+            
+            // Load per-website mode config (using domain as package name key)
+            val config = prefs.getBlockedAppConfig(domain)
+            holder.cbFocus.setOnCheckedChangeListener(null)
+            holder.cbAutoFocus.setOnCheckedChangeListener(null)
+            holder.cbBedtime.setOnCheckedChangeListener(null)
+            holder.cbCalendar.setOnCheckedChangeListener(null)
+            
+            holder.cbFocus.isChecked = config.blockInFocus
+            holder.cbAutoFocus.isChecked = config.blockInAutoFocus
+            holder.cbBedtime.isChecked = config.blockInBedtime
+            holder.cbCalendar.isChecked = config.blockInCalendar
+            
+            // Mode checkbox listeners
+            val modeChangeListener = { _: android.widget.CompoundButton, _: Boolean ->
+                val updatedConfig = com.neubofy.reality.Constants.BlockedAppConfig(
+                    packageName = domain,
+                    blockInFocus = holder.cbFocus.isChecked,
+                    blockInAutoFocus = holder.cbAutoFocus.isChecked,
+                    blockInBedtime = holder.cbBedtime.isChecked,
+                    blockInCalendar = holder.cbCalendar.isChecked
+                )
+                prefs.updateBlockedAppConfig(updatedConfig)
+                onConfigChanged()
+            }
+            holder.cbFocus.setOnCheckedChangeListener(modeChangeListener)
+            holder.cbAutoFocus.setOnCheckedChangeListener(modeChangeListener)
+            holder.cbBedtime.setOnCheckedChangeListener(modeChangeListener)
+            holder.cbCalendar.setOnCheckedChangeListener(modeChangeListener)
+            
+            // Expand button
+            holder.btnExpand.setOnClickListener {
+                if (expandedPositions.contains(position)) {
+                    expandedPositions.remove(position)
+                } else {
+                    expandedPositions.add(position)
+                }
+                notifyItemChanged(position)
+            }
+            
+            // Delete button
+            holder.btnDelete.setOnClickListener {
                 if (!StrictLockUtils.isModificationAllowedFor(requireContext(), StrictLockUtils.FeatureType.BLOCKLIST)) {
                     Toast.makeText(requireContext(), "Locked by Strict Mode", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
-                list.removeAt(holder.layoutPosition)
-                notifyItemRemoved(holder.layoutPosition)
+                val pos = holder.layoutPosition
+                list.removeAt(pos)
+                expandedPositions.remove(pos)
+                notifyItemRemoved(pos)
                 saveData()
                 updateEmptyState()
             }

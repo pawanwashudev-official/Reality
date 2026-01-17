@@ -5,6 +5,9 @@
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -145,6 +148,12 @@
             android:screenOrientation="portrait" />
 
         <activity
+            android:name=".ui.activity.SupportUsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait" />
+
+        <activity
             android:name=".ui.activity.ReminderActivity"
             android:exported="false"
             android:theme="@style/Theme.Reality"
@@ -165,6 +174,12 @@
             android:turnScreenOn="true"
             android:taskAffinity=""
             android:theme="@style/Theme.Reality" />
+
+        <activity
+            android:name=".ui.activity.ProfileActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait" />
 
         <activity
             android:name=".ui.activity.MainActivity"

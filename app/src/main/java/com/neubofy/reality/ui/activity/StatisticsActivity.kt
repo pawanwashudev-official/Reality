@@ -132,6 +132,16 @@ class StatisticsActivity : AppCompatActivity() {
         val calendar = Calendar.getInstance()
         val dateFormat = SimpleDateFormat("EEE", Locale.getDefault())
         
+        // System packages to exclude
+        val excludedPrefixes = listOf(
+            "com.android.",
+            "android",
+            "com.google.android.inputmethod",
+            "com.sec.android.app.launcher",
+            "com.miui.home",
+            "com.huawei.android.launcher"
+        )
+        
         // Get usage for last 7 days
         for (i in 6 downTo 0) {
             calendar.timeInMillis = System.currentTimeMillis()
@@ -151,13 +161,26 @@ class StatisticsActivity : AppCompatActivity() {
             val dayLabel = dateFormat.format(Date(dayStart))
             
             try {
-                // Aggregate for accuracy
-                val statsMap = usageStatsManager.queryAndAggregateUsageStats(dayStart, queryEnd)
-                // Filter system apps here too
-                val totalTime = statsMap.entries.sumOf { (pkg, stats) ->
-                     if (pkg == "com.android.systemui" || pkg.contains("launcher")) 0L 
-                     else stats.totalTimeInForeground 
+                // Use queryUsageStats with INTERVAL_DAILY for proper daily bucketing
+                val stats = usageStatsManager.queryUsageStats(
+                    UsageStatsManager.INTERVAL_DAILY,
+                    dayStart,
+                    queryEnd
+                )
+                
+                // Sum foreground time for non-system apps
+                var totalTime = 0L
+                for (stat in stats) {
+                    // Skip if no foreground time
+                    if (stat.totalTimeInForeground <= 0) continue
+                    
+                    // Skip system apps
+                    if (excludedPrefixes.any { stat.packageName.startsWith(it) }) continue
+                    if (stat.packageName.contains("launcher", ignoreCase = true)) continue
+                    
+                    totalTime += stat.totalTimeInForeground
                 }
+                
                 result.add(Pair(dayLabel, totalTime))
             } catch (e: Exception) {
                 result.add(Pair(dayLabel, 0L))
@@ -210,6 +233,7 @@ class StatisticsActivity : AppCompatActivity() {
             // Y-axis (hours)
             axisLeft.apply {
                 axisMinimum = 0f
+                granularity = 1f   // Show labels every hour
                 textColor = colorOnSurfaceVariant
                 setDrawGridLines(true)
                 gridColor = colorOutlineVariant

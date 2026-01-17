@@ -68,6 +68,14 @@ class AboutActivity : AppCompatActivity() {
 
         // Privacy Policy
         binding.btnPrivacyPolicy.setOnClickListener { openUrl(PRIVACY_POLICY) }
+        
+        // Support Us
+        binding.btnSupportUs.setOnClickListener {
+            startActivity(Intent(this, SupportUsActivity::class.java))
+        }
+        binding.cardSupportUs.setOnClickListener {
+            startActivity(Intent(this, SupportUsActivity::class.java))
+        }
     }
 
     private fun openUrl(url: String) {

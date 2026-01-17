@@ -107,6 +107,8 @@ class MainActivity : AppCompatActivity() {
         options = ActivityOptionsCompat.makeCustomAnimation(this, R.anim.fade_in, R.anim.fade_out)
         setupActivityLaunchers()
         setupClickListeners()
+        setupBottomNavigation()
+        // logAppSignature() - masked as per user request
 
         // Startup permission check removed as per user request. 
         // Permissions are now requested on-demand.
@@ -146,6 +148,47 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()
+    }
+
+    private fun logAppSignature() {
+        try {
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+            } else {
+                packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNATURES)
+            }
+
+            val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val signingInfo = packageInfo.signingInfo ?: return
+                if (signingInfo.hasMultipleSigners()) {
+                    signingInfo.apkContentsSigners
+                } else {
+                    signingInfo.signingCertificateHistory
+                }
+            } else {
+                packageInfo.signatures
+            }
+            
+            if (signatures == null) return
+
+            for (signature in signatures) {
+                val md = java.security.MessageDigest.getInstance("SHA-1")
+                md.update(signature.toByteArray())
+                val digest = md.digest()
+                val hexString = StringBuilder()
+                for (b in digest) {
+                    hexString.append(String.format("%02X:", b))
+                }
+                if (hexString.length > 0) {
+                    hexString.setLength(hexString.length - 1)
+                }
+                val sha1 = hexString.toString()
+                com.neubofy.reality.utils.TerminalLogger.log("APP SHA-1: $sha1")
+                Log.d("RealityAuth", "SHA-1: $sha1")
+            }
+        } catch (e: Exception) {
+            com.neubofy.reality.utils.TerminalLogger.log("Failed to get SHA-1: ${e.message}")
+        }
     }
 
     override fun onPause() {
@@ -327,6 +370,44 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
+    }
+
+    private fun setupBottomNavigation() {
+        binding.bottomNavigation.selectedItemId = R.id.nav_home
+        
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> true
+                R.id.nav_tasks -> {
+                    // Open Google Tasks App
+                    val launchIntent = packageManager.getLaunchIntentForPackage("com.google.android.apps.tasks")
+                    if (launchIntent != null) {
+                        startActivity(launchIntent)
+                    } else {
+                        // Redirect to Play Store or show toast
+                        Toast.makeText(this, "Google Tasks not installed", Toast.LENGTH_SHORT).show()
+                    }
+                    false // Don't select
+                }
+                R.id.nav_calendar -> {
+                     // Open Google Calendar App
+                    val launchIntent = packageManager.getLaunchIntentForPackage("com.google.android.calendar")
+                    if (launchIntent != null) {
+                        startActivity(launchIntent)
+                    } else {
+                        Toast.makeText(this, "Google Calendar not installed", Toast.LENGTH_SHORT).show()
+                    }
+                    false
+                }
+                R.id.nav_profile -> {
+                    startActivity(Intent(this, ProfileActivity::class.java))
+                    overridePendingTransition(0, 0)
+                    finish()
+                    true
+                }
+                else -> false
+            }
+        }
     }
     
     private suspend fun showEmergencyDialog() {

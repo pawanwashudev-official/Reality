@@ -1,0 +1,83 @@
+function nfcalculation() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Form Responses 1");
+  const data = sheet.getDataRange().getValues();
+  const lastRow = data.length;
+  const row = data[lastRow - 1];
+
+  if (!row) {
+    Logger.log("❌ No data found in the last row.");
+    return;
+  }
+
+  const timestamp = new Date(row[0]);
+  const sessionString = String(row[1] || "").trim();
+  const tasksDone = Number(row[2]) || 0;
+  const tasksPlanned = Number(row[3]) || 0;
+  const wastedTime = Number(row[4]) || 0;
+  const screenTime = Number(row[5]) || 0;
+
+  // ✅ XP Time (Column M)
+  const segments = sessionString.split("+").map(s => Number(s.trim()) || 0);
+  const totalMinutes = segments.reduce((sum, mins) => sum + mins, 0);
+  const xpTime = Math.floor(totalMinutes / 30) * 30;
+  sheet.getRange(lastRow, 13).setValue(xpTime); // Column M
+
+  // ✅ XP Rate (Column N)
+  const plannedTime = lastRow > 1 ? Number(data[lastRow - 2][6]) || 510 : 510;
+  let xpRate = 0;
+  const ratio = xpTime / plannedTime;
+  if (ratio < 0.9) xpRate = 0.5;
+  else if (ratio < 1.0) xpRate = 1;
+  else if (ratio < 1.1) xpRate = 3;
+  else xpRate = 5;
+  sheet.getRange(lastRow, 14).setValue(xpRate); // Column N
+
+  // ✅ XP Calculations
+  const studyXP = Math.round(xpTime * xpRate);
+  const taskXP = (tasksDone * 100) - ((tasksPlanned - tasksDone) * 100);
+
+  // ✅ Bonus XP
+  let bonusXP = 0;
+  segments.forEach(mins => {
+    if (mins >= 300) bonusXP += 1000;
+    else if (mins >= 240) bonusXP += 500;
+    else if (mins >= 180) bonusXP += 250;
+    else if (mins >= 120) bonusXP += 150;
+  });
+
+  // ✅ Penalty XP
+  const screenPenalty = Math.max(0, screenTime - 60) * 3;
+  const penaltyXP = wastedTime + screenPenalty;
+
+  // ✅ Today XP
+  let todayXP = studyXP + taskXP + bonusXP - penaltyXP;
+  const isSessionEmpty = sessionString === "0 + 0 + 0" || xpTime === 0;
+  if (isSessionEmpty) todayXP = -1000;
+
+  // ✅ Total XP
+  const prevTotalXP = lastRow > 1 ? Number(data[lastRow - 2][14]) || 0 : 0;
+  const totalXP = Math.max(0, prevTotalXP + todayXP);
+  sheet.getRange(lastRow, 15).setValue(totalXP); // Column O
+
+  // ✅ XP Breakdown Columns (AE–AI = 31–35)
+  sheet.getRange(lastRow, 31, 1, 5).setValues([[studyXP, taskXP, bonusXP, penaltyXP, todayXP]]);
+
+  // ✅ Level (Column P)
+  let level = 0, threshold = 1000;
+  while (totalXP >= threshold) {
+    level++;
+    threshold += 1000 + Math.floor(threshold * 0.2);
+  }
+  sheet.getRange(lastRow, 16).setValue(level); // Column P
+
+  // ✅ Streak (Column Q)
+  const yesterday = new Date(timestamp);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const prevRow = data[lastRow - 2];
+  const prevDate = lastRow > 1 ? new Date(prevRow[0]) : null;
+  const format = d => Utilities.formatDate(d, Session.getScriptTimeZone(), "yyyy-MM-dd");
+  const prevStreak = lastRow > 1 ? Number(prevRow[16]) || 0 : 0;
+  const continues = prevDate && format(prevDate) === format(yesterday) && xpRate >= 3;
+  const streak = continues ? prevStreak + 1 : 0;
+  sheet.getRange(lastRow, 17).setValue(streak); // Column Q
+}

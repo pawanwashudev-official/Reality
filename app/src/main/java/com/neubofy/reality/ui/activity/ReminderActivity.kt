@@ -110,19 +110,52 @@ class ReminderActivity : AppCompatActivity() {
     
     private fun loadCustomReminders() {
         val customReminders = savedPreferencesLoader.loadCustomReminders()
+        val originalSize = customReminders.size
+        
+        // 1. Permanently DELETE expired one-time reminders
+        val nowTime = java.util.Calendar.getInstance()
+        val currentMins = nowTime.get(java.util.Calendar.HOUR_OF_DAY) * 60 + nowTime.get(java.util.Calendar.MINUTE)
+        val todayStart = nowTime.clone() as java.util.Calendar
+        todayStart.set(java.util.Calendar.HOUR_OF_DAY, 0)
+        todayStart.set(java.util.Calendar.MINUTE, 0)
+        todayStart.set(java.util.Calendar.SECOND, 0)
+        todayStart.set(java.util.Calendar.MILLISECOND, 0)
+        // Fix: Only delete reminders that are REALLY old (from yesterday or earlier).
+        // Threshold: Start of Today (Midnight).
+        // Any one-time reminder dismissed BEFORE today started is considered "previous day's event" and removed.
+        
+        val cleanupThreshold = todayStart.timeInMillis
+        customReminders.removeAll { reminder ->
+            val isOneTime = reminder.repeatDays.isEmpty()
+            // Delete if it's a one-time reminder that was dismissed BEFORE today
+            isOneTime && reminder.lastDismissedDate > 0 && reminder.lastDismissedDate < cleanupThreshold
+        }
+        
+        // Save changes if any
+        if (customReminders.size != originalSize) {
+            savedPreferencesLoader.saveCustomReminders(customReminders)
+        }
+        
+        val validCustomReminders = customReminders.toMutableList()
         
         CoroutineScope(Dispatchers.Main).launch {
             val syncedEvents = withContext(Dispatchers.IO) {
                 com.neubofy.reality.data.ScheduleManager.getUnifiedEventsForToday(this@ReminderActivity)
             }
             
-            val allReminders = customReminders.toMutableList()
-            
+            // 2. Add Synced Events
             for (event in syncedEvents) {
+                // NO LONGER filtering by lastDismissedDate - show all events for today
+                
                 if (event.source != com.neubofy.reality.data.EventSource.CUSTOM_REMINDER) {
                     val startMins = event.startTimeMins
                     val offset = event.customOffsetMins ?: prefs.getInt("reminder_offset_minutes", 1)
                     val triggerMins = startMins - offset
+                    
+                    // FIX: Do NOT filter out past events here.
+                    // If a schedule started at 9 AM and it's 10 AM, we still want to show it in the list (unless dismissed).
+                    // The AlarmScheduler will handle not firing the alarm if it's too late.
+                    // But in the UI, we want to see "Today's Schedule".
                     
                     val sourceLabel = when(event.source) {
                         com.neubofy.reality.data.EventSource.MANUAL -> "📅"
@@ -136,16 +169,16 @@ class ReminderActivity : AppCompatActivity() {
                         hour = (triggerMins / 60).coerceIn(0, 23),
                         minute = (triggerMins % 60).coerceIn(0, 59),
                         isEnabled = event.isEnabled,
-                        repeatDays = emptyList(),
+                        repeatDays = emptyList(), // Synced events are handled by source schedule
                         retryIntervalMins = 0,
                         offsetMins = offset,
                         redirectUrl = event.url
                     )
-                    allReminders.add(virtualReminder)
+                    validCustomReminders.add(virtualReminder)
                 }
             }
             
-            val sorted = allReminders.sortedBy { it.hour * 60 + it.minute }
+            val sorted = validCustomReminders.sortedBy { it.hour * 60 + it.minute }
             customAdapter.updateList(sorted)
             
             // Show/hide empty state
@@ -271,6 +304,9 @@ class ReminderActivity : AppCompatActivity() {
                     else -> null
                 }
                 
+                // ALWAYS reset dismissal when editing - any edit should allow reminder to fire again
+                val newLastDismissed = 0L
+
                 val reminder = com.neubofy.reality.data.CustomReminder(
                     id = existingReminder?.id ?: java.util.UUID.randomUUID().toString(),
                     title = title,
@@ -279,7 +315,7 @@ class ReminderActivity : AppCompatActivity() {
                     isEnabled = true,
                     repeatDays = selectedDays,
                     retryIntervalMins = retry,
-                    lastDismissedDate = existingReminder?.lastDismissedDate ?: 0L,
+                    lastDismissedDate = newLastDismissed,
                     offsetMins = snapshotOffset,
                     redirectUrl = snapshotUrl,
                     snoozeEnabled = globalSnoozeEnabled,
@@ -292,6 +328,10 @@ class ReminderActivity : AppCompatActivity() {
                 list.removeAll { it.id == reminder.id }
                 list.add(reminder)
                 savedPreferencesLoader.saveCustomReminders(list)
+                
+                // Clear from fired cache to allow edited reminder to fire again
+                com.neubofy.reality.utils.FiredEventsCache.clearFired(this, reminder.id)
+                
                 loadCustomReminders()
                 com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(this)
             }

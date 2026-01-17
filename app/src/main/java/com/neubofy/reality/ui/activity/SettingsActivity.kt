@@ -13,6 +13,10 @@ import com.neubofy.reality.R
 import com.neubofy.reality.databinding.ActivitySettingsBinding
 import com.neubofy.reality.utils.SavedPreferencesLoader
 import com.neubofy.reality.utils.ThemeManager
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import coil.load
+import coil.transform.CircleCropTransformation
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -115,9 +119,89 @@ class SettingsActivity : AppCompatActivity() {
             val appPrefs = getSharedPreferences("reality_prefs", MODE_PRIVATE)
             appPrefs.edit().putBoolean("show_terminal_log", isChecked).apply()
         }
+        
+        // Account / Google Sign-In
+        binding.cardAccount.setOnClickListener {
+            handleAccountClick()
+        }
+    }
+    
+    private fun handleAccountClick() {
+        if (com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)) {
+            // Already signed in -> Show Sign Out Dialog
+            val email = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(this)
+            
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Google Account")
+                .setMessage("Signed in as $email\n\nDo you want to sign out?")
+                .setPositiveButton("Sign Out") { _, _ ->
+                    com.neubofy.reality.google.GoogleAuthManager.signOut(this)
+                    updateUI()
+                    android.widget.Toast.makeText(this, "Signed out", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        } else {
+            // Sign In
+            performGoogleSignIn()
+        }
+    }
+    
+    private fun performGoogleSignIn() {
+        lifecycleScope.launch {
+            try {
+                val credential = com.neubofy.reality.google.GoogleAuthManager.signIn(this@SettingsActivity)
+                
+                if (credential != null) {
+                    android.widget.Toast.makeText(this@SettingsActivity, "Welcome ${credential.displayName}!", android.widget.Toast.LENGTH_LONG).show()
+                    updateUI()
+                } else {
+                    android.widget.Toast.makeText(this@SettingsActivity, "Sign in failed or cancelled", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                com.neubofy.reality.utils.TerminalLogger.log("Sign In Error: ${e.message}")
+                android.widget.Toast.makeText(this@SettingsActivity, "Error: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun updateUI() {
+        // Account Status
+        if (com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)) {
+            val name = com.neubofy.reality.google.GoogleAuthManager.getUserName(this)
+            val email = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(this)
+            
+            binding.tvAccountTitle.text = name ?: "Google User"
+            binding.tvAccountStatus.text = email
+            
+            try {
+                val photoUrl = com.neubofy.reality.google.GoogleAuthManager.getUserPhotoUrl(this)
+                if (!photoUrl.isNullOrEmpty()) {
+                    binding.ivProfile.load(photoUrl) {
+                        crossfade(true)
+                        transformations(CircleCropTransformation())
+                        placeholder(R.drawable.baseline_account_circle_24)
+                        error(R.drawable.baseline_account_circle_24)
+                        listener(
+                            onError = { _, result ->
+                                com.neubofy.reality.utils.TerminalLogger.log("COIL ERROR: ${result.throwable.message}")
+                            }
+                        )
+                    }
+                    binding.ivProfile.imageTintList = null
+                } else {
+                    binding.ivProfile.setImageResource(R.drawable.baseline_account_circle_24)
+                    binding.ivProfile.imageTintList = androidx.core.content.ContextCompat.getColorStateList(this, R.color.md_theme_primary)
+                }
+            } catch (e: Exception) {
+                com.neubofy.reality.utils.TerminalLogger.log("SETTINGS IMAGE ERROR: ${e.message}")
+                binding.ivProfile.setImageResource(R.drawable.baseline_account_circle_24)
+            }
+        } else {
+            binding.tvAccountTitle.text = "Sign in with Google"
+            binding.tvAccountStatus.text = "Sync Tasks, Docs & Drive"
+            binding.ivProfile.setColorFilter(android.graphics.Color.GRAY)
+        }
         // Theme Status
         val themeMode = prefs.getThemeMode()
         binding.tvThemeStatus.text = when (themeMode) {

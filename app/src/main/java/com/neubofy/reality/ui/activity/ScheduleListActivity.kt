@@ -351,6 +351,8 @@ class ScheduleListActivity : AppCompatActivity() {
                     manualList.remove(found)
                     prefs.saveAutoFocusHoursList(manualList)
                     sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
+                    // Reschedule reminders since schedule changed
+                    com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(this)
                     loadSchedules()
                 }
             }
@@ -435,6 +437,8 @@ class ScheduleListActivity : AppCompatActivity() {
                         prefs.saveAutoFocusHoursList(manualList)
                         
                         sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
+                        // Reschedule reminders since new schedule added
+                        com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(this)
                         loadSchedules()
                         dialog.dismiss()
                     }
@@ -515,7 +519,11 @@ class ScheduleListActivity : AppCompatActivity() {
                     }
                 
                     val isReminder = dialogBinding.cbReminder.isChecked
-                    val updatedItem = Constants.AutoTimedActionItem(title, startTimeMins, endTimeMins, arrayListOf(), repeatDays = days, isReminderEnabled = isReminder)
+                    
+                    // ALWAYS reset dismissal when editing - any edit should allow reminder to fire again
+                    val newLastDismissed = 0L
+                    
+                    val updatedItem = Constants.AutoTimedActionItem(title, startTimeMins, endTimeMins, arrayListOf(), repeatDays = days, isReminderEnabled = isReminder, lastDismissedDate = newLastDismissed)
                     
                     // Remove old and add updated
                     manualList = prefs.loadAutoFocusHoursList()
@@ -525,6 +533,13 @@ class ScheduleListActivity : AppCompatActivity() {
                     prefs.saveAutoFocusHoursList(manualList)
                     
                     sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
+                    
+                    // Clear from fired cache to allow edited schedule to fire again
+                    val oldScheduleId = "sched_${existing.title}_${existing.startTimeInMins}_${existing.endTimeInMins}"
+                    com.neubofy.reality.utils.FiredEventsCache.clearFired(this, oldScheduleId)
+                    
+                    // Reschedule reminders since schedule edited
+                    com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(this)
                     loadSchedules()
                     dialog.dismiss()
                 }

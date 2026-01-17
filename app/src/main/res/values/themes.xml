@@ -274,4 +274,10 @@
         <item name="colorOutline">#F44336</item>
     </style>
 
+    <!-- Shape Appearance for Circle Images -->
+    <style name="ShapeAppearanceOverlay.App.Circle" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
 </resources>

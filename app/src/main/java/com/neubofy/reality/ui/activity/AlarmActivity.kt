@@ -33,6 +33,7 @@ class AlarmActivity : AppCompatActivity() {
     private var snoozeIntervalMins = 5
     private var autoSnoozeEnabled = true
     private var autoSnoozeTimeoutSecs = 30
+    private var source = "MANUAL"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,6 +67,7 @@ class AlarmActivity : AppCompatActivity() {
         val mins = intent.getIntExtra("mins", 0)
         val url = intent.getStringExtra("url")
         val id = intent.getStringExtra("id")
+        source = intent.getStringExtra("source") ?: "MANUAL"
 
         // Setup UI
         val tvTitle = findViewById<TextView>(R.id.tvTitle)
@@ -184,19 +186,18 @@ class AlarmActivity : AppCompatActivity() {
         stopAlarmService()
         handleAction(url)
         
-        // Mark as dismissed
+        // Mark as dismissed using ScheduleManager (handles all sources correctly)
         if (id != null) {
             try {
-                val loader = com.neubofy.reality.utils.SavedPreferencesLoader(applicationContext)
-                val list = loader.loadCustomReminders()
-                val itemIndex = list.indexOfFirst { it.id == id }
-                if (itemIndex != -1) {
-                    val item = list[itemIndex]
-                    val updated = item.copy(lastDismissedDate = System.currentTimeMillis())
-                    list[itemIndex] = updated
-                    loader.saveCustomReminders(list)
-                }
-            } catch (e: Exception) { e.printStackTrace() }
+                // Get original ID (strip snooze_ prefix if present)
+                val originalId = if (id.startsWith("snooze_")) id.removePrefix("snooze_") else id
+                val eventSource = com.neubofy.reality.data.EventSource.valueOf(source)
+                com.neubofy.reality.data.ScheduleManager.markAsDismissed(applicationContext, originalId, eventSource)
+                com.neubofy.reality.utils.TerminalLogger.log("ALARM: Dismissed $originalId ($source)")
+            } catch (e: Exception) { 
+                com.neubofy.reality.utils.TerminalLogger.log("ALARM ERROR: ${e.message}")
+                e.printStackTrace() 
+            }
         }
         
         finish()
@@ -216,7 +217,8 @@ class AlarmActivity : AppCompatActivity() {
             id ?: "unknown",
             title,
             url,
-            snoozeIntervalMins
+            snoozeIntervalMins,
+            source  // Pass source for proper dismissal handling later
         )
     }
     

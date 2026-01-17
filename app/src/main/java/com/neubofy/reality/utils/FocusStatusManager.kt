@@ -76,8 +76,9 @@ class FocusStatusManager(private val context: Context) {
         // 4. Manual Schedules
         val schedules = prefs.loadAutoFocusHoursList()
         schedules.forEach { item ->
-            // Check Repeat Days
-            if (item.repeatDays.contains(currentDay)) {
+            // Check Repeat Days - empty means every day (consistent with BlockCache)
+            val runsToday = item.repeatDays.isEmpty() || item.repeatDays.contains(currentDay)
+            if (runsToday) {
                 val start = item.startTimeInMins
                 val end = item.endTimeInMins
                 var isScheduleActive = false

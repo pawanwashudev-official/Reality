@@ -49,6 +49,7 @@ class AlarmService : Service() {
         val id = intent?.getStringExtra("id") ?: ""
         val url = intent?.getStringExtra("url")
         val mins = intent?.getIntExtra("mins", 0) ?: 0
+        val source = intent?.getStringExtra("source") ?: "MANUAL"
         
         // Extract snooze settings (snapshotted from reminder)
         val snoozeEnabled = intent?.getBooleanExtra("snoozeEnabled", true) ?: true
@@ -56,13 +57,13 @@ class AlarmService : Service() {
         val autoSnoozeEnabled = intent?.getBooleanExtra("autoSnoozeEnabled", true) ?: true
         val autoSnoozeTimeoutSecs = intent?.getIntExtra("autoSnoozeTimeoutSecs", 30) ?: 30
 
-        startForeground(NOTIFICATION_ID, buildNotification(id, title, mins, url, snoozeEnabled, snoozeIntervalMins, autoSnoozeEnabled, autoSnoozeTimeoutSecs))
+        startForeground(NOTIFICATION_ID, buildNotification(id, title, mins, url, snoozeEnabled, snoozeIntervalMins, autoSnoozeEnabled, autoSnoozeTimeoutSecs, source))
         startAlarm()
         
         return START_NOT_STICKY
     }
 
-    private fun buildNotification(id: String, title: String, mins: Int, url: String?, snoozeEnabled: Boolean, snoozeIntervalMins: Int, autoSnoozeEnabled: Boolean, autoSnoozeTimeoutSecs: Int): Notification {
+    private fun buildNotification(id: String, title: String, mins: Int, url: String?, snoozeEnabled: Boolean, snoozeIntervalMins: Int, autoSnoozeEnabled: Boolean, autoSnoozeTimeoutSecs: Int, source: String): Notification {
         val channelId = "reality_alarm_channel_v2"
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -83,6 +84,7 @@ class AlarmService : Service() {
             putExtra("title", title)
             putExtra("url", url)
             putExtra("mins", mins)
+            putExtra("source", source)
             // Pass snooze settings
             putExtra("snoozeEnabled", snoozeEnabled)
             putExtra("snoozeIntervalMins", snoozeIntervalMins)
@@ -106,11 +108,11 @@ class AlarmService : Service() {
             .setFullScreenIntent(fullScreenPendingIntent, true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(false) // Changed to false so it can be dismissed to trigger deleteIntent
-            .setDeleteIntent(getDeleteIntent(id, title, mins, url, snoozeEnabled, snoozeIntervalMins, autoSnoozeEnabled, autoSnoozeTimeoutSecs))
+            .setDeleteIntent(getDeleteIntent(id, title, mins, url, snoozeEnabled, snoozeIntervalMins, autoSnoozeEnabled, autoSnoozeTimeoutSecs, source))
             .build()
     }
 
-    private fun getDeleteIntent(id: String, title: String, mins: Int, url: String?, snoozeEnabled: Boolean, snoozeIntervalMins: Int, autoSnoozeEnabled: Boolean, autoSnoozeTimeoutSecs: Int): PendingIntent {
+    private fun getDeleteIntent(id: String, title: String, mins: Int, url: String?, snoozeEnabled: Boolean, snoozeIntervalMins: Int, autoSnoozeEnabled: Boolean, autoSnoozeTimeoutSecs: Int, source: String): PendingIntent {
         val intent = Intent(this, com.neubofy.reality.receivers.ReminderReceiver::class.java).apply {
             action = "ACTION_DISMISS"
             putExtra("id", id)
@@ -121,6 +123,7 @@ class AlarmService : Service() {
             putExtra("snoozeIntervalMins", snoozeIntervalMins)
             putExtra("autoSnoozeEnabled", autoSnoozeEnabled)
             putExtra("autoSnoozeTimeoutSecs", autoSnoozeTimeoutSecs)
+            putExtra("source", source)  // Critical for proper dismissal handling
         }
         return PendingIntent.getBroadcast(
             this,

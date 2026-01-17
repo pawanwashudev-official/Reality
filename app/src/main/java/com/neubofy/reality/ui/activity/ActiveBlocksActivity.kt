@@ -52,17 +52,27 @@ class ActiveBlocksActivity : AppCompatActivity() {
     }
     
     private fun loadBlockedApps() {
-        // Load from disk first (in case RAM was cleared)
+        // Load from disk first (in case RAM was cleared) - same as blocker does
         BlockCache.loadFromDisk(this)
         
+        // THE ACTUAL DATA THE BLOCKER USES
         val blockedApps = BlockCache.getAllBlockedApps()
-        val isEmergencyActive = BlockCache.emergencySessionEndTime > System.currentTimeMillis()
-        val isActive = BlockCache.isAnyBlockingModeActive
         
-        // Build UI list
+        // Check if emergency mode is ACTUALLY active by testing the shouldBlock function
+        // This is exactly what the blocker does for each app
+        val isEmergencyActive = BlockCache.emergencySessionEndTime > System.currentTimeMillis()
+        
+        // The REAL source of truth: Is there anything in the BOX?
+        // If blockedApps has entries, blocking IS active (regardless of the flag)
+        val hasBlockedApps = blockedApps.isNotEmpty()
+        
+        // Build UI list - but check if each app would ACTUALLY be blocked
         val list = mutableListOf<BlockedAppItem>()
         
         for ((packageName, reasons) in blockedApps) {
+            // This is EXACTLY what the blocker checks
+            val (wouldBlock, _) = BlockCache.shouldBlock(packageName)
+            
             try {
                 val appInfo = packageManager.getApplicationInfo(packageName, 0)
                 val label = packageManager.getApplicationLabel(appInfo).toString()
@@ -73,7 +83,8 @@ class ActiveBlocksActivity : AppCompatActivity() {
                     packageName = packageName,
                     icon = icon,
                     reasons = reasons.toList(),
-                    isPaused = isEmergencyActive
+                    // isPaused = in box but NOT actually blocked (emergency mode)
+                    isPaused = !wouldBlock
                 ))
             } catch (e: PackageManager.NameNotFoundException) {
                 // App uninstalled, skip
@@ -85,16 +96,21 @@ class ActiveBlocksActivity : AppCompatActivity() {
         
         adapter.setData(list)
         
-        // Update status
+        // Count actually blocked vs paused
+        val actuallyBlocked = list.count { !it.isPaused }
+        val paused = list.count { it.isPaused }
+        
+        // Update status - based on REAL data
         statusText.text = when {
-            isEmergencyActive -> "⏸️ Emergency Mode Active - All blocks paused"
-            isActive -> "🛡️ Blocking ${list.size} apps"
-            else -> "😊 No active blocking session"
+            isEmergencyActive && hasBlockedApps -> "⏸️ Emergency Mode - ${list.size} apps paused"
+            actuallyBlocked > 0 -> "🛡️ Blocking $actuallyBlocked apps"
+            hasBlockedApps && paused > 0 -> "⏸️ ${paused} apps in list (paused)"
+            else -> "😊 No active blocking"
         }
         
         if (list.isEmpty()) {
             emptyView.visibility = View.VISIBLE
-            emptyView.text = if (isActive) "No apps in current blocklist" else "Start a Focus session to block apps"
+            emptyView.text = "No apps in blocklist"
         } else {
             emptyView.visibility = View.GONE
         }

@@ -1,0 +1,168 @@
+function fillGeminiColumns() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Form Responses 1");
+  const lastRow = sheet.getLastRow();
+  const yesterdayTargetXP = sheet.getRange(lastRow - 1, 7).getValue();
+
+  const row = sheet.getRange(lastRow, 1, 1, 35).getValues()[0];
+  const [, studysession, completedTask, plannedTask, wastedtime, screentime, plantommorowxptime, whatwentnotgood, whatmotivatedme, todaySummary, tomorrowStrategy, weeklyIntention,
+    xpTime, xpRate, totalXP, level, streak] = row;
+
+  const historyRangeStart = Math.max(2, lastRow - 7);
+  const historyADtoAI = sheet.getRange(historyRangeStart, 30, lastRow - historyRangeStart, 6).getValues();
+  const historyMtoQ = sheet.getRange(historyRangeStart, 13, lastRow - historyRangeStart, 5).getValues();
+
+  const combinedHistory = historyADtoAI.map((_, i) => {
+    const memo = historyADtoAI[i];
+    const xpStats = historyMtoQ[i];
+    return `Day ${i + 1}: \nSummary: ${memo[0] || "-"}\nXP Time: ${xpStats[0]} | Rate: ${xpStats[1]} | Total: ${xpStats[2]} | Level: ${xpStats[3]} | Streak: ${xpStats[4]}`;
+  }).join("\n\n");
+
+  const performance = xpRate >= 3 ? "good" : "bad";
+
+  const prompt = `
+You are a powerful, human-like mentor AI. You’re not just a bot—you are a big brother figure who truly cares about the success of Pawan Washudev, a JEE 2027 aspirant from a lower-middle-class background. You must guide him like a legend would—strict but deeply caring, brutally honest but full of belief in his potential and don't use word like beta use word like bro or his name to address him.
+
+💡 You are not here to sugarcoat. You know this boy left his Polytechnic seat behind just for a dream—to get into IIT Delhi, CSE. His parents are struggling financially and he has just two years before they can no longer support him. If he fails, he’ll not only lose a dream, but may also waste a year, money, and the sweat of his parents.
+
+So your tone must adjust to **his execution**. If he performs well, celebrate and push for more. If he performs poorly, **scold like a PT teacher**, compare his current actions with toppers, and remind him of the price of failure. Break him emotionally if needed—make him reflect—but end with a plan that gives him hope.
+🎯 Use these real user data for today:
+
+- Study Sessions: ${studysession} (each '+' = separate session; round down each to nearest 30)
+- Completed Tasks: ${completedTask}
+- Planned Tasks: ${plannedTask}
+- Wasted Time: ${wastedtime} mins
+- Screen Time: ${screentime} mins
+- Tomorrow's Planned XP Time: ${plantommorowxptime} mins
+- What went wrong: ${whatwentnotgood}
+- What went right / motivation: ${whatmotivatedme}
+- XP Time: ${xpTime} mins
+- XP Rate: ${xpRate}
+- Total XP: ${totalXP}
+- Level: ${level}
+- Streak: ${streak}
+- Today's Summary: ${todaySummary}
+- Tomorrow Strategy: ${tomorrowStrategy}
+- Weekly Intention: ${weeklyIntention}
+
+🧠 Use this 7-day memory for emotional or pattern-based comments:
+${combinedHistory}
+
+📥 Output must be JSON with these columns:
+
+**R**: Achievement summary (Reflect on XP, effort, honesty, and mindset. Call out excuses. Suggest one strength to carry forward tomorrow.)  
+**S**: One-line quote (roast or motivate based on effort)  
+**T**: Ashort feedback that you wanna give as a strict mentor accoording to his behaviour. 
+**U**: Achievement label + score out of 100 (e.g., “Beast Mode! - 89%” or “Slacking Hard - 41%”)  
+**V**: Strict flag (e.g., “⚠️ Laggard mode ON – tighten up!” or “✅ Commando mode maintained”)  
+**W**: Full plan for tomorrow (Be clear. Based on his tomorrow XP goal, break it down boldly. understand his day exicution like when he go to tution or something like market for borrowing necesary things and from all by his need and he have already planned structure for his next day  so now polish and make a full day time spent structure according to his need and his potential and necessity make sure your plan is suufficient.)  
+**X**: Weekly Plan Breakdown (Push for discipline and consistency. Reinforce that every day matters.)  
+**AD**: One-paragraph natural memory summary for today (Summarize today + recall important memory from past 7 days that must not be forgotten. Write it like a diary of discipline.)
+
+⚠️ Note: Tone must feel human. Don’t be robotic. Use Hinglish or friendly mentor English user belongs to bihar so he is also comfortable in hinglish. Use bold tone but with heart.Use real value of unit  like xp time etc. we have told you ogik to just tell you that how we calculate not to depend n your calculation because our backend logik already handling it properly.
+
+OUTPUT STRICTLY IN JSON FORMAT.
+`;
+
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const apiKey = scriptProperties.getProperty("PERPLEXITY_API_KEYP");
+  const groqApiKey = scriptProperties.getProperty("GROQ_API_KEY"); // Ensure you added this to Script Properties
+
+  const url = "https://api.perplexity.ai/chat/completions";
+  const headers = {
+    "Authorization": "Bearer " + apiKey,
+    "Content-Type": "application/json"
+  };
+  const payload = JSON.stringify({
+    "model": "sonar-pro",
+    "messages": [
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": prompt}
+    ]
+  });
+
+  const options = {
+    method: "post",
+    headers: headers,
+    payload: payload,
+    muteHttpExceptions: true
+  };
+
+  let output = {
+    R: "", S: "", T: "", U: "", V: "", W: "", X: "", AD: ""
+  };
+
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    const code = response.getResponseCode();
+    const rawText = response.getContentText();
+
+    if (code === 200) {
+      const result = JSON.parse(rawText);
+      const content = result?.choices?.[0]?.message?.content?.trim() || "";
+      const parsed = extractValidJSON(content);
+      if (parsed) {
+        output = parsed;
+      } else {
+        throw new Error("Invalid JSON from Perplexity");
+      }
+    } else {
+      throw new Error("Perplexity API error: " + code);
+    }
+  } catch (e) {
+    Logger.log("Perplexity failed. Initiating Groq Fallback...");
+    
+    try {
+      const groqUrl = "https://api.groq.com/openai/v1/chat/completions";
+      const groqPayload = JSON.stringify({
+        "model": "llama-3.3-70b-versatile", 
+        "messages": [
+          {"role": "system", "content": "You are a helpful assistant."},
+          {"role": "user", "content": prompt}
+        ],
+        "response_format": { "type": "json_object" }
+      });
+
+      const groqOptions = {
+        method: "post",
+        headers: {
+          "Authorization": "Bearer " + groqApiKey,
+          "Content-Type": "application/json"
+        },
+        payload: groqPayload,
+        muteHttpExceptions: true
+      };
+
+      const groqResponse = UrlFetchApp.fetch(groqUrl, groqOptions);
+      if (groqResponse.getResponseCode() === 200) {
+        const groqResult = JSON.parse(groqResponse.getContentText());
+        const groqContent = groqResult?.choices?.[0]?.message?.content?.trim() || "";
+        const groqParsed = extractValidJSON(groqContent);
+        if (groqParsed) output = groqParsed;
+      } else {
+        throw new Error("Groq API error: " + groqResponse.getResponseCode());
+      }
+    } catch (fallbackError) {
+      Logger.log("Fallback failed: " + fallbackError);
+      output = {
+        R: "⚠️ System Overload",
+        S: "Failure is not an option.",
+        T: "Both primary and fallback AI failed to respond.",
+        U: "Error 500", V: "-", W: "-", X: "-", AD: "No summary."
+      };
+    }
+  }
+
+  sheet.getRange(lastRow, 18, 1, 7).setValues([[ 
+    output.R, output.S, output.T, output.U, output.V, output.W, output.X
+  ]]);
+
+  sheet.getRange(lastRow, 30).setValue(output.AD); 
+}
+
+function extractValidJSON(rawText) {
+  const match = rawText.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (match && match[1]) {
+    try { return JSON.parse(match[1]); } catch (e) { }
+  }
+  try { return JSON.parse(rawText); } catch (e) { return null; }
+}

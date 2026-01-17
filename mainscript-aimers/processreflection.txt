@@ -1,0 +1,183 @@
+function processReflectionAndFillColumns() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Form Responses 1");
+  const lastRow = sheet.getLastRow();
+  const timezone = Session.getScriptTimeZone();
+
+  // Read timestamp, compute formatted date for doc lookup
+  const timestamp = sheet.getRange(lastRow, 1).getValue(); // Column A
+  const formattedDate = Utilities.formatDate(new Date(timestamp), timezone, "yyyy-MM-dd");
+
+  // Find the daily doc
+  const folder = DriveApp.getFolderById("114LTprcJz-R6CQ06K_ZMJ6qroDMOD2Wb");
+  const files = folder.getFilesByName(`Plan for ${formattedDate}`);
+  if (!files.hasNext()) {
+    Logger.log("No doc found for today: Plan for " + formattedDate);
+    sheet.getRange(lastRow, 13).setValue("No doc found for " + formattedDate); // Column M debug
+    return;
+  }
+
+  const docId = files.next().getId();
+  const doc = DocumentApp.openById(docId);
+  const docText = doc.getBody().getText();
+
+  // Strict schema prompt
+  const prompt = `
+You are a smart mentor. Analyze the student's full daily plan text below and produce structured reflection data.
+
+Return ONLY valid JSON (no explanation or markdown), in EXACTLY this schema:
+{
+  "whatWentWrong": "string",
+  "whatWentWell": "string",
+  "daySummary": "string",
+  "totalTimeWasted": "number in minutes",
+  "screenTimeWasted": "number in minutes",
+  "tomorrowStrategy": "copy the user's exact plan text for tomorrow, unchanged",
+  "weeklyPlan": "a motivating roadmap for the next 5–7 days"
+}
+
+Rules:
+- Do NOT output an "events" array or any keys beyond the schema above.
+- "totalTimeWasted" and "screenTimeWasted" must be numbers in minutes (e.g., 45).
+- "tomorrowStrategy" must be an exact copy of the user's plan text for tomorrow, unchanged.
+- Be emotionally intelligent, motivating, and strategic in the reflection fields.
+
+---
+${docText}
+`.trim();
+
+  // --- FALLBACK LOGIC START ---
+  let raw = "";
+  try {
+    Logger.log("Attempting Perplexity API...");
+    raw = callPerplexityAPI_reflection(prompt).trim();
+  } catch (err) {
+    Logger.log("⚠️ Perplexity failed: " + err.message + ". Falling back to Groq...");
+    try {
+      raw = callGroqAPI_reflection(prompt).trim();
+    } catch (groqErr) {
+      Logger.log("❌ Both Perplexity and Groq failed: " + groqErr.message);
+      sheet.getRange(lastRow, 13).setValue("Both AI models failed.");
+      throw new Error("AI Processing Failed.");
+    }
+  }
+  // --- FALLBACK LOGIC END ---
+
+  Logger.log("Raw AI response:\n" + raw);
+
+  // Clean JSON fences and parse safely
+  const cleaned = raw.replace(/```json|```/g, "").trim();
+
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (err) {
+    Logger.log("❌ JSON.parse failed. Cleaned text:\n" + cleaned);
+    throw new Error("Invalid JSON from AI. Check Logs.");
+  }
+
+  // Validate schema keys
+  const requiredKeys = ["whatWentWrong", "whatWentWell", "daySummary", "totalTimeWasted", "screenTimeWasted", "tomorrowStrategy", "weeklyPlan"];
+  const missing = requiredKeys.filter(k => !(k in parsed));
+  if (missing.length) {
+    Logger.log("⚠️ Missing keys: " + missing.join(", "));
+  }
+
+  // Coerce numeric minute fields
+  const toMinutes = v => {
+    if (typeof v === "number") return v;
+    if (typeof v === "string") {
+      const num = parseInt(v.replace(/[^\d-]/g, ""), 10);
+      return isNaN(num) ? "" : num;
+    }
+    return "";
+  };
+
+  // Extract values
+  const whatWentWrong = parsed.whatWentWrong || "";
+  const whatWentWell = parsed.whatWentWell || "";
+  const daySummary = parsed.daySummary || "";
+  const totalTimeWasted = toMinutes(parsed.totalTimeWasted);
+  const screenTimeWasted = toMinutes(parsed.screenTimeWasted);
+  const tomorrowStrategy = parsed.tomorrowStrategy || "";
+  const weeklyPlan = parsed.weeklyPlan || "";
+
+  // Write values into the sheet
+  sheet.getRange(lastRow, 8).setValue(whatWentWrong);     // H
+  sheet.getRange(lastRow, 9).setValue(whatWentWell);      // I
+  sheet.getRange(lastRow, 10).setValue(daySummary);       // J
+  sheet.getRange(lastRow, 5).setValue(totalTimeWasted);   // E
+  sheet.getRange(lastRow, 6).setValue(screenTimeWasted);  // F
+  sheet.getRange(lastRow, 11).setValue(tomorrowStrategy); // K
+  sheet.getRange(lastRow, 12).setValue(weeklyPlan);       // L
+
+  Logger.log("✅ Reflection written for row " + lastRow);
+}
+
+/**
+ * Perplexity API Call
+ */
+function callPerplexityAPI_reflection(prompt) {
+  const apiKey = PropertiesService.getScriptProperties().getProperty("PERPLEXITY_API_KEYP");
+  const url = "https://api.perplexity.ai/chat/completions";
+
+  const payload = {
+    model: "sonar-pro",
+    messages: [
+      { role: "system", content: "Return only valid JSON. No markdown." },
+      { role: "user", content: prompt }
+    ],
+    temperature: 0
+  };
+
+  const options = {
+    method: "post",
+    headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  const response = UrlFetchApp.fetch(url, options);
+  if (response.getResponseCode() !== 200) throw new Error("Status " + response.getResponseCode());
+  
+  const result = JSON.parse(response.getContentText());
+  return result.choices[0].message.content;
+}
+
+/**
+ * Groq API Fallback (using Llama 3.3 70B or Qwen-QwQ 32B)
+ */
+function callGroqAPI_reflection(prompt) {
+  const apiKey = PropertiesService.getScriptProperties().getProperty("GROQ_API_KEY");
+  const url = "https://api.groq.com/openai/v1/chat/completions";
+
+  const payload = {
+    // Note: qwen-qwq-32b is currently the best 'OSS' logic model on Groq.
+    // Alternatively, you can use "llama-3.3-70b-versatile"
+    model: "llama-3.3-70b-versatile", 
+    messages: [
+      { role: "system", content: "Return only valid JSON. No preamble." },
+      { role: "user", content: prompt }
+    ],
+    temperature: 0,
+    response_format: { "type": "json_object" } // Force JSON mode
+  };
+
+  const options = {
+    method: "post",
+    headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  const response = UrlFetchApp.fetch(url, options);
+  const code = response.getResponseCode();
+  const resText = response.getContentText();
+
+  if (code !== 200) {
+    Logger.log("Groq Error: " + resText);
+    throw new Error("Groq API failed with status " + code);
+  }
+
+  const result = JSON.parse(resText);
+  return result.choices[0].message.content;
+}

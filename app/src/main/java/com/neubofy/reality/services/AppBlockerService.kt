@@ -96,6 +96,7 @@ class AppBlockerService : BaseBlockingService() {
     private var lastWindowPackage: String = ""
     var learnedSettingsPages = Constants.LearnedSettingsPages()
     private var currentCustomPageName: String = ""
+    private var wasDndEnabledByApp = false
 
 
     private val refreshReceiver = object : BroadcastReceiver() {
@@ -218,13 +219,14 @@ class AppBlockerService : BaseBlockingService() {
         // REMOVED: Over-aggressive content change checks for settings
         // The WINDOW_STATE_CHANGED check above is sufficient and catches recents too
         
-        if (!isBlockingActive) {
-            // Check occasionally (every 30s)
-            val now = System.currentTimeMillis()
-            if (now - lastBackgroundUpdate > 120_000) {
-                lastBackgroundUpdate = now
-                performBackgroundUpdates()
-            }
+        // PERIODIC CHECK RESTORED
+        // This is CRITICAL for scheduled/auto focus to detect when a session starts.
+        // Manual focus works via intent, but scheduled focus needs this time-based check.
+        // Interval: 60 seconds (was 120 seconds before).
+        val now = System.currentTimeMillis()
+        if (now - lastBackgroundUpdate > 60_000) {
+            lastBackgroundUpdate = now
+            performBackgroundUpdates()
         }
         scanEventsCount++
         
@@ -271,6 +273,12 @@ class AppBlockerService : BaseBlockingService() {
         }
         
         if (eventType == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) return
+        
+        // 0. EMERGENCY MODE BYPASS (Highest Priority)
+        // If Emergency Mode is active, bypass ALL app blocking checks.
+        if (com.neubofy.reality.utils.BlockCache.emergencySessionEndTime > System.currentTimeMillis()) {
+             return
+        }
         
         // Session Block Check (Fast path)
         if (sessionBlockedPackages.contains(packageName)) {
@@ -413,10 +421,21 @@ class AppBlockerService : BaseBlockingService() {
                         val currentFilter = notificationManager.getCurrentInterruptionFilter()
                         val isDndOn = currentFilter == android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY
                         
-                        if (isAnyModeActive && !isDndOn) {
-                            toggleDnd(true)
-                        } else if (!isAnyModeActive && isDndOn) {
-                            toggleDnd(false)
+                        // Smart DND Logic: Only toggle if we need to, and respect manual changes
+                        if (isAnyModeActive) {
+                            if (!isDndOn) {
+                                toggleDnd(true)
+                                wasDndEnabledByApp = true // Remember we did this
+                            }
+                        } else {
+                            // Only turn OFF if WE turned it on, AND it's currently on
+                            if (isDndOn && wasDndEnabledByApp) {
+                                toggleDnd(false)
+                                wasDndEnabledByApp = false // Reset state
+                            } else if (!isDndOn) {
+                                // If user turned it off manually, just sync our state
+                                wasDndEnabledByApp = false
+                            }
                         }
                     }
                     
@@ -1055,7 +1074,7 @@ class AppBlockerService : BaseBlockingService() {
         // Force check the current window
         checkCurrentWindow()
         
-        scheduleNextAlarm()
+        com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(this)
     }
     
     private fun checkCurrentWindow() {
@@ -1143,6 +1162,9 @@ class AppBlockerService : BaseBlockingService() {
     }
 
     private fun isBedtime(): Boolean {
+        // Maintenance Window Check (using correct util)
+        if (com.neubofy.reality.utils.StrictLockUtils.isMaintenanceWindow()) return false
+
         val cal = java.util.Calendar.getInstance()
         val currentMins = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
         val start = blocker.bedtimeData.startTimeInMins
@@ -1288,79 +1310,14 @@ class AppBlockerService : BaseBlockingService() {
     }
 
     // ==========================================
-    // REMINDER SYSTEM (FULL SCREEN ALARM)
+    // REMINDER SYSTEM (Unified)
     // ==========================================
     
     private val reminderManager by lazy { com.neubofy.reality.ui.overlay.ReminderOverlayManager(this) }
     
-    // Reliable Alarm Scheduling
-    private fun scheduleNextAlarm() {
-        try {
-            val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-            val intent = Intent(this, com.neubofy.reality.receivers.ReminderReceiver::class.java)
-            
-            // Cancel old
-            val pIntentCheck = android.app.PendingIntent.getBroadcast(this, 1001, intent, android.app.PendingIntent.FLAG_NO_CREATE or android.app.PendingIntent.FLAG_IMMUTABLE)
-            if (pIntentCheck != null) {
-                alarmManager.cancel(pIntentCheck)
-            }
-
-            val list = savedPreferencesLoader.loadCustomReminders()
-            val now = java.util.Calendar.getInstance()
-            val currentDay = now.get(java.util.Calendar.DAY_OF_WEEK)
-            val currentMins = now.get(java.util.Calendar.HOUR_OF_DAY) * 60 + now.get(java.util.Calendar.MINUTE)
-            
-            var nextTriggerMillis = Long.MAX_VALUE
-            var nextReminder: com.neubofy.reality.data.CustomReminder? = null
-            
-            // Global offset
-            val globalOffset = getSharedPreferences("reality_prefs", Context.MODE_PRIVATE).getInt("reminder_offset_minutes", 1)
-
-            for (r in list) {
-                if (!r.isEnabled) continue
-                if (r.repeatDays.isNotEmpty() && !r.repeatDays.contains(currentDay)) continue
-                
-                val startMins = r.hour * 60 + r.minute
-                val effectiveOffset = r.customOffsetMins ?: globalOffset
-                val triggerMins = startMins - effectiveOffset
-                
-                // If trigger time is in future today
-                if (triggerMins > currentMins) {
-                    val triggerCal = java.util.Calendar.getInstance()
-                    triggerCal.set(java.util.Calendar.HOUR_OF_DAY, triggerMins / 60)
-                    triggerCal.set(java.util.Calendar.MINUTE, triggerMins % 60)
-                    triggerCal.set(java.util.Calendar.SECOND, 0)
-                    triggerCal.set(java.util.Calendar.MILLISECOND, 0)
-                    
-                    if (triggerCal.timeInMillis < nextTriggerMillis) {
-                        nextTriggerMillis = triggerCal.timeInMillis
-                        nextReminder = r
-                    }
-                }
-            }
-            
-            if (nextReminder != null && nextTriggerMillis != Long.MAX_VALUE) {
-                val pIntent = android.app.PendingIntent.getBroadcast(this, 1001, intent.apply {
-                    putExtra("id", nextReminder.id)
-                    putExtra("title", nextReminder.title)
-                    putExtra("url", nextReminder.url)
-                    putExtra("mins", nextReminder.customOffsetMins ?: globalOffset)
-                }, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)
-                
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    // GOLD STANDARD: setAlarmClock guarantees wake-up even in Doze
-                    val acInfo = android.app.AlarmManager.AlarmClockInfo(nextTriggerMillis, pIntent)
-                    alarmManager.setAlarmClock(acInfo, pIntent)
-                } else {
-                    alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, nextTriggerMillis, pIntent)
-                }
-                com.neubofy.reality.utils.TerminalLogger.log("ALARM: Scheduled (AlarmClock) for ${java.util.Date(nextTriggerMillis)}")
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
+    // NOTE: Local scheduleNextAlarm() implementation REMOVED.
+    // We now use the unified com.neubofy.reality.utils.AlarmScheduler for robust scheduling.
+    
     private suspend fun checkUpcomingSchedules() {
         // Delegate all alarm scheduling to unified AlarmScheduler
         com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(this)
