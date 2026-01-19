@@ -1,0 +1,122 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:checkReleaseDuplicateClasses UP-TO-DATE
+> Task :app:buildKotlinToolingMetadata UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:dataBindingMergeDependencyArtifactsRelease UP-TO-DATE
+> Task :app:generateReleaseResValues UP-TO-DATE
+> Task :app:generateReleaseResources UP-TO-DATE
+> Task :app:mergeReleaseResources UP-TO-DATE
+> Task :app:packageReleaseResources UP-TO-DATE
+> Task :app:parseReleaseLocalResources UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesRelease UP-TO-DATE
+> Task :app:generateReleaseBuildConfig UP-TO-DATE
+> Task :app:checkReleaseAarMetadata UP-TO-DATE
+> Task :app:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :app:createReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksRelease UP-TO-DATE
+> Task :app:processReleaseMainManifest UP-TO-DATE
+> Task :app:processReleaseManifest UP-TO-DATE
+> Task :app:processReleaseManifestForPackage UP-TO-DATE
+> Task :app:processReleaseResources UP-TO-DATE
+> Task :app:javaPreCompileRelease UP-TO-DATE
+> Task :app:desugarReleaseFileDependencies UP-TO-DATE
+> Task :app:mergeReleaseStartupProfile UP-TO-DATE
+> Task :app:mergeExtDexRelease UP-TO-DATE
+> Task :app:mergeReleaseArtProfile UP-TO-DATE
+> Task :app:mergeReleaseShaders UP-TO-DATE
+> Task :app:compileReleaseShaders NO-SOURCE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:mergeReleaseAssets UP-TO-DATE
+> Task :app:compressReleaseAssets UP-TO-DATE
+> Task :app:extractReleaseVersionControlInfo UP-TO-DATE
+> Task :app:optimizeReleaseResources UP-TO-DATE
+> Task :app:collectReleaseDependencies UP-TO-DATE
+> Task :app:sdkReleaseDependencyData UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :app:mergeReleaseNativeLibs NO-SOURCE
+> Task :app:stripReleaseDebugSymbols NO-SOURCE
+> Task :app:validateSigningRelease UP-TO-DATE
+> Task :app:writeReleaseAppMetadata UP-TO-DATE
+> Task :app:writeReleaseSigningConfigVersions UP-TO-DATE
+> Task :app:kspReleaseKotlin
+
+> Task :app:compileReleaseKotlin
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/data/NightlyProtocolExecutor.kt:335:29 Variable 'qualityXP' initializer is redundant
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/data/NightlyProtocolExecutor.kt:746:45 Parameter 'diaryContent' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/data/NightlyProtocolExecutor.kt:895:32 Variable 'tasksCreated' initializer is redundant
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt:359:180 'TYPE_PHONE: Int' is deprecated. Deprecated in Java
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt:478:29 'recycle(): Unit' is deprecated. Deprecated in Java
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt:550:180 'TYPE_PHONE: Int' is deprecated. Deprecated in Java
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt:592:66 'TYPE_PHONE: Int' is deprecated. Deprecated in Java
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt:614:34 'recycle(): Unit' is deprecated. Deprecated in Java
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt:694:48 Parameter 'view' is never used, could be renamed to _
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt:832:66 'TYPE_PHONE: Int' is deprecated. Deprecated in Java
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt:836:57 'FLAG_FULLSCREEN: Int' is deprecated. Deprecated in Java
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt:974:126 Unnecessary safe call on a non-null receiver of type Constants.StrictModeData
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt:974:138 Elvis operator (?:) always returns the left operand of non-nullable type Boolean
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt:1023:25 Variable 'wasActive' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt:1136:31 'checkOpNoThrow(String, Int, String): Int' is deprecated. Deprecated in Java
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt:1189:20 'recycle(): Unit' is deprecated. Deprecated in Java
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/AIChatActivity.kt:54:75 Parameter 'v' is never used, could be renamed to _
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/AIChatActivity.kt:95:62 Parameter 'group' is never used, could be renamed to _
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/AIChatActivity.kt:311:17 Variable 'params' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/AlarmActivity.kt:214:79 Parameter 'mins' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/MainActivity.kt:159:75 'GET_SIGNATURES: Int' is deprecated. Deprecated in Java
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/MainActivity.kt:170:29 'signatures: Array<(out) Signature!>?' is deprecated. Deprecated in Java
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/MainActivity.kt:234:26 Name shadowed: data
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/MainActivity.kt:687:21 Variable 'levelName' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/NightlyActivity.kt:87:73 Parameter 'v' is never used, could be renamed to _
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/NightlyActivity.kt:524:13 Variable 'reportFolderId' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/NightlySettingsActivity.kt:271:73 Parameter 'v' is never used, could be renamed to _
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/NightlySettingsActivity.kt:924:13 Variable 'accountEmail' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/NightlySettingsActivity.kt:1019:13 Variable 'accountEmail' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/NightlySettingsActivity.kt:1091:13 Variable 'accountEmail' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/ReminderActivity.kt:117:13 Variable 'currentMins' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/ReminderActivity.kt:230:34 'customOffsetMins: Int?' is deprecated. Use offsetMins
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/ReminderActivity.kt:231:51 'customOffsetMins: Int?' is deprecated. Use offsetMins
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/ReminderActivity.kt:233:60 'urlSource: Int' is deprecated. Use redirectUrl
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/ReminderActivity.kt:234:34 'urlSource: Int' is deprecated. Use redirectUrl
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/ScheduleListActivity.kt:173:17 Variable 'isStrictLocked' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/StrictModeActivity.kt:234:35 Parameter 'enabled' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/StrictModeActivity.kt:699:9 'startActivityForResult(Intent, Int): Unit' is deprecated. This method has been deprecated in favor of using the Activity Result API
+      which brings increased type safety via an {@link ActivityResultContract} and the prebuilt
+      contracts for common intents available in
+      {@link androidx.activity.result.contract.ActivityResultContracts}, provides hooks for
+      testing, and allow receiving results in separate, testable classes independent from your
+      activity. Use
+      {@link #registerForActivityResult(ActivityResultContract, ActivityResultCallback)}
+      passing in a {@link StartActivityForResult} object for the {@link ActivityResultContract}.
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/StrictModeActivity.kt:710:18 This declaration overrides deprecated member but not marked as deprecated itself. Please add @Deprecated annotation or suppress. See https://youtrack.jetbrains.com/issue/KT-47902 for details
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/StrictModeActivity.kt:1060:33 Variable 'isEnabled' initializer is redundant
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/StrictModeActivity.kt:1061:28 Variable 'name' initializer is redundant
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/StrictModeActivity.kt:1062:29 Variable 'value' initializer is redundant
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/TapasyaActivity.kt:488:21 Variable 'now' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/TapasyaActivity.kt:636:13 Variable 'colorSecondary' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/activity/TapasyaActivity.kt:637:13 Variable 'colorError' is never used
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/adapter/CustomReminderAdapter.kt:75:19 'url: String?' is deprecated. Use redirectUrl
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/adapter/CustomReminderAdapter.kt:77:48 'url: String?' is deprecated. Use redirectUrl
+w: file:///D:/My%20project/my%20app/Reality/app/src/main/java/com/neubofy/reality/ui/fragments/installation/PermissionsFragment.kt:185:27 'checkOpNoThrow(String, Int, String): Int' is deprecated. Deprecated in Java
+
+> Task :app:compileReleaseJavaWithJavac
+> Task :app:dexBuilderRelease
+> Task :app:mergeReleaseGlobalSynthetics UP-TO-DATE
+> Task :app:processReleaseJavaRes UP-TO-DATE
+> Task :app:mergeReleaseJavaResource UP-TO-DATE
+> Task :app:mergeDexRelease
+> Task :app:compileReleaseArtProfile
+> Task :app:packageRelease
+> Task :app:createReleaseApkListingFileRedirect UP-TO-DATE
+
+> Task :app:installRelease
+Installing APK 'Reality-v1.0.1-release.apk, Reality-v1.0.1-release.dm' on 'V2437 - 15' for :app:release
+Installed on 1 device.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 1m 14s
+47 actionable tasks: 9 executed, 38 up-to-date

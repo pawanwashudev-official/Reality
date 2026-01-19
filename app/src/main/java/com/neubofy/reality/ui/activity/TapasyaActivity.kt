@@ -75,6 +75,22 @@ class TapasyaActivity : AppCompatActivity() {
         
         // Cleanup old sessions on startup
         cleanupOldSessions()
+        
+        // Handle external open settings request
+        handleIntent(intent)
+    }
+    
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra("OPEN_SETTINGS", false) == true) {
+            // Post to queue to ensure UI is ready
+            binding.root.post { showSettingsDialog() }
+        }
     }
 
     private fun setupInsets() {
@@ -175,6 +191,58 @@ class TapasyaActivity : AppCompatActivity() {
                 loadSessionsForSelectedDay()
             }
         }
+        binding.btnNextDay.setOnClickListener {
+            if (selectedDayOffset < 0) {
+                selectedDayOffset++
+                updateDateDisplay()
+                loadSessionsForSelectedDay()
+            }
+        }
+
+        // Edit Start Time Listener
+        binding.btnEditTime.setOnClickListener {
+            val state = TapasyaService.clockState.value
+            if (state.isRunning) {
+                showEditStartTimeDialog(state.elapsedTimeMs)
+            }
+        }
+    }
+    
+    private fun showEditStartTimeDialog(currentElapsedMs: Long) {
+        val now = System.currentTimeMillis()
+        val derivedStartTime = now - currentElapsedMs
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = derivedStartTime
+        
+        val picker = com.google.android.material.timepicker.MaterialTimePicker.Builder()
+            .setTimeFormat(com.google.android.material.timepicker.TimeFormat.CLOCK_12H)
+            .setHour(cal.get(Calendar.HOUR_OF_DAY))
+            .setMinute(cal.get(Calendar.MINUTE))
+            .setTitleText("Edit Start Time")
+            .build()
+            
+        picker.addOnPositiveButtonClickListener {
+            val h = picker.hour
+            val m = picker.minute
+            
+            // Construct new start time (using Today's date + selected H:M)
+            val newCal = Calendar.getInstance() // Now
+            newCal.set(Calendar.HOUR_OF_DAY, h)
+            newCal.set(Calendar.MINUTE, m)
+            newCal.set(Calendar.SECOND, 0)
+            newCal.set(Calendar.MILLISECOND, 0)
+            
+            val newStartTime = newCal.timeInMillis
+            
+            // Send to Service
+            val intent = Intent(this, TapasyaService::class.java).apply {
+                action = TapasyaService.ACTION_UPDATE_START_TIME
+                putExtra(TapasyaService.EXTRA_NEW_START_TIME, newStartTime)
+            }
+            startService(intent)
+        }
+        
+        picker.show(supportFragmentManager, "time_picker")
     }
     
     private fun setupSessionHistory() {
@@ -250,7 +318,7 @@ class TapasyaActivity : AppCompatActivity() {
         val cutoff = cal.timeInMillis
         
         lifecycleScope.launch(Dispatchers.IO) {
-            db.tapasyaSessionDao().deleteOlderThan(cutoff)
+            db.tapasyaSessionDao().deleteOldSessions(cutoff)
         }
     }
 
@@ -577,16 +645,23 @@ class TapasyaActivity : AppCompatActivity() {
                 binding.btnStart.visibility = View.GONE
                 binding.btnPause.visibility = View.VISIBLE
                 binding.btnStop.visibility = View.VISIBLE
-                binding.btnReset.visibility = View.VISIBLE // Show Reset
-                binding.tvRestTimer.visibility = View.GONE
+                binding.btnReset.visibility = View.VISIBLE
                 
-                val progressPercent = (state.progress * 100).toInt().coerceAtMost(100)
-                binding.tvRestTimer.text = "Progress: $progressPercent%"
-                binding.tvRestTimer.visibility = View.VISIBLE
+                // Show Live Stats
+                binding.cardLiveStats.visibility = View.VISIBLE
+                binding.tvLiveXp.text = "⚡ ${state.currentXP} XP"
+                binding.tvLiveFragment.text = "Fragment ${state.currentFragment}"
+                
+                // Edit Start Time (Check Lock)
+                val lockEdit = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
+                    .getBoolean("lock_start_time_edit", false)
+                binding.btnEditTime.visibility = if (lockEdit) View.GONE else View.VISIBLE
+                
+                // Hide Rest/Pause Timer
+                binding.tvRestTimer.visibility = View.GONE
             }
             state.isPaused -> {
                 binding.tvStatus.text = "Paused"
-                // Use secondary/accent color for pause
                 val pauseColor = 0xFFFFC107.toInt() // Amber
                 binding.waveView.setWaterColor(pauseColor)
                 binding.waveView.setBorderColor(pauseColor)
@@ -596,7 +671,14 @@ class TapasyaActivity : AppCompatActivity() {
                 binding.btnStart.visibility = View.VISIBLE
                 binding.btnPause.visibility = View.GONE
                 binding.btnStop.visibility = View.VISIBLE
-                binding.btnReset.visibility = View.VISIBLE // Show Reset
+                binding.btnReset.visibility = View.VISIBLE
+                
+                // Keep Live Stats visible (optional, but good context)
+                binding.cardLiveStats.visibility = View.VISIBLE
+                binding.tvLiveXp.text = "⚡ ${state.currentXP} XP"
+                binding.tvLiveFragment.text = "Fragment ${state.currentFragment}"
+                
+                binding.btnEditTime.visibility = View.GONE
                 
                 val pauseRemaining = state.pauseLimitMs - state.totalPauseMs
                 binding.tvRestTimer.text = "Pause left: ${formatTime(pauseRemaining)}"
@@ -613,10 +695,14 @@ class TapasyaActivity : AppCompatActivity() {
                 binding.btnStart.visibility = View.VISIBLE
                 binding.btnPause.visibility = View.GONE
                 binding.btnStop.visibility = View.GONE
-                binding.btnReset.visibility = View.GONE // Hide Reset
+                binding.btnReset.visibility = View.GONE
+                binding.btnEditTime.visibility = View.GONE
+                
+                binding.cardLiveStats.visibility = View.GONE
                 binding.tvRestTimer.visibility = View.GONE
             }
         }
+
     }
     
     private fun getThemeColor(attr: Int): Int {

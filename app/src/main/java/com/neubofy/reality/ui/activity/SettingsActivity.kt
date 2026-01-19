@@ -98,6 +98,13 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(Intent(this, NightlySettingsActivity::class.java))
         }
 
+        // Tapasya Settings
+        binding.cardTapasyaSettings.setOnClickListener {
+            val intent = Intent(this, TapasyaActivity::class.java)
+            intent.putExtra("OPEN_SETTINGS", true)
+            startActivity(intent)
+        }
+
         // Auto DND Logic
         binding.cardAutoDnd.setOnClickListener {
             val notificationManager = getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager

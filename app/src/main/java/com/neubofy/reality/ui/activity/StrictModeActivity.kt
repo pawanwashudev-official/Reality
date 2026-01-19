@@ -85,6 +85,8 @@ class StrictModeActivity : AppCompatActivity() {
 
         binding.switchAutoDndLock.isChecked = strictData.isAutoDndLocked
         binding.switchCalendarLock.isChecked = strictData.isCalendarLocked
+        binding.switchNightlyLimitLock.isChecked = strictData.isNightlyLimitLocked
+        binding.switchGamificationLock.isChecked = strictData.isGamificationLocked
         binding.switchAntiTimeCheat.isChecked = strictData.isTimeCheatProtectionEnabled
         binding.switchAccessibilityProtection.isChecked = strictData.isAccessibilityProtectionEnabled
         binding.switchAntiUninstall.isChecked = strictData.isAntiUninstallEnabled
@@ -239,6 +241,9 @@ class StrictModeActivity : AppCompatActivity() {
         binding.switchScheduleLock.isEnabled = true
 
         binding.switchAutoDndLock.isEnabled = true
+        binding.switchCalendarLock.isEnabled = true
+        binding.switchNightlyLimitLock.isEnabled = true
+        binding.switchGamificationLock.isEnabled = true
         binding.switchAntiTimeCheat.isEnabled = true
         binding.switchAntiUninstall.isEnabled = true
     }
@@ -255,6 +260,8 @@ class StrictModeActivity : AppCompatActivity() {
 
             binding.switchAutoDndLock to { v: Boolean -> strictData.isAutoDndLocked = v },
             binding.switchCalendarLock to { v: Boolean -> strictData.isCalendarLocked = v },
+            binding.switchNightlyLimitLock to { v: Boolean -> strictData.isNightlyLimitLocked = v },
+            binding.switchGamificationLock to { v: Boolean -> strictData.isGamificationLocked = v },
             
             // Page blocking
             binding.switchAntiTimeCheat to { v: Boolean -> strictData.isTimeCheatProtectionEnabled = v },

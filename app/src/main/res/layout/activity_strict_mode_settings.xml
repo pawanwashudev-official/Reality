@@ -177,6 +177,24 @@
                         android:layout_height="wrap_content"
                         android:text="Lock Calendar Sync"
                         android:checked="true"
+                        android:layout_marginBottom="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchNightlyLimitLock"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Lock Nightly Limit"
+                        android:checked="true"
+                        android:layout_marginBottom="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchGamificationLock"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Lock Gamification Stats"
+                        android:checked="true"
                         android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
                 </LinearLayout>

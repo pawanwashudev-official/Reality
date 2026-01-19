@@ -103,6 +103,70 @@ object GoogleTasksManager {
     }
     
     /**
+     * Data class for task statistics on a specific date.
+     */
+    data class TaskStats(
+        val dueTasks: List<String>,
+        val completedTasks: List<String>,
+        val pendingCount: Int,
+        val completedCount: Int
+    )
+    
+    /**
+     * Get task statistics for a specific date.
+     * Fetches from Google Tasks API for the given date.
+     * @param date The date string in "yyyy-MM-dd" format
+     * @return TaskStats with lists of task titles and counts
+     */
+    suspend fun getTasksForDate(context: Context, date: String): TaskStats {
+        return withContext(Dispatchers.IO) {
+            val service = getTasksService(context)
+                ?: return@withContext TaskStats(emptyList(), emptyList(), 0, 0)
+            
+            val dueTasks = mutableListOf<String>()
+            val completedTasks = mutableListOf<String>()
+            
+            try {
+                TerminalLogger.log("TASKS API: Fetching tasks for $date")
+                
+                // Get all task lists
+                val taskLists = service.tasklists().list().execute().items ?: emptyList()
+                
+                for (taskList in taskLists) {
+                    val tasks = service.tasks().list(taskList.id)
+                        .setShowCompleted(true)
+                        .setShowHidden(true)
+                        .execute().items ?: continue
+                    
+                    for (task in tasks) {
+                        val dueDate = task.due
+                        if (dueDate != null && dueDate.startsWith(date)) {
+                            val title = task.title ?: "Untitled"
+                            if (task.status == "completed") {
+                                completedTasks.add(title)
+                            } else {
+                                dueTasks.add(title)
+                            }
+                        }
+                    }
+                }
+                
+                TerminalLogger.log("TASKS API: Found ${dueTasks.size} pending, ${completedTasks.size} completed for $date")
+                
+            } catch (e: Exception) {
+                TerminalLogger.log("TASKS API: Error fetching tasks - ${e.message}")
+            }
+            
+            TaskStats(
+                dueTasks = dueTasks,
+                completedTasks = completedTasks,
+                pendingCount = dueTasks.size,
+                completedCount = completedTasks.size
+            )
+        }
+    }
+    
+    /**
      * Create a new task.
      */
     suspend fun createTask(context: Context, title: String, notes: String? = null, dueDate: String? = null, taskListId: String = "@default"): Task? {

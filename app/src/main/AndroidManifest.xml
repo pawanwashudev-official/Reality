@@ -205,6 +205,19 @@
             android:exported="false"
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
+            
+        <activity
+            android:name=".ui.activity.PlanningPadActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Reality"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.activity.ReflectionDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait" />
 
         <activity
             android:name=".ui.activity.TapasyaActivity"
@@ -289,6 +302,10 @@
 
         <receiver
             android:name=".receivers.ReminderReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".receiver.NightlyAlarmReceiver"
             android:exported="false" />
 
         <provider

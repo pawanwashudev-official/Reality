@@ -82,6 +82,12 @@ class Constants {
         var isGroupLimitLocked: Boolean = true,
         var isScheduleLocked: Boolean = true,
         
+        // Lock Nightly Screen Time Limit
+        var isNightlyLimitLocked: Boolean = true,
+        
+        // Lock Gamification Stats (XP, Streak, Level Name)
+        var isGamificationLocked: Boolean = true,
+        
         // Anti-Uninstall Protection (Device Admin page)
         var isAntiUninstallEnabled: Boolean = false,
         

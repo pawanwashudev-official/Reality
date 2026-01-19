@@ -6,6 +6,13 @@
     android:layout_height="match_parent"
     android:background="?android:colorBackground">
 
+    <!-- Pattern Overlay -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_pattern_zen"
+        android:alpha="0.6"/>
+
     <!-- Gradient Glow at Top -->
     <View
         android:id="@+id/gradient_glow"
@@ -76,30 +83,69 @@
 
             <!-- Big Moon/Night Icon -->
             <ImageView
-                android:layout_width="120dp"
-                android:layout_height="120dp"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
                 android:src="@drawable/baseline_bedtime_24"
                 app:tint="?attr/colorPrimary"
                 android:alpha="0.5"
-                android:layout_marginTop="40dp"
-                android:layout_marginBottom="24dp"/>
-
-            <TextView
-                android:layout_width="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="16dp"/>
+                
+            <!-- Date Selector Card (Transparent Glass style) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_date_selector"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Your Nightly Companion"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="?attr/colorOnSurface"
-                android:layout_marginBottom="8dp"/>
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="16dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeWidth="1dp"
+                app:cardElevation="0dp"
+                android:layout_marginBottom="16dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Capture your day, plan tomorrow"
-                android:textSize="14sp"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:layout_marginBottom="40dp"/>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:id="@+id/btn_prev_date"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_arrow_back"
+                            app:tint="?attr/colorPrimary"
+                            android:background="?attr/selectableItemBackgroundBorderless"/>
+
+                        <TextView
+                            android:id="@+id/tv_selected_date"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Today, January 18"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurface"
+                            android:gravity="center"/>
+
+                        <ImageView
+                            android:id="@+id/btn_next_date"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_arrow_forward"
+                            app:tint="?attr/colorPrimary"
+                            android:background="?attr/selectableItemBackgroundBorderless"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Status Card -->
             <com.google.android.material.card.MaterialCardView
@@ -110,7 +156,8 @@
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorOutlineVariant"
                 app:strokeWidth="1dp"
-                android:layout_marginBottom="16dp">
+                app:cardElevation="0dp"
+                android:layout_marginBottom="24dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -121,23 +168,505 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Setup Status"
+                        android:text="Protocol Status"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorPrimary"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView
+                        android:id="@+id/tv_setup_status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Not started"
+                        android:textSize="14sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Steps Header -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Session Steps"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                android:layout_marginBottom="12dp"
+                android:layout_marginStart="4dp"/>
+
+            <!-- Steps Container -->
+            <LinearLayout
+                android:id="@+id/layout_steps_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Step 1: Data -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_step_data"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardCornerRadius="12dp"
+                    app:strokeWidth="0dp"
+                    app:cardElevation="0dp"
+                    android:layout_marginBottom="8dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                    
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:gravity="center_vertical">
+                            
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_sync_24"
+                                app:tint="?attr/colorPrimary"/>
+                                
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="1. Collect Daily Data"
+                                android:textStyle="bold"
+                                android:layout_marginStart="16dp"
+                                android:textColor="?attr/colorOnSurface"/>
+                                
+                            <ImageView
+                                android:id="@+id/icon_step_data"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_radio_button_unchecked_24"
+                                app:tint="?attr/colorOutline"/>
+                        </LinearLayout>
+                        
+                        <TextView
+                            android:id="@+id/tv_step_data_detail"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Pending..."
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:paddingHorizontal="16dp"
+                            android:paddingBottom="16dp"
+                            android:layout_marginTop="-8dp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Step 2: Questions -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_step_questions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardCornerRadius="12dp"
+                    app:strokeWidth="0dp"
+                    app:cardElevation="0dp"
+                    android:layout_marginBottom="8dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                    
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:gravity="center_vertical">
+                            
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_auto_awesome_24"
+                                app:tint="?attr/colorPrimary"/>
+                                
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="2. AI Reflection Questions"
+                                android:textStyle="bold"
+                                android:layout_marginStart="16dp"
+                                android:textColor="?attr/colorOnSurface"/>
+                                
+                            <ImageView
+                                android:id="@+id/icon_step_questions"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_radio_button_unchecked_24"
+                                app:tint="?attr/colorOutline"/>
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tv_step_questions_detail"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Pending..."
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:paddingHorizontal="16dp"
+                            android:paddingBottom="16dp"
+                            android:layout_marginTop="-8dp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
+                <!-- Step 3: Diary -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_step_diary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardCornerRadius="12dp"
+                    app:strokeWidth="0dp"
+                    app:cardElevation="0dp"
+                    android:layout_marginBottom="8dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                    
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:gravity="center_vertical">
+                            
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_edit_24"
+                                app:tint="?attr/colorPrimary"/>
+                                
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="3. Write Diary"
+                                android:textStyle="bold"
+                                android:layout_marginStart="16dp"
+                                android:textColor="?attr/colorOnSurface"/>
+                                
+                            <ImageView
+                                android:id="@+id/icon_step_diary"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_radio_button_unchecked_24"
+                                app:tint="?attr/colorOutline"/>
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tv_step_diary_detail"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Pending..."
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:paddingHorizontal="16dp"
+                            android:paddingBottom="16dp"
+                            android:layout_marginTop="-8dp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Step 4: Analysis -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_step_analysis"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardCornerRadius="12dp"
+                    app:strokeWidth="0dp"
+                    app:cardElevation="0dp"
+                    android:layout_marginBottom="8dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                    
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:gravity="center_vertical">
+                            
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_auto_awesome_24"
+                                app:tint="?attr/colorPrimary"/>
+                                
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="4. AI Analysis &amp; XP"
+                                android:textStyle="bold"
+                                android:layout_marginStart="16dp"
+                                android:textColor="?attr/colorOnSurface"/>
+                                
+                            <ImageView
+                                android:id="@+id/icon_step_analysis"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_radio_button_unchecked_24"
+                                app:tint="?attr/colorOutline"/>
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tv_step_analysis_detail"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Pending..."
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:paddingHorizontal="16dp"
+                            android:paddingBottom="16dp"
+                            android:layout_marginTop="-8dp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Step 5: Create Plan Doc -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_step_create_plan"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardCornerRadius="12dp"
+                    app:strokeWidth="0dp"
+                    app:cardElevation="0dp"
+                    android:layout_marginBottom="8dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                    
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:gravity="center_vertical">
+                            
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_description_24"
+                                app:tint="?attr/colorPrimary"/>
+                                
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="5. Create Plan Doc"
+                                android:textStyle="bold"
+                                android:layout_marginStart="16dp"
+                                android:textColor="?attr/colorOnSurface"/>
+                                
+                            <ImageView
+                                android:id="@+id/icon_step_create_plan"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_radio_button_unchecked_24"
+                                app:tint="?attr/colorOutline"/>
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tv_step_create_plan_detail"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Pending..."
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:paddingHorizontal="16dp"
+                            android:paddingBottom="16dp"
+                            android:layout_marginTop="-8dp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Step 6: Process Plan -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_step_process_plan"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardCornerRadius="12dp"
+                    app:strokeWidth="0dp"
+                    app:cardElevation="0dp"
+                    android:layout_marginBottom="8dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                    
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:gravity="center_vertical">
+                            
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_calendar_month_24"
+                                app:tint="?attr/colorPrimary"/>
+                                
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="6. Process Plan"
+                                android:textStyle="bold"
+                                android:layout_marginStart="16dp"
+                                android:textColor="?attr/colorOnSurface"/>
+                                
+                            <ImageView
+                                android:id="@+id/icon_step_process_plan"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_radio_button_unchecked_24"
+                                app:tint="?attr/colorOutline"/>
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tv_step_process_plan_detail"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Pending..."
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:paddingHorizontal="16dp"
+                            android:paddingBottom="16dp"
+                            android:layout_marginTop="-8dp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+            <!-- Verification Actions (Initially Gone) -->
+            <LinearLayout
+                android:id="@+id/layout_verification_actions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Verification Required"
+                    android:textColor="?attr/colorPrimary"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Review and edit the plan in Google Docs, then confirm below."
+                    android:textSize="12sp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:gravity="center"
+                    android:layout_marginBottom="12dp"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_open_plan_doc"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Open Plan in Google Docs"
+                    app:icon="@drawable/baseline_edit_24"
+                    android:layout_marginBottom="4dp"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_verify_plan"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Plan is Ready for AI"
+                    app:icon="@drawable/baseline_check_circle_24"
+                    app:iconTint="@color/green_500"/>
+            </LinearLayout>
+
+            <!-- Questions Preview Card (shown after generation) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_questions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="16dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeWidth="1dp"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="💭 Reflection Questions"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="?attr/colorOnSurface"
                         android:layout_marginBottom="12dp"/>
 
                     <TextView
-                        android:id="@+id/tv_setup_status"
+                        android:id="@+id/tv_questions_list"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Not configured. Tap the gear icon to set up."
-                        android:textSize="14sp"
-                        android:textColor="?attr/colorOnSurfaceVariant"/>
+                        android:textSize="13sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:lineSpacingMultiplier="1.4"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Quick Actions -->
+            <!-- Open Diary Button (shown after creation) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_open_diary"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Open Diary in Google Docs"
+                android:textAllCaps="false"
+                app:cornerRadius="12dp"
+                android:layout_marginTop="16dp"
+                android:visibility="gone"/>
+
+            <!-- Start/Analyze Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_start_nightly"
                 android:layout_width="match_parent"
@@ -146,7 +675,73 @@
                 android:textAllCaps="false"
                 app:cornerRadius="12dp"
                 android:enabled="false"
-                android:layout_marginTop="16dp"/>
+                android:layout_marginTop="8dp"/>
+
+            <!-- Log Console Card (Always visible when needed, or toggled) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_logs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                app:cardCornerRadius="12dp"
+                app:strokeWidth="0dp"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Execution Log"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurfaceVariant"/>
+
+                        <TextView
+                            android:id="@+id/btn_clear_log"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="clear"
+                            android:textSize="11sp"
+                            android:textColor="?attr/colorPrimary"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:padding="4dp"/>
+                    </LinearLayout>
+
+                    <ScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="120dp"
+                        android:background="?attr/colorSurface"
+                        android:padding="8dp"
+                        android:fillViewport="true">
+
+                        <TextView
+                            android:id="@+id/tv_execution_log"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Ready to start..."
+                            android:textSize="11sp"
+                            android:fontFamily="monospace"
+                            android:textColor="?attr/colorOnSurface"/>
+                    </ScrollView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+
 
         </LinearLayout>
     </ScrollView>

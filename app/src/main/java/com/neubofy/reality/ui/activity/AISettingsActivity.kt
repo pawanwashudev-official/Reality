@@ -1,6 +1,7 @@
 package com.neubofy.reality.ui.activity
 
 import android.os.Bundle
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -11,7 +12,10 @@ class AISettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAiSettingsBinding
     private val providers = listOf("OpenAI", "Gemini", "Groq", "OpenRouter", "Perplexity")
-    private lateinit var savedModelsAdapter: com.neubofy.reality.ui.adapter.SavedModelsAdapter
+    private lateinit var chatModelsAdapter: com.neubofy.reality.ui.adapter.SavedModelsAdapter
+    
+    // Track which section triggered the form
+    private var addingForSection: String = "" // "CHAT" or "NIGHTLY"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)
@@ -27,162 +31,237 @@ class AISettingsActivity : AppCompatActivity() {
     private fun setupUI() {
         binding.btnBack.setOnClickListener { finish() }
 
+        // Provider spinner setup
         val adapter = ArrayAdapter(this, com.neubofy.reality.R.layout.spinner_item, providers)
         adapter.setDropDownViewResource(com.neubofy.reality.R.layout.spinner_dropdown_item)
         binding.spinnerProvider.adapter = adapter
 
         binding.spinnerProvider.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
-                 val selectedProvider = parent?.getItemAtPosition(position).toString()
-                 val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
-                 val key = prefs.getString("api_key_$selectedProvider", "")
-                 binding.etApiKey.setText(key)
+                val selectedProvider = parent?.getItemAtPosition(position).toString()
+                val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+                val key = prefs.getString("api_key_$selectedProvider", "")
+                binding.etApiKey.setText(key)
+                // Hide model spinner when provider changes
+                binding.lblSelectModel.visibility = View.GONE
+                binding.cardModelSpinner.visibility = View.GONE
             }
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
         }
 
-        binding.btnSave.setOnClickListener {
-            saveData()
+        // Chat Models - Add button
+        binding.btnAddChatModel.setOnClickListener {
+            showAddModelForm("CHAT")
         }
-        
+
+        // Nightly Model - Add button
+        binding.btnAddNightlyModel.setOnClickListener {
+            val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+            val existingNightlyModel = prefs.getString("nightly_model", null)
+            if (!existingNightlyModel.isNullOrEmpty()) {
+                Toast.makeText(this, "Delete existing model first to add new one", Toast.LENGTH_SHORT).show()
+            } else {
+                showAddModelForm("NIGHTLY")
+            }
+        }
+
+        // Delete Nightly Model
+        binding.btnDeleteNightlyModel.setOnClickListener {
+            val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+            prefs.edit().remove("nightly_model").apply()
+            updateNightlyModelDisplay()
+            Toast.makeText(this, "Nightly model removed", Toast.LENGTH_SHORT).show()
+        }
+
+        // Close form
+        binding.btnCloseForm.setOnClickListener {
+            hideAddModelForm()
+        }
+
+        // Verify & Fetch Models
         binding.btnVerify.setOnClickListener {
-             val apiKey = binding.etApiKey.text.toString().trim()
-             val provider = binding.spinnerProvider.selectedItem.toString()
-             if (apiKey.isEmpty()) {
-                 Toast.makeText(this, "Enter API Key first", Toast.LENGTH_SHORT).show()
-             } else {
-                 fetchModels(provider, apiKey)
-             }
-        // etModelName references removed
-    }
-        savedModelsAdapter = com.neubofy.reality.ui.adapter.SavedModelsAdapter(
-            mutableListOf(), 
+            val apiKey = binding.etApiKey.text.toString().trim()
+            val provider = binding.spinnerProvider.selectedItem.toString()
+            if (apiKey.isEmpty()) {
+                Toast.makeText(this, "Enter API Key first", Toast.LENGTH_SHORT).show()
+            } else {
+                fetchModels(provider, apiKey)
+            }
+        }
+
+        // Save Model
+        binding.btnSaveModel.setOnClickListener {
+            saveModel()
+        }
+
+        // Chat Models Adapter
+        chatModelsAdapter = com.neubofy.reality.ui.adapter.SavedModelsAdapter(
+            mutableListOf(),
             "",
             { selected ->
-                 val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
-                 prefs.edit().putString("model", selected).apply()
-                 savedModelsAdapter.setSelected(selected)
-                 Toast.makeText(this, "Set as default: $selected", Toast.LENGTH_SHORT).show()
+                val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+                prefs.edit().putString("model", selected).apply()
+                chatModelsAdapter.setSelected(selected)
+                Toast.makeText(this, "Set as default: $selected", Toast.LENGTH_SHORT).show()
             },
             { model ->
-                 val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
-                 val set = prefs.getStringSet("cached_models", mutableSetOf())?.toMutableSet()
-                 if (set != null && set.remove(model)) {
-                     prefs.edit().putStringSet("cached_models", set).apply()
-                     savedModelsAdapter.removeModel(model)
-                     Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show()
-                 }
+                val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+                val set = prefs.getStringSet("cached_models", mutableSetOf())?.toMutableSet()
+                if (set != null && set.remove(model)) {
+                    prefs.edit().putStringSet("cached_models", set).apply()
+                    chatModelsAdapter.removeModel(model)
+                    Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show()
+                }
             }
         )
-        binding.recyclerSavedModels.adapter = savedModelsAdapter
-        binding.recyclerSavedModels.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+        binding.recyclerChatModels.adapter = chatModelsAdapter
+        binding.recyclerChatModels.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+
+        // User Introduction Save
+        binding.btnSaveIntroduction.setOnClickListener {
+            val intro = binding.etUserIntroduction.text.toString().trim()
+            if (intro.isEmpty()) {
+                Toast.makeText(this, "Please enter something about yourself", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+            prefs.edit().putString("user_introduction", intro).apply()
+            Toast.makeText(this, "Personalization saved!", Toast.LENGTH_SHORT).show()
+            updateIntroductionDisplay()
+        }
+        
+        // Edit introduction
+        binding.btnEditIntroduction.setOnClickListener {
+            binding.cardSavedIntroduction.visibility = View.GONE
+            binding.layoutIntroductionForm.visibility = View.VISIBLE
+            binding.btnEditIntroduction.visibility = View.GONE
+        }
+        
+        // Delete introduction
+        binding.btnDeleteIntroduction.setOnClickListener {
+            val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+            prefs.edit().remove("user_introduction").apply()
+            binding.etUserIntroduction.text?.clear()
+            updateIntroductionDisplay()
+            Toast.makeText(this, "Personalization deleted", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showAddModelForm(section: String) {
+        addingForSection = section
+        binding.cardAddModelForm.visibility = View.VISIBLE
+        binding.tvFormTitle.text = if (section == "CHAT") "Add Chat Model" else "Add Nightly Model"
+        
+        // Reset form
+        binding.lblSelectModel.visibility = View.GONE
+        binding.cardModelSpinner.visibility = View.GONE
+    }
+
+    private fun hideAddModelForm() {
+        binding.cardAddModelForm.visibility = View.GONE
+        addingForSection = ""
+        binding.etApiKey.text?.clear()
+        binding.lblSelectModel.visibility = View.GONE
+        binding.cardModelSpinner.visibility = View.GONE
     }
 
     private fun loadData() {
-        loadForm()
-        loadSavedModels()
+        loadChatModels()
+        updateNightlyModelDisplay()
+        loadUserIntroduction()
     }
-    
-    private fun loadForm() {
-        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
-        val provider = prefs.getString("provider", "OpenAI")
-        // Load key for this provider
-        val apiKey = prefs.getString("api_key_$provider", "")
-        
-        // We do NOT load model into etModelName because that's for NEW entry.
-        // But previously we did. "model" pref is the default selected.
-        // The user wants form CLEARED.
-        // But on startup? Maybe leave it clear.
-        // But we DO want to show the API key if it exists? 
-        // User said "cleared out after saving".
-        // On restart? Usually you want to see if you have a key.
-        // I will keep key loading on startup.
-        
-        val position = providers.indexOf(provider)
-        if (position >= 0) {
-            binding.spinnerProvider.setSelection(position)
-        }
-        binding.etApiKey.setText(apiKey)
-    }
-    
-    private fun loadSavedModels() {
+
+    private fun loadChatModels() {
         val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
         val model = prefs.getString("model", "")
-        
-        // Load cached models if available
         val cachedModels = prefs.getStringSet("cached_models", emptySet())?.sorted() ?: emptyList()
+        chatModelsAdapter.updateData(cachedModels, model ?: "")
+    }
+
+    private fun updateNightlyModelDisplay() {
+        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+        val nightlyModel = prefs.getString("nightly_model", null)
         
-        savedModelsAdapter.updateData(cachedModels, model ?: "")
-        
-        if (cachedModels.isNotEmpty()) {
-            val adapter = ArrayAdapter(this, com.neubofy.reality.R.layout.spinner_item, cachedModels)
-            adapter.setDropDownViewResource(com.neubofy.reality.R.layout.spinner_dropdown_item)
-            binding.spinnerModel.adapter = adapter
-            
-            binding.lblSelectModel.visibility = android.view.View.VISIBLE
-            binding.cardModelSpinner.visibility = android.view.View.VISIBLE
-            
-            // Try to select current model (checking with and without provider prefix just in case)
-            val index = cachedModels.indexOfFirst { it == model || it.endsWith(": $model") }
-            if (index >= 0) {
-                binding.spinnerModel.setSelection(index)
-            }
+        if (nightlyModel.isNullOrEmpty()) {
+            binding.tvNightlyEmpty.visibility = View.VISIBLE
+            binding.layoutNightlyModel.visibility = View.GONE
+        } else {
+            binding.tvNightlyEmpty.visibility = View.GONE
+            binding.layoutNightlyModel.visibility = View.VISIBLE
+            binding.tvNightlyModelName.text = nightlyModel
         }
     }
 
-    private fun saveData() {
+    private fun loadUserIntroduction() {
+        updateIntroductionDisplay()
+    }
+    
+    private fun updateIntroductionDisplay() {
+        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+        val intro = prefs.getString("user_introduction", null)
+        
+        if (intro.isNullOrEmpty()) {
+            // No saved intro - show form
+            binding.cardSavedIntroduction.visibility = View.GONE
+            binding.layoutIntroductionForm.visibility = View.VISIBLE
+            binding.btnEditIntroduction.visibility = View.GONE
+            binding.etUserIntroduction.text?.clear()
+        } else {
+            // Has saved intro - show saved display
+            binding.cardSavedIntroduction.visibility = View.VISIBLE
+            binding.layoutIntroductionForm.visibility = View.GONE
+            binding.btnEditIntroduction.visibility = View.VISIBLE
+            binding.tvSavedIntroduction.text = intro
+            binding.etUserIntroduction.setText(intro)
+        }
+    }
+
+    private fun saveModel() {
         val provider = binding.spinnerProvider.selectedItem.toString()
         val apiKey = binding.etApiKey.text.toString().trim()
-        val selectedModel = if (binding.spinnerModel.adapter != null && binding.spinnerModel.paddingRight > 0) // check visibility or count?
-            binding.spinnerModel.selectedItem?.toString() else ""
-            
-        // Use simpler check: verify spinner is visible
-        val modelFromSpinner = if (binding.cardModelSpinner.visibility == android.view.View.VISIBLE) 
-             binding.spinnerModel.selectedItem?.toString() else ""
+        val modelFromSpinner = if (binding.cardModelSpinner.visibility == View.VISIBLE)
+            binding.spinnerModel.selectedItem?.toString() else null
 
         if (apiKey.isEmpty()) {
             Toast.makeText(this, "Please enter an API Key", Toast.LENGTH_SHORT).show()
             return
         }
-        
+
         if (modelFromSpinner.isNullOrEmpty()) {
-             Toast.makeText(this, "Please verify and select a model", Toast.LENGTH_SHORT).show()
-             return
+            Toast.makeText(this, "Please verify and select a model", Toast.LENGTH_SHORT).show()
+            return
         }
 
         val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
-        prefs.edit()
-            .putString("provider", provider)
-            .putString("api_key_$provider", apiKey) // Save per provider
-            // .putString("model", model) // Default model removed? OR saved?
-            // User says "when i slect anyone then save it". 
-            // Saving "model" pref usually means "Default".
-            // But user also wants list.
-            // I'll save selected as default "model" AND add to list.
-            .apply()
-
-        // Add to cache
-        val cached = prefs.getStringSet("cached_models", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         val fullModelName = "$provider: $modelFromSpinner"
-        if (!cached.contains(fullModelName)) {
-            cached.add(fullModelName)
-            prefs.edit().putStringSet("cached_models", cached).apply()
+
+        // Save API key for this provider
+        prefs.edit().putString("api_key_$provider", apiKey).apply()
+
+        if (addingForSection == "CHAT") {
+            // Add to cached models
+            val cached = prefs.getStringSet("cached_models", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+            if (!cached.contains(fullModelName)) {
+                cached.add(fullModelName)
+                prefs.edit().putStringSet("cached_models", cached).apply()
+            }
+            loadChatModels()
+            Toast.makeText(this, "Chat model added!", Toast.LENGTH_SHORT).show()
+        } else if (addingForSection == "NIGHTLY") {
+            // Set as nightly model (only one allowed)
+            prefs.edit().putString("nightly_model", fullModelName).apply()
+            updateNightlyModelDisplay()
+            Toast.makeText(this, "Nightly model set!", Toast.LENGTH_SHORT).show()
         }
-        
-        Toast.makeText(this, "Configuration Saved", Toast.LENGTH_SHORT).show()
-        
-        // Clear inputs to be ready for next
-        binding.etApiKey.text?.clear()
-        
-        // Refresh List
-        loadSavedModels()
+
+        hideAddModelForm()
     }
 
     private fun fetchModels(provider: String, apiKey: String) {
         val buttonText = binding.btnVerify.text
         binding.btnVerify.text = "Fetching..."
         binding.btnVerify.isEnabled = false
-        
+
         Thread {
             try {
                 val models = when (provider) {
@@ -190,26 +269,21 @@ class AISettingsActivity : AppCompatActivity() {
                     "Gemini" -> fetchGeminiModels(apiKey)
                     "Groq" -> fetchGroqModels(apiKey)
                     "OpenRouter" -> fetchOpenRouterModels(apiKey)
-                    "Perplexity" -> listOf("llama-3.1-sonar-small-128k-online", "llama-3.1-sonar-large-128k-online", "llama-3.1-sonar-huge-128k-online") // Static for now as API might differ
+                    "Perplexity" -> listOf("llama-3.1-sonar-small-128k-online", "llama-3.1-sonar-large-128k-online", "llama-3.1-sonar-huge-128k-online")
                     else -> emptyList()
                 }
-                
+
                 runOnUiThread {
                     if (models.isNotEmpty()) {
                         val adapter = ArrayAdapter(this, com.neubofy.reality.R.layout.spinner_item, models)
                         adapter.setDropDownViewResource(com.neubofy.reality.R.layout.spinner_dropdown_item)
                         binding.spinnerModel.adapter = adapter
-                        
-                        binding.lblSelectModel.visibility = android.view.View.VISIBLE
-                        binding.cardModelSpinner.visibility = android.view.View.VISIBLE
-                        
-                        // Select first by default
+
+                        binding.lblSelectModel.visibility = View.VISIBLE
+                        binding.cardModelSpinner.visibility = View.VISIBLE
                         binding.spinnerModel.setSelection(0)
-                        
-                        // DO NOT SAVE to cached_models here.
-                        // Wait for manual save.
-                            
-                        Toast.makeText(this, "Models Fetched: ${models.size}. Select one and Save.", Toast.LENGTH_SHORT).show()
+
+                        Toast.makeText(this, "Found ${models.size} models. Select one.", Toast.LENGTH_SHORT).show()
                     } else {
                         Toast.makeText(this, "No models found or API error", Toast.LENGTH_LONG).show()
                     }
@@ -225,29 +299,23 @@ class AISettingsActivity : AppCompatActivity() {
             }
         }.start()
     }
-    
+
     private fun fetchOpenAIModels(apiKey: String): List<String> {
         return simpleGetRequest("https://api.openai.com/v1/models", apiKey)
     }
-    
-    // Groq compatible with OpenAI format
+
     private fun fetchGroqModels(apiKey: String): List<String> {
         return simpleGetRequest("https://api.groq.com/openai/v1/models", apiKey)
     }
-    
+
     private fun fetchOpenRouterModels(apiKey: String): List<String> {
-        // OpenRouter returns data: [ { id: "..." } ... ]
-        // Using same parser usually works if field is 'id'
         val json = makeHttpRequest("https://openrouter.ai/api/v1/models", apiKey) ?: return emptyList()
         return parseJsonIds(json, "data", "id")
     }
 
     private fun fetchGeminiModels(apiKey: String): List<String> {
-        // Gemini uses GET https://generativelanguage.googleapis.com/v1beta/models?key=API_KEY
         val url = "https://generativelanguage.googleapis.com/v1beta/models?key=$apiKey"
         val json = makeHttpRequest(url, null) ?: return emptyList()
-        // Response: { "models": [ { "name": "models/gemini-pro", ... } ] }
-        // "name" field contains full path. we usually want "gemini-pro" or the full name.
         return parseJsonIds(json, "models", "name").map { it.replace("models/", "") }
     }
 
@@ -255,7 +323,7 @@ class AISettingsActivity : AppCompatActivity() {
         val json = makeHttpRequest(url, apiKey) ?: return emptyList()
         return parseJsonIds(json, "data", "id")
     }
-    
+
     private fun makeHttpRequest(urlString: String, apiKey: String?): String? {
         val url = java.net.URL(urlString)
         val conn = url.openConnection() as java.net.HttpURLConnection
@@ -263,7 +331,7 @@ class AISettingsActivity : AppCompatActivity() {
         if (apiKey != null) {
             conn.setRequestProperty("Authorization", "Bearer $apiKey")
         }
-        
+
         return try {
             if (conn.responseCode == 200) {
                 conn.inputStream.bufferedReader().use { it.readText() }
@@ -277,7 +345,7 @@ class AISettingsActivity : AppCompatActivity() {
             conn.disconnect()
         }
     }
-    
+
     private fun parseJsonIds(json: String, arrayName: String, fieldName: String): List<String> {
         val list = mutableListOf<String>()
         try {
@@ -290,8 +358,44 @@ class AISettingsActivity : AppCompatActivity() {
                 }
             }
         } catch (e: Exception) {
-             e.printStackTrace()
+            e.printStackTrace()
         }
         return list.sorted()
+    }
+
+    companion object {
+        /**
+         * Get the selected model for Nightly Protocol
+         */
+        fun getNightlyModel(context: android.content.Context): String? {
+            val prefs = context.getSharedPreferences("ai_prefs", MODE_PRIVATE)
+            return prefs.getString("nightly_model", null)
+        }
+
+        /**
+         * Get the user introduction for AI personalization
+         */
+        fun getUserIntroduction(context: android.content.Context): String? {
+            val prefs = context.getSharedPreferences("ai_prefs", MODE_PRIVATE)
+            return prefs.getString("user_introduction", null)
+        }
+
+        /**
+         * Get API key for a specific provider
+         */
+        fun getApiKey(context: android.content.Context, provider: String): String? {
+            val prefs = context.getSharedPreferences("ai_prefs", MODE_PRIVATE)
+            return prefs.getString("api_key_$provider", null)
+        }
+
+        /**
+         * Get provider and API key from model string (format: "Provider: model-name")
+         */
+        fun getProviderAndKeyFromModel(context: android.content.Context, model: String): Pair<String, String>? {
+            if (!model.contains(": ")) return null
+            val provider = model.substringBefore(": ")
+            val apiKey = getApiKey(context, provider) ?: return null
+            return Pair(provider, apiKey)
+        }
     }
 }

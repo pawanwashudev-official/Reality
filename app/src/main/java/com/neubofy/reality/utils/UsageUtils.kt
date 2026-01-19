@@ -98,4 +98,24 @@ object UsageUtils {
         
         return totalScreenTime
     }
+    fun getFocusedAppsUsage(context: Context): Long {
+        if (!hasUsageStatsPermission(context)) return 0L
+
+        val prefsLoader = SavedPreferencesLoader(context)
+        val focusData = prefsLoader.getFocusModeData()
+        val allSelected = if (focusData.selectedApps.isNotEmpty()) focusData.selectedApps else HashSet(prefsLoader.getFocusModeSelectedApps())
+
+        val affectedPkgs = allSelected.filter { pkg ->
+            prefsLoader.getBlockedAppConfig(pkg).blockInFocus
+        }
+
+        if (affectedPkgs.isEmpty()) return 0L
+
+        val usageMap = getUsageSinceMidnight(context)
+        var total = 0L
+        affectedPkgs.forEach { pkg ->
+            total += usageMap[pkg] ?: 0L
+        }
+        return total
+    }
 }

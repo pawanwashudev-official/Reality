@@ -130,6 +130,7 @@ class MainActivity : AppCompatActivity() {
         updateGreeting()
         updateThemeVisuals()
         updateTerminalLogVisibility()
+        loadReflectionCard()
         
 
     }
@@ -642,6 +643,67 @@ class MainActivity : AppCompatActivity() {
                 } else {
                      binding.tvUsageStatus.setTextColor(getColor(R.color.gray_light))
                 }
+            }
+        }
+    }
+    
+    private fun loadReflectionCard() {
+        scope.launch(Dispatchers.IO) {
+            try {
+                val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(applicationContext)
+                
+                // Get today's calendar events from device calendar (synced via CalendarRepository)
+                val calendarRepo = com.neubofy.reality.data.repository.CalendarRepository(applicationContext)
+                val todayEvents = calendarRepo.getEventsForToday()
+                
+                // Calculate total planned time from today's calendar events (in minutes)
+                var totalPlannedMinutes = 0L
+                for (event in todayEvents) {
+                    val durationMs = event.endTime - event.startTime
+                    totalPlannedMinutes += durationMs / 60000
+                }
+                
+                // Get today's Tapasya sessions for effective study time
+                val today = java.time.LocalDate.now()
+                val startOfDay = today.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                val endOfDay = today.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                
+                val todaySessions = db.tapasyaSessionDao().getSessionsForDay(startOfDay, endOfDay)
+                var totalEffectiveMinutes = 0L
+                for (session in todaySessions) {
+                    totalEffectiveMinutes += session.effectiveTimeMs / 60000
+                }
+                
+                // Calculate progress percentage
+                val progressPercent = if (totalPlannedMinutes > 0) {
+                    ((totalEffectiveMinutes * 100) / totalPlannedMinutes).toInt().coerceIn(0, 100)
+                } else {
+                    0
+                }
+                
+                // Load XP/streak/level using XPManager (Use Projected for consistency)
+                // XPManager.resetDailyXP(applicationContext) -- Removed, logic in getXPBreakdown
+                val xpBreakdown = com.neubofy.reality.utils.XPManager.getProjectedDailyXP(applicationContext)
+                val levelName = com.neubofy.reality.utils.XPManager.getLevelName(applicationContext, xpBreakdown.level)
+                
+                withContext(Dispatchers.Main) {
+                    // Update XP/streak/level
+                    binding.tvTotalXp.text = xpBreakdown.totalXP.toString()
+                    binding.tvTodayXp.text = if (xpBreakdown.todayXP > 0) "+${xpBreakdown.todayXP}" else "+${xpBreakdown.tapasyaXP}"
+                    binding.tvStreak.text = xpBreakdown.streak.toString()
+                    binding.tvLevel.text = xpBreakdown.level.toString()
+                    
+                    // Update study time progress
+                    binding.tvStudyProgress.text = "${totalEffectiveMinutes} / ${totalPlannedMinutes} min"
+                    binding.progressStudyTime.progress = progressPercent
+                    
+                    // View Progress button click
+                    binding.btnViewProgress.setOnClickListener {
+                        startActivity(Intent(this@MainActivity, ReflectionDetailActivity::class.java))
+                    }
+                }
+            } catch (e: Exception) {
+                com.neubofy.reality.utils.TerminalLogger.log("Reflection card error: ${e.message}")
             }
         }
     }

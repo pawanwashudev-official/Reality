@@ -14,6 +14,7 @@ import com.neubofy.reality.data.db.AppDatabase
 import com.neubofy.reality.data.db.TapasyaSession
 import com.neubofy.reality.ui.activity.TapasyaActivity
 import com.neubofy.reality.utils.SavedPreferencesLoader
+import com.neubofy.reality.utils.XPManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,6 +40,9 @@ class TapasyaService : Service() {
     private var isRunning = false
     private var isPaused = false
     private var isSessionActive = false
+    
+    // XP tracking
+    private var lastCompletedFragment = 0
 
     companion object {
         const val CHANNEL_ID = "tapasya_channel"
@@ -50,11 +54,13 @@ class TapasyaService : Service() {
         const val ACTION_RESUME = "ACTION_RESUME"
         const val ACTION_STOP = "ACTION_STOP"
         const val ACTION_RESET = "ACTION_RESET"
+        const val ACTION_UPDATE_START_TIME = "ACTION_UPDATE_START_TIME"
         
         // Extras
         const val EXTRA_SESSION_NAME = "session_name"
         const val EXTRA_TARGET_TIME_MS = "target_time_ms"
         const val EXTRA_PAUSE_LIMIT_MS = "pause_limit_ms"
+        const val EXTRA_NEW_START_TIME = "new_start_time"
         
         // Shared State for UI binding
         private val _clockState = MutableStateFlow(ClockState())
@@ -70,7 +76,9 @@ class TapasyaService : Service() {
         val targetTimeMs: Long = 0L,
         val pauseLimitMs: Long = 0L,
         val sessionName: String = "Tapasya",
-        val progress: Float = 0f  // 0 to 1+ for UI
+        val progress: Float = 0f,  // 0 to 1+ for UI
+        val currentXP: Int = 0,    // Live Tapasya XP
+        val currentFragment: Int = 0  // Current fragment number
     )
 
     override fun onCreate() {
@@ -90,6 +98,10 @@ class TapasyaService : Service() {
             ACTION_RESUME -> resumeSession()
             ACTION_STOP -> stopSession(wasAutoStopped = false)
             ACTION_RESET -> resetSession()
+            ACTION_UPDATE_START_TIME -> {
+                val newStart = intent.getLongExtra(EXTRA_NEW_START_TIME, -1L)
+                if (newStart != -1L) updateStartTime(newStart)
+            }
         }
         return START_STICKY
     }
@@ -111,6 +123,7 @@ class TapasyaService : Service() {
         isSessionActive = true
         isRunning = true
         isPaused = false
+        lastCompletedFragment = 0  // Reset XP fragment counter
         
         // Start Focus Mode
         startFocusMode()
@@ -230,6 +243,30 @@ class TapasyaService : Service() {
             }
         }
     }
+    
+    private fun updateStartTime(newStartTime: Long) {
+        if (!isSessionActive) return
+        
+        // Calculate delta (Positive if moving start time back/earlier, Negative if forward/later)
+        val delta = sessionStartTime - newStartTime
+        
+        sessionStartTime = newStartTime
+        
+        // Adjust elapsed calculation based on new start time
+        if (isRunning) {
+            // Shift the running start time window
+            runningStartTime -= delta
+        } else if (isPaused) {
+            // Apply delta directly to accumulated elapsed time
+            elapsedRunningTime += delta
+        }
+        
+        // Ensure elapsed time is not negative
+        if (elapsedRunningTime < 0) elapsedRunningTime = 0
+        
+        // Update notification immediately
+        emitState()
+    }
 
     private fun startFocusMode() {
         val prefs = SavedPreferencesLoader(this)
@@ -283,6 +320,22 @@ class TapasyaService : Service() {
                     return@launch
                 }
                 
+                // Calculate effective time and check for new fragment completion
+                val effectiveMinutes = (com.neubofy.reality.data.db.TapasyaSession.calculateEffectiveTime(currentElapsed) / 60000).toInt()
+                val currentFragment = effectiveMinutes / 15
+                
+                // If a new fragment completed, add XP
+                if (currentFragment > lastCompletedFragment) {
+                    val currentTotalXP = XPManager.calculateTapasyaXP(currentFragment * 15)
+                    val lastTotalXP = XPManager.calculateTapasyaXP(lastCompletedFragment * 15)
+                    val deltaXP = currentTotalXP - lastTotalXP
+                    
+                    if (deltaXP > 0) {
+                        XPManager.addTapasyaXP(this@TapasyaService, deltaXP)
+                    }
+                    lastCompletedFragment = currentFragment
+                }
+                
                 // Update notification
                 if (isRunning) {
                     updateNotification("Focusing: $sessionName", formatTime(currentElapsed))
@@ -293,6 +346,7 @@ class TapasyaService : Service() {
                 
                 // Emit state for UI
                 val progress = if (targetTimeMs > 0) currentElapsed.toFloat() / targetTimeMs else 0f
+                val currentXP = XPManager.calculateTapasyaXP(currentFragment * 15)
                 _clockState.value = ClockState(
                     isSessionActive = true,
                     isRunning = isRunning,
@@ -302,7 +356,9 @@ class TapasyaService : Service() {
                     targetTimeMs = targetTimeMs,
                     pauseLimitMs = pauseLimitMs,
                     sessionName = sessionName,
-                    progress = progress
+                    progress = progress,
+                    currentXP = currentXP,
+                    currentFragment = currentFragment
                 )
                 
                 delay(500)
@@ -317,6 +373,9 @@ class TapasyaService : Service() {
             elapsedRunningTime
         }
         val progress = if (targetTimeMs > 0) currentElapsed.toFloat() / targetTimeMs else 0f
+        val effectiveMinutes = (com.neubofy.reality.data.db.TapasyaSession.calculateEffectiveTime(currentElapsed) / 60000).toInt()
+        val currentFragment = effectiveMinutes / 15
+        val currentXP = XPManager.calculateTapasyaXP(currentFragment * 15)
         
         _clockState.value = ClockState(
             isSessionActive = isSessionActive,
@@ -327,7 +386,9 @@ class TapasyaService : Service() {
             targetTimeMs = targetTimeMs,
             pauseLimitMs = pauseLimitMs,
             sessionName = sessionName,
-            progress = progress
+            progress = progress,
+            currentXP = currentXP,
+            currentFragment = currentFragment
         )
     }
 

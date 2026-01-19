@@ -49,7 +49,10 @@ class CalendarRepository(private val context: Context) {
         return getEventsInRange(startOfDay, endOfDay)
     }
 
-    private fun getEventsInRange(startMillis: Long, endMillis: Long): List<CalendarEvent> {
+    /**
+     * Get events in a time range from device calendar.
+     */
+    fun getEventsInRange(startMillis: Long, endMillis: Long): List<CalendarEvent> {
         val events = mutableListOf<CalendarEvent>()
         
         val projection = arrayOf(

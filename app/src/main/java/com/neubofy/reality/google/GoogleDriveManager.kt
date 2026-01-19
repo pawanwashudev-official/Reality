@@ -181,4 +181,70 @@ object GoogleDriveManager {
             }
         }
     }
+    
+    /**
+     * List files in a specific folder (convenience alias).
+     */
+    suspend fun listFilesInFolder(context: Context, folderId: String, pageSize: Int = 50): List<File> {
+        return listFiles(context, folderId, pageSize)
+    }
+    
+    /**
+     * Move a file to a specific folder.
+     * Removes from current parent and adds to new folder.
+     */
+    suspend fun moveFileToFolder(context: Context, fileId: String, folderId: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val service = getDriveService(context) ?: return@withContext false
+                
+                // Get current parents
+                val file = service.files().get(fileId)
+                    .setFields("parents")
+                    .execute()
+                
+                val previousParents = file.parents?.joinToString(",") ?: ""
+                
+                // Move file to new folder
+                service.files().update(fileId, null)
+                    .setAddParents(folderId)
+                    .setRemoveParents(previousParents)
+                    .setFields("id, parents")
+                    .execute()
+                
+                TerminalLogger.log("DRIVE API: Moved file $fileId to folder $folderId")
+                true
+            } catch (e: Exception) {
+                TerminalLogger.log("DRIVE API: Error moving file - ${e.message}")
+                false
+            }
+        }
+    }
+    
+    /**
+     * Check if a file exists and is accessible.
+     */
+    suspend fun checkFileExists(context: Context, fileId: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val service = getDriveService(context) ?: return@withContext false
+                // Just try to fetch the ID field. If it fails (404), it doesn't exist.
+                service.files().get(fileId).setFields("id").execute()
+                true
+            } catch (e: Exception) {
+                // Determine if it's a 404 Not Found
+                if (e.message?.contains("404") == true || 
+                    e.message?.contains("File not found") == true ||
+                    e.message?.contains("notFound") == true) {
+                    TerminalLogger.log("DRIVE API: File $fileId not found (deleted?)")
+                    return@withContext false
+                }
+                
+                // For network/other errors, assume file EXISTS to prevent wiping memory.
+                // It's safer to fail later than to lose the ID.
+                TerminalLogger.log("DRIVE API: Error checking file (assuming exists) - ${e.message}")
+                true
+            }
+        }
+    }
 }

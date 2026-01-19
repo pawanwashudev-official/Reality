@@ -34,7 +34,7 @@ interface TapasyaSessionDao {
     suspend fun deleteAll()
     
     @Query("DELETE FROM tapasya_sessions WHERE startTime < :cutoffTime")
-    suspend fun deleteOlderThan(cutoffTime: Long)
+    suspend fun deleteOldSessions(cutoffTime: Long)
     
     @Query("SELECT * FROM tapasya_sessions WHERE startTime >= :dayStart AND startTime < :dayEnd ORDER BY startTime DESC")
     suspend fun getSessionsForDay(dayStart: Long, dayEnd: Long): List<TapasyaSession>
