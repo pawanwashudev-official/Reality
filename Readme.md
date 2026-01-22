@@ -1,18 +1,25 @@
-# Reality: The Intelligent Life OS
+<div align="center">
+
+# Reality
+### The Intelligent Life OS
+
+**Developed by Pawan Washudev | Neubofy**
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com)
 [![Status](https://img.shields.io/badge/Status-Active-success.svg)]()
 [![Privacy](https://img.shields.io/badge/Privacy-Local%20%2B%20G--Drive-lock.svg)]()
-[![AI](https://img.shields.io/badge/AI-Agentic%20120B-purple.svg)]()
+[![AI](https://img.shields.io/badge/AI-Bring%20Your%20Own%20Key-purple.svg)]()
 
 > **"Stop managing your life. Start commanding it."**
 
-<p align="center">
-  <img src="https://res.cloudinary.com/dnh4fonis/image/upload/v1766755541/gk1gp3sf5ihygmo9wfv8.png" width="100%" alt="Reality Dashboard">
-</p>
+<img src="https://res.cloudinary.com/dnh4fonis/image/upload/v1766755541/gk1gp3sf5ihygmo9wfv8.png" width="100%" alt="Reality Dashboard" style="border-radius: 10px; margin-top: 20px; margin-bottom: 20px;">
 
-[**🌐 Visit Official Website**](https://neubofyreality.vercel.app) | [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
+### Open Source • Free Forever • Any AI (BYO Key)
+
+[**🌐 Official Website**](https://neubofyreality.vercel.app) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
+
+</div>
 
 ---
 
