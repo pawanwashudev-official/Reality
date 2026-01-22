@@ -302,6 +302,7 @@ class MainActivity : AppCompatActivity() {
             popup.menu.add(0, 1, 0, "📖 User Manual")
             popup.menu.add(0, 2, 1, "ℹ️ App Status & Rules")
             popup.menu.add(0, 3, 2, "📱 About Reality")
+            popup.menu.add(0, 4, 3, "🔓 Unlock Capabilities")
             
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
@@ -317,6 +318,10 @@ class MainActivity : AppCompatActivity() {
                     }
                     3 -> {
                         startActivity(Intent(this, AboutActivity::class.java))
+                        true
+                    }
+                    4 -> {
+                        startActivity(Intent(this, AdbSetupActivity::class.java))
                         true
                     }
                     else -> false
@@ -688,8 +693,9 @@ class MainActivity : AppCompatActivity() {
                 
                 withContext(Dispatchers.Main) {
                     // Update XP/streak/level
-                    binding.tvTotalXp.text = xpBreakdown.totalXP.toString()
-                    binding.tvTodayXp.text = if (xpBreakdown.todayXP > 0) "+${xpBreakdown.todayXP}" else "+${xpBreakdown.tapasyaXP}"
+                    val totalXP = com.neubofy.reality.utils.XPManager.getTotalXP(applicationContext)
+                    binding.tvTotalXp.text = totalXP.toString()
+                    binding.tvTodayXp.text = if (xpBreakdown.totalDailyXP > 0) "+${xpBreakdown.totalDailyXP}" else "+${xpBreakdown.tapasyaXP}"
                     binding.tvStreak.text = xpBreakdown.streak.toString()
                     binding.tvLevel.text = xpBreakdown.level.toString()
                     

@@ -41,7 +41,7 @@ object BlockCache {
     @Volatile var emergencySessionEndTime: Long = 0L
     
     /** Is any blocking mode currently active */
-    var isAnyBlockingModeActive = false
+    @Volatile var isAnyBlockingModeActive = false
         private set
     
     // === INSTANT CHECK (O(1)) ===
@@ -97,7 +97,7 @@ object BlockCache {
                 
                 // CRITICAL FIX: Reload emergency status immediately
                 val emergencyData = prefs.getEmergencyData()
-                emergencySessionEndTime = if (emergencyData.currentSessionEndTime > now && emergencyData.usesRemaining >= 0) {
+                emergencySessionEndTime = if (emergencyData.currentSessionEndTime > now && emergencyData.usesRemaining > 0) {
                     emergencyData.currentSessionEndTime
                 } else {
                     0L

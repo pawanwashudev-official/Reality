@@ -25,22 +25,21 @@ object UsageUtils {
      * and provides totalTimeInForeground which is the definitive usage time.
      */
     fun getUsageSinceMidnight(context: Context): Map<String, Long> {
+        return getUsageForDate(context, java.time.LocalDate.now())
+    }
+
+    /**
+     * Get usage for a specific date.
+     */
+    fun getUsageForDate(context: Context, date: java.time.LocalDate): Map<String, Long> {
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
             ?: return emptyMap()
 
-        val calendar = Calendar.getInstance()
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        
-        val midnight = calendar.timeInMillis
-        val now = System.currentTimeMillis()
+        val startOfDay = date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val endOfDay = date.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
         
         return try {
-            // queryAndAggregateUsageStats is what Digital Wellbeing uses
-            // It returns the official system-calculated totalTimeInForeground
-            val statsMap = usm.queryAndAggregateUsageStats(midnight, now)
+            val statsMap = usm.queryAndAggregateUsageStats(startOfDay, endOfDay)
             statsMap.mapValues { it.value.totalTimeInForeground }
         } catch (e: Exception) {
             emptyMap()
@@ -99,6 +98,10 @@ object UsageUtils {
         return totalScreenTime
     }
     fun getFocusedAppsUsage(context: Context): Long {
+        return getFocusedAppsUsageForDate(context, java.time.LocalDate.now())
+    }
+
+    fun getFocusedAppsUsageForDate(context: Context, date: java.time.LocalDate): Long {
         if (!hasUsageStatsPermission(context)) return 0L
 
         val prefsLoader = SavedPreferencesLoader(context)
@@ -111,7 +114,7 @@ object UsageUtils {
 
         if (affectedPkgs.isEmpty()) return 0L
 
-        val usageMap = getUsageSinceMidnight(context)
+        val usageMap = getUsageForDate(context, date)
         var total = 0L
         affectedPkgs.forEach { pkg ->
             total += usageMap[pkg] ?: 0L

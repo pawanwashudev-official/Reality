@@ -14,6 +14,12 @@ interface DailyStatsDao {
     @Query("SELECT * FROM daily_stats WHERE date = :date")
     suspend fun getStatsForDate(date: String): DailyStats?
 
+    @Query("SELECT * FROM daily_stats")
+    suspend fun getAllStats(): List<DailyStats>
+
+    @Query("DELETE FROM daily_stats WHERE date = :date")
+    suspend fun deleteStatsForDate(date: String)
+
     @Query("SELECT * FROM daily_stats ORDER BY date DESC LIMIT :limit")
     fun getRecentStats(limit: Int): Flow<List<DailyStats>>
 

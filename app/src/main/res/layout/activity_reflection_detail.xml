@@ -28,24 +28,31 @@
             app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge">
 
             <ImageView
-                android:id="@+id/btn_erase_xp"
+                android:id="@+id/btn_reflection_settings"
                 android:layout_width="44dp"
                 android:layout_height="44dp"
                 android:layout_gravity="end"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="4dp"
                 android:padding="10dp"
-                android:src="@drawable/baseline_delete_24"
-                app:tint="?attr/colorError"
+                android:src="@drawable/baseline_settings_24"
+                app:tint="?attr/colorOnSurface"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Erase XP Data"/>
+                android:contentDescription="Reflection Settings"/>
+
+
         </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <androidx.core.widget.NestedScrollView
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        android:clipToPadding="false">
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -198,6 +205,7 @@
                     android:padding="20dp">
 
                     <TextView
+                        android:id="@+id/tv_breakdown_title"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Today's XP Breakdown"
@@ -242,6 +250,16 @@
                             android:text="✅ Task XP"
                             android:textSize="14sp"
                             android:textColor="?attr/colorOnSurface"/>
+                        
+                        <ImageView
+                            android:id="@+id/btn_calc_task_xp"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/baseline_refresh_24"
+                            app:tint="?attr/colorPrimary"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:layout_marginStart="8dp"
+                            android:contentDescription="Calculate Task XP"/>
                         <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
                         <TextView
                             android:id="@+id/tv_task_xp"
@@ -444,5 +462,5 @@
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
-
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

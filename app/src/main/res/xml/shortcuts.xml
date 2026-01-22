@@ -4,13 +4,13 @@
         android:enabled="true"
         android:icon="@drawable/focus_mode_icon"
         android:shortcutShortLabel="@string/focus_mode"
-        android:shortcutId="digipaws_focus_mode_shortcut"
+        android:shortcutId="reality_focus_mode_shortcut"
         android:shortcutLongLabel="@string/focus_mode">
         <intent
             android:action="android.intent.action.VIEW"
             android:targetPackage="com.neubofy.reality"
             android:targetClass="com.neubofy.reality.ui.activity.ShortcutActivity" />
-        <categories android:name="digiipaws" />
+        <categories android:name="reality" />
         <capability-binding android:key="actions.intent.CREATE_MESSAGE" />
     </shortcut>
     <!-- Specify more shortcuts here. -->

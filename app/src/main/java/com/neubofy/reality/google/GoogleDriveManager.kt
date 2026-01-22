@@ -64,6 +64,41 @@ object GoogleDriveManager {
     }
     
     /**
+     * Search for a specific file by name in a specific folder.
+     * Returns the first matching file's ID, or null if not found.
+     */
+    suspend fun searchFile(context: Context, fileName: String, folderId: String? = null): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val service = getDriveService(context) ?: return@withContext null
+                
+                var query = "name = '$fileName' and trashed = false"
+                if (folderId != null) {
+                    query += " and '$folderId' in parents"
+                }
+                
+                // Exclude folders from file search if we want strictly files? 
+                // Usually for diary docs we just want the name match.
+                
+                val result = service.files().list()
+                    .setQ(query)
+                    .setFields("files(id, name)")
+                    .setPageSize(1)
+                    .execute()
+                
+                if (result.files.isNotEmpty()) {
+                    result.files[0].id
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                TerminalLogger.log("DRIVE API: Error searching file - ${e.message}")
+                null
+            }
+        }
+    }
+    
+    /**
      * Create or get a folder by name in Drive.
      * Returns Pair(folderId, wasCreated)
      * Throws UserRecoverableAuthIOException if permission is needed.

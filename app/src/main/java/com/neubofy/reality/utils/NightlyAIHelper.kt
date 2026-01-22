@@ -2,6 +2,7 @@ package com.neubofy.reality.utils
 
 import android.content.Context
 import com.neubofy.reality.data.NightlyProtocolExecutor
+import com.neubofy.reality.data.model.DaySummary
 import com.neubofy.reality.ui.activity.AISettingsActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -29,7 +30,7 @@ object NightlyAIHelper {
         context: Context,
         modelString: String,
         userIntroduction: String,
-        daySummary: NightlyProtocolExecutor.DaySummary
+        daySummary: DaySummary
     ): List<String> = withContext(Dispatchers.IO) {
         
         TerminalLogger.log("Nightly AI: Generating questions with model: $modelString")
@@ -56,7 +57,7 @@ object NightlyAIHelper {
         parseQuestions(response)
     }
     
-    private fun buildPrompt(context: Context, userIntro: String, summary: NightlyProtocolExecutor.DaySummary): String {
+    private fun buildPrompt(context: Context, userIntro: String, summary: DaySummary): String {
         val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
         
         // Calendar events from device
@@ -170,7 +171,8 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
     suspend fun analyzePlan(
         context: Context,
         modelString: String,
-        planContent: String
+        planContent: String,
+        taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig> = emptyList()
     ): String = withContext(Dispatchers.IO) {
         
         TerminalLogger.log("Nightly AI: Analyzing plan with model: $modelString")
@@ -185,8 +187,19 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_plan_prompt", null)
         
-        val systemPrompt = customPrompt?.replace("{plan_content}", planContent) 
-            ?: getDefaultPlanPrompt(planContent)
+        // Build List Context
+        val listsContext = if (taskListConfigs.isNotEmpty()) {
+            val details = taskListConfigs.joinToString("\n") { 
+                "- List Name: \"${it.displayName}\" (ID: ${it.googleListId})\n  Description: ${it.description}" 
+            }
+            "\n[AVAILABLE TASK LISTS]\n$details\n"
+        } else {
+            ""
+        }
+
+        val systemPrompt = customPrompt?.replace("{plan_content}", planContent)
+            ?.replace("{list_context}", listsContext)
+            ?: getDefaultPlanPrompt(planContent, taskListConfigs)
             
         TerminalLogger.log("Nightly AI: Plan prompt built, calling $provider API...")
         
@@ -202,23 +215,177 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         response
     }
     
-    fun getDefaultPlanPrompt(planContent: String): String {
+    fun getDefaultQuestionsPromptTemplate(): String {
+        return """You are a supportive but honest personal productivity coach.
+
+{user_intro}
+
+Today is {date}.
+
+📅 SCHEDULED CALENDAR EVENTS:
+{calendar}
+
+📋 TASKS DUE TODAY:
+{tasks_due}
+
+✅ TASKS COMPLETED TODAY:
+{tasks_completed}
+
+⏱️ STUDY/WORK SESSIONS (Tapasya):
+{sessions}
+
+📊 STATISTICS:
+{stats}
+
+Based on this comprehensive data, generate EXACTLY 5 personalized reflection questions.
+
+Guidelines:
+1. If there's a gap between planned and actual, ask about what happened (gently but directly)
+2. If they completed many tasks, acknowledge and ask what helped them succeed
+3. If tasks are pending, ask about priorities and blockers
+4. Ask about their emotional/mental state during work
+5. Help them plan improvements for tomorrow
+
+Be warm and supportive, but also honest. Don't sugarcoat if they underperformed.
+If no plan was set, ask about setting intentions.
+If no work was done, be compassionate but encourage reflection on barriers.
+
+Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
+    }
+
+    fun getDefaultAnalyzerPromptTemplate(): String {
+        return """You are a wise and strict mentor reviewing a student's nightly reflection.
+Your goal is to ensure they are taking the process seriously and actually reflecting, not just going through the motions.
+
+{user_intro}
+
+Analyze the following Nightly Reflection Diary:
+
+[[DIARY_START]]
+{diary_content}
+[[DIARY_END]]
+
+EVALUATION CRITERIA:
+1. DEPTH: Did they answer the questions with thought? (One word answers = Fail)
+2. HONESTY: Does it seem genuine?
+3. COMPLETENESS: Did they complete the reflection?
+
+OUTPUT REQUIREMENTS:
+You must output a single JSON object. Do not include markdown formatting like ```json.
+{
+  "xp": (integer 0-50, score for quality of reflection),
+  "satisfied": (boolean, true if reflection is good enough to accept, false if lazy/incomplete),
+  "feedback": (string, 1-2 sentence feedback. If satisfied, praise insight. If false, explain why and ask them to add more.)
+}"""
+    }
+
+    fun getDefaultReportPromptTemplate(): String {
+        return """You are a professional executive coach generating a daily progress report.
+
+About the user: {user_intro}
+
+DATE: {date}
+
+[DATA SUMMARY]
+- Efficiency: {efficiency} ({total_effective} / {total_planned})
+- Tasks Completed: {tasks_done}
+- XP Earned Today: {xp_earned}
+- Current Level: {level}
+
+[USER REFLECTION]
+{reflection_content}
+
+[TOMORROW'S Plan]
+{plan_content}
+
+INSTRUCTIONS:
+1. Summarize the day's achievements.
+2. Provide feedback on their reflection.
+3. Critique their plan for tomorrow.
+4. Give a final "Coach's Directive".
+
+OUTPUT FORMAT:
+- Clean, professional Markdown.
+- Concise and actionable."""
+    }
+
+    /**
+     * Get the default prompt template for plan extraction.
+     * Use {plan_content} and {list_context} as placeholders.
+     */
+    fun getDefaultPlanPromptTemplate(): String {
         return """
-            You are a personal productivity assistant. 
-            Analyze the following "Plan for Tomorrow" document and extract actionable items.
+            You are an advanced productivity extraction AI. 
+            Analyze the following "Plan for Tomorrow" and extract actionable items with extreme precision.
             
-            PLAN CONTENT:
-            $planContent
+            [PLAN CONTENT]
+            {plan_content}
             
-            Return a valid JSON object with two arrays: "tasks" and "events".
+            {list_context}
             
-            "tasks": List of objects { "title": string, "notes": string (optional) }
-            "events": List of objects { "title": string, "startTime": string (HH:mm), "endTime": string (HH:mm), "description": string (optional) }
+            [STRICT EXTRACTION RULES]
+            1. TASKS:
+               - Extract ONLY actionable task mentions that are explicitly listed.
+               - NEGATIVE CONSTRAINT: Do NOT infer or "hallucinate" tasks that are not clearly written (e.g. don't turn general advice into tasks).
+               - TITLE: Clean title only.
+               - CATEGORIZATION: Select the best "taskListId" from the [AVAILABLE TASK LISTS].
+               - CRITICAL: You MUST use one of the "ID"s provided in the context. Do NOT use names like "inbox", "work", or "personal" unless they are explicitly listed with that ID.
+               - IF NO MATCH: Use "@default".
+               - Distribute tasks appropriately based on the list descriptions. 
+               - DUE TIME: If a specific time is mentioned (e.g., "14:00 Finish report"), extract it as "startTime" in 24h HH:mm format. 
             
-            If times are missing for events, exclude them or make a best guess if context implies it (e.g. "Morning workout" -> 07:00-08:00). 
-            If no specific items found, return empty arrays.
-            OUTPUT JSON ONLY. NO MARKDOWN.
+            2. CALENDAR EVENTS: 
+               - ONLY extract productive/focused study or work sessions.
+               - NEGATIVE CONSTRAINT: DO NOT extract Sleep, Travel, Commute, Relax, Eating, Gym, or Leisure activities as events.
+               - TIME: Must have both "startTime" and "endTime" in HH:mm.
+            
+            4. WAKE UP TIME: (Constraint: AI Decision)
+               - Based on the plan's first activity, determine the optimal "wakeupTime" (HH:mm).
+               - If the plan starts at 06:00, wake up might be 05:30.
+               - IMPORTANT: If no clear start time is found, return empty string "".
+            
+            5. MENTORSHIP (Short Advice):
+               - Provide a 2-3 sentence punchy piece of advice for the user to succeed tomorrow.
+               - Focus on mindset, energy, or specific focus from the plan.
+            
+            [JSON OUTPUT FORMAT]
+            (CRITICAL: Output EXACTLY this JSON structure. NO MARKDOWN. NO PREAMBLE. NO OTHER TEXT)
+            {
+              "wakeupTime": "HH:mm or empty",
+              "mentorship": "Your advice string here",
+              "tasks": [
+                {
+                  "title": "Clean task title",
+                  "startTime": "HH:mm or null",
+                  "taskListId": "EXACT_ID_FROM_CONTEXT",
+                  "notes": "Details"
+                }
+              ],
+              "events": [
+                {
+                  "title": "Productive Session Title",
+                  "startTime": "HH:mm",
+                  "endTime": "HH:mm",
+                  "description": "Details"
+                }
+              ]
+            }
         """.trimIndent()
+    }
+
+    fun getDefaultPlanPrompt(planContent: String, taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig> = emptyList()): String {
+        val listsContext = if (taskListConfigs.isNotEmpty()) {
+            val details = taskListConfigs.joinToString("\n") { 
+                "- List Name: \"${it.displayName}\" (ID: ${it.googleListId})\n  Description: ${it.description}" 
+            }
+            "\n[AVAILABLE TASK LISTS]\n$details\n"
+        } else {
+            ""
+        }
+
+        return getDefaultPlanPromptTemplate()
+            .replace("{plan_content}", planContent)
+            .replace("{list_context}", listsContext)
     }
 
     private fun callOpenAI(apiKey: String, model: String, prompt: String): String {
@@ -274,7 +441,7 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
                 })
             })
             put("temperature", 0.7)
-            put("max_tokens", 500)
+            put("max_tokens", 8192)
         }
         
         conn.outputStream.bufferedWriter().use { it.write(requestBody.toString()) }
@@ -314,7 +481,7 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
             })
             put("generationConfig", JSONObject().apply {
                 put("temperature", 0.7)
-                put("maxOutputTokens", 500)
+                put("maxOutputTokens", 8192)
             })
         }
         
@@ -401,7 +568,7 @@ EVALUATION CRITERIA:
 OUTPUT REQUIREMENTS:
 You must output a single JSON object. Do not include markdown formatting like ```json.
 {
-  "xp": (integer 0-50, score for quality of reflection),
+  "xp": (integer 0-500, score for quality of reflection),
   "satisfied": (boolean, true if reflection is good enough to accept, false if lazy/incomplete),
   "feedback": (string, 1-2 sentence feedback. If satisfied, praise insight. If false, explain why and ask them to add more.)
 }"""
@@ -461,5 +628,206 @@ You must output a single JSON object. Do not include markdown formatting like ``
         
         // Ensure we return at most 5 questions
         return questions.take(5)
+    }
+    suspend fun generatePlanSuggestions(
+        context: Context,
+        modelString: String,
+        userIntro: String,
+        summary: DaySummary
+    ): String = withContext(Dispatchers.IO) {
+        
+        TerminalLogger.log("Nightly AI: Generating plan suggestions...")
+        
+        val providerAndKey = AISettingsActivity.getProviderAndKeyFromModel(context, modelString)
+            ?: throw IllegalStateException("Invalid model configuration")
+        
+        val (provider, apiKey) = providerAndKey
+        val modelName = modelString.substringAfter(": ")
+        
+        val prompt = buildPlanPrompt(context, userIntro, summary)
+        
+        val response = when (provider) {
+            "OpenAI" -> callOpenAI(apiKey, modelName, prompt)
+            "Gemini" -> callGemini(apiKey, modelName, prompt)
+            "Groq" -> callGroq(apiKey, modelName, prompt)
+            "OpenRouter" -> callOpenRouter(apiKey, modelName, prompt)
+            "Perplexity" -> callPerplexity(apiKey, modelName, prompt)
+            else -> throw IllegalStateException("Unsupported provider: $provider")
+        }
+        
+        // Return raw response (Markdown expected)
+        response.trim()
+    }
+    
+    private fun buildPlanPrompt(context: Context, userIntro: String, summary: DaySummary): String {
+        val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
+        val tomorrowDate = summary.date.plusDays(1).format(dateFormatter)
+        
+        // Pending Tasks
+        val pendingTasks = if (summary.tasksDue.isEmpty()) {
+            "No overdue tasks."
+        } else {
+            summary.tasksDue.joinToString("\n") { "- $it" }
+        }
+        
+        val userIntroStr = if (userIntro.isNotEmpty()) "About the user:\n$userIntro" else ""
+        
+        return """
+            You are an expert productivity planner.
+            $userIntroStr
+            
+            Based on the user's pending tasks and context, suggest a realistic High-Level Plan for TOMORROW ($tomorrowDate).
+            
+            PENDING TASKS (Carry over?):
+            $pendingTasks
+            
+            INSTRUCTIONS:
+            1. Suggest 3 Top Priorities for tomorrow.
+            2. Suggest a rough time-blocked schedule (Morning/Afternoon/Evening).
+            3. Include any specific advice for maintaining momentum or recovering if today was slow.
+            
+            FORMAT:
+            Use clean Markdown.
+            
+            ### Top Priorities
+            1. ...
+            2. ...
+            3. ...
+            
+            ### Suggested Schedule
+            - **Morning**: ...
+            - **Afternoon**: ...
+            
+            ### Advice
+            ...
+        """.trimIndent()
+    }
+    
+    suspend fun generateReportSummary(
+        context: Context,
+        modelString: String,
+        userIntro: String,
+        summary: DaySummary,
+        xpStats: com.neubofy.reality.utils.XPManager.XPBreakdown?,
+        reflectionContent: String,
+        planContent: String
+    ): String = withContext(Dispatchers.IO) {
+        
+        TerminalLogger.log("Nightly AI: Generating report summary...")
+        
+        val providerAndKey = AISettingsActivity.getProviderAndKeyFromModel(context, modelString)
+            ?: throw IllegalStateException("Invalid model configuration")
+        
+        val (provider, apiKey) = providerAndKey
+        val modelName = modelString.substringAfter(": ")
+        
+        // Load custom or default prompt
+        val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
+        val customPrompt = prefs.getString("custom_report_prompt", null)
+        
+        val prompt = if (customPrompt != null) {
+            // Replace placeholders in custom prompt
+            val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
+            val totalPlanned = summary.totalPlannedMinutes
+            val totalEffective = summary.totalEffectiveMinutes
+            val efficiency = if (totalPlanned > 0) (totalEffective * 100 / totalPlanned) else 0
+            
+            customPrompt
+                .replace("{user_intro}", userIntro)
+                .replace("{date}", summary.date.format(dateFormatter))
+                .replace("{efficiency}", "$efficiency%")
+                .replace("{total_effective}", "$totalEffective mins")
+                .replace("{total_planned}", "$totalPlanned mins")
+                .replace("{tasks_done}", "${summary.tasksCompleted.size}")
+                .replace("{xp_earned}", "${xpStats?.totalDailyXP ?: 0}")
+                .replace("{level}", "${xpStats?.level ?: 1}")
+                .replace("{reflection_content}", reflectionContent.take(8000))
+                .replace("{plan_content}", planContent.take(8000))
+        } else {
+            buildReportPrompt(context, userIntro, summary, xpStats, reflectionContent, planContent)
+        }
+        
+        val response = when (provider) {
+            "OpenAI" -> callOpenAI(apiKey, modelName, prompt)
+            "Gemini" -> callGemini(apiKey, modelName, prompt)
+            "Groq" -> callGroq(apiKey, modelName, prompt)
+            "OpenRouter" -> callOpenRouter(apiKey, modelName, prompt)
+            "Perplexity" -> callPerplexity(apiKey, modelName, prompt)
+            else -> throw IllegalStateException("Unsupported provider: $provider")
+        }
+        
+        response.trim()
+    }
+
+    private fun buildReportPrompt(
+        context: Context, 
+        userIntro: String, 
+        summary: DaySummary,
+        xpStats: com.neubofy.reality.utils.XPManager.XPBreakdown?,
+        reflectionContent: String,
+        planContent: String
+    ): String {
+        val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
+        
+        // Extract stats
+        val totalPlanned = summary.totalPlannedMinutes
+        val totalEffective = summary.totalEffectiveMinutes
+        val efficiency = if (totalPlanned > 0) (totalEffective * 100 / totalPlanned) else 0
+        val tasksDone = summary.tasksCompleted.size
+        
+        val xpEarned = xpStats?.totalDailyXP ?: 0
+        val level = xpStats?.level ?: 1
+        
+        val userIntroStr = if (userIntro.isNotEmpty()) "About the user: $userIntro" else ""
+        
+        // Structured Metadata as JSON-like block for AI
+        val metadata = """
+        {
+          "date": "${summary.date}",
+          "stats": {
+            "efficiency_percent": $efficiency,
+            "effective_minutes": $totalEffective,
+            "planned_minutes": $totalPlanned,
+            "tasks_completed": $tasksDone,
+            "xp_earned": $xpEarned,
+            "current_level": $level
+          },
+          "user_context": "${userIntro.replace("\"", "\\\"")}"
+        }
+        """.trimIndent()
+        
+        return """
+            You are a professional executive coach and performance analyst.
+            
+            [SYSTEM METADATA]
+            $metadata
+            
+            [PRIMARY SOURCE: DIARY DOCUMENT]
+            The following is the full text extracted from the user's diary document (including any tables or lists). 
+            Analyze this deeply:
+            ---
+            $reflectionContent
+            ---
+            
+            [PRIMARY SOURCE: PLAN FOR TOMORROW]
+            The following is the text extracted from the user's planning document for tomorrow:
+            ---
+            $planContent
+            ---
+            
+            INSTRUCTIONS:
+            Perform a deep analysis of the user's day based on the provided JSON metadata and the full text of their Diary and Plan.
+            1. **Daily Briefing**: Provide a concise summary of the day's achievements and challenges.
+            2. **Deep Insights**: Analyze the user's reflection. Identify patterns, wins, or recurring blockers.
+            3. **Plan Critique**: Analyze the plan for tomorrow. Evaluate its feasibility based on today's metrics ($efficiency% efficiency).
+            4. **Level Up**: Provide a motivational comment regarding their current level ($level) and today's XP ($xpEarned).
+            5. **Final Verdict**: Assign a "Theme of the Day" and a one-sentence "Coach's Directive".
+
+            OUTPUT FORMAT:
+            - Use clean, professional Markdown.
+            - Do NOT include any meta-talk like "As an AI..." or "Here is your analysis...".
+            - Be direct, insightful, and encouraging.
+            - **Length Constraint**: Ensure the entire report is comprehensive but remains under 7,000 characters.
+        """.trimIndent()
     }
 }

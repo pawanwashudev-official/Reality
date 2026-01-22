@@ -185,33 +185,16 @@
                         android:visibility="visible"/>
 
                     <!-- Nightly model display (single item) -->
-                    <LinearLayout
-                        android:id="@+id/layout_nightly_model"
+                    <!-- Nightly models list -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recycler_nightly_models"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
                         android:layout_marginTop="8dp"
-                        android:visibility="gone">
-
-                        <TextView
-                            android:id="@+id/tv_nightly_model_name"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:textSize="14sp"
-                            android:textColor="?attr/colorOnSurface"/>
-
-                        <ImageView
-                            android:id="@+id/btn_delete_nightly_model"
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:padding="6dp"
-                            android:src="@drawable/baseline_delete_24"
-                            app:tint="?attr/colorError"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="Delete"/>
-                    </LinearLayout>
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                        android:visibility="gone"/>
 
                     <!-- Divider -->
                     <View

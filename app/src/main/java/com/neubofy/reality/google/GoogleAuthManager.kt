@@ -228,4 +228,18 @@ object GoogleAuthManager {
         // In production, this should be a build config or resource
         // For now, we'll use a placeholder
     }
+    
+    /**
+     * Check if the current credential has all required scopes.
+     * Note: This is an optimistic check. The actual token might still be rejected if revoked externally.
+     */
+    fun hasRequiredPermissions(context: Context): Boolean {
+        if (!isSignedIn(context)) return false
+        
+        // In a real OAuth flow we'd check granted scopes from the token response.
+        // For simple Google Sign-In + Account Manager, we assume yes if signed in,
+        // but we rely on the Activity to trigger a re-auth if API calls fail with 401/403.
+        // However, we can basic check if we have an email.
+        return !getUserEmail(context).isNullOrEmpty()
+    }
 }

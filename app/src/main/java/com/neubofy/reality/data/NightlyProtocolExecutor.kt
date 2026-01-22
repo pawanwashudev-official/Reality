@@ -4,6 +4,7 @@ import android.content.Context
 import com.neubofy.reality.data.db.AppDatabase
 import com.neubofy.reality.data.db.CalendarEvent
 import com.neubofy.reality.data.db.TapasyaSession
+import com.neubofy.reality.data.repository.NightlyRepository
 import com.neubofy.reality.google.GoogleDocsManager
 import com.neubofy.reality.google.GoogleDriveManager
 import com.neubofy.reality.ui.activity.AISettingsActivity
@@ -15,6 +16,18 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.io.File
+import java.io.FileInputStream
+import com.google.api.services.drive.Drive
+import com.google.api.services.drive.model.File as DriveFile
+import com.google.api.client.http.FileContent
+import com.google.gson.Gson
+import com.neubofy.reality.google.GoogleAuthManager
+import org.json.JSONObject
+import org.json.JSONArray
+import com.neubofy.reality.data.model.DaySummary
+import com.neubofy.reality.data.nightly.NightlyReporter
+import com.neubofy.reality.data.nightly.NightlyDataCollector
 
 /**
  * Orchestrates the Nightly Protocol process:
@@ -31,7 +44,7 @@ class NightlyProtocolExecutor(
     
     interface NightlyProgressListener {
         fun onStepStarted(step: Int, stepName: String)
-        fun onStepCompleted(step: Int, stepName: String, details: String? = null)
+        fun onStepCompleted(step: Int, stepName: String, details: String? = null, linkUrl: String? = null)
         fun onStepSkipped(step: Int, stepName: String, reason: String)
         fun onError(step: Int, error: String)
         fun onQuestionsReady(questions: List<String>)
@@ -39,16 +52,9 @@ class NightlyProtocolExecutor(
         fun onComplete(diaryDocId: String?, diaryUrl: String?)
     }
     
-    data class DaySummary(
-        val date: LocalDate,
-        val calendarEvents: List<com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent>,
-        val completedSessions: List<TapasyaSession>,
-        val tasksDue: List<String>,
-        val tasksCompleted: List<String>,
-        val plannedEvents: List<CalendarEvent>,
-        val totalPlannedMinutes: Long,
-        val totalEffectiveMinutes: Long
-    )
+    // Helpers
+    private val reporter = NightlyReporter(context)
+    private val dataCollector = NightlyDataCollector(context)
 
     // Granular Step State Persistence
     data class StepProgress(
@@ -65,16 +71,26 @@ class NightlyProtocolExecutor(
     }
     
     companion object {
-        const val STEP_CHECK_DIARY = 1
-        const val STEP_COLLECT_DATA = 2
-        const val STEP_GENERATE_QUESTIONS = 3
-        const val STEP_CREATE_DIARY = 4
-        const val STEP_READ_DIARY = 5
-        const val STEP_ANALYZE_REFLECTION = 6
-        const val STEP_CALCULATE_XP = 7
-        const val STEP_PLANNING = 8
-        const val STEP_CREATE_PLAN_DOC = 9
-        const val STEP_PROCESS_PLAN = 10
+        // 12-Step Protocol
+        const val STEP_FETCH_TASKS = 1          // Google Tasks API
+        const val STEP_FETCH_SESSIONS = 2       // Tapasya DB + Calendar
+        const val STEP_CALC_SCREEN_TIME = 3     // UsageStats
+        const val STEP_GENERATE_QUESTIONS = 4   // AI
+        const val STEP_CREATE_DIARY = 5         // Google Docs
+        const val STEP_ANALYZE_REFLECTION = 6   // AI
+        const val STEP_FINALIZE_XP = 7          // XPManager
+        const val STEP_CREATE_PLAN_DOC = 8      // Google Docs
+        const val STEP_GENERATE_PLAN = 9        // AI
+        const val STEP_PROCESS_PLAN = 10        // Google Tasks + Calendar
+        const val STEP_GENERATE_REPORT = 11     // AI -> NightlySession
+        const val STEP_GENERATE_PDF = 12        // PDF -> Google Drive
+
+        
+        // Legacy aliases (for backward compatibility)
+        @Deprecated("Use STEP_FETCH_TASKS") const val STEP_CHECK_DIARY = 1
+        @Deprecated("Use STEP_FETCH_SESSIONS") const val STEP_COLLECT_DATA = 2
+        @Deprecated("Use STEP_FINALIZE_XP") const val STEP_CALCULATE_XP = 7
+        @Deprecated("Use STEP_ANALYZE_REFLECTION") const val STEP_READ_DIARY = 6
         
         // Protocol States
         const val STATE_IDLE = 0
@@ -82,6 +98,7 @@ class NightlyProtocolExecutor(
         const val STATE_PENDING_REFLECTION = 2
         const val STATE_ANALYZING = 3
         const val STATE_COMPLETE = 4
+        const val STATE_PLANNING_READY = 5
         
         private const val PREFS_NAME = "nightly_prefs"
         
@@ -96,64 +113,53 @@ class NightlyProtocolExecutor(
         private const val KEY_DIARY_DOC_ID = "current_diary_doc_id"
         
         // Get state for a specific date
-        fun getStateForDate(context: Context, date: LocalDate): Int {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            return prefs.getInt(getStateKey(date), STATE_IDLE)
+        suspend fun getStateForDate(context: Context, date: LocalDate): Int {
+            return NightlyRepository.getSessionStatus(context, date)
         }
         
         // Get diary doc ID for a specific date
-        fun getDiaryDocIdForDate(context: Context, date: LocalDate): String? {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            return prefs.getString(getDiaryDocIdKey(date), null)
+        suspend fun getDiaryDocIdForDate(context: Context, date: LocalDate): String? {
+            return NightlyRepository.getDiaryDocId(context, date)
         }
         
         // Granular Step State Persistence
 
         
-        fun getStepStateKey(date: LocalDate, step: Int): String = 
-            "step_state_${date.format(DateTimeFormatter.ISO_LOCAL_DATE)}_$step"
-            
-        fun getStepDetailsKey(date: LocalDate, step: Int): String = 
-            "step_details_${date.format(DateTimeFormatter.ISO_LOCAL_DATE)}_$step"
 
-        fun saveStepState(context: Context, date: LocalDate, step: Int, status: Int, details: String?) {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            prefs.edit()
-                .putInt(getStepStateKey(date, step), status)
-                .putString(getStepDetailsKey(date, step), details)
-                .apply()
-        }
-        
-        fun loadStepState(context: Context, date: LocalDate, step: Int): StepProgress {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val status = prefs.getInt(getStepStateKey(date, step), StepProgress.STATUS_PENDING)
-            val details = prefs.getString(getStepDetailsKey(date, step), null)
-            return StepProgress(status, details)
-        }
         
         // ... (Existing Cleanup & Clear Memory) ...
         
+
+        
         // Cleanup old entries (keep only last 3 days)
-        fun cleanupOldEntries(context: Context) {
+        suspend fun cleanupOldEntries(context: Context, activeDate: LocalDate) {
+            val today = LocalDate.now()
+            val cutoffDate = today.minusDays(2) // 3 days including today: today, yesterday, day before
+            
+            TerminalLogger.log("Nightly: Strict cleanup - removing data older than $cutoffDate")
+            
+            // 1. DB Cleanup (Strict)
+            NightlyRepository.cleanupOldData(context, cutoffDate)
+            
+            // 2. Legacy Prefs Cleanup
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val editor = prefs.edit()
-            val today = LocalDate.now()
-            val cutoffDate = today.minusDays(3)
             
             // Collect keys to remove
             val keysToRemove = prefs.all.keys.filter { key ->
                 (key.startsWith("state_") || 
                  key.startsWith("diary_doc_id_") || 
+                 key.startsWith("plan_doc_id_") || 
                  key.startsWith("step_state_") || 
-                 key.startsWith("step_details_")) &&
+                 key.startsWith("step_details_") ||
+                 key.startsWith("questions_")) &&
                 try {
-                    // Extract date string (YYYY-MM-DD) from key
-                    // Pattern: prefix_2023-01-01 or prefix_2023-01-01_suffix
                     val parts = key.split("_")
                     val datePart = parts.find { it.length == 10 && it.contains("-") }
                     if (datePart != null) {
                         val keyDate = LocalDate.parse(datePart)
-                        keyDate.isBefore(cutoffDate)
+                        // EXEMPTION: Never cleanup the date currently being processed by the protocol
+                        keyDate.isBefore(cutoffDate) && keyDate != activeDate
                     } else false
                 } catch (e: Exception) { false }
             }
@@ -165,8 +171,8 @@ class NightlyProtocolExecutor(
             }
         }
         
-        const val DEFAULT_DIARY_TEMPLATE = "## Nightly Review - {date}\n\n### 1. Daily Data\n{data}\n\n### 2. Reflection\n(Answer the questions below)\n\n"
-        const val DEFAULT_PLAN_TEMPLATE = "## Plan for Tomorrow - {date}\n\n### 1. Top Priorities\n- [ ] \n- [ ] \n\n### 2. Schedule\n- 09:00 \n\n### 3. Tapasya Focus\n\n"
+        const val DEFAULT_DIARY_TEMPLATE = "# 📔 Daily Reflection Diary - {date}\n\n## 📊 Day Summary Data\n{data}\n\n## 💡 Personalized Questions\n{questions}\n\n## ✍️ My Reflection\n(Write your answers here...)\n"
+        const val DEFAULT_PLAN_TEMPLATE = "# My Plan for Tomorrow\n\n## 🎯 Top Priorities\n- [ ] \n\n## 📅 Schedule\n- \n\n## 🚀 Tapasya Focus\n- \n"
 
         // Clear all protocol memory (States and Diary IDs)
         fun clearMemory(context: Context) {
@@ -193,21 +199,49 @@ class NightlyProtocolExecutor(
     }
     
     private var daySummary: DaySummary? = null
-    private var generatedQuestions: List<String> = emptyList()
     private var diaryDocId: String? = null
+    
+    // Debug/State Data (Restored for Layout Fixes)
+    private var reportHtml: String? = null
+    private var nightlyStartTime: Long = System.currentTimeMillis()
+
+    // --- State Management Helpers (Delegated to Repository) ---
+    // Note: These now delegate to NightlyRepository to avoid duplicating DB logic
+    
+    private suspend fun loadStepState(context: Context, date: LocalDate, step: Int): StepProgress {
+        return com.neubofy.reality.data.repository.NightlyRepository.loadStepState(context, date, step)
+    }
+    
+    private suspend fun loadStepData(context: Context, date: LocalDate, step: Int): com.neubofy.reality.data.repository.StepData {
+        return com.neubofy.reality.data.repository.NightlyRepository.loadStepData(context, date, step)
+    }
+
+    private suspend fun saveStepState(
+        context: Context, 
+        date: LocalDate, 
+        step: Int, 
+        status: Int, 
+        details: String?,
+        resultJson: String? = null,
+        linkUrl: String? = null
+    ) {
+        com.neubofy.reality.data.repository.NightlyRepository.saveStepState(context, date, step, status, details, resultJson, linkUrl)
+    }
     
     // --- Phase 1: Creation ---
     
     suspend fun startCreationPhase() {
+        val today = LocalDate.now()
+        cleanupOldEntries(context, diaryDate)
+        
         try {
             setProtocolState(STATE_CREATING)
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             
             // --- Step 1: Check if diary already exists ---
             val checkState = loadStepState(context, diaryDate, STEP_CHECK_DIARY)
             if (checkState.status == StepProgress.STATUS_COMPLETED) {
                 // Already checked, try to load ID from prefs
-                diaryDocId = prefs.getString(getDiaryDocIdKey(diaryDate), null)
+                diaryDocId = NightlyRepository.getDiaryDocId(context, diaryDate)
                 listener.onStepCompleted(STEP_CHECK_DIARY, "Diary Check", checkState.details)
             } else {
                 checkDiaryExists() // This updates diaryDocId if found
@@ -231,9 +265,7 @@ class NightlyProtocolExecutor(
                     // File deleted externally! Reset state.
                     TerminalLogger.log("Nightly: Diary file missing! Reseting creation phase.")
                     diaryDocId = null
-                    val editor = prefs.edit()
-                    editor.remove(getDiaryDocIdKey(diaryDate))
-                    editor.apply()
+                    NightlyRepository.saveDiaryDocId(context, diaryDate, null)
                     saveStepState(context, diaryDate, STEP_CREATE_DIARY, StepProgress.STATUS_PENDING, null)
                     // Continue to re-create...
                 }
@@ -276,7 +308,7 @@ class NightlyProtocolExecutor(
                 }
             } else {
                 // Already handled above, but for safety:
-                diaryDocId = prefs.getString(getDiaryDocIdKey(diaryDate), null)
+                diaryDocId = NightlyRepository.getDiaryDocId(context, diaryDate)
                 listener.onStepCompleted(STEP_CREATE_DIARY, "Diary Ready", createState.details)
             }
             
@@ -294,8 +326,7 @@ class NightlyProtocolExecutor(
     suspend fun finishAnalysisPhase() {
         try {
             setProtocolState(STATE_ANALYZING)
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            diaryDocId = prefs.getString(getDiaryDocIdKey(diaryDate), null) ?: prefs.getString(KEY_DIARY_DOC_ID, null)
+            diaryDocId = NightlyRepository.getDiaryDocId(context, diaryDate)
             
             if (diaryDocId == null) {
                 if (!checkDiaryExists()) {
@@ -381,27 +412,38 @@ class NightlyProtocolExecutor(
             // Step 7: Calculate XP
             calculateReflection(diaryContent, qualityXP)
             
-            // --- Phase 3: Planning ---
+            // --- BREAK: End of Phase 2 ---
+            setProtocolState(STATE_PLANNING_READY)
+            // Trigger UI update but don't proceed
+            // We use onComplete with nulls to signal "Action Required" or just let the state update handle it
+            listener.onStepCompleted(STEP_CALCULATE_XP, "Analysis Complete", "Ready for Planning")
+            
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
+    suspend fun executePlanningPhase() {
+        try {
+             // --- Phase 3: Planning ---
             
             // Step 8/9: Create Plan Doc
             createPlanDoc()
             
-            
-            // Check Verification
-            // Note: prefs is already defined in this scope
-            val isVerified = prefs.getBoolean(getPlanVerifiedKey(diaryDate), false)
-            
-            
-            if (!isVerified) {
-                // Stop here, let user verify
-                TerminalLogger.log("Nightly: Plan document created, waiting for verification.")
-                return 
-            }
+            // Step 9: Generate AI Plan
+            step9_generatePlan()
             
             // Step 10: Process Plan
             processPlanToTasks()
             
+            // Step 11: Generate Report (AI Summary)
+            step11_generateReport()
+            
+            // Step 12: Generate PDF Report
+            step12_generatePdf()
+            
             setProtocolState(STATE_COMPLETE)
+            diaryDocId = NightlyRepository.getDiaryDocId(context, diaryDate)
             listener.onComplete(diaryDocId, diaryDocId?.let { getDiaryUrl(it) })
             
         } catch (e: Exception) {
@@ -409,12 +451,8 @@ class NightlyProtocolExecutor(
         }
     }
     
-    private fun setProtocolState(state: Int) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putInt(getStateKey(diaryDate), state)
-            .putInt(KEY_STATE, state) // Also update legacy key for backwards compatibility
-            .apply()
+    private suspend fun setProtocolState(state: Int) {
+        NightlyRepository.updateSessionStatus(context, diaryDate, state)
         TerminalLogger.log("Nightly: State updated to $state for date $diaryDate")
     }
     
@@ -427,47 +465,229 @@ class NightlyProtocolExecutor(
         listener.onStepStarted(STEP_COLLECT_DATA, "Collecting day data")
         saveStepState(context, diaryDate, STEP_COLLECT_DATA, StepProgress.STATUS_RUNNING, "Collecting...")
         
-        withContext(Dispatchers.IO) {
-            val db = AppDatabase.getDatabase(context)
-            val startOfDay = diaryDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            val endOfDay = diaryDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
-            
-            val calendarRepo = com.neubofy.reality.data.repository.CalendarRepository(context)
-            val calendarEvents = calendarRepo.getEventsInRange(startOfDay, endOfDay)
-            
-            val dateString = diaryDate.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-            val taskStats = try {
-                com.neubofy.reality.google.GoogleTasksManager.getTasksForDate(context, dateString)
-            } catch (e: Exception) {
-                com.neubofy.reality.google.GoogleTasksManager.TaskStats(emptyList(), emptyList(), 0, 0)
-            }
-            
-            val sessions = db.tapasyaSessionDao().getSessionsForDay(startOfDay, endOfDay)
-            val plannedEvents = db.calendarEventDao().getEventsInRange(startOfDay, endOfDay)
-            
-            val totalPlannedMinutes = calendarEvents.sumOf { (it.endTime - it.startTime) / 60000 }
-            val totalEffectiveMinutes = sessions.sumOf { it.effectiveTimeMs / 60000 }
-            
-            daySummary = DaySummary(
-                date = diaryDate,
-                calendarEvents = calendarEvents,
-                completedSessions = sessions,
-                tasksDue = taskStats.dueTasks,
-                tasksCompleted = taskStats.completedTasks,
-                plannedEvents = plannedEvents,
-                totalPlannedMinutes = totalPlannedMinutes,
-                totalEffectiveMinutes = totalEffectiveMinutes
-            )
-        }
+        try {
+            // Delegated to DataCollector
+            val taskStats = dataCollector.fetchTasks(diaryDate)
+            daySummary = dataCollector.collectDayData(diaryDate, taskStats)
         
-        val details = "${daySummary?.calendarEvents?.size ?: 0} events, ${daySummary?.completedSessions?.size ?: 0} sessions, ${(daySummary?.tasksDue?.size ?: 0) + (daySummary?.tasksCompleted?.size ?: 0)} tasks"
-        listener.onStepCompleted(STEP_COLLECT_DATA, "Data collected", details)
-        saveStepState(context, diaryDate, STEP_COLLECT_DATA, StepProgress.STATUS_COMPLETED, details)
+            val details = "${daySummary?.calendarEvents?.size ?: 0} events, ${daySummary?.completedSessions?.size ?: 0} sessions, ${(daySummary?.tasksDue?.size ?: 0) + (daySummary?.tasksCompleted?.size ?: 0)} tasks"
+            listener.onStepCompleted(STEP_COLLECT_DATA, "Data collected", details)
+            saveStepState(context, diaryDate, STEP_COLLECT_DATA, StepProgress.STATUS_COMPLETED, details)
+        } catch (e: Exception) { 
+             val err = "Data collection failed: ${e.message}"
+             listener.onError(STEP_COLLECT_DATA, err)
+             saveStepState(context, diaryDate, STEP_COLLECT_DATA, StepProgress.STATUS_ERROR, err)
+        }
     }
     
-    // Silent version - no UI updates, just populates daySummary
-    private suspend fun collectDayDataSilently() {
-        withContext(Dispatchers.IO) {
+    // ========== 12-STEP PROTOCOL: Granular Data Collection ==========
+    
+    private var fetchedTasks: com.neubofy.reality.google.GoogleTasksManager.TaskStats? = null
+    private var screenTimeMinutes: Int = 0
+    private var screenTimeXpDelta: Int = 0
+    private var reflectionXp: Int = 0
+    private var generatedQuestions: List<String> = emptyList()
+    
+    private suspend fun step1_fetchTasks() {
+        val stepData = loadStepData(context, diaryDate, STEP_FETCH_TASKS)
+        
+        // If completed, try to restore from saved resultJson
+        if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
+            try {
+                val json = JSONObject(stepData.resultJson)
+                val dueTasks = mutableListOf<String>()
+                val completedTasks = mutableListOf<String>()
+                
+                json.optJSONArray("dueTasks")?.let { arr ->
+                    for (i in 0 until arr.length()) dueTasks.add(arr.getString(i))
+                }
+                json.optJSONArray("completedTasks")?.let { arr ->
+                    for (i in 0 until arr.length()) completedTasks.add(arr.getString(i))
+                }
+                
+                fetchedTasks = com.neubofy.reality.google.GoogleTasksManager.TaskStats(
+                    dueTasks, completedTasks, 
+                    json.optInt("pendingCount", dueTasks.size), 
+                    json.optInt("completedCount", completedTasks.size)
+                )
+                TerminalLogger.log("Nightly: Step 1 restored from DB (${fetchedTasks?.completedTasks?.size} done)")
+                return
+            } catch (e: Exception) {
+                TerminalLogger.log("Nightly: Step 1 JSON parse failed, re-fetching: ${e.message}")
+            }
+        }
+        
+        // Fetch fresh from API using Helper
+        listener.onStepStarted(STEP_FETCH_TASKS, "Fetching Tasks")
+        saveStepState(context, diaryDate, STEP_FETCH_TASKS, StepProgress.STATUS_RUNNING, "Fetching...")
+        
+        try {
+            fetchedTasks = dataCollector.fetchTasks(diaryDate)
+            
+            val details = "${fetchedTasks?.completedTasks?.size ?: 0} done, ${fetchedTasks?.dueTasks?.size ?: 0} pending"
+            
+            // Build resultJson
+            val resultJson = JSONObject().apply {
+                put("dueTasks", JSONArray(fetchedTasks?.dueTasks ?: emptyList<String>()))
+                put("completedTasks", JSONArray(fetchedTasks?.completedTasks ?: emptyList<String>()))
+                put("pendingCount", fetchedTasks?.pendingCount ?: 0)
+                put("completedCount", fetchedTasks?.completedCount ?: 0)
+            }.toString()
+            
+            listener.onStepCompleted(STEP_FETCH_TASKS, "Tasks Fetched", details)
+            saveStepState(context, diaryDate, STEP_FETCH_TASKS, StepProgress.STATUS_COMPLETED, details, resultJson)
+        } catch (e: Exception) {
+            fetchedTasks = com.neubofy.reality.google.GoogleTasksManager.TaskStats(emptyList(), emptyList(), 0, 0)
+            listener.onError(STEP_FETCH_TASKS, "Task Fetch Failed: ${e.message}")
+            saveStepState(context, diaryDate, STEP_FETCH_TASKS, StepProgress.STATUS_ERROR, e.message)
+        }
+    }
+    
+    private suspend fun step2_fetchSessions() {
+        val stepData = loadStepData(context, diaryDate, STEP_FETCH_SESSIONS)
+        
+        // If completed, try to restore stats from saved resultJson
+        if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
+            try {
+                val json = JSONObject(stepData.resultJson)
+                val plannedMins = json.optLong("plannedMinutes", 0)
+                val effectiveMins = json.optLong("effectiveMinutes", 0)
+                val sessionCount = json.optInt("sessionCount", 0)
+                val eventCount = json.optInt("eventCount", 0)
+                
+                // Re-fetch from local DB (fast) to populate full objects for AI use
+                withContext(Dispatchers.IO) {
+                    val db = AppDatabase.getDatabase(context)
+                    val startOfDay = diaryDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    val endOfDay = diaryDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
+                    
+                    val calendarRepo = com.neubofy.reality.data.repository.CalendarRepository(context)
+                    val calendarEvents = calendarRepo.getEventsInRange(startOfDay, endOfDay)
+                    val sessions = db.tapasyaSessionDao().getSessionsForDay(startOfDay, endOfDay)
+                    val plannedEvents = db.calendarEventDao().getEventsInRange(startOfDay, endOfDay)
+                    
+                    daySummary = DaySummary(
+                        date = diaryDate,
+                        calendarEvents = calendarEvents,
+                        completedSessions = sessions,
+                        tasksDue = fetchedTasks?.dueTasks ?: emptyList(),
+                        tasksCompleted = fetchedTasks?.completedTasks ?: emptyList(),
+                        plannedEvents = plannedEvents,
+                        totalPlannedMinutes = plannedMins,
+                        totalEffectiveMinutes = effectiveMins
+                    )
+                }
+                TerminalLogger.log("Nightly: Step 2 restored from DB ($sessionCount sessions, $eventCount events)")
+                return
+            } catch (e: Exception) {
+                TerminalLogger.log("Nightly: Step 2 JSON parse failed, re-fetching: ${e.message}")
+            }
+        }
+        
+        // Fetch fresh
+        listener.onStepStarted(STEP_FETCH_SESSIONS, "Fetching Sessions")
+        saveStepState(context, diaryDate, STEP_FETCH_SESSIONS, StepProgress.STATUS_RUNNING, "Fetching...")
+        
+        try {
+            withContext(Dispatchers.IO) {
+                val db = AppDatabase.getDatabase(context)
+                val startOfDay = diaryDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                val endOfDay = diaryDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
+                
+                val calendarRepo = com.neubofy.reality.data.repository.CalendarRepository(context)
+                val calendarEvents = calendarRepo.getEventsInRange(startOfDay, endOfDay)
+                val sessions = db.tapasyaSessionDao().getSessionsForDay(startOfDay, endOfDay)
+                val plannedEvents = db.calendarEventDao().getEventsInRange(startOfDay, endOfDay)
+                
+                val totalPlannedMinutes = calendarEvents.sumOf { (it.endTime - it.startTime) / 60000 }
+                val totalEffectiveMinutes = sessions.sumOf { it.effectiveTimeMs / 60000 }
+                
+                daySummary = DaySummary(
+                    date = diaryDate,
+                    calendarEvents = calendarEvents,
+                    completedSessions = sessions,
+                    tasksDue = fetchedTasks?.dueTasks ?: emptyList(),
+                    tasksCompleted = fetchedTasks?.completedTasks ?: emptyList(),
+                    plannedEvents = plannedEvents,
+                    totalPlannedMinutes = totalPlannedMinutes,
+                    totalEffectiveMinutes = totalEffectiveMinutes
+                )
+            }
+            
+            val details = "${daySummary?.completedSessions?.size ?: 0} sessions, ${daySummary?.calendarEvents?.size ?: 0} events"
+            
+            // Build resultJson
+            val resultJson = JSONObject().apply {
+                put("sessionCount", daySummary?.completedSessions?.size ?: 0)
+                put("eventCount", daySummary?.calendarEvents?.size ?: 0)
+                put("plannedMinutes", daySummary?.totalPlannedMinutes ?: 0)
+                put("effectiveMinutes", daySummary?.totalEffectiveMinutes ?: 0)
+            }.toString()
+            
+            listener.onStepCompleted(STEP_FETCH_SESSIONS, "Sessions Fetched", details)
+            saveStepState(context, diaryDate, STEP_FETCH_SESSIONS, StepProgress.STATUS_COMPLETED, details, resultJson)
+        } catch (e: Exception) {
+            listener.onError(STEP_FETCH_SESSIONS, "Session Fetch Failed: ${e.message}")
+            saveStepState(context, diaryDate, STEP_FETCH_SESSIONS, StepProgress.STATUS_ERROR, e.message)
+        }
+    }
+    
+    private suspend fun step3_calcScreenTime() {
+        val stepData = loadStepData(context, diaryDate, STEP_CALC_SCREEN_TIME)
+        
+        // If completed, restore from saved resultJson
+        if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
+            try {
+                val json = JSONObject(stepData.resultJson)
+                screenTimeMinutes = json.optInt("usedMinutes", 0)
+                screenTimeXpDelta = json.optInt("xpDelta", 0)
+                TerminalLogger.log("Nightly: Step 3 restored from DB (${screenTimeMinutes}m, XP: $screenTimeXpDelta)")
+                return
+            } catch (e: Exception) {
+                TerminalLogger.log("Nightly: Step 3 JSON parse failed, recalculating: ${e.message}")
+            }
+        }
+        
+        listener.onStepStarted(STEP_CALC_SCREEN_TIME, "Calculating Screen Time")
+        saveStepState(context, diaryDate, STEP_CALC_SCREEN_TIME, StepProgress.STATUS_RUNNING, "Calculating...")
+        
+        try {
+            val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
+            val limitMinutes = prefs.getInt("screen_time_limit_minutes", 0)
+            
+            val totalUsedMillis = com.neubofy.reality.utils.UsageUtils.getFocusedAppsUsageForDate(context, diaryDate)
+            screenTimeMinutes = (totalUsedMillis / 60000).toInt()
+            
+            if (limitMinutes > 0) {
+                if (screenTimeMinutes > limitMinutes) {
+                    val over = screenTimeMinutes - limitMinutes
+                    screenTimeXpDelta = -(over * 10).coerceAtMost(500)
+                } else {
+                    val left = limitMinutes - screenTimeMinutes
+                    screenTimeXpDelta = (left * 10).coerceAtMost(500)
+                }
+            }
+            
+            val details = "${screenTimeMinutes}m used (XP: ${if (screenTimeXpDelta >= 0) "+" else ""}$screenTimeXpDelta)"
+            
+            // Build resultJson
+            val resultJson = JSONObject().apply {
+                put("usedMinutes", screenTimeMinutes)
+                put("limitMinutes", limitMinutes)
+                put("xpDelta", screenTimeXpDelta)
+            }.toString()
+            
+            listener.onStepCompleted(STEP_CALC_SCREEN_TIME, "Screen Time Calculated", details)
+            saveStepState(context, diaryDate, STEP_CALC_SCREEN_TIME, StepProgress.STATUS_COMPLETED, details, resultJson)
+        } catch (e: Exception) {
+            listener.onError(STEP_CALC_SCREEN_TIME, "Screen Time Failed: ${e.message}")
+            saveStepState(context, diaryDate, STEP_CALC_SCREEN_TIME, StepProgress.STATUS_ERROR, e.message)
+        }
+    }
+    
+    // Silent version - no UI updates, just populates daySummary for AI context
+    private suspend fun collectDayDataSilently(): DaySummary {
+        return withContext(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(context)
             val startOfDay = diaryDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
             val endOfDay = diaryDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
@@ -477,7 +697,7 @@ class NightlyProtocolExecutor(
             
             val dateString = diaryDate.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             val taskStats = try {
-                com.neubofy.reality.google.GoogleTasksManager.getTasksForDate(context, dateString)
+                fetchedTasks ?: com.neubofy.reality.google.GoogleTasksManager.getTasksForDate(context, dateString)
             } catch (e: Exception) {
                 com.neubofy.reality.google.GoogleTasksManager.TaskStats(emptyList(), emptyList(), 0, 0)
             }
@@ -488,7 +708,7 @@ class NightlyProtocolExecutor(
             val totalPlannedMinutes = calendarEvents.sumOf { (it.endTime - it.startTime) / 60000 }
             val totalEffectiveMinutes = sessions.sumOf { it.effectiveTimeMs / 60000 }
             
-            daySummary = DaySummary(
+            val summary = DaySummary(
                 date = diaryDate,
                 calendarEvents = calendarEvents,
                 completedSessions = sessions,
@@ -498,11 +718,9 @@ class NightlyProtocolExecutor(
                 totalPlannedMinutes = totalPlannedMinutes,
                 totalEffectiveMinutes = totalEffectiveMinutes
             )
+            daySummary = summary
+            summary
         }
-        
-        // Also update the saved details with fresh data
-        val details = "${daySummary?.calendarEvents?.size ?: 0} events, ${daySummary?.completedSessions?.size ?: 0} sessions, ${(daySummary?.tasksDue?.size ?: 0) + (daySummary?.tasksCompleted?.size ?: 0)} tasks"
-        saveStepState(context, diaryDate, STEP_COLLECT_DATA, StepProgress.STATUS_COMPLETED, details)
     }
     
     // Silent version - regenerates questions without UI updates
@@ -574,25 +792,89 @@ class NightlyProtocolExecutor(
         }
     }
     
+    private suspend fun step4_generateQuestions() {
+        val stepData = loadStepData(context, diaryDate, STEP_GENERATE_QUESTIONS)
+        
+        // If completed, restore questions from saved resultJson
+        if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
+            try {
+                val json = JSONObject(stepData.resultJson)
+                val questionsArr = json.optJSONArray("questions")
+                if (questionsArr != null && questionsArr.length() > 0) {
+                    val questions = mutableListOf<String>()
+                    for (i in 0 until questionsArr.length()) {
+                        questions.add(questionsArr.getString(i))
+                    }
+                    generatedQuestions = questions
+                    TerminalLogger.log("Nightly: Step 4 restored ${questions.size} questions from DB")
+                    listener.onQuestionsReady(generatedQuestions)
+                    return
+                }
+            } catch (e: Exception) {
+                TerminalLogger.log("Nightly: Step 4 JSON parse failed, regenerating: ${e.message}")
+            }
+        }
+        
+        // Ensure data is ready (silently)
+        if (daySummary == null) collectDayDataSilently()
+        
+        generateQuestions() 
+    }
+
+    private suspend fun step5_createDiary() {
+        val stepData = loadStepData(context, diaryDate, STEP_CREATE_DIARY)
+        
+        // If completed, restore diaryDocId from saved resultJson
+        if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
+            try {
+                val json = JSONObject(stepData.resultJson)
+                val savedDocId = json.optString("docId", null)
+                val savedUrl = json.optString("docUrl", null)
+                
+                if (savedDocId != null) {
+                    diaryDocId = savedDocId
+                    TerminalLogger.log("Nightly: Step 5 restored diaryDocId from DB: $savedDocId")
+                    // Notify UI with the link
+                    if (savedUrl != null) {
+                        listener.onStepCompleted(STEP_CREATE_DIARY, "Diary Ready", "Restored", savedUrl)
+                    }
+                    return
+                }
+            } catch (e: Exception) {
+                TerminalLogger.log("Nightly: Step 5 JSON parse failed: ${e.message}")
+            }
+        }
+        
+        // Not completed yet - create new diary (no duplicate checking to save API calls)
+        createDiary()
+    }
+
+    // ... (Step 6-12 placeholders remain) ...
+
     private suspend fun generateQuestions() {
         listener.onStepStarted(STEP_GENERATE_QUESTIONS, "Generating reflection questions")
         saveStepState(context, diaryDate, STEP_GENERATE_QUESTIONS, StepProgress.STATUS_RUNNING, "Generating questions...")
         
         val summary = daySummary ?: run {
-            val err = "No day data collected"
-            listener.onError(STEP_GENERATE_QUESTIONS, err)
-            saveStepState(context, diaryDate, STEP_GENERATE_QUESTIONS, StepProgress.STATUS_ERROR, err)
-            return
+             collectDayDataSilently()
+             daySummary ?: run {
+                val err = "No day data collected"
+                listener.onError(STEP_GENERATE_QUESTIONS, err)
+                saveStepState(context, diaryDate, STEP_GENERATE_QUESTIONS, StepProgress.STATUS_ERROR, err)
+                return
+             }
         }
         
         val userIntro = AISettingsActivity.getUserIntroduction(context)
         val nightlyModel = AISettingsActivity.getNightlyModel(context)
         
         if (nightlyModel.isNullOrEmpty()) {
-            val err = "No AI model configured"
-            listener.onError(STEP_GENERATE_QUESTIONS, err)
-            saveStepState(context, diaryDate, STEP_GENERATE_QUESTIONS, StepProgress.STATUS_ERROR, err)
-            return
+             // Fallback to offline questions
+             generatedQuestions = getFallbackQuestions()
+             val details = "Offline (No AI Model)"
+             listener.onStepCompleted(STEP_GENERATE_QUESTIONS, "Questions Ready", details)
+             saveStepState(context, diaryDate, STEP_GENERATE_QUESTIONS, StepProgress.STATUS_COMPLETED, details)
+             return
         }
         
         try {
@@ -604,87 +886,64 @@ class NightlyProtocolExecutor(
             )
             listener.onQuestionsReady(generatedQuestions)
             
-            val details = "${generatedQuestions.size} questions"
-            listener.onStepCompleted(STEP_GENERATE_QUESTIONS, "Questions generated", details)
-            saveStepState(context, diaryDate, STEP_GENERATE_QUESTIONS, StepProgress.STATUS_COMPLETED, details)
+            // Build resultJson for persistence
+            val resultJson = JSONObject().apply {
+                put("questions", JSONArray(generatedQuestions))
+                put("count", generatedQuestions.size)
+                put("source", "ai")
+            }.toString()
+            
+            val details = "${generatedQuestions.size} AI Questions"
+            listener.onStepCompleted(STEP_GENERATE_QUESTIONS, "Questions Ready", details)
+            saveStepState(context, diaryDate, STEP_GENERATE_QUESTIONS, StepProgress.STATUS_COMPLETED, details, resultJson)
             
         } catch (e: Exception) {
             generatedQuestions = getFallbackQuestions()
-            listener.onQuestionsReady(generatedQuestions)
             
-            val details = "Using fallback (AI Error: ${e.message})"
-            listener.onStepCompleted(STEP_GENERATE_QUESTIONS, "Using fallback questions", details)
-            saveStepState(context, diaryDate, STEP_GENERATE_QUESTIONS, StepProgress.STATUS_COMPLETED, details) // Completed with fallback
+            // Save fallback questions too
+            val resultJson = JSONObject().apply {
+                put("questions", JSONArray(generatedQuestions))
+                put("count", generatedQuestions.size)
+                put("source", "fallback")
+                put("error", e.message)
+            }.toString()
+            
+            val details = "Fallback (AI Error: ${e.message})"
+            listener.onStepCompleted(STEP_GENERATE_QUESTIONS, "Questions Ready", details)
+            saveStepState(context, diaryDate, STEP_GENERATE_QUESTIONS, StepProgress.STATUS_COMPLETED, details, resultJson)
         }
     }
-    
-    private suspend fun checkDiaryExists(): Boolean {
-        listener.onStepStarted(STEP_CHECK_DIARY, "Checking for existing diary")
-        saveStepState(context, diaryDate, STEP_CHECK_DIARY, StepProgress.STATUS_RUNNING, "Checking Drive...")
-        
-        val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
-        val diaryFolderId = prefs.getString("diary_folder_id", null)
-        
-        if (diaryFolderId.isNullOrEmpty()) {
-            val err = "Diary folder not configured"
-            listener.onError(STEP_CHECK_DIARY, err)
-            saveStepState(context, diaryDate, STEP_CHECK_DIARY, StepProgress.STATUS_ERROR, err)
-            return false
-        }
-        
-        val diaryTitle = getDiaryTitle()
-        
-        return withContext(Dispatchers.IO) {
-            try {
-                val existingFiles = GoogleDriveManager.listFilesInFolder(context, diaryFolderId)
-                val matchingFile = existingFiles.find { it.name == diaryTitle }
-                
-                if (matchingFile != null) {
-                    // FOUND! Save the ID and mark as complete
-                    diaryDocId = matchingFile.id
-                    
-                    // Save to prefs so it persists
-                    prefs.edit()
-                        .putString(getDiaryDocIdKey(diaryDate), matchingFile.id)
-                        .putString(KEY_DIARY_DOC_ID, matchingFile.id)
-                        .apply()
-                    
-                    listener.onStepCompleted(STEP_CHECK_DIARY, "Diary Found", diaryTitle)
-                    saveStepState(context, diaryDate, STEP_CHECK_DIARY, StepProgress.STATUS_COMPLETED, "Found: $diaryTitle")
-                    
-                    // Mark CREATE step as completed too since diary exists
-                    saveStepState(context, diaryDate, STEP_CREATE_DIARY, StepProgress.STATUS_COMPLETED, diaryTitle)
-                    
-                    true
-                } else {
-                    listener.onStepCompleted(STEP_CHECK_DIARY, "No existing diary")
-                    saveStepState(context, diaryDate, STEP_CHECK_DIARY, StepProgress.STATUS_COMPLETED, "Not found (Will create)")
-                    false
-                }
-            } catch (e: Exception) {
-                listener.onStepCompleted(STEP_CHECK_DIARY, "Check failed, will create new")
-                saveStepState(context, diaryDate, STEP_CHECK_DIARY, StepProgress.STATUS_COMPLETED, "Check failed (Offline?)")
-                false
-            }
-        }
-    }
-    
+
     private suspend fun createDiary() {
         listener.onStepStarted(STEP_CREATE_DIARY, "Creating diary document")
         saveStepState(context, diaryDate, STEP_CREATE_DIARY, StepProgress.STATUS_RUNNING, "Creating...")
         
-        val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
-        val diaryFolderId = prefs.getString("diary_folder_id", null)
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        var diaryFolderId = prefs.getString("diary_folder_id", null)
+        val realityFolderId = prefs.getString("reality_folder_id", null)
+
+        // Dynamic Folder Resolution for Diary
+        if (diaryFolderId.isNullOrEmpty() && !realityFolderId.isNullOrEmpty()) {
+            val credential = GoogleAuthManager.getGoogleAccountCredential(context)
+            if (credential != null) {
+                val driveService = Drive.Builder(GoogleAuthManager.getHttpTransport(), GoogleAuthManager.getJsonFactory(), credential).setApplicationName("Reality").build()
+                val folders = withContext(Dispatchers.IO) {
+                    val result = driveService.files().list()
+                        .setQ("'$realityFolderId' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false")
+                        .setOrderBy("name")
+                        .setFields("files(id, name)")
+                        .execute()
+                    result.files ?: emptyList<com.google.api.services.drive.model.File>()
+                }
+                if (folders.isNotEmpty()) {
+                    diaryFolderId = folders[0].id // 1st folder for Diary
+                    TerminalLogger.log("Nightly: Dynamic Diary folder resolved: ${folders[0].name}")
+                }
+            }
+        }
         
         if (diaryFolderId.isNullOrEmpty()) {
             val err = "Diary folder not configured"
-            listener.onError(STEP_CREATE_DIARY, err)
-            saveStepState(context, diaryDate, STEP_CREATE_DIARY, StepProgress.STATUS_ERROR, err)
-            return
-        }
-        
-        val summary = daySummary ?: run {
-             val err = "No day data available"
             listener.onError(STEP_CREATE_DIARY, err)
             saveStepState(context, diaryDate, STEP_CREATE_DIARY, StepProgress.STATUS_ERROR, err)
             return
@@ -692,22 +951,111 @@ class NightlyProtocolExecutor(
         
         withContext(Dispatchers.IO) {
             try {
-                val diaryTitle = getDiaryTitle()
-                val docId = GoogleDocsManager.createDocument(context, diaryTitle)
+                // Prepare content using Template
+                // 1. Get Template
+                val template = prefs.getString("template_diary", DEFAULT_DIARY_TEMPLATE) ?: DEFAULT_DIARY_TEMPLATE
                 
-                GoogleDriveManager.moveFileToFolder(context, docId, diaryFolderId)
+                // 2. Format Variables
+                val dateStr = diaryDate.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy"))
                 
+                // Ensure questions are available by loading from Step 4 result if memory is empty
+                if (generatedQuestions.isEmpty()) {
+                    val step4Data = loadStepData(context, diaryDate, STEP_GENERATE_QUESTIONS)
+                    if (step4Data.status == StepProgress.STATUS_COMPLETED && step4Data.resultJson != null) {
+                        try {
+                            val json = JSONObject(step4Data.resultJson)
+                            val questionsArr = json.optJSONArray("questions")
+                            if (questionsArr != null) {
+                                val questions = mutableListOf<String>()
+                                for (i in 0 until questionsArr.length()) questions.add(questionsArr.getString(i))
+                                generatedQuestions = questions
+                            }
+                        } catch (e: Exception) { /* ignore */ }
+                    }
+                }
+                
+                // If STILL empty, use fallbacks
+                if (generatedQuestions.isEmpty()) {
+                    generatedQuestions = getFallbackQuestions()
+                }
+                
+                val summary = daySummary ?: run {
+                     collectDayDataSilently()
+                     daySummary!!
+                }
+                
+                // Use unified builder
                 val content = buildDiaryContent(summary, generatedQuestions)
-                GoogleDocsManager.appendText(context, docId, content)
                 
+                val diaryTitle = getDiaryTitle()
+                
+                // 4. Search or Create
+                // Check if doc ID is already saved
+                var docId = prefs.getString(getDiaryDocIdKey(diaryDate), null)
+                
+                // If not in prefs, search in folder
+                if (docId == null) {
+                    docId = GoogleDriveManager.searchFile(context, diaryTitle, diaryFolderId)
+                    if (docId != null) {
+                         TerminalLogger.log("Nightly: Found existing diary '$diaryTitle' (ID: $docId)")
+                         // Save recovered ID IMMEDIATELY
+                         prefs.edit().putString(getDiaryDocIdKey(diaryDate), docId).apply()
+                         NightlyRepository.saveDiaryDocId(context, diaryDate, docId)
+                    }
+                }
+                
+                val processedUrl: String
+                 
+                if (docId != null) {
+                    // Update existing
+                    // Logic: If content is just template (contains {data} or {stats}) or very short, overwrite/append.
+                    val currentContent = GoogleDocsManager.getDocumentContent(context, docId) ?: ""
+                    
+                    // Check if "raw template" exists in content
+                    val hasRawTemplate = currentContent.contains("{data}") || currentContent.contains("{questions}")
+                    
+                    if (currentContent.length < 50 || hasRawTemplate) {
+                         // Append (or ideally replace, but API is append-only for now)
+                         GoogleDocsManager.appendText(context, docId, "\n\n" + content)
+                         TerminalLogger.log("Nightly: Injected data into existing diary (was empty or raw).")
+                    } else {
+                         TerminalLogger.log("Nightly: Diary exists and seems populated. Skipping injection.")
+                    }
+                    processedUrl = "https://docs.google.com/document/d/$docId"
+                     
+                } else {
+                    // Create New
+                    docId = GoogleDocsManager.createDocument(context, diaryTitle)
+                    if (docId != null) {
+                        GoogleDriveManager.moveFileToFolder(context, docId, diaryFolderId)
+                        GoogleDocsManager.appendText(context, docId, content)
+                        processedUrl = "https://docs.google.com/document/d/$docId"
+                        
+                        // Save ID to *both* keys for safety
+                        prefs.edit()
+                            .putString(getDiaryDocIdKey(diaryDate), docId)
+                            .putString(KEY_DIARY_DOC_ID, docId) // Legacy/Current key
+                            .apply()
+                        
+                        // Save to Repository for Step 11 recovery
+                        NightlyRepository.saveDiaryDocId(context, diaryDate, docId)
+                    } else {
+                         throw IllegalStateException("Failed to create document ID")
+                    }
+                }
+                
+                // 5. Finish
                 diaryDocId = docId
-                prefs.edit()
-                    .putString(getDiaryDocIdKey(diaryDate), docId)
-                    .putString(KEY_DIARY_DOC_ID, docId) // Legacy key for backwards compatibility
-                    .apply()
                 
-                listener.onStepCompleted(STEP_CREATE_DIARY, "Diary created", diaryTitle)
-                saveStepState(context, diaryDate, STEP_CREATE_DIARY, StepProgress.STATUS_COMPLETED, diaryTitle)
+                // Build resultJson for persistence
+                val resultJson = JSONObject().apply {
+                    put("docId", docId)
+                    put("docUrl", processedUrl)
+                    put("title", diaryTitle)
+                }.toString()
+                
+                listener.onStepCompleted(STEP_CREATE_DIARY, "Diary Ready", diaryTitle, processedUrl)
+                saveStepState(context, diaryDate, STEP_CREATE_DIARY, StepProgress.STATUS_COMPLETED, diaryTitle, resultJson, processedUrl) 
                 
             } catch (e: Exception) {
                 listener.onError(STEP_CREATE_DIARY, e.message ?: "Failed to create diary")
@@ -722,8 +1070,33 @@ class NightlyProtocolExecutor(
         
         return withContext(Dispatchers.IO) {
             if (diaryDocId == null) {
-                saveStepState(context, diaryDate, STEP_READ_DIARY, StepProgress.STATUS_ERROR, "No Doc ID")
-                throw IllegalStateException("No diary ID found")
+                // 1. Try Repository (New source of truth)
+                diaryDocId = NightlyRepository.getDiaryDocId(context, diaryDate)
+                
+                // 2. FALLBACK: Try SharedPreferences
+                if (diaryDocId == null) {
+                    diaryDocId = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                        .getString(getDiaryDocIdKey(diaryDate), null)
+                }
+                
+                // 3. DOUBLE FALLBACK: Search in Drive
+                if (diaryDocId == null) {
+                     val diaryTitle = getDiaryTitle()
+                     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                     val folderId = prefs.getString("diary_folder_id", null)
+                     if (folderId != null) {
+                         diaryDocId = GoogleDriveManager.searchFile(context, diaryTitle, folderId)
+                         if (diaryDocId != null) {
+                             prefs.edit().putString(getDiaryDocIdKey(diaryDate), diaryDocId).apply()
+                             NightlyRepository.saveDiaryDocId(context, diaryDate, diaryDocId)
+                         }
+                     }
+                }
+
+                if (diaryDocId == null) {
+                    saveStepState(context, diaryDate, STEP_READ_DIARY, StepProgress.STATUS_ERROR, "No Doc ID")
+                    throw IllegalStateException("No diary ID found")
+                }
             }
             
             try {
@@ -743,185 +1116,549 @@ class NightlyProtocolExecutor(
     /**
      * Step 7: Calculate XP, Streak, and Level
      */
-    private suspend fun calculateReflection(diaryContent: String, qualityXP: Int) {
-        listener.onStepStarted(STEP_CALCULATE_XP, "Calculating XP & Streak")
-        saveStepState(context, diaryDate, STEP_CALCULATE_XP, StepProgress.STATUS_RUNNING, "Calculating...")
+    private suspend fun step6_analyzeReflection() {
+        val stepData = loadStepData(context, diaryDate, STEP_ANALYZE_REFLECTION)
+        
+        // If completed, restore reflectionXp from saved resultJson
+        if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
+            try {
+                val json = JSONObject(stepData.resultJson)
+                val accepted = json.optBoolean("accepted", false)
+                if (accepted) {
+                    reflectionXp = json.optInt("xp", 0)
+                    TerminalLogger.log("Nightly: Step 6 restored reflectionXp from DB: $reflectionXp")
+                    return
+                }
+            } catch (e: Exception) {
+                TerminalLogger.log("Nightly: Step 6 JSON parse failed: ${e.message}")
+            }
+        }
+        
+        listener.onStepStarted(STEP_ANALYZE_REFLECTION, "Analyzing Reflection")
+        saveStepState(context, diaryDate, STEP_ANALYZE_REFLECTION, StepProgress.STATUS_RUNNING, "Reading Diary...")
         
         try {
+            // 1. Read Diary
+            val content = readDiaryContent()
+            if (content.isEmpty()) {
+                throw IllegalStateException("Diary is empty")
+            }
+            
+            saveStepState(context, diaryDate, STEP_ANALYZE_REFLECTION, StepProgress.STATUS_RUNNING, "AI Analyzing...")
+            
+            // 2. AI Analysis
+            val userIntro = AISettingsActivity.getUserIntroduction(context) ?: ""
+            val nightlyModel = AISettingsActivity.getNightlyModel(context) ?: "Gemini: gemini-pro"
+            
+            val result = NightlyAIHelper.analyzeReflection(
+                context = context,
+                modelString = nightlyModel,
+                userIntroduction = userIntro,
+                diaryContent = content
+            )
+            
+            if (result.satisfied) {
+                // 3. Success
+                reflectionXp = result.xp
+                val details = "Accepted! XP: ${result.xp}. \"${result.feedback}\""
+                
+                // Build resultJson for persistence
+                val resultJson = JSONObject().apply {
+                    put("accepted", true)
+                    put("xp", result.xp)
+                    put("feedback", result.feedback)
+                    put("content", content) // Store input for "Completed" check
+                }.toString()
+                
+                listener.onStepCompleted(STEP_ANALYZE_REFLECTION, "Reflection Accepted", details)
+                saveStepState(context, diaryDate, STEP_ANALYZE_REFLECTION, StepProgress.STATUS_COMPLETED, details, resultJson)
+                    
+            } else {
+                // 4. Rejection - Mark as ERROR so Retry button appears
+                // Don't save resultJson so step doesn't appear "completed"
+                val errorDetails = "Rejected: ${result.feedback}"
+                saveStepState(context, diaryDate, STEP_ANALYZE_REFLECTION, StepProgress.STATUS_ERROR, errorDetails)
+                listener.onAnalysisFeedback(result.feedback)
+            }
+            
+        } catch (e: Exception) {
+            listener.onError(STEP_ANALYZE_REFLECTION, "Analysis Failed: ${e.message}")
+            saveStepState(context, diaryDate, STEP_ANALYZE_REFLECTION, StepProgress.STATUS_ERROR, e.message)
+        }
+    }
+
+    private suspend fun step7_finalizeXp() {
+        val stepData = loadStepData(context, diaryDate, STEP_FINALIZE_XP)
+        if (stepData.status == StepProgress.STATUS_COMPLETED) return
+        
+        listener.onStepStarted(STEP_FINALIZE_XP, "Finalizing XP & Streak")
+        saveStepState(context, diaryDate, STEP_FINALIZE_XP, StepProgress.STATUS_RUNNING, "Calculating...")
+        
+        try {
+            // Ensure data available
             val summary = daySummary ?: run {
-                collectDayData()
-                daySummary ?: run {
-                    listener.onStepCompleted(STEP_CALCULATE_XP, "Calculating XP", "No data")
-                    return
+                collectDayDataSilently()
+                daySummary ?: throw IllegalStateException("No day data available")
+            }
+            
+            // Get Reflection XP from Step 6 resultJson
+            if (reflectionXp == 0) {
+                val step6Data = loadStepData(context, diaryDate, STEP_ANALYZE_REFLECTION)
+                if (step6Data.resultJson != null) {
+                    try {
+                        val json = JSONObject(step6Data.resultJson)
+                        reflectionXp = json.optInt("xp", 0)
+                    } catch (e: Exception) { /* ignore */ }
+                }
+            }
+            val finalReflectionXp = reflectionXp
+            
+            // Get Screen Time XP delta from Step 3 resultJson
+            if (screenTimeXpDelta == 0) {
+                val step3Data = loadStepData(context, diaryDate, STEP_CALC_SCREEN_TIME)
+                if (step3Data.resultJson != null) {
+                    try {
+                        val json = JSONObject(step3Data.resultJson)
+                        screenTimeXpDelta = json.optInt("xpDelta", 0)
+                        screenTimeMinutes = json.optInt("usedMinutes", 0)
+                    } catch (e: Exception) { /* ignore */ }
                 }
             }
             
-            val tasksCompleted = summary.tasksCompleted.size
-            val tasksIncomplete = summary.tasksDue.size - tasksCompleted
+            val stBonus = if (screenTimeXpDelta > 0) screenTimeXpDelta else 0
+            val stPenalty = if (screenTimeXpDelta < 0) -screenTimeXpDelta else 0
             
+            // Task Stats
+            val tasksCompleted = summary.tasksCompleted.size
+            val tasksIncomplete = summary.tasksDue.size
+            
+            // Session Stats
             var sessionsAttended = 0
             var sessionsMissed = 0
             var earlyStarts = 0
-            
             for (event in summary.calendarEvents) {
-                val eventStart = event.startTime
-                val eventEnd = event.endTime
-                val matchingSession = summary.completedSessions.find { session ->
-                    session.startTime < eventEnd && session.endTime > eventStart
+                val matchingSession = summary.completedSessions.find { 
+                    it.startTime < event.endTime && it.endTime > event.startTime 
                 }
-                
                 if (matchingSession != null) {
                     sessionsAttended++
-                    if (matchingSession.startTime <= eventStart && 
-                        matchingSession.startTime >= eventStart - 5 * 60 * 1000) {
-                        earlyStarts++
-                    }
-                } else {
-                    if (eventEnd < System.currentTimeMillis()) {
-                        sessionsMissed++
-                    }
+                    if (matchingSession.startTime <= event.startTime && matchingSession.startTime >= event.startTime - 300000) earlyStarts++
+                } else if (event.endTime < System.currentTimeMillis()) {
+                    sessionsMissed++
                 }
             }
+
+            // Calculate Base Diary XP (Fixed 50 for completion + Quality)
+            val totalDiaryXp = 50 + finalReflectionXp
             
-            val diaryXP = 50 + qualityXP
-            
-            val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
-            val screenTimeLimit = prefs.getInt("screen_time_limit_minutes", 0)
-            var bonusXP = 0
-            var penaltyXP = 0
-            
-            if (screenTimeLimit > 0) {
-                val usageMillis = com.neubofy.reality.utils.UsageUtils.getFocusedAppsUsage(context)
-                val todayUsageMinutes = (usageMillis / 60000).toInt()
-                val difference = screenTimeLimit - todayUsageMinutes
-                if (difference > 0) {
-                    bonusXP = (difference * 10).coerceAtMost(500)
-                } else if (difference < 0) {
-                    penaltyXP = (-difference * 10).coerceAtMost(500)
-                }
-            }
-            
-            val studyPercent = if (summary.totalPlannedMinutes > 0) {
-                ((summary.totalEffectiveMinutes * 100) / summary.totalPlannedMinutes).toInt()
-            } else {
-                0
-            }
-            
-            XPManager.performNightlyReflection(
-                context = context,
-                tasksCompleted = tasksCompleted,
-                tasksIncomplete = tasksIncomplete.coerceAtLeast(0),
-                sessionsAttended = sessionsAttended,
-                sessionsMissed = sessionsMissed,
-                earlyStarts = earlyStarts,
-                diaryXP = diaryXP,
-                screenTimeBonus = bonusXP,
-                screenTimePenalty = penaltyXP,
-                studyPercent = studyPercent,
-                effectiveStudyMinutes = summary.totalEffectiveMinutes.toInt()
+            // Commit to Database using New XPManager
+            val taskXpResult = XPManager.finalizeNightlyTaskXP(
+                context, 
+                diaryDate.toString(), 
+                summary.tasksCompleted, 
+                summary.tasksDue
             )
+            // Session and Screen Time XP are calculated live/dynamically, so we don't overwrite them here.
             
-            XPManager.cleanupData(context)
+            XPManager.updateDailyStats(
+                context = context, 
+                date = diaryDate.toString(), 
+                plannedMins = summary.totalPlannedMinutes,
+                effectiveMins = summary.totalEffectiveMinutes
+            ) { current ->
+                current.copy(
+                    reflectionXP = totalDiaryXp,
+                    screenTimeXP = stBonus,
+                    penaltyXP = stPenalty
+                )
+            }
             
-            val details = "XP: $diaryXP (Qual: $qualityXP) + $bonusXP bonus"
-            listener.onStepCompleted(STEP_CALCULATE_XP, "XP Calculated", details)
-            saveStepState(context, diaryDate, STEP_CALCULATE_XP, StepProgress.STATUS_COMPLETED, details)
+            // Legacy Call (Stubbed/Removed)
+            // XPManager.performNightlyReflection(...)
             
-            // Also update Step 4 (Analysis) visible card to show XP is done
-            saveStepState(context, diaryDate, STEP_ANALYZE_REFLECTION, StepProgress.STATUS_COMPLETED, "Analysis Verified & XP Added")
+            val totalXp = totalDiaryXp + taskXpResult // + other existing XP (not added here)
+            val details = "XP Finalized: +$totalXp"
+            
+            // Build resultJson
+            val resultJson = JSONObject().apply {
+                put("diaryXp", totalDiaryXp)
+                put("reflectionXp", finalReflectionXp)
+                put("screenTimeBonus", stBonus)
+                put("screenTimePenalty", stPenalty)
+                put("tasksCompleted", tasksCompleted)
+                put("sessionsAttended", sessionsAttended)
+                put("totalXp", totalXp)
+            }.toString()
+            
+            listener.onStepCompleted(STEP_FINALIZE_XP, "Day Complete", details)
+            saveStepState(context, diaryDate, STEP_FINALIZE_XP, StepProgress.STATUS_COMPLETED, details, resultJson)
             
         } catch (e: Exception) {
-            listener.onError(STEP_CALCULATE_XP, e.message ?: "XP Calc failed")
-            saveStepState(context, diaryDate, STEP_CALCULATE_XP, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(STEP_FINALIZE_XP, "XP Finalization Failed: ${e.message}")
+            saveStepState(context, diaryDate, STEP_FINALIZE_XP, StepProgress.STATUS_ERROR, e.message)
         }
     }
 
     private suspend fun createPlanDoc() {
-        // Check if already done
-        val state = loadStepState(context, diaryDate, STEP_CREATE_PLAN_DOC)
-        if (state.status == StepProgress.STATUS_COMPLETED) return
-        
         listener.onStepStarted(STEP_CREATE_PLAN_DOC, "Creating Plan Document")
         saveStepState(context, diaryDate, STEP_CREATE_PLAN_DOC, StepProgress.STATUS_RUNNING, "Creating...")
         
         try {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            var planFolderId = prefs.getString("plan_folder_id", null) 
+            val diaryFolderId = prefs.getString("diary_folder_id", null)
+            val realityFolderId = prefs.getString("reality_folder_id", null)
+
+            // Dynamic Folder Resolution if not set
+            if (planFolderId.isNullOrEmpty() && !realityFolderId.isNullOrEmpty()) {
+                val credential = GoogleAuthManager.getGoogleAccountCredential(context)
+                if (credential != null) {
+                    val driveService = Drive.Builder(GoogleAuthManager.getHttpTransport(), GoogleAuthManager.getJsonFactory(), credential).setApplicationName("Reality").build()
+                    val folders = withContext(Dispatchers.IO) {
+                        val result = driveService.files().list()
+                            .setQ("'$realityFolderId' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false")
+                            .setOrderBy("name")
+                            .setFields("files(id, name)")
+                            .execute()
+                        result.files ?: emptyList<com.google.api.services.drive.model.File>()
+                    }
+                    if (folders.size >= 2) {
+                        planFolderId = folders[1].id // 2nd folder for Plans
+                        TerminalLogger.log("Nightly: Dynamic Plan folder resolved: ${folders[1].name}")
+                    }
+                }
+            }
             
-            // Check if already exists in prefs
+            if (planFolderId.isNullOrEmpty()) planFolderId = diaryFolderId // Fallback to diary if still null
+            
+            val title = "Plan - ${diaryDate.plusDays(1).format(DateTimeFormatter.ofPattern("MMM dd, yyyy"))}"
+            val template = prefs.getString("template_plan", DEFAULT_PLAN_TEMPLATE) ?: DEFAULT_PLAN_TEMPLATE
+            // Handle common variable replacements just in case
+            val content = template
+                .replace("{date}", diaryDate.plusDays(1).format(DateTimeFormatter.ofPattern("EEEE, MMM d")))
+                .replace("{data}", "[Plan Details]") // Placeholder if user uses {data} here too
+            
+            // Search or Create Logic
             var planId = prefs.getString(getPlanDocIdKey(diaryDate), null)
             
             if (planId == null) {
-                // Create New
-                val title = "Plan - ${diaryDate.plusDays(1).format(DateTimeFormatter.ofPattern("MMM dd, yyyy"))}"
-                val template = DEFAULT_PLAN_TEMPLATE.replace("{date}", diaryDate.plusDays(1).toString())
-                
-                planId = GoogleDocsManager.createDocument(context, title)
-                GoogleDocsManager.appendText(context, planId, template)
-                
-                // Move to correct folder if configured (use diary folder for now)
-                val folderId = prefs.getString("diary_folder_id", null)
-                if (!folderId.isNullOrEmpty()) {
-                    GoogleDriveManager.moveFileToFolder(context, planId, folderId)
-                }
-                
-                prefs.edit().putString(getPlanDocIdKey(diaryDate), planId).apply()
+                // Try search in folder
+                 if (planFolderId != null) {
+                    planId = GoogleDriveManager.searchFile(context, title, planFolderId)
+                    if (planId != null) {
+                        TerminalLogger.log("Nightly: Found existing plan '$title' (ID: $planId)")
+                        prefs.edit().putString(getPlanDocIdKey(diaryDate), planId).apply()
+                        NightlyRepository.savePlanDocId(context, diaryDate, planId)
+                    }
+                 }
             }
             
-            listener.onStepCompleted(STEP_CREATE_PLAN_DOC, "Plan Doc Ready", "Ready to Edit")
-            saveStepState(context, diaryDate, STEP_CREATE_PLAN_DOC, StepProgress.STATUS_COMPLETED, "Ready to Edit")
+            val docUrl: String
+            
+            if (planId != null) {
+                // Check content if recovered
+                val currentContent = GoogleDocsManager.getDocumentContent(context, planId) ?: ""
+                val hasRawTemplate = currentContent.contains("{date}") || currentContent.contains("{data}")
+                
+                if (currentContent.length < 50 || hasRawTemplate) {
+                     GoogleDocsManager.appendText(context, planId, "\n" + content)
+                     TerminalLogger.log("Nightly: Injected template into existing empty/raw plan.")
+                }
+                docUrl = "https://docs.google.com/document/d/$planId"
+                
+            } else {
+                // Create New
+                planId = GoogleDocsManager.createDocument(context, title)
+                if (planId != null) {
+                    if (planFolderId != null) {
+                        GoogleDriveManager.moveFileToFolder(context, planId, planFolderId)
+                    }
+                    GoogleDocsManager.appendText(context, planId, content)
+                    docUrl = "https://docs.google.com/document/d/$planId"
+                    
+                    prefs.edit().putString(getPlanDocIdKey(diaryDate), planId).apply()
+                    NightlyRepository.savePlanDocId(context, diaryDate, planId)
+                } else {
+                    throw IllegalStateException("Failed to create Plan Doc ID")
+                }
+            }
+            
+            // Build resultJson for persistence
+            val resultJson = JSONObject().apply {
+                put("docId", planId)
+                put("docUrl", docUrl)
+                put("title", title)
+            }.toString()
+            
+            listener.onStepCompleted(STEP_CREATE_PLAN_DOC, "Plan Doc Ready", "Ready to Edit", docUrl)
+            saveStepState(context, diaryDate, STEP_CREATE_PLAN_DOC, StepProgress.STATUS_COMPLETED, "Ready to Edit", resultJson, docUrl)
             
         } catch (e: Exception) {
             listener.onError(STEP_CREATE_PLAN_DOC, "Failed to create plan: ${e.message}")
             saveStepState(context, diaryDate, STEP_CREATE_PLAN_DOC, StepProgress.STATUS_ERROR, e.message)
-            throw e
+            // Throwing might be aggressive if user just wants to retry
         }
     }
     
     private suspend fun processPlanToTasks() {
-        val state = loadStepState(context, diaryDate, STEP_PROCESS_PLAN)
-        if (state.status == StepProgress.STATUS_COMPLETED) return
+        val stepData = loadStepData(context, diaryDate, STEP_PROCESS_PLAN)
+        if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) return
         
-        listener.onStepStarted(STEP_PROCESS_PLAN, "Processing Plan to Tasks")
+        listener.onStepStarted(STEP_PROCESS_PLAN, "Processing Plan to Tasks & Events")
         saveStepState(context, diaryDate, STEP_PROCESS_PLAN, StepProgress.STATUS_RUNNING, "Processing...")
         
         try {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val planId = prefs.getString(getPlanDocIdKey(diaryDate), null) ?: throw IllegalStateException("No Plan ID")
-            
-            // Read content
-            val content = GoogleDocsManager.getDocumentContent(context, planId) ?: ""
-            
-            // Simple Parse: Look for lines starting with "- [ ]" in "Top Priorities"
-            // (This is a simplified implementation - in real world we'd parse sections strictly)
-            val regex = Regex("- \\[ \\] (.*)")
-            val matches = regex.findAll(content)
-            var tasksCreated = 0
-            
-            // For now, we mock the creation or log it, as per instructions "fill data... same way creation"
-            // If we have GoogleTasksManager write access:
-            /*
-            matches.forEach { match ->
-                 val taskTitle = match.groupValues[1].trim()
-                 if (taskTitle.isNotEmpty()) {
-                     GoogleTasksManager.createTask(context, taskTitle, diaryDate.plusDays(1))
-                     tasksCreated++
-                 }
+            // Get JSON from Step 9
+            val step9Data = loadStepData(context, diaryDate, STEP_GENERATE_PLAN)
+            if (step9Data.resultJson == null) {
+                throw IllegalStateException("Step 9 not completed. Run AI Plan first.")
             }
-            */
-            // Since I cannot verify Google Tasks write permissions fully in this context, 
-            // I will assume for now we just verify it was read. 
-            // Real implementation would go here.
             
-            tasksCreated = matches.count()
-            val details = "Processed $tasksCreated items"
+            val step9Json = JSONObject(step9Data.resultJson)
+            val tasks = step9Json.optJSONArray("tasks") ?: JSONArray()
+            val events = step9Json.optJSONArray("events") ?: JSONArray()
+            val wakeupTime = step9Json.optString("wakeupTime", "")
+            
+            val createdItems = JSONArray() // Moved up
+            val nextDay = diaryDate.plusDays(1)
+            
+            // Auto-Set Alarm Logic
+            // Auto-Set Alarm Logic (Smart - Internal AlarmManager)
+            if (wakeupTime.isNotEmpty()) {
+                val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
+                val autoAlarm = prefs.getBoolean("auto_set_alarm", false)
+                
+                if (autoAlarm) {
+                    try {
+                        val parts = wakeupTime.split(":")
+                        if (parts.size == 2) {
+                            val hour = parts[0].toInt()
+                            val min = parts[1].toInt()
+                            
+                            // Calculate alarm time for TOMORROW
+                            val alarmTime = nextDay.atTime(hour, min)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toInstant()
+                                .toEpochMilli()
+                                
+                            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager
+                            
+                            if (alarmManager != null) {
+                                // Check permission for Android 12+
+                                val canSchedule = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                                    alarmManager.canScheduleExactAlarms()
+                                } else {
+                                    true
+                                }
+                                
+                                if (canSchedule) {
+                                    val alarmIntent = android.content.Intent(context, com.neubofy.reality.receivers.ReminderReceiver::class.java).apply {
+                                        putExtra("id", "nightly_wakeup") // Constant ID allows rescheduling!
+                                        putExtra("title", "Wake Up (Reality Plan)")
+                                        putExtra("mins", 0)
+                                        putExtra("source", "NIGHTLY")
+                                        putExtra("snoozeEnabled", true)
+                                        putExtra("autoSnoozeEnabled", true)
+                                    }
+                                    
+                                    val pendingIntent = android.app.PendingIntent.getBroadcast(
+                                        context,
+                                        777, // Constant Request Code
+                                        alarmIntent,
+                                        android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                                    )
+                                    
+                                    // Set Exact Alarm (Idle safe)
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                        alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, alarmTime, pendingIntent)
+                                    } else {
+                                        alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, alarmTime, pendingIntent)
+                                    }
+                                    
+                                    // 2. VISIBILITY: Save to CustomReminders so it shows in the App UI
+                                    try {
+                                        val prefsLoader = com.neubofy.reality.utils.SavedPreferencesLoader(context)
+                                        val reminders = prefsLoader.loadCustomReminders()
+                                        
+                                        // Remove existing nightly wakeup if present (to update it)
+                                        reminders.removeAll { it.id == "nightly_wakeup" }
+                                        
+                                        // Add updated one
+                                        reminders.add(com.neubofy.reality.data.CustomReminder(
+                                            id = "nightly_wakeup",
+                                            title = "Wake Up (AI Plan)",
+                                            hour = hour,
+                                            minute = min,
+                                            isEnabled = true,
+                                            repeatDays = emptyList(), // Runs everyday (updated daily by AI)
+                                            snoozeEnabled = true,
+                                            autoSnoozeEnabled = true,
+                                            redirectUrl = "nightly_plan" // Special tag to open plan?
+                                        ))
+                                        
+                                        prefsLoader.saveCustomReminders(reminders)
+                                        TerminalLogger.log("Nightly: Saved alarm to UI list (CustomReminders)")
+                                        
+                                    } catch (e: Exception) {
+                                        TerminalLogger.log("Nightly: Failed to save alarm to UI - ${e.message}")
+                                    }
+                                    
+                                    TerminalLogger.log("Nightly: Smart Alarm scheduled for $wakeupTime")
+                                    createdItems.put(JSONObject().apply {
+                                        put("type", "ALARM")
+                                        put("time", wakeupTime)
+                                        put("status", "SUCCESS (Smart Internal + UI)")
+                                    })
+                                } else {
+                                    TerminalLogger.log("Nightly: Alarm permission missing")
+                                    createdItems.put(JSONObject().apply {
+                                        put("type", "ALARM")
+                                        put("time", wakeupTime)
+                                        put("status", "FAILED: Permission Missing")
+                                        put("warning", "Please grant Alarm permission in Settings.")
+                                    })
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        TerminalLogger.log("Nightly: Failed to set alarm - ${e.message}")
+                        createdItems.put(JSONObject().apply {
+                            put("type", "ALARM")
+                            put("time", wakeupTime)
+                            put("status", "FAILED: ${e.message}")
+                        })
+                    }
+                }
+            }
+            
+            var tasksCreated = 0
+            var eventsCreated = 0
+            // val nextDay = diaryDate.plusDays(1) // Moved up
+            
+            // For feedback/debug (Moved declaration up)
+            
+            // Load Task List Configs for mapping names to IDs
+            val listConfigs = com.neubofy.reality.data.db.AppDatabase.getDatabase(context).taskListConfigDao().getAll()
+            
+            // Create Google Tasks
+            for (i in 0 until tasks.length()) {
+                val taskLog = JSONObject()
+                try {
+                    val taskObj = tasks.getJSONObject(i)
+                    val title = taskObj.optString("title", "").trim()
+                    val notes = taskObj.optString("notes", null)
+                    val rawListId = taskObj.optString("taskListId", "@default")
+                    val startTime = taskObj.optString("startTime", null)
+                    
+                    taskLog.put("inputTitle", title)
+                    taskLog.put("inputStartTime", startTime)
+                    taskLog.put("inputList", rawListId)
+                    
+                    if (title.isNotEmpty()) {
+                        // Resolve List ID (AI might return the Name instead of ID)
+                        var finalTaskListId = "@default"
+                        val matchedConfig = listConfigs.find { 
+                            it.googleListId == rawListId || it.displayName.equals(rawListId, ignoreCase = true) 
+                        }
+                        
+                        if (matchedConfig != null) {
+                            finalTaskListId = matchedConfig.googleListId
+                        } else if (rawListId != "@default" && rawListId.isNotEmpty()) {
+                            // AI returned an unknown list ID/Name (e.g. "inbox") -> Fallback to Default to avoid API Error
+                            taskLog.put("warning", "List '$rawListId' not found. Used Default.")
+                            TerminalLogger.log("Nightly: List '$rawListId' not found. Fallback to @default.")
+                            finalTaskListId = "@default" 
+                        }
+                        
+                        val finalTitle = if (!startTime.isNullOrEmpty()) "$startTime|$title" else title
+                        val dueDate = nextDay.format(DateTimeFormatter.ISO_LOCAL_DATE) + "T09:00:00.000Z"
+                        
+                        val createdTask = com.neubofy.reality.google.GoogleTasksManager.createTask(context, finalTitle, notes, dueDate, finalTaskListId)
+                        
+                        if (createdTask != null) {
+                            tasksCreated++
+                            taskLog.put("status", "SUCCESS")
+                            taskLog.put("finalTitle", finalTitle)
+                            taskLog.put("finalList", finalTaskListId)
+                            TerminalLogger.log("Nightly: Created task - $finalTitle in list $finalTaskListId")
+                        } else {
+                            taskLog.put("status", "FAILED (API Error)")
+                        }
+                    } else {
+                        taskLog.put("status", "FAILED (Empty Title)")
+                    }
+                } catch (e: Exception) {
+                    taskLog.put("status", "ERROR: ${e.message}")
+                    TerminalLogger.log("Nightly: Failed to process task at index $i - ${e.message}")
+                }
+                taskLog.put("type", "TASK")
+                createdItems.put(taskLog)
+            }
+            
+            // Create Calendar Events
+            for (i in 0 until events.length()) {
+                val eventLog = JSONObject()
+                try {
+                    val eventObj = events.getJSONObject(i)
+                    val title = eventObj.optString("title", "").trim()
+                    val startTime = eventObj.optString("startTime", "")
+                    val endTime = eventObj.optString("endTime", "")
+                    val description = eventObj.optString("description", null)
+                    
+                    eventLog.put("inputTitle", title)
+                    eventLog.put("inputTime", "$startTime - $endTime")
+                    
+                    if (title.isNotEmpty() && startTime.isNotEmpty() && endTime.isNotEmpty()) {
+                        // Convert HH:mm to epoch milliseconds for next day
+                        val startParts = startTime.split(":")
+                        val endParts = endTime.split(":")
+                        
+                        if (startParts.size >= 2 && endParts.size >= 2) {
+                            val startMs = nextDay.atTime(startParts[0].toInt(), startParts[1].toInt())
+                                .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                            val endMs = nextDay.atTime(endParts[0].toInt(), endParts[1].toInt())
+                                .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                            
+                            val eventId = com.neubofy.reality.google.GoogleCalendarManager.createEvent(
+                                context, title, startMs, endMs, description
+                            )
+                            
+                            if (eventId != null) {
+                                eventsCreated++
+                                eventLog.put("status", "SUCCESS")
+                                TerminalLogger.log("Nightly: Created Cloud Google Calendar event - $title (ID: $eventId)")
+                            } else {
+                                eventLog.put("status", "FAILED (Cloud API Error)")
+                            }
+                        } else {
+                            eventLog.put("status", "FAILED (Invalid Time Format)")
+                        }
+                    } else {
+                        eventLog.put("status", "FAILED (Missing Title or Time)")
+                    }
+                } catch (e: Exception) {
+                    eventLog.put("status", "ERROR: ${e.message}")
+                    TerminalLogger.log("Nightly: Failed to create calendar event at index $i - ${e.message}")
+                }
+                eventLog.put("type", "EVENT")
+                createdItems.put(eventLog)
+            }
+            
+            val details = "$tasksCreated tasks, $eventsCreated events created"
+            
+            // Build resultJson
+            val resultJson = JSONObject().apply {
+                put("tasksCreated", tasksCreated)
+                put("eventsCreated", eventsCreated)
+                put("items", createdItems)
+            }.toString()
             
             listener.onStepCompleted(STEP_PROCESS_PLAN, "Plan Processed", details)
-            saveStepState(context, diaryDate, STEP_PROCESS_PLAN, StepProgress.STATUS_COMPLETED, details)
+            saveStepState(context, diaryDate, STEP_PROCESS_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
             
         } catch (e: Exception) {
             listener.onError(STEP_PROCESS_PLAN, "Process Failed: ${e.message}")
             saveStepState(context, diaryDate, STEP_PROCESS_PLAN, StepProgress.STATUS_ERROR, e.message)
-            // We don't throw here to allow completion of the night even if parsing fails
         }
     }
 
@@ -936,81 +1673,85 @@ class NightlyProtocolExecutor(
     }
     
     private fun buildDiaryContent(summary: DaySummary, questions: List<String>): String {
-        val sb = StringBuilder()
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val template = prefs.getString("template_diary", DEFAULT_DIARY_TEMPLATE) ?: DEFAULT_DIARY_TEMPLATE
         val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")
+        val dateStr = summary.date.format(dateFormatter)
+
+        // 1. Build Metrics/Stats Block
+        val totalPlanned = summary.totalPlannedMinutes
+        val totalEffective = summary.totalEffectiveMinutes
+        val efficiency = if (totalPlanned > 0) (totalEffective * 100 / totalPlanned) else 0
         
-        sb.appendLine("Diary of ${summary.date.format(dateFormatter)}")
-        sb.appendLine()
-        sb.appendLine("═══════════════════════════════════════")
-        sb.appendLine()
+        val statsSb = StringBuilder()
+        statsSb.appendLine("## 📊 Today's Metrics")
+        statsSb.appendLine("---")
+        statsSb.appendLine("- **Scheduled Time**: $totalPlanned minutes")
+        statsSb.appendLine("- **Effective Study**: $totalEffective minutes")
+        statsSb.appendLine("- **Efficiency**: $efficiency%")
+        statsSb.appendLine()
         
-        sb.appendLine("📅 Calendar Schedule")
-        sb.appendLine("───────────────────────────────────────")
-        if (summary.calendarEvents.isEmpty()) {
-            sb.appendLine("No events scheduled")
-        } else {
-            summary.calendarEvents.forEach { event ->
-                val startTime = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                    .format(java.util.Date(event.startTime))
-                val endTime = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                    .format(java.util.Date(event.endTime))
-                sb.appendLine("• $startTime - $endTime: ${event.title}")
-            }
-        }
-        sb.appendLine()
-        
-        sb.appendLine("📋 Tasks")
-        sb.appendLine("───────────────────────────────────────")
-        if (summary.tasksCompleted.isEmpty() && summary.tasksDue.isEmpty()) {
-            sb.appendLine("No tasks for today")
-        } else {
-            summary.tasksCompleted.forEach { task -> sb.appendLine("✓ $task") }
-            summary.tasksDue.forEach { task -> sb.appendLine("○ $task (pending)") }
-        }
-        sb.appendLine()
-        
-        sb.appendLine("⏱️ Study Sessions (Tapasya)")
-        sb.appendLine("───────────────────────────────────────")
+        statsSb.appendLine("### ⏱️ Productive Sessions (Tapasya)")
         if (summary.completedSessions.isEmpty()) {
-            sb.appendLine("No sessions completed")
+            statsSb.appendLine("_No focused sessions completed today._")
         } else {
             summary.completedSessions.forEach { session ->
                 val effectiveMins = session.effectiveTimeMs / 60000
                 val targetMins = session.targetTimeMs / 60000
-                sb.appendLine("• ${session.name}: ${effectiveMins}min / ${targetMins}min target")
+                statsSb.appendLine("- **${session.name}**: ${effectiveMins}min (Target: ${targetMins}min)")
             }
         }
-        sb.appendLine()
+        statsSb.appendLine()
         
-        sb.appendLine("📊 Summary")
-        sb.appendLine("───────────────────────────────────────")
-        sb.appendLine("• Scheduled Time: ${summary.totalPlannedMinutes} minutes")
-        sb.appendLine("• Effective Study: ${summary.totalEffectiveMinutes} minutes")
-        val efficiency = if (summary.totalPlannedMinutes > 0) {
-            (summary.totalEffectiveMinutes * 100 / summary.totalPlannedMinutes)
-        } else 0
-        sb.appendLine("• Efficiency: ${efficiency}%")
-        sb.appendLine()
-        
-        sb.appendLine("💭 Reflection Questions")
-        sb.appendLine("───────────────────────────────────────")
-        questions.forEachIndexed { index, question ->
-            sb.appendLine("${index + 1}. $question")
-            sb.appendLine()
-            sb.appendLine("   > [Your answer here]")
-            sb.appendLine()
+        statsSb.appendLine("### 📋 Task Summary")
+        if (summary.tasksCompleted.isEmpty() && summary.tasksDue.isEmpty()) {
+            statsSb.appendLine("_No tasks recorded for today._")
+        } else {
+            summary.tasksCompleted.forEach { task -> statsSb.appendLine("- ✓ $task") }
+            summary.tasksDue.forEach { task -> statsSb.appendLine("- ○ $task (pending)") }
         }
+        statsSb.appendLine()
         
-        sb.appendLine()
-        sb.appendLine("✍️ Free Writing")
-        sb.appendLine("───────────────────────────────────────")
-        sb.appendLine("[Space for additional thoughts, insights, or journaling]")
-        sb.appendLine()
-        sb.appendLine()
-        sb.appendLine("───────────────────────────────────────")
-        sb.appendLine("Generated by Reality Nightly Protocol")
+        statsSb.appendLine("### 📅 Calendar Schedule")
+        if (summary.calendarEvents.isEmpty()) {
+            statsSb.appendLine("_No calendar events recorded._")
+        } else {
+            summary.calendarEvents.forEach { event ->
+                val start = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                    .format(java.util.Date(event.startTime))
+                val end = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                    .format(java.util.Date(event.endTime))
+                statsSb.appendLine("- **$start - $end**: ${event.title}")
+            }
+        }
+        val statsBlock = statsSb.toString()
+
+        // 2. Build Questions Block
+        val qSb = StringBuilder()
+        qSb.appendLine("## 💡 Personalized Reflection Questions")
+        qSb.appendLine("---")
+        qSb.appendLine("_Answer the following questions to gain clarity on your progress:_")
+        qSb.appendLine()
         
-        return sb.toString()
+        if (questions.isEmpty()) {
+            qSb.appendLine("_Generating AI questions..._")
+        } else {
+            questions.forEachIndexed { index, question ->
+                qSb.appendLine("### Q${index + 1}: $question")
+                qSb.appendLine()
+                qSb.appendLine("> ") // Placeholder for answer
+                qSb.appendLine()
+                qSb.appendLine()
+            }
+        }
+        val questionsBlock = qSb.toString()
+
+        // 3. Perform Replacements
+        return template
+            .replace("{date}", dateStr)
+            .replace("{questions}", questionsBlock)
+            .replace("{stats}", statsBlock)
+            .replace("{data}", statsBlock)
     }
     
     private fun getFallbackQuestions(): List<String> {
@@ -1021,5 +1762,716 @@ class NightlyProtocolExecutor(
             "What's one thing you're grateful for from today?",
             "What's your top priority for tomorrow, and how will you protect time for it?"
         )
+    }
+    
+    // ========== STEP 11 & 12: Report Generation ==========
+    
+    // ========== PUBLIC INTERFACE FOR GRANULAR CONTROL ==========
+    
+    suspend fun executeSpecificStep(step: Int) {
+        when (step) {
+            STEP_FETCH_TASKS -> step1_fetchTasks()
+            STEP_FETCH_SESSIONS -> step2_fetchSessions()
+            STEP_CALC_SCREEN_TIME -> step3_calcScreenTime()
+            STEP_GENERATE_QUESTIONS -> step4_generateQuestions()
+            STEP_CREATE_DIARY -> step5_createDiary()
+            STEP_ANALYZE_REFLECTION -> step6_analyzeReflection()
+            STEP_FINALIZE_XP -> step7_finalizeXp()
+            STEP_CREATE_PLAN_DOC -> step8_createPlanDoc()
+            STEP_GENERATE_PLAN -> step9_generatePlan()
+            STEP_PROCESS_PLAN -> processPlanToTasks()
+            STEP_GENERATE_REPORT -> step11_generateReport()
+            STEP_GENERATE_PDF -> step12_generatePdf()
+            else -> throw IllegalArgumentException("Unknown step: $step")
+        }
+    }
+
+    // ========== INDIVIDUAL STEP IMPLEMENTATIONS (Extracted) ==========
+
+    // Steps 1-3 are already defined above (step1_fetchTasks, etc.)
+
+
+
+    private suspend fun step8_createPlanDoc() {
+        createPlanDoc() // Existing function
+    }
+    
+    private suspend fun step9_generatePlan() {
+        val stepData = loadStepData(context, diaryDate, STEP_GENERATE_PLAN)
+        if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) return
+        
+        listener.onStepStarted(STEP_GENERATE_PLAN, "AI Parsing Plan")
+        saveStepState(context, diaryDate, STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "Reading plan...")
+        
+        try {
+            val nightlyModel = AISettingsActivity.getNightlyModel(context)
+            
+            if (nightlyModel.isNullOrEmpty()) {
+                listener.onStepSkipped(STEP_GENERATE_PLAN, "Plan AI", "No Model Configured")
+                saveStepState(context, diaryDate, STEP_GENERATE_PLAN, StepProgress.STATUS_SKIPPED, "No Model")
+                return
+            }
+            
+            // 1. Read Plan Document content
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val planId = prefs.getString(getPlanDocIdKey(diaryDate), null)
+            
+            if (planId == null) {
+                listener.onError(STEP_GENERATE_PLAN, "Plan Document missing")
+                saveStepState(context, diaryDate, STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, "No Plan Doc")
+                return
+            }
+            
+            val planContent = GoogleDocsManager.getDocumentContent(context, planId) ?: ""
+            
+            if (planContent.length < 20) {
+                // Plan too short, reject
+                val errorDetails = "Plan too short. Please write your tasks and schedule in the plan document."
+                saveStepState(context, diaryDate, STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails)
+                listener.onAnalysisFeedback(errorDetails)
+                return
+            }
+            
+            saveStepState(context, diaryDate, STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "AI parsing...")
+            
+            // 2. Call AI to parse plan into JSON {tasks: [], events: []}
+            // Fetch Task List Configs for AI Context
+            val taskListConfigs = AppDatabase.getDatabase(context).taskListConfigDao().getAll()
+            val aiResponse = NightlyAIHelper.analyzePlan(context, nightlyModel, planContent, taskListConfigs)
+            
+            // 3. Validate JSON with Robust Extraction
+            try {
+                // Find first '{' and last '}' to extract JSON block
+                val start = aiResponse.indexOf('{')
+                val end = aiResponse.lastIndexOf('}')
+                
+                val jsonStr = if (start != -1 && end != -1 && end > start) {
+                    aiResponse.substring(start, end + 1)
+                } else {
+                    aiResponse // Fallback
+                }
+                
+                val json = JSONObject(jsonStr.trim())
+                
+                val tasks = json.optJSONArray("tasks") ?: JSONArray()
+                val events = json.optJSONArray("events") ?: JSONArray()
+                
+                if (tasks.length() == 0 && events.length() == 0) {
+                    // No items extracted, reject
+                    val errorDetails = "Could not extract tasks or events from your plan. Please write clearer items with times."
+                    saveStepState(context, diaryDate, STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails)
+                    listener.onAnalysisFeedback(errorDetails)
+                    return
+                }
+                
+                // 4. Accept - Save parsed JSON with rich debug info
+                val details = "${tasks.length()} tasks, ${events.length()} events extracted"
+                val mentorship = json.optString("mentorship", "No advice generated.")
+                val wakeupTime = json.optString("wakeupTime", "")
+                
+                val resultJson = JSONObject().apply {
+                    put("tasks", tasks)
+                    put("events", events)
+                    put("mentorship", mentorship)
+                    put("wakeupTime", wakeupTime)
+                    put("planId", planId)
+                    put("rawResponse", aiResponse)
+                    put("sanitizedJson", jsonStr)
+                    put("planSnippet", if (planContent.length > 500) planContent.take(500) + "..." else planContent)
+                    put("tasksCount", tasks.length())
+                    put("eventsCount", events.length())
+                }.toString()
+                
+                listener.onStepCompleted(STEP_GENERATE_PLAN, "Plan Parsed", details)
+                saveStepState(context, diaryDate, STEP_GENERATE_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
+                
+            } catch (e: Exception) {
+                // JSON parse failed, reject
+                val errorDetails = "AI response was not valid JSON. Please try again or simplify your plan."
+                TerminalLogger.log("Step 9 JSON parse error: ${e.message}, Raw: $aiResponse")
+                
+                // Save the raw response even on failure for debugging in double-tap window
+                val failureJson = JSONObject().apply {
+                    put("rawResponse", aiResponse)
+                    put("error", e.message)
+                }.toString()
+                
+                saveStepState(context, diaryDate, STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails, failureJson)
+                listener.onAnalysisFeedback(errorDetails)
+            }
+            
+        } catch (e: Exception) {
+             listener.onError(STEP_GENERATE_PLAN, "AI Plan Failed: ${e.message}")
+             saveStepState(context, diaryDate, STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, e.message)
+        }
+    }
+    // ========== REPORT GENERATION (STEPS 11 & 12) are defined at the end of file ==========
+
+    // Restores Completed status for Data Collection steps (1 & 2) if DaySummary is valid.
+    // This handles cases where user deleted data or re-ran report without running previous steps explicitly.
+    private suspend fun restoreCollectedDataState(summary: DaySummary) {
+        // Heal Step 1: Tasks
+        // We use com.neubofy.reality.data.model.FetchedTasks to match saved format
+        val fetched = com.neubofy.reality.data.model.FetchedTasks(summary.tasksCompleted, summary.tasksDue)
+        val tasksJson = com.google.gson.Gson().toJson(fetched)
+        val taskDetails = "Tasks: ${summary.tasksCompleted.size} Done, ${summary.tasksDue.size} Due"
+        
+        saveStepState(context, diaryDate, STEP_FETCH_TASKS, StepProgress.STATUS_COMPLETED, taskDetails, tasksJson)
+        
+        // Update local memory
+        this.fetchedTasks = com.neubofy.reality.google.GoogleTasksManager.TaskStats(
+            fetched.dueTasks,
+            fetched.completedTasks,
+            fetched.dueTasks.size,
+            fetched.completedTasks.size
+        )
+        
+        // Heal Step 2: Sessions
+        val sessionCount = summary.completedSessions.size
+        val focusMins = summary.totalEffectiveMinutes
+        val sessionDetails = "Sessions: $sessionCount ($focusMins mins)"
+        
+        // Step 2 doesn't use complex JSON for result, currently just counts?
+        // Check collectDayData: usually saves daySummary? Or just stats.
+        // Step 2 usually saves "Sessions: N..." and maybe resultJson is null in legacy or summary json?
+        // We'll save just details which sets status to COMPLETED.
+        // Actually, Step 2 should ideally save the DaySummary JSON?
+        // But DaySummary is large.
+        // For now, restoring Status is priority.
+        saveStepState(context, diaryDate, STEP_FETCH_SESSIONS, StepProgress.STATUS_COMPLETED, sessionDetails, "{}")
+    }
+    
+
+    // ========== DEBUG / UI SUPPORT ==========
+    
+    suspend fun getStepDebugData_LEGACY(step: Int): String {
+        return withContext(Dispatchers.IO) {
+            val sb = StringBuilder()
+            
+            // Common Header
+            sb.append("Details for Step $step\n")
+            sb.append("────────────────────────\n\n")
+            
+            try {
+                when (step) {
+                    STEP_FETCH_TASKS -> {
+                        sb.append("RAW OUTPUT:\n")
+                        val completed = fetchedTasks?.completedTasks ?: emptyList()
+                        val due = fetchedTasks?.dueTasks ?: emptyList()
+                        if (completed.isEmpty() && due.isEmpty()) {
+                            // No data available
+                            sb.append("No task data in memory. (Run step to fetch)\n")
+                        }
+                        
+                        sb.append("• Completed Tasks (${fetchedTasks?.completedTasks?.size}):\n")
+                        fetchedTasks?.completedTasks?.forEach { sb.append("  - $it\n") }
+                        
+                        sb.append("\n• Due Tasks (${fetchedTasks?.dueTasks?.size}):\n")
+                        fetchedTasks?.dueTasks?.forEach { sb.append("  - $it\n") }
+                    }
+                    
+                    STEP_FETCH_SESSIONS -> {
+                        if (daySummary == null) try { collectDayDataSilently() } catch (e: Exception) {}
+                        val s = daySummary
+                        if (s != null) {
+                            sb.append("• Sessions (${s.completedSessions.size}):\n")
+                            s.completedSessions.forEach { 
+                                sb.append("  - ${it.name} (${it.effectiveTimeMs/60000}m / ${it.targetTimeMs/60000}m)\n") 
+                            }
+                            sb.append("\n• Calendar Events (${s.calendarEvents.size}):\n")
+                            s.calendarEvents.forEach { sb.append("  - ${it.title}\n") }
+                        } else {
+                            sb.append("No session data available.")
+                        }
+                    }
+                    
+                    STEP_CALC_SCREEN_TIME -> {
+                        sb.append("• Total Screen Time: $screenTimeMinutes mins\n")
+                        sb.append("• XP Impact: $screenTimeXpDelta XP\n")
+                        // If we had limit info, we'd show it here.
+                    }
+                    
+                    STEP_GENERATE_QUESTIONS -> {
+                        sb.append("INPUTS:\n")
+                        sb.append("- User Intro: ${AISettingsActivity.getUserIntroduction(context)?.take(50)}...\n")
+                        sb.append("- Tasks: ${fetchedTasks?.completedTasks?.size} done\n")
+                        sb.append("- Sessions: ${daySummary?.completedSessions?.size}\n\n")
+                        
+                        sb.append("OUTPUT (Start Time: $nightlyStartTime):\n")
+                        if (generatedQuestions.isNotEmpty()) {
+                             generatedQuestions.forEachIndexed { i, q -> sb.append("${i+1}. $q\n\n") }
+                        } else {
+                            // Try to load from prefs
+                            val saved = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString("questions_${diaryDate}", null)
+                            if (saved != null) {
+                                saved.split("|").forEachIndexed { i, q -> sb.append("${i+1}. $q\n\n") }
+                            } else {
+                                sb.append("No questions generated or saved.")
+                            }
+                        }
+                    }
+                    
+                    STEP_CREATE_DIARY -> {
+                         val template = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString("template_diary", DEFAULT_DIARY_TEMPLATE)
+                         sb.append("TEMPLATE USED:\n${template?.take(100)}...\n\n")
+                         sb.append("SAVED DOC ID:\n$diaryDocId\n")
+                    }
+                    
+                    STEP_ANALYZE_REFLECTION -> {
+                        sb.append("INPUT:\n")
+                        sb.append("Diary Doc ID: $diaryDocId\n")
+                        val xp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt("reflection_xp_${diaryDate}", 0)
+                        sb.append("OUTPUT:\n")
+                        sb.append("Calculated XP: $xp\n")
+                    }
+                    
+                    STEP_GENERATE_REPORT -> {
+                        sb.append("GENERATED REPORT CONTENT:\n")
+                        val content = NightlyRepository.getReportContent(context, diaryDate)
+                        if (content != null) {
+                            sb.append(content.take(500) + "...\n")
+                        } else {
+                             sb.append("Report not generated yet.")
+                        }
+                    }
+                    
+                    else -> sb.append("No detailed debug info for this step.")
+                }
+            } catch (e: Exception) {
+                sb.append("Error fetching details: ${e.message}")
+            }
+            sb.toString()
+        }
+    }
+
+    private suspend fun checkDiaryExists(): Boolean {
+        saveStepState(context, diaryDate, STEP_CHECK_DIARY, StepProgress.STATUS_RUNNING, "Checking Drive...")
+        
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val diaryFolderId = prefs.getString("diary_folder_id", null)
+        
+        if (diaryFolderId.isNullOrEmpty()) {
+            val err = "Diary folder not configured"
+            listener.onError(STEP_CHECK_DIARY, err)
+            saveStepState(context, diaryDate, STEP_CHECK_DIARY, StepProgress.STATUS_ERROR, err)
+            return false
+        }
+        
+        val diaryTitle = getDiaryTitle()
+        
+        return withContext(Dispatchers.IO) {
+            try {
+                val existingFiles = GoogleDriveManager.listFilesInFolder(context, diaryFolderId)
+                val matchingFile = existingFiles.find { it.name == diaryTitle }
+                
+                if (matchingFile != null) {
+                    diaryDocId = matchingFile.id
+                    NightlyRepository.saveDiaryDocId(context, diaryDate, matchingFile.id)
+                    
+                    listener.onStepCompleted(STEP_CHECK_DIARY, "Diary Found", diaryTitle)
+                    saveStepState(context, diaryDate, STEP_CHECK_DIARY, StepProgress.STATUS_COMPLETED, "Found: $diaryTitle")
+                    saveStepState(context, diaryDate, STEP_CREATE_DIARY, StepProgress.STATUS_COMPLETED, diaryTitle)
+                    true
+                } else {
+                    listener.onStepCompleted(STEP_CHECK_DIARY, "No existing diary")
+                    saveStepState(context, diaryDate, STEP_CHECK_DIARY, StepProgress.STATUS_COMPLETED, "Not found (Will create)")
+                    false
+                }
+            } catch (e: Exception) {
+                listener.onError(STEP_CHECK_DIARY, "Check failed: ${e.message}")
+                saveStepState(context, diaryDate, STEP_CHECK_DIARY, StepProgress.STATUS_ERROR, e.message)
+                false
+            }
+        }
+    }
+
+    private suspend fun calculateReflection(diaryContent: String, qualityXP: Int) {
+        // Reuse step7 logic but ensure we use the passed qualityXP if needed
+        // Since step7_finalizeXp reads from prefs/memory which step6 writes to, 
+        // we can essentially just run step7_finalizeXp logic here, but forcing qualityXP update if needed.
+        
+        // Update reflectionXp in case it differed (though it shouldn't if flow is correct)
+        reflectionXp = qualityXP
+        reflectionXp = qualityXP
+        NightlyRepository.setReflectionXp(context, diaryDate, qualityXP)
+            
+        step7_finalizeXp()
+    }
+
+
+    suspend fun getStepDebugData(step: Int): String {
+        return withContext(Dispatchers.IO) {
+            val sb = StringBuilder()
+            val stepData = loadStepData(context, diaryDate, step)
+            
+            // Common Header
+            sb.append("Step $step: ${getStepName(step)}\n")
+            sb.append("Status: ${getStatusText(stepData.status)}\n")
+            sb.append("────────────────────────\n\n")
+            
+            if (stepData.details != null) {
+                sb.append("MESSAGE: ${stepData.details}\n")
+            }
+            if (stepData.linkUrl != null) {
+                sb.append("LINK: ${stepData.linkUrl}\n")
+            }
+            sb.append("\n")
+
+            try {
+                when (step) {
+                    STEP_FETCH_TASKS -> {
+                        val json = stepData.resultJson?.let { JSONObject(it) }
+                        val tasks = json?.optJSONArray("completedTasks")
+                        val due = json?.optJSONArray("dueTasks")
+                        
+                        sb.append("• Resolved Tasks:\n")
+                        if (tasks != null) {
+                            for (i in 0 until tasks.length()) sb.append("  - ✓ ${tasks.getString(i)}\n")
+                        }
+                        sb.append("\n• Pending Tasks:\n")
+                        if (due != null) {
+                            for (i in 0 until due.length()) sb.append("  - ${due.getString(i)}\n")
+                        }
+                        
+                        if (tasks == null && due == null) sb.append("No task data found in DB.")
+                    }
+                    
+                    STEP_FETCH_SESSIONS -> {
+                        val json = stepData.resultJson?.let { JSONObject(it) }
+                        if (json != null) {
+                            sb.append("• Planned: ${json.optLong("plannedMinutes")}m\n")
+                            sb.append("• Effective: ${json.optLong("effectiveMinutes")}m\n")
+                            sb.append("• Sessions: ${json.optInt("sessionCount")}\n")
+                            sb.append("• Calendar Events: ${json.optInt("eventCount")}\n")
+                        } else {
+                            sb.append("No session data summary found.")
+                        }
+                    }
+                    
+                    STEP_CALC_SCREEN_TIME -> {
+                        val json = stepData.resultJson?.let { JSONObject(it) }
+                        sb.append("• Total Screen Time: ${json?.optInt("minutes") ?: 0} mins\n")
+                        sb.append("• XP Delta: ${json?.optInt("xpDelta") ?: 0} XP\n")
+                    }
+                    
+                    STEP_GENERATE_QUESTIONS -> {
+                        val json = stepData.resultJson?.let { JSONObject(it) }
+                        val questions = json?.optJSONArray("questions")
+                        if (questions != null) {
+                            for (i in 0 until questions.length()) sb.append("${i+1}. ${questions.getString(i)}\n\n")
+                        } else {
+                            sb.append("No questions found in result data.")
+                        }
+                    }
+                    
+                    STEP_CREATE_DIARY -> {
+                        sb.append("DIARY DOC ID: $diaryDocId\n")
+                        sb.append("URL: https://docs.google.com/document/d/$diaryDocId/edit\n")
+                    }
+                    
+                    STEP_ANALYZE_REFLECTION -> {
+                        val json = stepData.resultJson?.let { JSONObject(it) }
+                        if (json != null) {
+                            sb.append("XP EARNED: ${json.optInt("xp")}\n")
+                            sb.append("SATISFIED: ${json.optBoolean("satisfied")}\n")
+                            sb.append("FEEDBACK: ${json.optString("feedback")}\n")
+                        }
+                        sb.append("\nDIARY ID USED: $diaryDocId\n")
+                    }
+                    
+                    STEP_FINALIZE_XP -> {
+                        sb.append("XP finalizing completed.\n")
+                    }
+
+                    STEP_CREATE_PLAN_DOC -> {
+                        val id = NightlyRepository.getPlanDocId(context, diaryDate)
+                        sb.append("PLAN DOC ID: $id\n")
+                    }
+                    
+                    STEP_GENERATE_PLAN -> {
+                        val json = stepData.resultJson?.let { JSONObject(it) }
+                        sb.append("INPUT PLAN SNIPPET:\n")
+                        sb.append(json?.optString("planSnippet") ?: "N/A")
+                        sb.append("\n\nAI RAW OUTPUT:\n")
+                        sb.append(json?.optString("rawResponse") ?: "N/A")
+                    }
+
+                    STEP_PROCESS_PLAN -> {
+                        val json = stepData.resultJson?.let { JSONObject(it) }
+                        sb.append("EXECUTION SUMMARY:\n")
+                        sb.append("• Tasks Created: ${json?.optInt("tasksCreated")}\n")
+                        sb.append("• Events Created: ${json?.optInt("eventsCreated")}\n\n")
+                        
+                        val items = json?.optJSONArray("items")
+                        if (items != null && items.length() > 0) {
+                            sb.append("DETAILED LOGS:\n")
+                            for (i in 0 until items.length()) {
+                                val item = items.getJSONObject(i)
+                                val type = item.optString("type")
+                                val status = item.optString("status")
+                                val title = item.optString("inputTitle")
+                                val info = when(type) {
+                                    "TASK" -> "List: ${item.optString("inputList")}, Time: ${item.optString("inputStartTime", "N/A")}"
+                                    "EVENT" -> "Time: ${item.optString("inputTime")}"
+                                    else -> ""
+                                }
+                                
+                                val emoji = if (status.startsWith("SUCCESS")) "✅" else "❌"
+                                sb.append("$emoji [$type] $title\n")
+                                sb.append("   $info\n")
+                                
+                                val warning = item.optString("warning")
+                                if (warning.isNotEmpty()) {
+                                    sb.append("   ⚠️ $warning\n")
+                                }
+                                
+                                if (!status.startsWith("SUCCESS")) {
+                                    sb.append("   Result: $status\n")
+                                }
+                            }
+                        }
+                    }
+
+                    STEP_GENERATE_REPORT -> {
+                        sb.append("INPUTS:\n")
+                        val json = stepData.resultJson?.let { JSONObject(it) }
+                        if (json != null) {
+                            sb.append("- Diary ID: ${json.optString("diaryDocId")}\n")
+                            sb.append("- Diary: ${json.optInt("diaryLength")} chars\n")
+                            val diarySnippet = json.optString("diarySnippet")
+                            if (diarySnippet.isNotEmpty()) sb.append("  Snippet: $diarySnippet\n\n")
+                            
+                            sb.append("- Plan ID: ${json.optString("planDocId")}\n")
+                            sb.append("- Plan: ${json.optInt("planLength")} chars\n")
+                            val planSnippet = json.optString("planSnippet")
+                            if (planSnippet.isNotEmpty()) sb.append("  Snippet: $planSnippet\n\n")
+                            
+                            sb.append("- Day Data (Efficiency): ${json.optString("efficiency")}\n")
+                        }
+                        
+                        sb.append("\nOUTPUT:\n")
+                        val content = NightlyRepository.getReportContent(context, diaryDate)
+                        if (content != null) {
+                            sb.append(content.take(1000) + (if (content.length > 1000) "..." else ""))
+                        } else {
+                            sb.append("Report content is missing from repository.")
+                        }
+                    }
+
+                    STEP_GENERATE_PDF -> {
+                        val pdfId = NightlyRepository.getReportPdfId(context, diaryDate)
+                        sb.append("PDF FILE ID: $pdfId\n")
+                        if (pdfId != null) {
+                            sb.append("Link: https://drive.google.com/file/d/$pdfId/view\n")
+                        }
+                    }
+                    
+                    else -> sb.append("No detailed debug info for this step.")
+                }
+            } catch (e: Exception) {
+                sb.append("Error parsing debug data: ${e.message}")
+            }
+            sb.toString()
+        }
+    }
+
+    private fun getStepName(step: Int): String = when (step) {
+        STEP_FETCH_TASKS -> "Fetch Tasks"
+        STEP_FETCH_SESSIONS -> "Fetch Sessions"
+        STEP_CALC_SCREEN_TIME -> "Calc Screen Time"
+        STEP_GENERATE_QUESTIONS -> "Generate Questions"
+        STEP_CREATE_DIARY -> "Create Diary"
+        STEP_ANALYZE_REFLECTION -> "Analyze Reflection"
+        STEP_FINALIZE_XP -> "Finalize XP"
+        STEP_CREATE_PLAN_DOC -> "Create Plan Doc"
+        STEP_GENERATE_PLAN -> "Generate Plan"
+        STEP_PROCESS_PLAN -> "Process Plan"
+        STEP_GENERATE_REPORT -> "Generate Report"
+        STEP_GENERATE_PDF -> "Generate PDF"
+        else -> "Unknown Step"
+    }
+
+    private fun getStatusText(status: Int): String = when (status) {
+        StepProgress.STATUS_PENDING -> "⏳ Pending"
+        StepProgress.STATUS_RUNNING -> "🔄 Running"
+        StepProgress.STATUS_COMPLETED -> "✅ Completed"
+        StepProgress.STATUS_SKIPPED -> "⏭️ Skipped"
+        StepProgress.STATUS_ERROR -> "❌ Error"
+        else -> "Unknown"
+    }
+
+    
+    // ========== STEP 11: Generate Report ==========
+    private suspend fun step11_generateReport() {
+        // Check if already completed
+        val stepData = loadStepData(context, diaryDate, STEP_GENERATE_REPORT)
+        if (stepData.status == StepProgress.STATUS_COMPLETED) {
+            TerminalLogger.log("Nightly: Step 11 already completed for $diaryDate")
+            return
+        }
+        
+        listener.onStepStarted(STEP_GENERATE_REPORT, "Generating Report")
+        saveStepState(context, diaryDate, STEP_GENERATE_REPORT, StepProgress.STATUS_RUNNING, "Collecting day summary...")
+        
+        try {
+            // 1. Recover Day Summary
+            val summary = daySummary ?: collectDayDataSilently()
+            TerminalLogger.log("Nightly Step 11: Summary recovered (${summary.tasksCompleted.size} tasks done)")
+            
+            // 2. Recover Doc IDs
+            saveStepState(context, diaryDate, STEP_GENERATE_REPORT, StepProgress.STATUS_RUNNING, "Retrieving document IDs...")
+            val dId = diaryDocId ?: NightlyRepository.getDiaryDocId(context, diaryDate)
+            val pId = NightlyRepository.getPlanDocId(context, diaryDate)
+            
+            if (dId == null) {
+                TerminalLogger.log("Nightly Step 11 ERROR: Diary Doc ID is missing.")
+            }
+            if (pId == null) {
+                TerminalLogger.log("Nightly Step 11 ERROR: Plan Doc ID is missing.")
+            }
+
+            // 3. Fetch Diary Content
+            saveStepState(context, diaryDate, STEP_GENERATE_REPORT, StepProgress.STATUS_RUNNING, "Fetching Diary content...")
+            val diaryContent = withContext(Dispatchers.IO) {
+                if (dId != null) {
+                    val content = GoogleDocsManager.getDocumentContent(context, dId)
+                    if (content == null) TerminalLogger.log("Nightly Step 11 ERROR: Failed to read Diary doc $dId")
+                    content ?: ""
+                } else ""
+            }
+            
+            // 4. Fetch Plan Content
+            saveStepState(context, diaryDate, STEP_GENERATE_REPORT, StepProgress.STATUS_RUNNING, "Fetching Plan content...")
+            val planContent = withContext(Dispatchers.IO) {
+                if (pId != null) {
+                    val content = GoogleDocsManager.getDocumentContent(context, pId)
+                    if (content == null) TerminalLogger.log("Nightly Step 11 ERROR: Failed to read Plan doc $pId")
+                    content ?: ""
+                } else ""
+            }
+            
+            if (diaryContent.isEmpty() && planContent.isEmpty()) {
+                val errorMsg = "Both Diary and Plan are empty. Please ensure documents have content before generating report (Diary ID: $dId, Plan ID: $pId)."
+                throw Exception(errorMsg)
+            }
+
+            saveStepState(context, diaryDate, STEP_GENERATE_REPORT, StepProgress.STATUS_RUNNING, "AI Generating report...")
+            TerminalLogger.log("Nightly Step 11: Prompting AI with ${diaryContent.length} chars diary and ${planContent.length} chars plan")
+
+            // 5. Generate report using AI
+            val report = reporter.generateReport(
+                diaryDate,
+                summary,
+                diaryContent,
+                planContent
+            )
+            
+            // 6. Save results with detailed snippets for debug transparency
+            val resultJson = JSONObject().apply {
+                put("diaryDocId", dId ?: "N/A")
+                put("planDocId", pId ?: "N/A")
+                put("diaryLength", diaryContent.length)
+                put("planLength", planContent.length)
+                put("diarySnippet", if (diaryContent.length > 500) diaryContent.take(500) + "..." else diaryContent)
+                put("planSnippet", if (planContent.length > 500) planContent.take(500) + "..." else planContent)
+                put("efficiency", "${summary.totalEffectiveMinutes} / ${summary.totalPlannedMinutes} mins")
+                put("tasksCompleted", summary.tasksCompleted.size)
+                put("date", diaryDate.toString())
+            }.toString()
+            
+            val details = "Report generated (${report.length} chars)"
+            listener.onStepCompleted(STEP_GENERATE_REPORT, "Report Generated", details)
+            saveStepState(context, diaryDate, STEP_GENERATE_REPORT, StepProgress.STATUS_COMPLETED, details, resultJson)
+            
+        } catch (e: Exception) {
+            val err = "Step 11 Error: ${e.message}"
+            TerminalLogger.log("Nightly Protocol ERROR (Step 11): $err")
+            listener.onError(STEP_GENERATE_REPORT, err)
+            saveStepState(context, diaryDate, STEP_GENERATE_REPORT, StepProgress.STATUS_ERROR, err)
+        }
+    }
+    
+    // ========== STEP 12: Generate PDF ==========
+    private suspend fun step12_generatePdf() {
+        listener.onStepStarted(STEP_GENERATE_PDF, "Creating PDF Report")
+        saveStepState(context, diaryDate, STEP_GENERATE_PDF, StepProgress.STATUS_RUNNING, "Creating PDF...")
+        
+        try {
+            // Get report content from Step 11 (stored in database)
+            val reportContent = NightlyRepository.getReportContent(context, diaryDate)
+            
+            if (reportContent.isNullOrEmpty()) {
+                val err = "No report content available (Step 11 may have failed)"
+                listener.onStepSkipped(STEP_GENERATE_PDF, "PDF Skipped", err)
+                saveStepState(context, diaryDate, STEP_GENERATE_PDF, StepProgress.STATUS_SKIPPED, err)
+                return
+            }
+            
+            // Get report folder ID
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val reportFolderId = prefs.getString("report_folder_id", null)
+            
+            if (reportFolderId.isNullOrEmpty()) {
+                val err = "Report folder not configured"
+                listener.onError(STEP_GENERATE_PDF, err)
+                saveStepState(context, diaryDate, STEP_GENERATE_PDF, StepProgress.STATUS_ERROR, err)
+                return
+            }
+            
+            val dateFormatted = diaryDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            val title = "Reality Report - $dateFormatted"
+            val fileName = "Reality_Report_$dateFormatted"
+            
+            // Generate PDF from report content (markdown)
+            val pdfFile = withContext(Dispatchers.IO) {
+                com.neubofy.reality.utils.PdfGenerator.generatePdfFile(
+                    context,
+                    reportContent,
+                    title,
+                    fileName
+                )
+            }
+            
+            // Upload to Google Drive
+            val pdfFileId = withContext(Dispatchers.IO) {
+                val credential = GoogleAuthManager.getGoogleAccountCredential(context)
+                    ?: throw Exception("Not signed in")
+                
+                val driveService = Drive.Builder(
+                    GoogleAuthManager.getHttpTransport(),
+                    GoogleAuthManager.getJsonFactory(),
+                    credential
+                ).setApplicationName("Reality").build()
+                
+                val fileMetadata = DriveFile()
+                fileMetadata.setName("$fileName.pdf")
+                fileMetadata.setParents(listOf(reportFolderId))
+                fileMetadata.setMimeType("application/pdf")
+                
+                val mediaContent = FileContent("application/pdf", pdfFile)
+                val uploadedFile = driveService.files().create(fileMetadata, mediaContent)
+                    .setFields("id, webViewLink")
+                    .execute()
+                
+                // Clean up temp file
+                pdfFile.delete()
+                
+                uploadedFile.id
+            }
+            
+            // Save PDF ID to database
+            NightlyRepository.saveReportPdfId(context, diaryDate, pdfFileId)
+            
+            val details = "PDF uploaded: $pdfFileId"
+            listener.onStepCompleted(STEP_GENERATE_PDF, "PDF Created", details, "https://drive.google.com/file/d/$pdfFileId/view")
+            saveStepState(context, diaryDate, STEP_GENERATE_PDF, StepProgress.STATUS_COMPLETED, details)
+            
+        } catch (e: Exception) {
+            val err = "PDF generation failed: ${e.message}"
+            TerminalLogger.log("Nightly: $err")
+            e.printStackTrace()
+            listener.onError(STEP_GENERATE_PDF, err)
+            saveStepState(context, diaryDate, STEP_GENERATE_PDF, StepProgress.STATUS_ERROR, err)
+        }
     }
 }

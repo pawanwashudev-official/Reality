@@ -1,542 +1,50 @@
 package com.neubofy.reality.utils
 
 import android.content.Context
-import android.content.SharedPreferences
-import org.json.JSONArray
+import com.neubofy.reality.data.db.AppDatabase
+import com.neubofy.reality.data.db.DailyStats
+import com.neubofy.reality.google.GoogleTasksManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-/**
- * XP Manager - Handles all gamification logic
- * 
- * XP Types:
- * - Tapasya XP: Live (15 XP per 1st fragment, 30 per 2nd, 45 per 3rd, etc.)
- * - Task XP: +100 per completed, -100 per incomplete (Nightly)
- * - Session XP: +100 attended, -100 missed, +50 early start (Nightly)
- * - Diary XP: AI assigned, max 500 (Nightly)
- * - Bonus XP: Screen time under limit (Nightly)
- * - Penalty XP: Screen time over limit (Nightly)
- */
-data class GamificationLevel(
-    val level: Int,
-    val name: String,
-    val requiredXP: Int,
-    val requiredStreak: Int
-)
-
 object XPManager {
-    
-    private const val PREFS_NAME = "reflection_prefs"
-    
-    // XP per fragment (each fragment = 15 minutes)
-    fun calculateTapasyaXP(effectiveMinutes: Int): Int {
-        val roundedMinutes = (effectiveMinutes / 15) * 15
-        val fragments = roundedMinutes / 15
-        
-        var totalXP = 0
-        for (i in 1..fragments) {
-            totalXP += i * 15
-        }
-        return totalXP
-    }
-    
-    // Calculate XP for a single fragment
-    fun getXPForFragment(fragmentNumber: Int): Int {
-        return fragmentNumber * 15
-    }
-    
-    // Get current fragment number
-    fun getCurrentFragment(effectiveMinutes: Int): Int {
-        return (effectiveMinutes / 15) + 1
-    }
-    
-    // Add to Tapasya XP (and update daily totals)
-    fun addTapasyaXP(context: Context, additionalXP: Int) {
-        val prefs = getPrefs(context)
-        checkDailyRollover(prefs)
-        
-        // Update Tapasya Component
-        val currentTapasya = prefs.getInt("tapasya_xp", 0)
-        val newTapasya = currentTapasya + additionalXP
-        
-        // Update Daily Total
-        val currentToday = prefs.getInt("today_xp", 0)
-        val newToday = currentToday + additionalXP
-        
-        // Update Global Total (Live)
-        val currentTotal = prefs.getInt("total_xp", 0)
-        val newTotal = currentTotal + additionalXP
-        
-        prefs.edit()
-            .putInt("tapasya_xp", newTapasya)
-            .putInt("today_xp", newToday)
-            .putInt("total_xp", newTotal)
-            .putString("last_xp_date", LocalDate.now().toString()) // Mark as active for today
-            .apply()
-            
-        // Check for level up immediately
-        updateLevel(context)
-        
-        TerminalLogger.log("XP: Added $additionalXP Tapasya XP. Today: $newToday")
-    }
-    
-    // Check if new day, reset daily counters if needed
-    private fun checkDailyRollover(prefs: SharedPreferences) {
-        val lastDate = prefs.getString("last_xp_date", null)
-        val today = LocalDate.now().toString()
-        
-        if (lastDate != today) {
-            // New day detected (or first run) regarding XP updates
-            // Force reset daily components because we are about to write new data for TODAY
-            prefs.edit()
-                .putInt("tapasya_xp", 0)
-                .putInt("task_xp", 0)
-                .putInt("session_xp", 0)
-                .putInt("diary_xp", 0)
-                .putInt("bonus_xp", 0)
-                .putInt("penalty_xp", 0)
-                .putInt("today_xp", 0)
-                .putString("last_xp_date", today)
-                .apply()
-            TerminalLogger.log("XP: Rollover triggered (Last: $lastDate, Today: $today)")
-        }
-    }
-    
-    // Get all current XP values (checking specifically for rollover first)
-    fun getXPBreakdown(context: Context): XPBreakdown {
-        val prefs = getPrefs(context)
-        checkDailyRollover(prefs)
-        
-        return XPBreakdown(
-            totalXP = prefs.getInt("total_xp", 0),
-            todayXP = prefs.getInt("today_xp", 0),
-            tapasyaXP = prefs.getInt("tapasya_xp", 0),
-            taskXP = prefs.getInt("task_xp", 0),
-            sessionXP = prefs.getInt("session_xp", 0),
-            diaryXP = prefs.getInt("diary_xp", 0),
-            bonusXP = prefs.getInt("bonus_xp", 0),
-            penaltyXP = prefs.getInt("penalty_xp", 0),
-            streak = prefs.getInt("streak", 0),
-            level = prefs.getInt("level", 1)
-        )
-    }
-    
-    // Calculate streak
-    fun updateStreak(context: Context, studyPercent: Int): Int {
-        val prefs = getPrefs(context)
-        var streak = prefs.getInt("streak", 0)
-        
-        streak = when {
-            studyPercent >= 75 -> streak + 1
-            studyPercent >= 50 -> streak
-            else -> 0
-        }
-        
-        prefs.edit().putInt("streak", streak).apply()
-        TerminalLogger.log("XP: Streak updated to $streak (study: $studyPercent%)")
-        return streak
-    }
-    
-    // Update level and save
-    fun updateLevel(context: Context) {
-        val prefs = getPrefs(context)
-        val totalXP = prefs.getInt("total_xp", 0)
-        val streak = prefs.getInt("streak", 0)
-        
-        val levelInfo = calculateLevel(context, totalXP, streak)
-        
-        prefs.edit().putInt("level", levelInfo.level).apply()
-        TerminalLogger.log("XP: Level updated to ${levelInfo.level} (${levelInfo.name})")
-    }
-    
-    // Get level name
-    fun getLevelName(context: Context, level: Int): String {
-        val levels = getAllLevels(context)
-        return levels.find { it.level == level }?.name ?: "Unknown"
-    }
-    
-    // Set custom level name (Legacy Wrapper)
-    fun setCustomLevelName(context: Context, level: Int, name: String) {
-        // Also save to new overrides
-        val prefs = getPrefs(context)
-        val overridesJson = prefs.getString("level_overrides", "{}")
-        val overrides = try { JSONObject(overridesJson) } catch (e: Exception) { JSONObject() }
-        
-        // Preserve existing override data if any
-        val data = overrides.optJSONObject(level.toString()) ?: JSONObject()
-        data.put("name", name)
-        overrides.put(level.toString(), data)
-        prefs.edit().putString("level_overrides", overrides.toString()).apply()
-        
-        // Legacy support
-        val customNamesJson = prefs.getString("custom_level_names", null)
-        val customNames = if (customNamesJson != null) {
-            try { JSONObject(customNamesJson) } catch (e: Exception) { JSONObject() }
-        } else {
-            JSONObject()
-        }
-        customNames.put(level.toString(), name)
-        prefs.edit().putString("custom_level_names", customNames.toString()).apply()
-    }
 
-    // Set Total XP
-    fun setTotalXP(context: Context, xp: Int) {
-        val prefs = getPrefs(context)
-        prefs.edit().putInt("total_xp", xp).apply()
-        updateLevel(context)
-    }
+    private const val PREFS_NAME = "xp_prefs"
+    private const val PREF_TOTAL_XP = "total_xp"
+    private const val PREF_LEVEL = "current_level"
+    private const val PREF_STREAK = "current_streak"
+    private const val PREF_RETENTION_DAYS = "xp_retention_days"
 
-    // Set Streak
-    fun setStreak(context: Context, streak: Int) {
-        val prefs = getPrefs(context)
-        prefs.edit().putInt("streak", streak).apply()
-        updateLevel(context)
-    }
-
-    // Save Level Override
-    fun saveLevelOverride(context: Context, levelId: Int, name: String, xp: Int, streak: Int) {
-        val prefs = getPrefs(context)
-        val overridesJson = prefs.getString("level_overrides", "{}")
-        val overrides = try { JSONObject(overridesJson) } catch (e: Exception) { JSONObject() }
-        
-        val data = JSONObject()
-        data.put("name", name)
-        data.put("xp", xp)
-        data.put("streak", streak)
-        
-        overrides.put(levelId.toString(), data)
-        prefs.edit().putString("level_overrides", overrides.toString()).apply()
-        
-        setCustomLevelName(context, levelId, name)
-        updateLevel(context)
-    }
-
-    // --- Projected XP Calculations (Live Preview) ---
-
-    // Calculate projected Bonus/Penalty based on current usage
-    // (Used by getProjectedDailyXP and ReflectionDetailActivity)
-    fun calculateProjectedScreenTimeXP(context: Context): Pair<Int, Int> {
-        val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
-        val limit = prefs.getInt("screen_time_limit_minutes", 0)
-        
-        if (limit > 0) {
-            val usageMillis = try { UsageUtils.getFocusedAppsUsage(context) } catch(e: Exception) { 0L }
-            val minutes = (usageMillis / 60000).toInt()
-            val diff = limit - minutes
-            
-            return if (diff > 0) {
-                Pair((diff * 10).coerceAtMost(500), 0)
-            } else {
-                Pair(0, (-diff * 10).coerceAtMost(500))
-            }
-        }
-        return Pair(0, 0)
-    }
-
-    suspend fun getProjectedDailyXP(context: Context): XPBreakdown {
-        val stored = getXPBreakdown(context)
-        val today = LocalDate.now()
-        val dateStr = today.toString()
-        
-        // 1. Task XP (Live projection disabled by user request - API limitations)
-        // Only calculated during Nightly Protocol
-        val projectedTaskXP = 0
-        /* 
-        val taskStats = try { ... } 
-        */
-        
-        // 2. Session XP (Live from DB/Calendar)
-        val projectedSessionXP = calculateProjectedSessionXP(context, today)
-        
-        // 3. Screen Time XP (Live from UsageStats)
-        val screenTimeXP = calculateProjectedScreenTimeXP(context)
-        val projectedBonus = screenTimeXP.first
-        val projectedPenalty = screenTimeXP.second
-        
-        // 4. Calculate Totals
-        val newTodayXP = stored.tapasyaXP + // Live
-                        projectedTaskXP + 
-                        projectedSessionXP + 
-                        stored.diaryXP + // Stored (0 until done)
-                        projectedBonus - 
-                        projectedPenalty
-        
-        val projectedTotalXP = (stored.totalXP - stored.todayXP) + newTodayXP
-        
-        return stored.copy(
-            totalXP = projectedTotalXP,
-            todayXP = newTodayXP,
-            taskXP = projectedTaskXP,
-            sessionXP = projectedSessionXP,
-            bonusXP = projectedBonus,
-            penaltyXP = projectedPenalty
-        )
-    }
-    
-    private suspend fun calculateProjectedSessionXP(context: Context, date: LocalDate): Int {
-        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            try {
-                val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(context)
-                val startOfDay = date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-                val endOfDay = date.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
-                
-                val calendarRepo = com.neubofy.reality.data.repository.CalendarRepository(context)
-                val calendarEvents = calendarRepo.getEventsInRange(startOfDay, endOfDay)
-                val sessions = db.tapasyaSessionDao().getSessionsForDay(startOfDay, endOfDay)
-                
-                var sessionsAttended = 0
-                var sessionsMissed = 0
-                var earlyStarts = 0
-                
-                val now = System.currentTimeMillis()
-                
-                for (event in calendarEvents) {
-                    val eventStart = event.startTime
-                    val eventEnd = event.endTime
-                    
-                    val matchingSession = sessions.find { session ->
-                        session.startTime < eventEnd && session.endTime > eventStart
-                    }
-                    
-                    if (matchingSession != null) {
-                        sessionsAttended++
-                        if (matchingSession.startTime <= eventStart && 
-                            matchingSession.startTime >= eventStart - 5 * 60 * 1000) {
-                            earlyStarts++
-                        }
-                    } else {
-                        if (eventEnd < now) {
-                            sessionsMissed++
-                        }
-                    }
-                }
-                
-                (sessionsAttended * 100) - (sessionsMissed * 100) + (earlyStarts * 50)
-            } catch (e: Exception) {
-                0
-            }
-        }
-    }
-
-    // Get All Levels
-    fun getAllLevels(context: Context): List<GamificationLevel> {
-        val prefs = getPrefs(context)
-        val overridesJson = prefs.getString("level_overrides", "{}")
-        val overrides = try { JSONObject(overridesJson) } catch (e: Exception) { JSONObject() }
-        val legacyNames = try { JSONObject(prefs.getString("custom_level_names", "{}")) } catch(e: Exception) { JSONObject() }
-
-        val list = ArrayList<GamificationLevel>()
-        
-        for (i in 1..100) {
-            val def = LEVELS.getOrNull(i - 1)
-            var name = def?.name ?: "Level $i"
-            var xp = def?.requiredXP ?: (2500000 + (i - 50) * 100000)
-            var streak = def?.requiredStreak ?: (1000 + (i - 50) * 20)
-
-            if (legacyNames.has(i.toString())) {
-                name = legacyNames.getString(i.toString())
-            }
-
-            if (overrides.has(i.toString())) {
-                val data = overrides.getJSONObject(i.toString())
-                name = data.optString("name", name)
-                xp = data.optInt("xp", xp)
-                streak = data.optInt("streak", streak)
-            }
-            
-            list.add(GamificationLevel(i, name, xp, streak))
-        }
-        return list
-    }
-    
-    // Updated calculateLevel
-    fun calculateLevel(context: Context, totalXP: Int, streak: Int): GamificationLevel {
-        val allLevels = getAllLevels(context)
-        for (i in allLevels.indices.reversed()) {
-            val level = allLevels[i]
-            if (totalXP >= level.requiredXP && streak >= level.requiredStreak) {
-                return level
-            }
-        }
-        return allLevels[0]
-    }
-    
-    // Deprecated: Uses only defaults
-    fun calculateLevel(totalXP: Int, streak: Int): GamificationLevel {
-         for (i in LEVELS.indices.reversed()) {
-            val level = LEVELS[i]
-            if (totalXP >= level.requiredXP && streak >= level.requiredStreak) {
-                return level
-            }
-        }
-        return LEVELS[0]
-    }
-    
-    // Perform nightly reflection
-    suspend fun performNightlyReflection(
-        context: Context,
-        tasksCompleted: Int,
-        tasksIncomplete: Int,
-        sessionsAttended: Int,
-        sessionsMissed: Int,
-        earlyStarts: Int,
-        diaryXP: Int,
-        screenTimeBonus: Int,
-        screenTimePenalty: Int,
-        studyPercent: Int,
-        effectiveStudyMinutes: Int
-    ) {
-        val prefs = getPrefs(context)
-        
-        val taskXP = (tasksCompleted * 100) - (tasksIncomplete * 100)
-        val sessionXP = (sessionsAttended * 100) - (sessionsMissed * 100) + (earlyStarts * 50)
-        val bonusXP = screenTimeBonus
-        val penaltyXP = screenTimePenalty
-        
-        val tapasyaXP = prefs.getInt("tapasya_xp", 0)
-        val todayXP = tapasyaXP + taskXP + sessionXP + diaryXP + bonusXP - penaltyXP
-        
-        val currentTotalXP = prefs.getInt("total_xp", 0)
-        val newTotalXP = (currentTotalXP + todayXP).coerceAtLeast(0)
-        
-        val newStreak = updateStreak(context, studyPercent)
-        saveXPHistory(context, todayXP)
-        
-        prefs.edit()
-            .putInt("total_xp", newTotalXP)
-            .putInt("today_xp", todayXP)
-            .putInt("task_xp", taskXP)
-            .putInt("session_xp", sessionXP)
-            .putInt("diary_xp", diaryXP)
-            .putInt("bonus_xp", bonusXP)
-            .putInt("penalty_xp", penaltyXP)
-            .putString("last_xp_date", LocalDate.now().toString())
-            .apply()
-        
-        updateLevel(context)
-        val level = prefs.getInt("level", 1)
-
-        // Save to DailyStats Database
-        val breakdown = JSONObject().apply {
-            put("tapasya", tapasyaXP)
-            put("tasks", taskXP)
-            put("sessions", sessionXP)
-            put("diary", diaryXP)
-            put("bonus", bonusXP)
-            put("penalty", penaltyXP)
-        }
-        
-        val today = LocalDate.now().toString()
-        val stats = com.neubofy.reality.data.db.DailyStats(
-            date = today,
-            totalXP = todayXP, // Store daily XP, not cumulative
-            totalStudyTimeMinutes = effectiveStudyMinutes.toLong(),
-            streak = newStreak,
-            level = level,
-            breakdownJson = breakdown.toString()
-        )
-        
-        try {
-            val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(context)
-            db.dailyStatsDao().insertStats(stats)
-            TerminalLogger.log("XP: Saved DailyStats for $today")
-        } catch (e: Exception) {
-            TerminalLogger.log("XP: Error saving DailyStats: ${e.message}")
-        }
-        
-        TerminalLogger.log("XP: Nightly reflection complete. Today: $todayXP, Total: $newTotalXP")
-    }
-    
-    // resetDailyXP removed: logic integrated into checkDailyRollover and called automatically
-    
-    private fun saveXPHistory(context: Context, todayXP: Int) {
-        val prefs = getPrefs(context)
-        val historyJson = prefs.getString("xp_history", "[]")
-        val history = try { JSONArray(historyJson) } catch (e: Exception) { JSONArray() }
-        val today = LocalDate.now().toString()
-        val entry = JSONObject()
-        entry.put("date", today)
-        entry.put("xp", todayXP)
-        history.put(entry)
-        
-        // Remove only if exceeding max raw retention (default 30)
-        val rawLimit = prefs.getInt("retention_raw_days", 30)
-        while (history.length() > rawLimit) {
-            history.remove(0)
-        }
-        prefs.edit().putString("xp_history", history.toString()).apply()
-    }
-    
-    suspend fun cleanupData(context: Context) {
-        val prefs = getPrefs(context)
-        val rawLimit = prefs.getInt("retention_raw_days", 30)
-        val statsLimit = prefs.getInt("retention_stats_days", -1)
-        val today = LocalDate.now()
-        
-        TerminalLogger.log("Nightly: Cleaning data. Raw Limit: $rawLimit days, Stats Limit: $statsLimit days")
-
-        val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(context)
-
-        // 1. Cleanup Raw XP History (JSON)
-        // Using rawLimit
-        val historyJson = prefs.getString("xp_history", "[]")
-        val history = try { JSONArray(historyJson) } catch (e: Exception) { JSONArray() }
-        val rawCutoffDate = today.minusDays(rawLimit.toLong())
-        
-        val newHistory = JSONArray()
-        for (i in 0 until history.length()) {
-            val entry = history.optJSONObject(i) ?: continue
-            val dateStr = entry.optString("date", "")
-            try {
-                val date = LocalDate.parse(dateStr)
-                if (!date.isBefore(rawCutoffDate)) {
-                    newHistory.put(entry)
-                }
-            } catch (e: Exception) { }
-        }
-        prefs.edit().putString("xp_history", newHistory.toString()).apply()
-        
-        // 2. Cleanup Raw DB Data (Tapasya Sessions, Calendar Events)
-        val rawCutoffMillis = rawCutoffDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-        try {
-            db.tapasyaSessionDao().deleteOldSessions(rawCutoffMillis)
-            db.calendarEventDao().deleteOldEvents(rawCutoffMillis)
-            TerminalLogger.log("Nightly: Cleaned raw sessions/events older than $rawCutoffDate")
-        } catch (e: Exception) {
-            TerminalLogger.log("Nightly: Error cleaning raw DB data: ${e.message}")
-        }
-
-        // 3. Cleanup Daily Stats (Long-term)
-        if (statsLimit != -1) {
-            val statsCutoffDate = today.minusDays(statsLimit.toLong()).toString()
-            try {
-                db.dailyStatsDao().deleteOldStats(statsCutoffDate)
-                TerminalLogger.log("Nightly: Cleaned DailyStats older than $statsCutoffDate")
-            } catch (e: Exception) {
-                TerminalLogger.log("Nightly: Error cleaning stats: ${e.message}")
-            }
-        }
-    }
-    
-    private fun getPrefs(context: Context): SharedPreferences {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    }
-    
+    // Data Class for XP Breakdown
     data class XPBreakdown(
-        val totalXP: Int,
-        val todayXP: Int,
-        val tapasyaXP: Int,
-        val taskXP: Int,
-        val sessionXP: Int,
-        val diaryXP: Int,
-        val bonusXP: Int,
-        val penaltyXP: Int,
-        val streak: Int,
-        val level: Int
+        val date: String,
+        val tapasyaXP: Int = 0,
+        val taskXP: Int = 0,
+        val sessionXP: Int = 0,
+        val screenTimeXP: Int = 0,
+        val reflectionXP: Int = 0,
+        val penaltyXP: Int = 0,
+        val totalDailyXP: Int = 0,
+        val level: Int = 1,
+        val streak: Int = 0,
+        val plannedMinutes: Long = 0,
+        val effectiveMinutes: Long = 0
     )
-    
-    val LEVELS = listOf(
+
+    // Data Class for Level Information
+    data class GamificationLevel(
+        val level: Int,
+        val name: String,
+        val requiredXP: Int,
+        val requiredStreak: Int
+    )
+
+    // Static Levels List (User Provided)
+    private val LEVELS = listOf(
         GamificationLevel(1, "Novice Explorer", 0, 0),
         GamificationLevel(2, "Rising Student", 500, 1),
         GamificationLevel(3, "Eager Learner", 1000, 2),
@@ -588,4 +96,501 @@ object XPManager {
         GamificationLevel(49, "Eternal Grandmaster", 2385000, 900),
         GamificationLevel(50, "Reality Enlightened", 2560000, 1000)
     )
+
+    /**
+     * Get all level definitions, applying any user overrides.
+     */
+    fun getAllLevels(context: Context): List<GamificationLevel> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val defaults = LEVELS.toMutableList()
+        
+        // Apply saved overrides (if any)
+        for (i in defaults.indices) {
+            val lvl = defaults[i].level
+            val savedName = prefs.getString("level_${lvl}_name", null)
+            val savedXP = prefs.getInt("level_${lvl}_xp", -1)
+            val savedStreak = prefs.getInt("level_${lvl}_streak", -1)
+            
+            if (savedName != null || savedXP >= 0 || savedStreak >= 0) {
+                defaults[i] = defaults[i].copy(
+                    name = savedName ?: defaults[i].name,
+                    requiredXP = if (savedXP >= 0) savedXP else defaults[i].requiredXP,
+                    requiredStreak = if (savedStreak >= 0) savedStreak else defaults[i].requiredStreak
+                )
+            }
+        }
+        
+        return defaults
+    }
+
+    // Cache for UI to access synchronously
+    private var currentBreakdownCache: XPBreakdown? = null
+
+    /**
+     * Get XP breakdown for display (synchronous).
+     * Returns cached value if available, or legacy prefs fallback.
+     */
+    fun getXPBreakdown(context: Context): XPBreakdown {
+        if (currentBreakdownCache != null) return currentBreakdownCache!!
+        
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return XPBreakdown(
+            date = LocalDate.now().toString(),
+            totalDailyXP = prefs.getInt("today_xp", 0),
+            level = prefs.getInt(PREF_LEVEL, 1),
+            streak = prefs.getInt(PREF_STREAK, 0)
+        )
+    }
+
+    suspend fun getDailyStats(context: Context, date: String): XPBreakdown? = withContext(Dispatchers.IO) {
+        val db = AppDatabase.getDatabase(context)
+        val stats = db.dailyStatsDao().getStatsForDate(date)
+        if (stats != null) {
+            parseBreakdown(stats.breakdownJson, date).copy(level = stats.level, streak = stats.streak)
+        } else {
+            null
+        }
+    }
+
+    suspend fun getAllStatsDates(context: Context): List<String> = withContext(Dispatchers.IO) {
+        val db = AppDatabase.getDatabase(context)
+        db.dailyStatsDao().getAllStats().map { it.date }.sortedDescending()
+    }
+
+    // --- Core Logic: Tapasya XP Calculation ---
+    // XP per fragment (each fragment = 15 minutes)
+    fun calculateTapasyaXP(effectiveMinutes: Int): Int {
+        val roundedMinutes = (effectiveMinutes / 15) * 15
+        val fragments = roundedMinutes / 15
+        
+        var totalXP = 0
+        for (i in 1..fragments) {
+            totalXP += i * 15
+        }
+        return totalXP
+    }
+
+    // --- Core Logic: Task XP Calculation ---
+
+    /**
+     * Calculates Task XP manually (User Button Trigger).
+     * Logic:
+     * 1. Fetch Google Tasks for today.
+     * 2. Parse Title: "{due time}|{Task title}" (e.g., "14:00|Meeting").
+     * 3. Ignore tasks without due time.
+     * 4. Filter tasks where Due Time <= Current Time.
+     * 5. +100 XP for Completed, -100 XP for Pending/Due.
+     */
+    suspend fun calculateTaskXP(context: Context): Int = withContext(Dispatchers.IO) {
+        val today = LocalDate.now().toString()
+        val taskStats = GoogleTasksManager.getTasksForDate(context, today)
+        
+        var xp = 0
+        val now = LocalTime.now()
+        
+        // Helper to check time condition
+        fun checkTask(title: String): Boolean {
+            val parts = title.split("|")
+            if (parts.size >= 2) {
+                var timeStr = parts[0].trim()
+                // Handle {HH:mm} format by removing braces
+                if (timeStr.startsWith("{") && timeStr.endsWith("}")) {
+                    timeStr = timeStr.substring(1, timeStr.length - 1)
+                }
+                
+                return try {
+                    val dueTime = LocalTime.parse(timeStr) // Default ISO format HH:mm
+                    !dueTime.isAfter(now) // True if Due <= Now
+                } catch (e: Exception) {
+                    false // Ignore if parse fails
+                }
+            }
+            return false // Ignore if format doesn't match
+        }
+
+        // 1. Process Completed Tasks (+100)
+        taskStats.completedTasks.forEach { title ->
+            if (checkTask(title)) {
+                xp += 100
+            }
+        }
+        
+        // 2. Process Pending (Due) Tasks (-100)
+        taskStats.dueTasks.forEach { title ->
+             if (checkTask(title)) {
+                xp -= 100
+            }
+        }
+        
+        // Save to DB
+        updateDailyStats(context, today) { current ->
+            current.copy(taskXP = xp)
+        }
+        
+        return@withContext xp
+    }
+
+    /**
+     * Finalizes Task XP during Nightly Protocol (Step 7).
+     * Rule: Counts ALL tasks for detailed date regardless of time.
+     */
+    suspend fun finalizeNightlyTaskXP(context: Context, date: String, completedTasks: List<String>, pendingTasks: List<String>): Int = withContext(Dispatchers.IO) {
+        var xp = 0
+        
+        // +100 for every completed task
+        xp += (completedTasks.size * 100)
+        
+        // -100 for every pending task
+        xp -= (pendingTasks.size * 100)
+        
+        // Save to DB
+        updateDailyStats(context, date) { current ->
+            current.copy(taskXP = xp)
+        }
+        return@withContext xp
+    }
+    
+    // Removed private isTaskDue as logic is now embedded in calculateTaskXP per spec
+
+    // --- Persistence & Updates ---
+
+    suspend fun updateDailyStats(
+        context: Context, 
+        date: String, 
+        plannedMins: Long? = null,
+        effectiveMins: Long? = null,
+        update: (XPBreakdown) -> XPBreakdown
+    ) {
+        val db = AppDatabase.getDatabase(context)
+        val dao = db.dailyStatsDao()
+        
+        val existing = dao.getStatsForDate(date)
+        val currentBreakdown = if (existing != null) {
+            parseBreakdown(existing.breakdownJson, date).copy(
+                plannedMinutes = existing.totalPlannedMinutes,
+                effectiveMinutes = existing.totalEffectiveMinutes
+            )
+        } else {
+            XPBreakdown(date)
+        }
+        
+        var updatedBreakdown = update(currentBreakdown)
+        
+        // Update minutes if provided
+        if (plannedMins != null || effectiveMins != null) {
+            updatedBreakdown = updatedBreakdown.copy(
+                plannedMinutes = plannedMins ?: updatedBreakdown.plannedMinutes,
+                effectiveMinutes = effectiveMins ?: updatedBreakdown.effectiveMinutes
+            )
+        }
+        val totalDaily = updatedBreakdown.tapasyaXP + updatedBreakdown.taskXP + updatedBreakdown.sessionXP + 
+                         updatedBreakdown.screenTimeXP + updatedBreakdown.reflectionXP - updatedBreakdown.penaltyXP
+                         
+        val finalBreakdown = updatedBreakdown.copy(totalDailyXP = totalDaily)
+        
+        // Update Cache if it's today
+        if (date == LocalDate.now().toString()) {
+            currentBreakdownCache = finalBreakdown
+        }
+
+        // Save to DB
+        val entity = DailyStats(
+            date = date,
+            totalXP = totalDaily,
+            totalStudyTimeMinutes = updatedBreakdown.effectiveMinutes, 
+            totalPlannedMinutes = updatedBreakdown.plannedMinutes,
+            totalEffectiveMinutes = updatedBreakdown.effectiveMinutes,
+            streak = getStreak(context),
+            level = getLevel(context),
+            breakdownJson = toJson(finalBreakdown)
+        )
+        dao.insertStats(entity)
+        
+        // Sync Global Stats from DB to ensure consistency
+        recalculateGlobalStats(context)
+        
+        // Update SharedPreferences Legacy "Today XP" for UI sync (ONLY IF TODAY)
+        if (date == LocalDate.now().toString()) {
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                .putInt("today_xp", totalDaily)
+                .apply()
+        }
+    }
+    
+    // Recalculate Total XP, Level, and Streak from DB History
+    suspend fun recalculateGlobalStats(context: Context) {
+        val db = AppDatabase.getDatabase(context)
+        val allStats = db.dailyStatsDao().getAllStats() // Need to ensure DAO has this or use range
+        
+        var calculatedTotalXP = 0
+        var currentStreak = 0
+        
+        // Calculate Total
+        allStats.forEach { calculatedTotalXP += it.totalXP }
+        
+        // Calculate Streak (Consecutive days ending today/yesterday)
+        // Sort by date desc
+        val sortedStats = allStats.sortedByDescending { LocalDate.parse(it.date).toEpochDay() }
+        if (sortedStats.isNotEmpty()) {
+            val today = LocalDate.now()
+            val yesterday = today.minusDays(1)
+            
+            var lastDate = LocalDate.parse(sortedStats[0].date)
+            
+            // Streak is active if last entry is Today or Yesterday
+            if (lastDate.isEqual(today) || lastDate.isEqual(yesterday)) {
+                // Check if lastDate itself was successful
+                val firstDay = sortedStats[0]
+                val isFirstDaySuccessful = if (firstDay.totalPlannedMinutes > 0) {
+                    firstDay.totalEffectiveMinutes >= (firstDay.totalPlannedMinutes * 0.75)
+                } else {
+                    firstDay.totalEffectiveMinutes > 0 // Or just true? User said "75% of planned". If 0 planned, maybe any work counts.
+                }
+
+                if (isFirstDaySuccessful) {
+                    currentStreak = 1
+                    var previousDate = lastDate
+                    
+                    for (i in 1 until sortedStats.size) {
+                        val stat = sortedStats[i]
+                        val date = LocalDate.parse(stat.date)
+                        
+                        if (date.isEqual(previousDate.minusDays(1))) {
+                            val isSuccessful = if (stat.totalPlannedMinutes > 0) {
+                                stat.totalEffectiveMinutes >= (stat.totalPlannedMinutes * 0.75)
+                            } else {
+                                stat.totalEffectiveMinutes > 0
+                            }
+                            
+                            if (isSuccessful) {
+                                currentStreak++
+                                previousDate = date
+                            } else {
+                                break // Streak broken by unsuccessful day
+                            }
+                        } else {
+                            break // Streak broken by gap
+                        }
+                    }
+                }
+            }
+        }
+
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putInt(PREF_TOTAL_XP, calculatedTotalXP)
+            .putInt(PREF_STREAK, currentStreak)
+            .apply()
+            
+        checkLevelUp(context, calculatedTotalXP)
+    }
+    
+    suspend fun deleteDailyStats(context: Context, date: String) {
+        val db = AppDatabase.getDatabase(context)
+        db.dailyStatsDao().deleteStatsForDate(date) // Need to ensure DAO has this
+        recalculateGlobalStats(context)
+        
+        if (date == LocalDate.now().toString()) {
+            currentBreakdownCache = null
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                .putInt("today_xp", 0)
+                .apply()
+        }
+    }
+    
+    suspend fun enforceRetentionPolicy(context: Context) = withContext(Dispatchers.IO) {
+        // Enforce rigid 7-day retention as requested
+        val retentionDays = 7
+        val cutoffDate = LocalDate.now().minusDays(retentionDays.toLong()).toString()
+        val db = AppDatabase.getDatabase(context)
+        db.dailyStatsDao().deleteOldStats(cutoffDate)
+        
+        // Sync globals after deletion
+        recalculateGlobalStats(context)
+    }
+
+    // --- XP Types Helpers ---
+    
+    suspend fun addTapasyaXP(context: Context, xp: Int, date: String = LocalDate.now().toString()) {
+        updateDailyStats(context, date) { it.copy(tapasyaXP = it.tapasyaXP + xp) }
+    }
+
+    suspend fun addSessionXP(context: Context, xp: Int, date: String = LocalDate.now().toString()) {
+        updateDailyStats(context, date) { it.copy(sessionXP = it.sessionXP + xp) }
+    }
+    
+    suspend fun addScreenTimeXP(context: Context, xp: Int, date: String = LocalDate.now().toString()) {
+        updateDailyStats(context, date) { it.copy(screenTimeXP = it.screenTimeXP + xp) }
+    }
+    
+    suspend fun addReflectionXP(context: Context, xp: Int, date: String = LocalDate.now().toString()) {
+        updateDailyStats(context, date) { it.copy(reflectionXP = it.reflectionXP + xp) }
+    }
+
+    suspend fun setReflectionXP(context: Context, xp: Int, date: String = LocalDate.now().toString()) {
+        updateDailyStats(context, date) { it.copy(reflectionXP = xp) }
+    }
+    
+    // --- Global Stats (SharedPreferences) ---
+
+    fun getLevel(context: Context): Int {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(PREF_LEVEL, 1)
+    }
+
+    fun getTotalXP(context: Context): Int {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(PREF_TOTAL_XP, 0)
+    }
+
+    fun getStreak(context: Context): Int {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(PREF_STREAK, 0)
+    }
+    
+    private fun addGlobalXP(context: Context, amount: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val newTotal = prefs.getInt(PREF_TOTAL_XP, 0) + amount
+        prefs.edit().putInt(PREF_TOTAL_XP, newTotal).apply()
+        checkLevelUp(context, newTotal)
+    }
+    
+    private fun checkLevelUp(context: Context, totalXP: Int) {
+        val allLevels = getAllLevels(context)
+        val currentStreak = getStreak(context)
+        
+        // Find highest level reached where BOTH XP and Streak criteria are met
+        var currentLevel = 1
+        for (lvl in allLevels) {
+            if (totalXP >= lvl.requiredXP && currentStreak >= lvl.requiredStreak) {
+                currentLevel = lvl.level
+            } else {
+                // levels are sorted, so if one fails, we stop ascending
+                if (totalXP < lvl.requiredXP) break
+                // If streak fails but XP passes, we just don't advance to THIS level yet, 
+                // but we keep checking in case a future level has a different fitting 
+                // (though unlikely in standard progression)
+            }
+        }
+        
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val storedLevel = prefs.getInt(PREF_LEVEL, 1)
+        
+        if (currentLevel != storedLevel) {
+            prefs.edit().putInt(PREF_LEVEL, currentLevel).apply()
+        }
+    }
+
+    // --- Retention ---
+
+    fun setRetentionPolicy(context: Context, weeks: Int) {
+        val days = weeks * 7
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+            .putInt(PREF_RETENTION_DAYS, days)
+            .apply()
+    }
+    
+    suspend fun cleanupOldData(context: Context) = withContext(Dispatchers.IO) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val retentionDays = prefs.getInt(PREF_RETENTION_DAYS, 7)
+        
+        val cutoffDate = LocalDate.now().minusDays(retentionDays.toLong()).toString()
+        val db = AppDatabase.getDatabase(context)
+        db.dailyStatsDao().deleteOldStats(cutoffDate)
+    }
+
+    // --- JSON Helpers ---
+
+    private fun toJson(bd: XPBreakdown): String {
+        return JSONObject().apply {
+            put("tapasyaXP", bd.tapasyaXP)
+            put("taskXP", bd.taskXP)
+            put("sessionXP", bd.sessionXP)
+            put("screenTimeXP", bd.screenTimeXP)
+            put("reflectionXP", bd.reflectionXP)
+            put("penaltyXP", bd.penaltyXP)
+            put("totalDailyXP", bd.totalDailyXP)
+            put("level", bd.level)
+            put("streak", bd.streak)
+        }.toString()
+    }
+
+    private fun parseBreakdown(json: String, date: String): XPBreakdown {
+        if (json.isEmpty()) return XPBreakdown(date)
+        return try {
+            val obj = JSONObject(json)
+            XPBreakdown(
+                date = date,
+                tapasyaXP = obj.optInt("tapasyaXP", 0),
+                taskXP = obj.optInt("taskXP", 0),
+                sessionXP = obj.optInt("sessionXP", 0),
+                screenTimeXP = obj.optInt("screenTimeXP", 0),
+                reflectionXP = obj.optInt("reflectionXP", 0),
+                penaltyXP = obj.optInt("penaltyXP", 0),
+                totalDailyXP = obj.optInt("totalDailyXP", 0),
+                level = obj.optInt("level", 1),
+                streak = obj.optInt("streak", 0)
+            )
+        } catch (e: Exception) {
+            XPBreakdown(date)
+        }
+    }
+    
+    // --- Compatibility / Stubs ---
+
+    fun getLevelName(context: Context, level: Int): String {
+        val levels = getAllLevels(context)
+        return levels.find { it.level == level }?.name ?: "Unknown"
+    }
+
+    fun saveLevelOverride(context: Context, level: Int, name: String, xp: Int, streak: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString("level_${level}_name", name)
+            .putInt("level_${level}_xp", xp)
+            .putInt("level_${level}_streak", streak)
+            .apply()
+    }
+    
+    suspend fun getProjectedDailyXP(context: Context): XPBreakdown = withContext(Dispatchers.IO) {
+        val today = LocalDate.now().toString()
+        val db = AppDatabase.getDatabase(context)
+        val stats = db.dailyStatsDao().getStatsForDate(today)
+        val current = if (stats != null) {
+            parseBreakdown(stats.breakdownJson, today).copy(level = stats.level, streak = stats.streak)
+        } else {
+            XPBreakdown(today, level = getLevel(context), streak = getStreak(context))
+        }
+        
+        // Calculate Screen Time XP Live for UI projection
+        val stLimit = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE).getInt("screen_time_limit_minutes", 0)
+        val stUsedMillis = com.neubofy.reality.utils.UsageUtils.getFocusedAppsUsage(context)
+        val stUsedMins = (stUsedMillis / 60000).toInt()
+        
+        var stXp = 0
+        var penaltyXp = current.penaltyXP
+        
+        if (stLimit > 0) {
+            if (stUsedMins > stLimit) {
+                val over = stUsedMins - stLimit
+                penaltyXp = (over * 10).coerceAtMost(500)
+                stXp = 0
+            } else {
+                val left = stLimit - stUsedMins
+                stXp = (left * 10).coerceAtMost(500)
+                penaltyXp = 0 
+            }
+        }
+        
+        val combined = current.copy(
+            screenTimeXP = stXp,
+            penaltyXP = penaltyXp
+        )
+        
+        val totalDaily = combined.tapasyaXP + combined.taskXP + combined.sessionXP + 
+                         combined.screenTimeXP + combined.reflectionXP - combined.penaltyXP
+                         
+        return@withContext combined.copy(totalDailyXP = totalDaily)
+    }
+    
+    suspend fun performNightlyReflection(context: Context, date: String) {
+        // No-op
+    }
 }

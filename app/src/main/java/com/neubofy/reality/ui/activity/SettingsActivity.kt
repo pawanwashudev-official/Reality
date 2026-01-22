@@ -98,6 +98,11 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(Intent(this, NightlySettingsActivity::class.java))
         }
 
+        // Reflection Settings
+        binding.cardReflectionSettings.setOnClickListener {
+            startActivity(Intent(this, ReflectionSettingsActivity::class.java))
+        }
+
         // Tapasya Settings
         binding.cardTapasyaSettings.setOnClickListener {
             val intent = Intent(this, TapasyaActivity::class.java)

@@ -42,20 +42,32 @@ class ReflectionDetailActivity : AppCompatActivity() {
         
         binding.toolbar.setNavigationOnClickListener { finish() }
         
-        // Erase XP Data Button
-        binding.btnEraseXp.setOnClickListener {
-            MaterialAlertDialogBuilder(this)
-                .setTitle("Erase All XP Data?")
-                .setMessage("This will reset your Total XP, Today XP, Streak, and Level to zero. This cannot be undone.")
-                .setPositiveButton("Erase") { _, _ ->
-                    eraseAllXpData()
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
+        // Reflection Settings
+        binding.toolbar.findViewById<View>(R.id.btn_reflection_settings)?.setOnClickListener {
+            val intent = android.content.Intent(this, ReflectionSettingsActivity::class.java)
+            startActivity(intent)
         }
+
+        // Calculate Task XP (Manual Trigger)
+        binding.btnCalcTaskXp.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.IO) {
+                XPManager.calculateTaskXP(applicationContext)
+                withContext(Dispatchers.Main) {
+                    android.widget.Toast.makeText(this@ReflectionDetailActivity, "Task XP Updated", android.widget.Toast.LENGTH_SHORT).show()
+                    loadData()
+                }
+            }
+        }
+
+
         
         setupSpinners()
         setupCharts()
+        
+        binding.swipeRefresh.setOnRefreshListener {
+            loadData()
+        }
+        
         loadData()
     }
     
@@ -149,35 +161,7 @@ class ReflectionDetailActivity : AppCompatActivity() {
         }
     }
     
-    private fun loadData() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            // Use Projected breakdown for live "Expected" values
-            val xp = XPManager.getProjectedDailyXP(applicationContext) 
-            val levelName = XPManager.getLevelName(applicationContext, xp.level)
-            
-            withContext(Dispatchers.Main) {
-                // Stats
-                binding.tvTotalXp.text = "${xp.totalXP}*" // Indicate projected total
-                binding.tvTodayXp.text = if (xp.todayXP >= 0) "+${xp.todayXP}*" else "${xp.todayXP}*"
-                binding.tvStreak.text = "${xp.streak} days"
-                binding.tvLevel.text = "Level ${xp.level}"
-                binding.tvLevelName.text = levelName
-                
-                // Breakdown (All Projected)
-                binding.tvTapasyaXp.text = "+${xp.tapasyaXP}" // Live (Real)
-                
-                // Projected values with suffix
-                binding.tvTaskXp.text = formatXpValue(xp.taskXP) // Not projected anymore
-                binding.tvSessionXp.text = "${formatXpValue(xp.sessionXP)}*"
-                binding.tvDiaryXp.text = "+${xp.diaryXP}" // 0 usually
-                binding.tvBonusXp.text = "+${xp.bonusXP}*"
-                binding.tvPenaltyXp.text = if (xp.penaltyXP > 0) "-${xp.penaltyXP}*" else "0"
-            }
-        }
-        
-        loadXpChart()
-        loadStudyChart()
-    }
+    // loadData removed (duplicate)
     
     private fun loadXpChart() {
         lifecycleScope.launch(Dispatchers.IO) {
@@ -201,6 +185,7 @@ class ReflectionDetailActivity : AppCompatActivity() {
                 labels.add(dateFormat.format(calendar.time))
             }
             
+            
             withContext(Dispatchers.Main) {
                 val dataSet = LineDataSet(entries, "XP").apply {
                     color = ContextCompat.getColor(this@ReflectionDetailActivity, R.color.accent_focus)
@@ -218,8 +203,87 @@ class ReflectionDetailActivity : AppCompatActivity() {
                 binding.chartXpHistory.xAxis.valueFormatter = IndexAxisValueFormatter(labels)
                 binding.chartXpHistory.data = LineData(dataSet)
                 binding.chartXpHistory.invalidate()
+                
+                // Chart Selection Listener
+                binding.chartXpHistory.setOnChartValueSelectedListener(object : com.github.mikephil.charting.listener.OnChartValueSelectedListener {
+                    override fun onValueSelected(e: Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
+                        e?.let {
+                            val index = it.x.toInt()
+                            // Recover date from index logic: (currentXpDays - 1 - i) = index => i = currentXpDays - 1 - index
+                            // But cleaner is to recreate the date
+                            val daysAgo = currentXpDays - 1 - index
+                            val cal = Calendar.getInstance()
+                            cal.add(Calendar.DAY_OF_YEAR, -daysAgo)
+                            val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cal.time)
+                            
+                            // Fetch stats for this date
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                val stats = XPManager.getDailyStats(applicationContext, dateStr)
+                                withContext(Dispatchers.Main) {
+                                    updateBreakdownUI(stats ?: XPManager.XPBreakdown(dateStr), isHistorical = true)
+                                }
+                            }
+                        }
+                    }
+
+                    override fun onNothingSelected() {
+                        // Revert to Today/Projected
+                        loadData()
+                    }
+                })
             }
         }
+    }
+    
+    private fun updateBreakdownUI(xp: XPManager.XPBreakdown, isHistorical: Boolean = false) {
+        if (isHistorical) {
+            binding.tvBreakdownTitle.text = "XP Breakdown (${xp.date})"
+            binding.tvTodayXp.text = if (xp.totalDailyXP >= 0) "+${xp.totalDailyXP}" else "${xp.totalDailyXP}"
+        } else {
+            binding.tvBreakdownTitle.text = "Today's XP Breakdown"
+            val totalXP = XPManager.getTotalXP(applicationContext)
+            binding.tvTotalXp.text = "$totalXP" // Cumulative
+            binding.tvTodayXp.text = if (xp.totalDailyXP >= 0) "+${xp.totalDailyXP}" else "${xp.totalDailyXP}"
+            binding.tvStreak.text = "${xp.streak} days"
+            binding.tvLevel.text = "Level ${xp.level}"
+            
+            lifecycleScope.launch(Dispatchers.IO) {
+                 val levelName = XPManager.getLevelName(applicationContext, xp.level)
+                 withContext(Dispatchers.Main) {
+                     binding.tvLevelName.text = levelName
+                 }
+            }
+        }
+
+        binding.tvTapasyaXp.text = "+${xp.tapasyaXP}" // Originally mapped to SessionXP but user wants specific?
+        // Wait, earlier mapping was: tvTapasyaXp -> sessionXP (from breakdown). 
+        // User screenshot shows: "Tapasya XP +0", "Task XP +100", "Session XP +0", "Diary XP +94", "Bonus XP +500", "Penalty XP 0"
+        // Let's match Breakdown properties directly
+        binding.tvTapasyaXp.text = "+${xp.tapasyaXP}"
+        binding.tvTaskXp.text = formatXpValue(xp.taskXP) 
+        binding.tvSessionXp.text = "+${xp.sessionXP}"
+        binding.tvDiaryXp.text = "+${xp.reflectionXP}" 
+        binding.tvBonusXp.text = "+${xp.screenTimeXP}"
+        binding.tvPenaltyXp.text = if (xp.penaltyXP > 0) "-${xp.penaltyXP}" else "0"
+    }
+
+    private fun loadData() {
+        binding.swipeRefresh.isRefreshing = true
+        lifecycleScope.launch(Dispatchers.IO) {
+            // Sync Global Stats first (Recalculate Totals from DB)
+            XPManager.recalculateGlobalStats(applicationContext) 
+            
+            // Use Projected breakdown for live "Expected" values
+            val xp = XPManager.getProjectedDailyXP(applicationContext) 
+            
+            withContext(Dispatchers.Main) {
+                updateBreakdownUI(xp)
+                binding.swipeRefresh.isRefreshing = false
+            }
+        }
+        
+        loadXpChart()
+        loadStudyChart()
     }
     
     private fun loadStudyChart() {
@@ -269,28 +333,5 @@ class ReflectionDetailActivity : AppCompatActivity() {
         return if (value >= 0) "+$value" else value.toString()
     }
     
-    private fun eraseAllXpData() {
-        // Use same prefs name as XPManager
-        val prefs = getSharedPreferences("reflection_prefs", MODE_PRIVATE)
-        prefs.edit()
-            .putInt("total_xp", 0)
-            .putInt("today_xp", 0)
-            .putInt("tapasya_xp", 0)
-            .putInt("task_xp", 0)
-            .putInt("session_xp", 0)
-            .putInt("diary_xp", 0)
-            .putInt("bonus_xp", 0)
-            .putInt("penalty_xp", 0)
-            .putInt("streak", 0)
-            .putInt("level", 1)
-            .apply()
-        
-        getSharedPreferences("nightly_prefs", MODE_PRIVATE).edit()
-            .remove("protocol_state")
-            .remove("current_diary_doc_id")
-            .apply()
-            
-        android.widget.Toast.makeText(this, "All XP data erased", android.widget.Toast.LENGTH_SHORT).show()
-        loadData()
-    }
+
 }

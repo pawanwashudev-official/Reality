@@ -98,30 +98,47 @@ object GoogleDocsManager {
     }
     
     /**
-     * Get document content (plain text extraction).
+     * Get document content with support for structural elements (paragraphs, tables, lists).
      */
     suspend fun getDocumentContent(context: Context, documentId: String): String? {
         return withContext(Dispatchers.IO) {
             try {
                 val service = getDocsService(context) ?: return@withContext null
-                
                 val doc = service.documents().get(documentId).execute()
                 
-                // Extract text from document body
-                val content = StringBuilder()
+                val sb = StringBuilder()
                 doc.body?.content?.forEach { element ->
-                    element.paragraph?.elements?.forEach { paragraphElement ->
-                        paragraphElement.textRun?.content?.let { text ->
-                            content.append(text)
-                        }
-                    }
+                    processStructuralElement(element, sb)
                 }
                 
-                content.toString()
+                sb.toString()
             } catch (e: Exception) {
                 TerminalLogger.log("DOCS API: Error reading document - ${e.message}")
                 null
             }
+        }
+    }
+
+    private fun processStructuralElement(element: com.google.api.services.docs.v1.model.StructuralElement, sb: StringBuilder) {
+        // Handle Paragraph
+        element.paragraph?.elements?.forEach { pe ->
+            pe.textRun?.content?.let { sb.append(it) }
+        }
+
+        // Handle Table
+        element.table?.tableRows?.forEach { row ->
+            row.tableCells?.forEach { cell ->
+                cell.content?.forEach { cellElement ->
+                    processStructuralElement(cellElement, sb)
+                }
+                sb.append(" | ") // Cell separator
+            }
+            sb.append("\n") // Row separator
+        }
+
+        // Handle Table of Contents
+        element.tableOfContents?.content?.forEach { tocElement ->
+            processStructuralElement(tocElement, sb)
         }
     }
     

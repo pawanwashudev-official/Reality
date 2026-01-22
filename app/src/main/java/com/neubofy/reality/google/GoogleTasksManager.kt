@@ -45,6 +45,40 @@ object GoogleTasksManager {
             result.items ?: emptyList()
         }
     }
+
+    /**
+     * Find a task list by name, ignoring case and extra whitespace.
+     */
+    suspend fun findTaskListByName(context: Context, name: String): TaskList? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val lists = getTaskLists(context)
+                val target = name.replace("\\s+".toRegex(), " ").trim().lowercase()
+                lists.find { 
+                    it.title?.replace("\\s+".toRegex(), " ")?.trim()?.lowercase() == target 
+                }
+            } catch (e: Exception) {
+                TerminalLogger.log("TASKS API: Error finding list - ${e.message}")
+                null
+            }
+        }
+    }
+
+    /**
+     * Create a new task list.
+     */
+    suspend fun createTaskList(context: Context, title: String): TaskList? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val service = getTasksService(context) ?: return@withContext null
+                val taskList = TaskList().setTitle(title)
+                service.tasklists().insert(taskList).execute()
+            } catch (e: Exception) {
+                TerminalLogger.log("TASKS API: Error creating list - ${e.message}")
+                null
+            }
+        }
+    }
     
     /**
      * Get tasks from a specific task list.
@@ -140,13 +174,24 @@ object GoogleTasksManager {
                     
                     for (task in tasks) {
                         val dueDate = task.due
-                        if (dueDate != null && dueDate.startsWith(date)) {
-                            val title = task.title ?: "Untitled"
-                            if (task.status == "completed") {
+                        val completedDate = task.completed // RFC 3339 Timestamp string
+                        val title = task.title ?: "Untitled"
+
+                        // logic:
+                        // 1. If completed ON this date -> Completed Task
+                        // 2. If due ON this date (and NOT completed on this date) -> Due/Pending Task
+                        
+                        val isCompletedOnDate = completedDate != null && completedDate.toString().startsWith(date)
+                        val isDueOnDate = dueDate != null && dueDate.startsWith(date)
+                        
+                        if (isCompletedOnDate) {
+                            if (!completedTasks.contains(title)) {
                                 completedTasks.add(title)
-                            } else {
-                                dueTasks.add(title)
                             }
+                        } else if (isDueOnDate) {
+                            // It was due today, but NOT completed today.
+                            // (It might be completed later, or never, but for TODAY's record, it's pending)
+                            dueTasks.add(title)
                         }
                     }
                 }

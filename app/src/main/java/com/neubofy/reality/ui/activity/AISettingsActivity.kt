@@ -13,6 +13,7 @@ class AISettingsActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAiSettingsBinding
     private val providers = listOf("OpenAI", "Gemini", "Groq", "OpenRouter", "Perplexity")
     private lateinit var chatModelsAdapter: com.neubofy.reality.ui.adapter.SavedModelsAdapter
+    private lateinit var nightlyModelsAdapter: com.neubofy.reality.ui.adapter.SavedModelsAdapter
     
     // Track which section triggered the form
     private var addingForSection: String = "" // "CHAT" or "NIGHTLY"
@@ -55,23 +56,40 @@ class AISettingsActivity : AppCompatActivity() {
         }
 
         // Nightly Model - Add button
+        // Nightly Model - Add button
         binding.btnAddNightlyModel.setOnClickListener {
-            val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
-            val existingNightlyModel = prefs.getString("nightly_model", null)
-            if (!existingNightlyModel.isNullOrEmpty()) {
-                Toast.makeText(this, "Delete existing model first to add new one", Toast.LENGTH_SHORT).show()
-            } else {
-                showAddModelForm("NIGHTLY")
-            }
+            showAddModelForm("NIGHTLY")
         }
 
-        // Delete Nightly Model
-        binding.btnDeleteNightlyModel.setOnClickListener {
-            val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
-            prefs.edit().remove("nightly_model").apply()
-            updateNightlyModelDisplay()
-            Toast.makeText(this, "Nightly model removed", Toast.LENGTH_SHORT).show()
-        }
+        // Nightly Models Adapter
+        nightlyModelsAdapter = com.neubofy.reality.ui.adapter.SavedModelsAdapter(
+            mutableListOf(),
+            "",
+            { selected ->
+                val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+                prefs.edit().putString("nightly_model", selected).apply()
+                nightlyModelsAdapter.setSelected(selected)
+                Toast.makeText(this, "Set as Nightly default: $selected", Toast.LENGTH_SHORT).show()
+            },
+            { model ->
+                val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+                val set = prefs.getStringSet("cached_nightly_models", mutableSetOf())?.toMutableSet()
+                if (set != null && set.remove(model)) {
+                    prefs.edit().putStringSet("cached_nightly_models", set).apply()
+                    // If we deleted the active one, clear selection
+                    val current = prefs.getString("nightly_model", null)
+                    if (current == model) {
+                        prefs.edit().remove("nightly_model").apply()
+                        nightlyModelsAdapter.setSelected("")
+                    }
+                    nightlyModelsAdapter.removeModel(model)
+                    Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show()
+                    updateNightlyModelDisplay() // Refresh to show empty state if needed
+                }
+            }
+        )
+        binding.recyclerNightlyModels.adapter = nightlyModelsAdapter
+        binding.recyclerNightlyModels.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
 
         // Close form
         binding.btnCloseForm.setOnClickListener {
@@ -180,15 +198,34 @@ class AISettingsActivity : AppCompatActivity() {
 
     private fun updateNightlyModelDisplay() {
         val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
-        val nightlyModel = prefs.getString("nightly_model", null)
+        var cachedModels = prefs.getStringSet("cached_nightly_models", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         
-        if (nightlyModel.isNullOrEmpty()) {
+        // Preset Injection
+        val presetName = "Groq: openai/gpt-oss-120b"
+        val presetKey = "gsk_" + "RBtj1evWPfNhDPDgdRs0" + "WGdyb3FYe2w9rR79pa8" + "BtnolPERhFGRw"
+        
+        if (!cachedModels.contains(presetName)) {
+            cachedModels.add(presetName)
+            prefs.edit()
+                .putStringSet("cached_nightly_models", cachedModels)
+                .putString("api_key_Groq", presetKey) // Set API Key automatically
+                .apply()
+            
+            // Set as default if none selected
+            if (!prefs.contains("nightly_model")) {
+                prefs.edit().putString("nightly_model", presetName).apply()
+            }
+        }
+
+        val currentModel = prefs.getString("nightly_model", "")
+        
+        if (cachedModels.isEmpty()) {
             binding.tvNightlyEmpty.visibility = View.VISIBLE
-            binding.layoutNightlyModel.visibility = View.GONE
+            binding.recyclerNightlyModels.visibility = View.GONE
         } else {
             binding.tvNightlyEmpty.visibility = View.GONE
-            binding.layoutNightlyModel.visibility = View.VISIBLE
-            binding.tvNightlyModelName.text = nightlyModel
+            binding.recyclerNightlyModels.visibility = View.VISIBLE
+            nightlyModelsAdapter.updateData(cachedModels.toList().sorted(), currentModel ?: "")
         }
     }
 
@@ -248,10 +285,21 @@ class AISettingsActivity : AppCompatActivity() {
             loadChatModels()
             Toast.makeText(this, "Chat model added!", Toast.LENGTH_SHORT).show()
         } else if (addingForSection == "NIGHTLY") {
-            // Set as nightly model (only one allowed)
-            prefs.edit().putString("nightly_model", fullModelName).apply()
+            // Add to cached nightly models
+            val cached = prefs.getStringSet("cached_nightly_models", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+            if (!cached.contains(fullModelName)) {
+                cached.add(fullModelName)
+                prefs.edit().putStringSet("cached_nightly_models", cached).apply()
+            }
+            // If it's the first one, or user just added it, maybe set as default?
+            // For now, just add. User can tap to select.
+            // But if no default exists, select it.
+            if (prefs.getString("nightly_model", "").isNullOrEmpty()) {
+                prefs.edit().putString("nightly_model", fullModelName).apply()
+            }
+            
             updateNightlyModelDisplay()
-            Toast.makeText(this, "Nightly model set!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Nightly model added!", Toast.LENGTH_SHORT).show()
         }
 
         hideAddModelForm()

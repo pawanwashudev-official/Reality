@@ -185,4 +185,8 @@ dependencies {
     implementation("io.noties.markwon:image:4.6.2")
     implementation("io.noties.markwon:image-coil:4.6.2")
     // implementation("io.noties.markwon:image-coil:4.6.2") // Conflict with coil version often, skip for now unless requested
+    
+    // PDF Generation (iText7 for styled markdown rendering)
+    implementation("com.itextpdf:itext7-core:7.2.5")
+    implementation("com.itextpdf:html2pdf:4.0.5")
 }

@@ -107,4 +107,60 @@ class CalendarRepository(private val context: Context) {
         }
         return events
     }
+    
+    /**
+     * Create a calendar event.
+     * @return The event ID if successful, -1 if failed
+     */
+    fun createEvent(title: String, startTime: Long, endTime: Long, description: String? = null): Long {
+        try {
+            val values = android.content.ContentValues().apply {
+                put(CalendarContract.Events.TITLE, title)
+                put(CalendarContract.Events.DTSTART, startTime)
+                put(CalendarContract.Events.DTEND, endTime)
+                if (description != null) {
+                    put(CalendarContract.Events.DESCRIPTION, description)
+                }
+                put(CalendarContract.Events.CALENDAR_ID, getDefaultCalendarId())
+                put(CalendarContract.Events.EVENT_TIMEZONE, java.util.TimeZone.getDefault().id)
+            }
+            
+            val uri = context.contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)
+            return uri?.lastPathSegment?.toLongOrNull() ?: -1
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return -1
+        }
+    }
+    
+    private fun getDefaultCalendarId(): Long {
+        val cursor = context.contentResolver.query(
+            CalendarContract.Calendars.CONTENT_URI,
+            arrayOf(CalendarContract.Calendars._ID),
+            "${CalendarContract.Calendars.IS_PRIMARY} = 1",
+            null,
+            null
+        )
+        
+        cursor?.use {
+            if (it.moveToFirst()) {
+                return it.getLong(0)
+            }
+        }
+        
+        // Fallback: get first available calendar
+        val fallbackCursor = context.contentResolver.query(
+            CalendarContract.Calendars.CONTENT_URI,
+            arrayOf(CalendarContract.Calendars._ID),
+            null, null, null
+        )
+        
+        fallbackCursor?.use {
+            if (it.moveToFirst()) {
+                return it.getLong(0)
+            }
+        }
+        
+        return 1L // Fallback to calendar ID 1
+    }
 }

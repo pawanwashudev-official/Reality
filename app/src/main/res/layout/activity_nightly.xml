@@ -54,6 +54,30 @@
             android:textColor="?attr/colorOnSurface"
             android:layout_marginStart="16dp"/>
 
+        <!-- Report Icon -->
+        <ImageView
+            android:id="@+id/btn_report"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:padding="10dp"
+            android:src="@drawable/baseline_description_24"
+            app:tint="?attr/colorOnSurface"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Daily Report"
+            android:layout_marginEnd="8dp"/>
+
+        <!-- NEW: Plan Icon -->
+        <ImageView
+            android:id="@+id/btn_plan"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:padding="10dp"
+            android:src="@drawable/baseline_calendar_month_24"
+            app:tint="?attr/colorOnSurface"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Next Day Plan"
+            android:layout_marginEnd="8dp"/>
+
         <!-- Settings Gear Icon -->
         <ImageView
             android:id="@+id/btn_settings"
@@ -67,19 +91,21 @@
     </LinearLayout>
 
     <!-- Main Content ScrollView -->
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintTop_toBottomOf="@id/header"
         app:layout_constraintBottom_toBottomOf="parent"
         android:padding="20dp"
-        android:clipToPadding="false">
+        android:clipToPadding="false"
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center_horizontal">
+            android:gravity="center_horizontal"
+            android:paddingBottom="100dp">
 
             <!-- Big Moon/Night Icon -->
             <ImageView
@@ -195,12 +221,21 @@
                 android:layout_marginBottom="12dp"
                 android:layout_marginStart="4dp"/>
 
-            <!-- Steps Container -->
+            <!-- NEW: Steps RecyclerView (12 Dynamic Cards) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_steps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:overScrollMode="never"/>
+
+            <!-- OLD: Steps Container (set GONE, kept for reference during migration) -->
             <LinearLayout
                 android:id="@+id/layout_steps_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:visibility="gone">
 
                 <!-- Step 1: Data -->
                 <com.google.android.material.card.MaterialCardView
@@ -570,103 +605,7 @@
 
             </LinearLayout>
 
-            <!-- Verification Actions (Initially Gone) -->
-            <LinearLayout
-                android:id="@+id/layout_verification_actions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="16dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Verification Required"
-                    android:textColor="?attr/colorPrimary"
-                    android:textStyle="bold"
-                    android:gravity="center"
-                    android:layout_marginBottom="8dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Review and edit the plan in Google Docs, then confirm below."
-                    android:textSize="12sp"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:gravity="center"
-                    android:layout_marginBottom="12dp"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_open_plan_doc"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Open Plan in Google Docs"
-                    app:icon="@drawable/baseline_edit_24"
-                    android:layout_marginBottom="4dp"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_verify_plan"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Plan is Ready for AI"
-                    app:icon="@drawable/baseline_check_circle_24"
-                    app:iconTint="@color/green_500"/>
-            </LinearLayout>
-
-            <!-- Questions Preview Card (shown after generation) -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_questions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
-                app:strokeWidth="1dp"
-                android:layout_marginBottom="16dp"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="💭 Reflection Questions"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
-                        android:layout_marginBottom="12dp"/>
-
-                    <TextView
-                        android:id="@+id/tv_questions_list"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textSize="13sp"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:lineSpacingMultiplier="1.4"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Open Diary Button (shown after creation) -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_open_diary"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Open Diary in Google Docs"
-                android:textAllCaps="false"
-                app:cornerRadius="12dp"
-                android:layout_marginTop="16dp"
-                android:visibility="gone"/>
-
-            <!-- Start/Analyze Button -->
+            <!-- Start/Analyze Button (Main Action) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_start_nightly"
                 android:layout_width="match_parent"
@@ -675,7 +614,8 @@
                 android:textAllCaps="false"
                 app:cornerRadius="12dp"
                 android:enabled="false"
-                android:layout_marginTop="8dp"/>
+                android:layout_marginTop="16dp"
+                android:visibility="gone"/>
 
             <!-- Log Console Card (Always visible when needed, or toggled) -->
             <com.google.android.material.card.MaterialCardView
@@ -722,7 +662,7 @@
                             android:padding="4dp"/>
                     </LinearLayout>
 
-                    <ScrollView
+                    <androidx.core.widget.NestedScrollView
                         android:layout_width="match_parent"
                         android:layout_height="120dp"
                         android:background="?attr/colorSurface"
@@ -737,13 +677,13 @@
                             android:textSize="11sp"
                             android:fontFamily="monospace"
                             android:textColor="?attr/colorOnSurface"/>
-                    </ScrollView>
+                    </androidx.core.widget.NestedScrollView>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
 
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

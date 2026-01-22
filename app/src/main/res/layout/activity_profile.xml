@@ -20,6 +20,21 @@
         app:layout_constraintTop_toTopOf="parent"
         android:elevation="4dp"/>
 
+    <ImageView
+        android:id="@+id/btn_info_profile"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:padding="10dp"
+        android:src="@drawable/baseline_info_24"
+        app:tint="?attr/colorOnSurfaceVariant"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Info"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:elevation="4dp"/>
+
     <!-- Gradient Glow -->
     <View
         android:id="@+id/gradient_glow"
@@ -395,12 +410,186 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Divider -->
+            <com.google.android.material.divider.MaterialDivider
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="16dp"/>
+
+            <!-- Section: Detailed Protocol Setup -->
+            <TextView
+                android:id="@+id/tv_setup_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nightly Protocol Setup"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                android:layout_marginBottom="16dp"
+                android:layout_marginStart="4dp"
+                android:visibility="gone"/>
+
+            <!-- Google Drive Detailed Setup -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_drive_setup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+                        
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_cloud_24"
+                            app:tint="?attr/colorPrimary"/>
+                            
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="8dp"
+                            android:text="Drive Folders"
+                            android:textStyle="bold"
+                            android:textSize="16sp"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_forget_drive"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Forget"
+                            android:textColor="?attr/colorError"
+                            android:visibility="gone"/>
+                    </LinearLayout>
+
+                    <!-- Saved Folders Info -->
+                    <TextView
+                        android:id="@+id/tv_saved_drive_info"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No folders configured."
+                        android:textSize="12sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:fontFamily="monospace"
+                        android:layout_marginBottom="12dp"
+                        android:background="?attr/colorSurfaceVariant"
+                        android:padding="8dp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_auto_setup_drive"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Setup"
+                        app:icon="@drawable/baseline_auto_fix_high_24"
+                        style="@style/Widget.Material3.Button.TonalButton"/>
+                    
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Google Tasks Detailed Setup -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_tasks_setup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+                        
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/baseline_task_alt_24"
+                            app:tint="?attr/colorPrimary"/>
+                            
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="8dp"
+                            android:text="Task Lists"
+                            android:textStyle="bold"
+                            android:textSize="16sp"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_forget_tasks"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Forget"
+                            android:textColor="?attr/colorError"
+                            android:visibility="gone"/>
+                    </LinearLayout>
+
+                    <!-- Saved Tasks Info -->
+                    <TextView
+                        android:id="@+id/tv_saved_tasks_info"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No task lists configured."
+                        android:textSize="13sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:paddingVertical="4dp"/>
+
+                    
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Erase All Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_erase_all_setup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Erase All Protocol Setup"
+                android:textColor="?attr/colorError"
+                app:strokeColor="?attr/colorError"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                app:icon="@drawable/ic_delete_forever"
+                app:iconTint="?attr/colorError"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone"/>
+
             <!-- Hint Text -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Tip: Check the Terminal on home screen for detailed logs"
+                android:text="Tip: Nightly Protocol uses these folders and lists to store your reflections and tasks."
                 android:textSize="12sp"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:gravity="center"/>

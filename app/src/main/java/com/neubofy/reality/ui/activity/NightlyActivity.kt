@@ -14,6 +14,7 @@ import com.neubofy.reality.data.NightlyProtocolExecutor
 import com.neubofy.reality.databinding.ActivityNightlyBinding
 import com.neubofy.reality.utils.TerminalLogger
 import com.neubofy.reality.utils.ThemeManager
+import com.neubofy.reality.R
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
@@ -32,6 +33,10 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
     // Execution state
     private var isExecuting = false
     private var diaryUrl: String? = null
+    
+    // RecyclerView Adapter for 12 Steps
+    private lateinit var stepAdapter: com.neubofy.reality.ui.adapter.NightlyStepAdapter
+    private val stepItems = mutableListOf<com.neubofy.reality.ui.adapter.StepItem>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)
@@ -42,8 +47,15 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
         setContentView(binding.root)
         
         calculateBaseDate()
+        
+        // Clean up old data on launch (protect currently selected date)
+        lifecycleScope.launch {
+            NightlyProtocolExecutor.cleanupOldEntries(this@NightlyActivity, selectedDate)
+        }
+        
         setupInsets()
         setupListeners()
+        setupStepsRecyclerView()
         updateSetupStatus()
         updateDateDisplay()
     }
@@ -55,10 +67,9 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
     }
     
     private fun calculateBaseDate() {
-        // Simple logic: if after midnight and before 4am, use previous day
-        // This covers most nightly review scenarios
-        val now = LocalTime.now()
-        baseDate = if (now.hour < 4) LocalDate.now().minusDays(1) else LocalDate.now()
+        // Always include TODAY in baseDate so it's always selectable.
+        // We use maxOffset to go back in time.
+        baseDate = LocalDate.now()
         selectedDate = baseDate
         dateOffset = 0
     }
@@ -96,13 +107,133 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
         }
     }
     
+    private fun setupStepsRecyclerView() {
+        // Initialize 12 Step Items
+        stepItems.clear()
+        stepItems.addAll(listOf(
+            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_FETCH_TASKS, "1. Fetch Tasks", R.drawable.baseline_sync_24),
+            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_FETCH_SESSIONS, "2. Fetch Sessions", R.drawable.baseline_sync_24),
+            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_CALC_SCREEN_TIME, "3. Screen Time", R.drawable.baseline_access_time_24),
+            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS, "4. AI Questions", R.drawable.baseline_auto_awesome_24),
+            
+            // Step 5
+            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_CREATE_DIARY, "5. Create Diary", R.drawable.baseline_edit_24),
+                
+            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION, "6. Analyze Reflection", R.drawable.baseline_auto_awesome_24, isEnabled = false), // Initially disabled
+            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_FINALIZE_XP, "7. Finalize XP", R.drawable.baseline_bolt_24),
+            
+            // Step 8 
+            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC, "8. Create Plan", R.drawable.baseline_description_24),
+                
+            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_GENERATE_PLAN, "9. AI Plan", R.drawable.baseline_auto_awesome_24, isEnabled = false), // Initially disabled
+            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_PROCESS_PLAN, "10. Process Plan", R.drawable.baseline_calendar_month_24),
+            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_GENERATE_REPORT, "11. Generate Report", R.drawable.baseline_description_24),
+            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_GENERATE_PDF, "12. Generate PDF", R.drawable.baseline_picture_as_pdf_24)
+        ))
+        
+        stepAdapter = com.neubofy.reality.ui.adapter.NightlyStepAdapter(
+            steps = stepItems,
+            onStartClick = { step -> executeStep(step.stepId) },
+            onDoubleTap = { step -> showStepDetails(step) },
+            onLongPress = { step -> showStepContextMenu(step.stepId) },
+                onCheckboxChanged = { _, _ -> } // Removed functionality as per user request
+        )
+        
+        binding.recyclerSteps.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+        binding.recyclerSteps.adapter = stepAdapter
+    }
+    
+    private fun executeStep(stepId: Int) {
+        if (isExecuting) return
+        
+        // STRICT MODE: Check if within active time window before allowing any step to run
+        val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
+        val startTimeMinutes = prefs.getInt("nightly_start_time", 22 * 60)
+        val endTimeMinutes = prefs.getInt("nightly_end_time", 23 * 60 + 59)
+        
+        if (!isWithinTimeWindow(startTimeMinutes, endTimeMinutes)) {
+            Toast.makeText(this, "Steps can only run within the active time window (${formatTimeDisplay(startTimeMinutes)} - ${formatTimeDisplay(endTimeMinutes)})", Toast.LENGTH_LONG).show()
+            return
+        }
+        
+        isExecuting = true
+        
+        lifecycleScope.launch {
+            try {
+                val executor = NightlyProtocolExecutor(this@NightlyActivity, selectedDate, this@NightlyActivity)
+                
+                // Call specific step function based on stepId
+                appendLog("Starting Step $stepId...")
+                stepAdapter.updateStep(stepId, NightlyProtocolExecutor.StepProgress.STATUS_RUNNING, "Running...")
+                
+                executor.executeSpecificStep(stepId)
+                
+            } catch (e: Exception) {
+                appendLog("Error: ${e.message}")
+                stepAdapter.updateStep(stepId, NightlyProtocolExecutor.StepProgress.STATUS_ERROR, e.message ?: "Failed")
+            } finally {
+                isExecuting = false
+            }
+        }
+    }
+    
+    private fun showStepDetails(step: com.neubofy.reality.ui.adapter.StepItem) {
+        showDetailedStepPopup(step.stepId)
+    }
+    // Legacy showStepDetails implementation removed
+
+        
+
+    
+    private fun getStatusName(status: Int): String = when(status) {
+        NightlyProtocolExecutor.StepProgress.STATUS_PENDING -> "Pending"
+        NightlyProtocolExecutor.StepProgress.STATUS_RUNNING -> "Running"
+        NightlyProtocolExecutor.StepProgress.STATUS_COMPLETED -> "Completed"
+        NightlyProtocolExecutor.StepProgress.STATUS_ERROR -> "Error"
+        NightlyProtocolExecutor.StepProgress.STATUS_SKIPPED -> "Skipped"
+        else -> "Unknown"
+    }
+    
+    private fun clearAndRetryStep(stepId: Int) {
+        lifecycleScope.launch {
+            // Clear this step's state
+            com.neubofy.reality.data.repository.NightlyRepository.saveStepState(this@NightlyActivity, selectedDate, stepId, 
+                NightlyProtocolExecutor.StepProgress.STATUS_PENDING, null)
+            
+            // Update UI
+            stepAdapter.updateStep(stepId, NightlyProtocolExecutor.StepProgress.STATUS_PENDING, "Pending...")
+            loadPersistentState()
+            
+            Toast.makeText(this@NightlyActivity, "Step cleared. Tap Start to retry.", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
     private fun setupListeners() {
         binding.btnBack.setOnClickListener { finish() }
         
+        binding.btnReport.setOnClickListener {
+            val intent = Intent(this, NightlyReportActivity::class.java)
+            intent.putExtra("date", selectedDate)
+            startActivity(intent)
+        }
+        
+        // NEW: Plan Icon Navigation
+        binding.btnPlan.setOnClickListener {
+            val intent = Intent(this, NightlyPlanActivity::class.java)
+            intent.putExtra("date", selectedDate)
+            startActivity(intent)
+        }
+
         binding.btnSettings.setOnClickListener {
             startActivity(Intent(this, NightlySettingsActivity::class.java))
         }
         
+        binding.btnReport.setOnClickListener {
+             startActivity(Intent(this, NightlyReportActivity::class.java).apply {
+                 putExtra("date", selectedDate.toString())
+             })
+        }
+
         binding.btnPrevDate.setOnClickListener {
             if (dateOffset > -maxOffset) {
                 dateOffset--
@@ -121,13 +252,8 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
             }
         }
         
-        // Step Details Click Listeners - Show saved data from memory
-        binding.cardStepData.setOnClickListener { showDetailedStepPopup(1) }
-        binding.cardStepQuestions.setOnClickListener { showDetailedStepPopup(2) }
-        binding.cardStepDiary.setOnClickListener { showDetailedStepPopup(3) }
-        binding.cardStepAnalysis.setOnClickListener { showDetailedStepPopup(4) }
-        binding.cardStepCreatePlan.setOnClickListener { showDetailedStepPopup(5) }
-        binding.cardStepProcessPlan.setOnClickListener { showDetailedStepPopup(6) }
+        // Step Card Listeners - Removed (Now handled by RecyclerView Adapter)
+
 
         // Start Button Logic (Dynamic)
         binding.btnStartNightly.setOnClickListener {
@@ -139,58 +265,27 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
             if (currentState == NightlyProtocolExecutor.STATE_PENDING_REFLECTION) {
                 // Analysis Phase
                 analyzeDay()
+            } else if (currentState == NightlyProtocolExecutor.STATE_PLANNING_READY) {
+                // Planning Phase
+                 processPlan()
             } else {
                 // Creation Phase
-                startNightlyProtocol()
+                 if (checkApiIntegrity()) {
+                    startNightlyProtocol()
+                 }
             }
         }
         
-        binding.btnOpenDiary.setOnClickListener {
-            diaryUrl?.let { url ->
-                try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    Toast.makeText(this, "Could not open Google Docs", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
+        // btnOpenDiary removed - now in Step 5 card via adapter
         
-        // Verification Actions
-        binding.btnOpenPlanDoc.setOnClickListener {
-            val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
-            val planId = prefs.getString(NightlyProtocolExecutor.getPlanDocIdKey(selectedDate), null)
-            planId?.let { id ->
-                try {
-                    val url = "https://docs.google.com/document/d/$id/edit"
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                } catch (e: Exception) {
-                    Toast.makeText(this, "Could not open Plan", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-        
-        binding.btnVerifyPlan.setOnClickListener {
-            // User confirms they have edited the plan
-            val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
-            prefs.edit().putBoolean(NightlyProtocolExecutor.getPlanVerifiedKey(selectedDate), true).apply()
-            
-            // UI Update
-            binding.layoutVerificationActions.visibility = View.GONE
-            Toast.makeText(this, "Plan Verified! Proceeding...", Toast.LENGTH_SHORT).show()
-            
-            // Allow processing to start
-            loadPersistentState() 
-            // We might want to trigger processing immediately or just let user click start?
-            // "Plan is Ready" implies we are good to go.
-        }
-        
-
+        // Verification Actions - Moved to Step 8 card (handled in double-tap details)
         
         // Clear Log Console
         binding.btnClearLog.setOnClickListener {
             binding.tvExecutionLog.text = "Ready to start..."
         }
+        
+        // Inline Open Diary/Report buttons - now handled in adapter via linkUrl
     }
 
     private fun showStepDetail(step: Int, title: String, description: String, isDestructive: Boolean = false) {
@@ -213,96 +308,103 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
         builder.show()
     }
     
+    private fun showStepContextMenu(step: Int) {
+        val options = arrayOf("View Details", "Retry Step (Reset)")
+        
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Step Options")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showDetailedStepPopup(step)
+                    1 -> confirmDeleteAndRerun(step, step)
+                }
+            }
+            .show()
+    }
+    
+    // mapUiStepToExecutorStep removed - stepId is now consistent
+
+
     // Enhanced Step Popup - Shows all saved data from memory
     private fun showDetailedStepPopup(step: Int) {
-        val executorStep = when (step) {
-            1 -> NightlyProtocolExecutor.STEP_COLLECT_DATA
-            2 -> NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS
-            3 -> NightlyProtocolExecutor.STEP_CREATE_DIARY
-            4 -> NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION
-            5 -> NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC
-            6 -> NightlyProtocolExecutor.STEP_PROCESS_PLAN
-            else -> return
-        }
+        val executorStep = step // Direct mapping now
         
-        val stepState = NightlyProtocolExecutor.loadStepState(this, selectedDate, executorStep)
-        val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
-        
-        val title = when (step) {
-            1 -> "📊 Day Data Collection"
-            2 -> "🤖 AI Questions"
-            3 -> "📖 Diary Document"
-            4 -> "✨ AI Analysis & XP"
-            5 -> "📝 Plan Document"
-            6 -> "📅 Process & Calendar"
-            else -> "Step $step"
-        }
-        
-        // Build content from saved memory
-        val content = StringBuilder()
-        
-        content.append("Status: ${getStatusText(stepState.status)}\n\n")
-        content.append("📋 Saved Details:\n${stepState.details ?: "No data yet"}\n\n")
-        
-        when (step) {
-            1 -> content.append("This step collects:\n• Calendar events\n• Tasks (due & completed)\n• Focus sessions")
-            2 -> content.append("AI generates 5 personalized reflection questions based on your day summary.")
-            3 -> {
-                val diaryId = prefs.getString(NightlyProtocolExecutor.getDiaryDocIdKey(selectedDate), null)
-                if (diaryId != null) {
-                    content.append("📄 Doc ID: $diaryId\n")
-                    content.append("🔗 Click 'Open Diary' to view in Google Docs")
+        lifecycleScope.launch {
+            // Show loading
+            val loadingDialog = androidx.appcompat.app.AlertDialog.Builder(this@NightlyActivity)
+                .setTitle("Fetching Details...")
+                .setMessage("Please wait...")
+                .setCancelable(false)
+                .show()
+                
+            try {
+                // Fetch State
+                val stepState = com.neubofy.reality.data.repository.NightlyRepository.loadStepState(this@NightlyActivity, selectedDate, executorStep)
+                
+                // Fetch Rich Debug Data (Input/Output)
+                val executor = NightlyProtocolExecutor(this@NightlyActivity, selectedDate, this@NightlyActivity)
+                val debugData = executor.getStepDebugData(executorStep)
+                
+                loadingDialog.dismiss()
+                
+                val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
+                
+                val item = stepItems.find { it.stepId == step }
+                val title = item?.title ?: "Step $step"
+                
+                // Build content
+                val content = StringBuilder()
+                
+                content.append("Status: ${getStatusText(stepState.status)}\n")
+                // content.append("Last Msg: ${stepState.details ?: "None"}\n\n") // Redundant if debugData is good
+                
+                content.append(debugData)
+    
+                // Build Dialog
+                val builder = androidx.appcompat.app.AlertDialog.Builder(this@NightlyActivity)
+                    .setTitle(title)
+                    .setMessage(content.toString())
+                    .setPositiveButton("Close", null)
+                
+                // Add "Copy" option
+                builder.setNeutralButton("Copy") { _, _ ->
+                     val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                     val clip = android.content.ClipData.newPlainText("Step Details", content.toString())
+                     clipboard.setPrimaryClip(clip)
+                     Toast.makeText(this@NightlyActivity, "Copied to clipboard", Toast.LENGTH_SHORT).show()
                 }
-            }
-            4 -> content.append("AI reads your reflection and grades quality (0-50 XP bonus).")
-            5 -> {
-                val planId = prefs.getString(NightlyProtocolExecutor.getPlanDocIdKey(selectedDate), null)
-                if (planId != null) {
-                    content.append("📄 Doc ID: $planId\n")
-                    content.append("🔗 Click 'Open Plan' to edit in Google Docs")
+                
+                // Add "Delete & Re-run" option as a separate choice (maybe overflow or negative?)
+                // User asked for Input/Output primarily. Re-run is accessible via context menu too.
+                // Let's keep Delete as negative button but rename it to be clear
+                builder.setNegativeButton("🗑️ Reset Step") { _, _ ->
+                    confirmDeleteAndRerun(step, executorStep)
                 }
-            }
-            6 -> content.append("AI reads your verified plan and creates tasks/events for tomorrow.")
-        }
-        
-        val builder = androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle(title)
-            .setMessage(content.toString())
-            .setPositiveButton("Close", null)
-        
-        // Add "Delete & Re-run" option
-        builder.setNegativeButton("🗑️ Delete & Re-run") { _, _ ->
-            confirmDeleteAndRerun(step, executorStep)
-        }
-        
-        // Add "Open Doc" buttons
-        if (step == 3) {
-            val diaryId = prefs.getString(NightlyProtocolExecutor.getDiaryDocIdKey(selectedDate), null)
-            if (diaryId != null) {
-                builder.setNeutralButton("📖 Open Diary") { _, _ ->
-                    try {
-                        val url = "https://docs.google.com/document/d/$diaryId/edit"
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                    } catch (e: Exception) {
-                        Toast.makeText(this, "Could not open diary", Toast.LENGTH_SHORT).show()
+                
+                // Extra actions for specific steps
+                if (step == NightlyProtocolExecutor.STEP_CREATE_DIARY) {
+                    val diaryId = prefs.getString(NightlyProtocolExecutor.getDiaryDocIdKey(selectedDate), null)
+                    if (diaryId != null) {
+                        builder.setPositiveButton("📖 Open Diary") { _, _ ->
+                            try {
+                                val url = "https://docs.google.com/document/d/$diaryId/edit"
+                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                            } catch (e: Exception) {
+                                Toast.makeText(this@NightlyActivity, "Could not open diary", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        // Add Close as neutral since Positive is taken? Or just add another button?
+                        // builder.setNeutralButton("Close", null) // limit 3 buttons usually
                     }
                 }
-            }
-        } else if (step == 5) {
-            val planId = prefs.getString(NightlyProtocolExecutor.getPlanDocIdKey(selectedDate), null)
-            if (planId != null) {
-                builder.setNeutralButton("📝 Open Plan") { _, _ ->
-                    try {
-                        val url = "https://docs.google.com/document/d/$planId/edit"
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                    } catch (e: Exception) {
-                        Toast.makeText(this, "Could not open plan", Toast.LENGTH_SHORT).show()
-                    }
-                }
+                
+                builder.show()
+                
+            } catch (e: Exception) {
+                loadingDialog.dismiss()
+                Toast.makeText(this@NightlyActivity, "Error loading details: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
-        
-        builder.show()
     }
     
     private fun getStatusText(status: Int): String {
@@ -318,12 +420,18 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
     
     private fun confirmDeleteAndRerun(step: Int, executorStep: Int) {
         val stepName = when (step) {
-            1 -> "Data Collection"
-            2 -> "Question Generation"
-            3 -> "Diary Creation"
-            4 -> "Analysis & XP"
-            5 -> "Plan Document"
-            6 -> "Process Plan"
+            NightlyProtocolExecutor.STEP_FETCH_TASKS -> "Fetch Tasks"
+            NightlyProtocolExecutor.STEP_FETCH_SESSIONS -> "Fetch Sessions"
+            NightlyProtocolExecutor.STEP_CALC_SCREEN_TIME -> "Screen Time"
+            NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS -> "Generate Questions"
+            NightlyProtocolExecutor.STEP_CREATE_DIARY -> "Create Diary"
+            NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION -> "Analyze Reflection"
+            NightlyProtocolExecutor.STEP_FINALIZE_XP -> "Finalize XP"
+            NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC -> "Create Plan Doc"
+            NightlyProtocolExecutor.STEP_GENERATE_PLAN -> "Generate Plan Suggestions"
+            NightlyProtocolExecutor.STEP_PROCESS_PLAN -> "Process Plan"
+            NightlyProtocolExecutor.STEP_GENERATE_REPORT -> "Generate Report"
+            NightlyProtocolExecutor.STEP_GENERATE_PDF -> "Generate PDF"
             else -> "Step $step"
         }
         
@@ -331,20 +439,30 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
             .setTitle("Delete & Re-run $stepName?")
             .setMessage("This will delete saved data for this step and re-execute it.")
             .setPositiveButton("Delete & Re-run") { _, _ ->
-                // Clear this step's state
-                NightlyProtocolExecutor.saveStepState(
-                    this, selectedDate, executorStep,
-                    NightlyProtocolExecutor.StepProgress.STATUS_PENDING, null
-                )
-                
-                // Reset icon for this step
-                val icon = getStepIcon(step)
-                val text = getStepText(step)
-                icon.setImageResource(com.neubofy.reality.R.drawable.baseline_radio_button_unchecked_24)
-                icon.setColorFilter(getColor(com.google.android.material.R.color.material_on_surface_disabled))
-                text.text = "Pending..."
-                
-                handleRerunStep(step)
+                lifecycleScope.launch {
+                    // Clear this step's state
+                    com.neubofy.reality.data.repository.NightlyRepository.saveStepState(
+                        this@NightlyActivity, selectedDate, executorStep,
+                        NightlyProtocolExecutor.StepProgress.STATUS_PENDING, null
+                    )
+                    
+                    // Clear persistent Doc IDs if applicable
+                    if (executorStep == NightlyProtocolExecutor.STEP_CREATE_DIARY) {
+                        com.neubofy.reality.data.repository.NightlyRepository.clearDiaryDocId(this@NightlyActivity, selectedDate)
+                        // Also clear preferences for legacy support if needed
+                        getSharedPreferences("nightly_prefs", MODE_PRIVATE).edit()
+                            .remove(NightlyProtocolExecutor.getDiaryDocIdKey(selectedDate))
+                            .apply()
+                    }
+                    if (executorStep == NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC) {
+                         com.neubofy.reality.data.repository.NightlyRepository.clearPlanDocId(this@NightlyActivity, selectedDate)
+                    }
+
+                    // Reset adapter step
+                    stepAdapter.updateStep(step, NightlyProtocolExecutor.StepProgress.STATUS_PENDING, "Pending...")
+                    
+                    handleRerunStep(step)
+                }
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -357,38 +475,71 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
             return
         }
 
-        when (step) {
-            1 -> { // Data
-                 startNightlyProtocol() // Simplest way is to restart creation phase
-                 Toast.makeText(this, "Restarting Data Collection...", Toast.LENGTH_SHORT).show()
-            }
-            2 -> { // Questions
-                 startNightlyProtocol() // Questions depend on data, so restart creation
-                 Toast.makeText(this, "Regenerating Questions...", Toast.LENGTH_SHORT).show()
-            }
-            3 -> { // Diary
-                NightlyProtocolExecutor.clearMemory(this) // Simulates "Fresh Start"
-                startNightlyProtocol()
-                Toast.makeText(this, "Re-creating Diary...", Toast.LENGTH_SHORT).show()
-            }
-            4 -> { // Analysis
-                analyzeDay()
-                Toast.makeText(this, "Restarting Analysis...", Toast.LENGTH_SHORT).show()
-            }
-            5 -> { // Plan Doc
-                // Need a way to run just plan doc? For now, re-run analysis/creation or just set state
-                // Since this runs after Analysis, we should likely check state
-                startNightlyProtocol() // Fallback
-                Toast.makeText(this, "Re-creating Plan Doc...", Toast.LENGTH_SHORT).show()
-            }
-            6 -> { // Process Plan
-                // Re-process
-                analyzeDay() // Runs the sequential steps
-                Toast.makeText(this, "Re-processing Plan...", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            val executor = NightlyProtocolExecutor(this@NightlyActivity, selectedDate, this@NightlyActivity)
+            
+            when (step) {
+                // Phase 1 & 2: Creation Phase (Dependencies: 1->2->3->4->5)
+                NightlyProtocolExecutor.STEP_FETCH_TASKS,
+                NightlyProtocolExecutor.STEP_FETCH_SESSIONS,
+                NightlyProtocolExecutor.STEP_CALC_SCREEN_TIME,
+                NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS -> {
+                     Toast.makeText(this@NightlyActivity, "Restarting Data Collection...", Toast.LENGTH_SHORT).show()
+                     executor.executeSpecificStep(step) // Just run this step, don't force whole chain unless needed?
+                     // Actually, safer to just run specific step if user asked for specific step.
+                     // But dependencies might be missing? executeSpecificStep handles silent collection.
+                }
+                
+                NightlyProtocolExecutor.STEP_CREATE_DIARY -> {
+                    NightlyProtocolExecutor.clearMemory(this@NightlyActivity)
+                    Toast.makeText(this@NightlyActivity, "Re-creating Diary...", Toast.LENGTH_SHORT).show()
+                    executor.executeSpecificStep(step)
+                }
+                
+                // Phase 2: Analysis/XP
+                NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION -> {
+                    Toast.makeText(this@NightlyActivity, "Re-analyzing...", Toast.LENGTH_SHORT).show()
+                    executor.executeSpecificStep(step)
+                }
+                NightlyProtocolExecutor.STEP_FINALIZE_XP -> {
+                    Toast.makeText(this@NightlyActivity, "Finalizing XP...", Toast.LENGTH_SHORT).show()
+                    executor.executeSpecificStep(step)
+                }
+                
+                // Phase 3: Planning
+                NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC,
+                NightlyProtocolExecutor.STEP_GENERATE_PLAN,
+                NightlyProtocolExecutor.STEP_PROCESS_PLAN -> {
+                    Toast.makeText(this@NightlyActivity, "Re-running Plan Step...", Toast.LENGTH_SHORT).show()
+                    executor.executeSpecificStep(step)
+                }
+                
+                // Phase 4: Reporting
+                NightlyProtocolExecutor.STEP_GENERATE_REPORT,
+                NightlyProtocolExecutor.STEP_GENERATE_PDF -> {
+                    val label = if (step == NightlyProtocolExecutor.STEP_GENERATE_REPORT) "Report" else "PDF"
+                    Toast.makeText(this@NightlyActivity, "Re-generating $label...", Toast.LENGTH_SHORT).show()
+                    executor.executeSpecificStep(step)
+                }
             }
         }
     }
     
+    private fun checkApiIntegrity(): Boolean {
+        if (!com.neubofy.reality.google.GoogleAuthManager.hasRequiredPermissions(this)) {
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("Connecion Required")
+                .setMessage("To customize your reality, this app needs access to Google Tasks, Calendar, and Drive.\n\nPlease check your settings or sign in again.")
+                .setPositiveButton("Fix Connection") { _, _ ->
+                    startActivity(Intent(this, NightlySettingsActivity::class.java))
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+            return false
+        }
+        return true
+    }
+
     private fun startNightlyProtocol() {
         isExecuting = true
         TerminalLogger.log("Nightly: Starting protocol for $selectedDate")
@@ -422,21 +573,28 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
         }
     }
     
-    private fun resetStepIcons() {
-        // Reset to default only if not loading from state? 
-        // Actually, startNightlyProtocol calls this. If strictly starting fresh, we should reset.
-        // But if persistent state exists, we might want to respect it?
-        // Let's keep it resetting visually for "Start" action, but loadPersistentState works on Resume.
-        resetStepIcon(binding.iconStepData, binding.tvStepDataDetail)
-        resetStepIcon(binding.iconStepQuestions, binding.tvStepQuestionsDetail)
-        resetStepIcon(binding.iconStepDiary, binding.tvStepDiaryDetail)
+    private fun processPlan() {
+        isExecuting = true
+        TerminalLogger.log("Nightly: Processing Plan for $selectedDate")
         
-        resetStepIcon(binding.iconStepAnalysis, binding.tvStepAnalysisDetail)
-        resetStepIcon(binding.iconStepCreatePlan, binding.tvStepCreatePlanDetail)
-        resetStepIcon(binding.iconStepProcessPlan, binding.tvStepProcessPlanDetail)
+        binding.btnStartNightly.isEnabled = false
+        binding.btnStartNightly.text = "Creating Plan..."
+        
+        lifecycleScope.launch {
+             val executor = NightlyProtocolExecutor(this@NightlyActivity, selectedDate, this@NightlyActivity)
+             executor.executePlanningPhase()
+        }
+    }
+    
+    private fun resetStepIcons() {
+        // Reset all steps in adapter to pending
+        stepItems.forEach { item ->
+            stepAdapter.updateStep(item.stepId, NightlyProtocolExecutor.StepProgress.STATUS_PENDING, "Pending...")
+        }
     }
     
     private fun resetStepIcon(icon: android.widget.ImageView, detail: android.widget.TextView) {
+        // Legacy - kept for compatibility but not actively used
         icon.setImageResource(com.neubofy.reality.R.drawable.baseline_radio_button_unchecked_24)
         icon.setColorFilter(getColor(com.google.android.material.R.color.material_on_surface_disabled))
         detail.text = "Pending..."
@@ -444,140 +602,152 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
 
 
     private fun loadPersistentState() {
-        // Iterate through all known steps
-        val steps = listOf(
-            NightlyProtocolExecutor.STEP_COLLECT_DATA,
-            NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS,
-            NightlyProtocolExecutor.STEP_CREATE_DIARY,
-            NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION,
-            NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC,
-            NightlyProtocolExecutor.STEP_PROCESS_PLAN
-        )
-        
-        steps.forEach { step ->
-            val stepState = NightlyProtocolExecutor.loadStepState(this, selectedDate, step)
-            val mappedStep = when(step) {
-                NightlyProtocolExecutor.STEP_COLLECT_DATA -> 1
-                NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS -> 2
-                NightlyProtocolExecutor.STEP_CREATE_DIARY -> 3
-                NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION -> 4
-                NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC -> 5
-                NightlyProtocolExecutor.STEP_PROCESS_PLAN -> 6
-                else -> -1
+        lifecycleScope.launch {
+            // Iterate through all 12 steps and update adapter
+            val allSteps = listOf(
+                NightlyProtocolExecutor.STEP_FETCH_TASKS,
+                NightlyProtocolExecutor.STEP_FETCH_SESSIONS,
+                NightlyProtocolExecutor.STEP_CALC_SCREEN_TIME,
+                NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS,
+                NightlyProtocolExecutor.STEP_CREATE_DIARY,
+                NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION,
+                NightlyProtocolExecutor.STEP_FINALIZE_XP,
+                NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC,
+                NightlyProtocolExecutor.STEP_GENERATE_PLAN,
+                NightlyProtocolExecutor.STEP_PROCESS_PLAN,
+                NightlyProtocolExecutor.STEP_GENERATE_REPORT,
+                NightlyProtocolExecutor.STEP_GENERATE_PDF
+            )
+            
+            allSteps.forEach { step ->
+                // Use loadStepData to check actual resultJson existence (Strict Data-Driven)
+                val stepData = com.neubofy.reality.data.repository.NightlyRepository.loadStepData(this@NightlyActivity, selectedDate, step)
+                
+                // Determine real status: ONLY truly completed if resultJson exists
+                // This ensures UI doesn't show "Completed" if data was wiped or failed to save.
+                val hasData = !stepData.resultJson.isNullOrEmpty()
+                val realStatus = if (hasData) {
+                    NightlyProtocolExecutor.StepProgress.STATUS_COMPLETED
+                } else if (stepData.status == NightlyProtocolExecutor.StepProgress.STATUS_RUNNING) {
+                    NightlyProtocolExecutor.StepProgress.STATUS_PENDING
+                } else {
+                    stepData.status
+                }
+                
+                val statusText = when (realStatus) {
+                    NightlyProtocolExecutor.StepProgress.STATUS_COMPLETED -> stepData.details ?: "Completed"
+                    NightlyProtocolExecutor.StepProgress.STATUS_ERROR -> stepData.details ?: "Error"
+                    NightlyProtocolExecutor.StepProgress.STATUS_SKIPPED -> "Skipped"
+                    else -> "Not run yet"
+                }
+                
+                stepAdapter.updateStep(step, realStatus, statusText, stepData.linkUrl)
             }
             
-            if (mappedStep != -1) {
-                val icon = getStepIcon(mappedStep)
-                val text = getStepText(mappedStep)
-                
-                when (stepState.status) {
-                    NightlyProtocolExecutor.StepProgress.STATUS_COMPLETED -> {
-                        icon.setImageResource(com.neubofy.reality.R.drawable.baseline_check_circle_24)
-                        icon.setColorFilter(getColor(com.neubofy.reality.R.color.green_500))
-                        text.text = if (!stepState.details.isNullOrEmpty()) stepState.details else "Completed"
-                    }
-                    NightlyProtocolExecutor.StepProgress.STATUS_RUNNING -> {
-                         icon.setImageResource(com.neubofy.reality.R.drawable.baseline_sync_24)
-                         // Rotate animation?
-                         icon.setColorFilter(getColor(com.neubofy.reality.R.color.blue_500))
-                         text.text = "Running..."
-                    }
-                    NightlyProtocolExecutor.StepProgress.STATUS_ERROR -> {
-                         icon.setImageResource(com.neubofy.reality.R.drawable.baseline_error_24)
-                         icon.setColorFilter(getColor(com.neubofy.reality.R.color.status_error))
-                         text.text = "Error"
-                    }
-                    NightlyProtocolExecutor.StepProgress.STATUS_SKIPPED -> {
-                         icon.setImageResource(com.neubofy.reality.R.drawable.baseline_arrow_forward_24)
-                         icon.setColorFilter(getColor(com.google.android.material.R.color.material_on_surface_disabled))
-                         text.text = "Skipped"
-                    }
-                    else -> {
-                        // Pending
-                         icon.setImageResource(com.neubofy.reality.R.drawable.baseline_radio_button_unchecked_24)
-                         icon.setColorFilter(getColor(com.google.android.material.R.color.material_on_surface_disabled))
-                         text.text = "Pending..."
-                    }
-                }
+            // Restore dependent step enable states (Strictly based on data availability of previous step)
+            val stepStates = allSteps.associateWith { step ->
+                com.neubofy.reality.data.repository.NightlyRepository.loadStepData(this@NightlyActivity, selectedDate, step)
             }
-        }
-        
-        // Verification State Check
-        val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
-        val step5State = NightlyProtocolExecutor.loadStepState(this, selectedDate, NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC)
-        val planVerified = prefs.getBoolean(NightlyProtocolExecutor.getPlanVerifiedKey(selectedDate), false)
-        
-        if (step5State.status == NightlyProtocolExecutor.StepProgress.STATUS_COMPLETED && !planVerified) {
-            binding.layoutVerificationActions.visibility = View.VISIBLE
-        } else {
-            binding.layoutVerificationActions.visibility = View.GONE
+
+            // Step 6 enables if Step 5 has data
+            val step5Ok = stepStates[NightlyProtocolExecutor.STEP_CREATE_DIARY]?.resultJson != null
+            stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION, step5Ok)
+            
+            // Step 9 enables if Step 8 has data
+            val step8Ok = stepStates[NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC]?.resultJson != null
+            stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_GENERATE_PLAN, step8Ok)
+            
+            // Step 10 enables if Step 9 has data
+            val step9Ok = stepStates[NightlyProtocolExecutor.STEP_GENERATE_PLAN]?.resultJson != null
+            stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_PROCESS_PLAN, step9Ok)
+            
+            // Step 12 enables if Step 11 has data (Check NightlyRepository for report content)
+            val step11Ok = stepStates[NightlyProtocolExecutor.STEP_GENERATE_REPORT]?.status == NightlyProtocolExecutor.StepProgress.STATUS_COMPLETED
+            stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_GENERATE_PDF, step11Ok)
         }
     }
     
     private fun updateSetupStatus() {
-        val aiPrefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
-        val nightlyModel = aiPrefs.getString("nightly_model", null)
-        
-        val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
-        val realityFolderId = prefs.getString("reality_folder_id", null)
-        val diaryFolderId = prefs.getString("diary_folder_id", null)
-        val reportFolderId = prefs.getString("report_folder_id", null)
-        
-        // State Check - DATE-SPECIFIC
-        val protocolState = NightlyProtocolExecutor.getStateForDate(this, selectedDate)
-        val lastDocId = NightlyProtocolExecutor.getDiaryDocIdForDate(this, selectedDate)
-        
-        // ... (Existing readiness checks) ...
-        val startTimeMinutes = prefs.getInt("nightly_start_time", 22 * 60)
-        val endTimeMinutes = prefs.getInt("nightly_end_time", 23 * 60 + 59)
-        
-        val aiReady = !nightlyModel.isNullOrEmpty()
-        val driveReady = !realityFolderId.isNullOrEmpty() && !diaryFolderId.isNullOrEmpty() 
-        val withinTimeWindow = isWithinTimeWindow(startTimeMinutes, endTimeMinutes)
-        
-        val sb = StringBuilder()
-        // ... (Status Text Building - simplified for brevity, keep existing logic logic if possible or rewrite) ...
-        // Re-implementing concise status text to fit block
-        
-        if (aiReady && driveReady) {
-             sb.append("✓ System Ready\n")
-        } else {
-             sb.append("✗ Setup Incomplete\n")
-        }
-        
-        if (withinTimeWindow) {
-             sb.append("✓ Within time window\n")
-        } else {
-             sb.append("⏰ Recommended time: ${formatTimeDisplay(startTimeMinutes)}\n")
-        }
-        
-        binding.tvSetupStatus.text = sb.toString()
-        
-        // Button State Logic - ENFORCE WINDOW
-        val canStart = aiReady && driveReady && withinTimeWindow
-        val isPendingReflection = protocolState == NightlyProtocolExecutor.STATE_PENDING_REFLECTION
-        
-        // Allow start only if within window OR if resuming pending reflection (user already started)
-        binding.btnStartNightly.isEnabled = canStart || isPendingReflection
-        
-        when (protocolState) {
-            NightlyProtocolExecutor.STATE_IDLE -> {
-                binding.btnStartNightly.text = "Start Nightly Protocol"
+        lifecycleScope.launch {
+            val aiPrefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+            val nightlyModel = aiPrefs.getString("nightly_model", null)
+            
+            val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
+            val realityFolderId = prefs.getString("reality_folder_id", null)
+            val diaryFolderId = prefs.getString("diary_folder_id", null)
+            
+            // State Check - DATE-SPECIFIC (Suspend calls)
+            val protocolState = NightlyProtocolExecutor.getStateForDate(this@NightlyActivity, selectedDate)
+            val lastDocId = NightlyProtocolExecutor.getDiaryDocIdForDate(this@NightlyActivity, selectedDate)
+            
+            val startTimeMinutes = prefs.getInt("nightly_start_time", 22 * 60)
+            val endTimeMinutes = prefs.getInt("nightly_end_time", 23 * 60 + 59)
+            
+            val aiReady = !nightlyModel.isNullOrEmpty()
+            val driveReady = !realityFolderId.isNullOrEmpty() && !diaryFolderId.isNullOrEmpty() 
+            val withinTimeWindow = isWithinTimeWindow(startTimeMinutes, endTimeMinutes)
+            
+            val sb = StringBuilder()
+            
+            if (aiReady && driveReady) {
+                 sb.append("✓ System Ready\n")
+            } else {
+                 sb.append("✗ Setup Incomplete\n")
             }
-            NightlyProtocolExecutor.STATE_CREATING -> {
-                binding.btnStartNightly.text = "Resume Creation"
+            
+            if (withinTimeWindow) {
+                 sb.append("✓ Within time window\n")
+            } else {
+                 sb.append("⏰ Recommended time: ${formatTimeDisplay(startTimeMinutes)}\n")
             }
-            NightlyProtocolExecutor.STATE_PENDING_REFLECTION -> {
-                binding.btnStartNightly.text = "Analyze Day"
-                binding.btnOpenDiary.visibility = if (lastDocId != null) View.VISIBLE else View.GONE
-                diaryUrl = lastDocId?.let { "https://docs.google.com/document/d/$it/edit" }
+            
+            TerminalLogger.log("Nightly: Window Check - Start: $startTimeMinutes, End: $endTimeMinutes, Now: ${LocalTime.now().hour * 60 + LocalTime.now().minute}, Valid: $withinTimeWindow")
+            
+            binding.tvSetupStatus.text = sb.toString()
+            
+            // Button State Logic - ENFORCE WINDOW STRICTLY
+            val canStart = aiReady && driveReady && withinTimeWindow
+            val isPendingReflection = protocolState == NightlyProtocolExecutor.STATE_PENDING_REFLECTION
+            
+            // STRICT MODE: If outside window, NO PROCESS allowed, even resume.
+            // Exception: If verification (Step 8) is pending? No, user said "no process".
+            
+            if (withinTimeWindow) {
+                binding.btnStartNightly.isEnabled = canStart || isPendingReflection
+                binding.tvSetupStatus.alpha = 1.0f
+            } else {
+                binding.btnStartNightly.isEnabled = false
+                binding.btnStartNightly.text = "Outside Window"
+                binding.tvSetupStatus.alpha = 0.5f // Dim status to indicate inactive
             }
-            NightlyProtocolExecutor.STATE_ANALYZING -> {
-                binding.btnStartNightly.text = "Resume Analysis"
-            }
-            NightlyProtocolExecutor.STATE_COMPLETE -> {
-                 binding.btnStartNightly.text = "Review Complete"
-                 binding.btnStartNightly.isEnabled = false // Disable if done for today
+            
+            when (protocolState) {
+                NightlyProtocolExecutor.STATE_IDLE -> {
+                    binding.btnStartNightly.text = "Start Nightly Protocol"
+                }
+                NightlyProtocolExecutor.STATE_CREATING -> {
+                    binding.btnStartNightly.text = "Resume Creation"
+                }
+                NightlyProtocolExecutor.STATE_PENDING_REFLECTION -> {
+                    binding.btnStartNightly.text = "Analyze Day"
+                    // Update Step 5 diary card with link
+                    if (lastDocId != null) {
+                        diaryUrl = "https://docs.google.com/document/d/$lastDocId/edit"
+                        stepAdapter.updateStep(NightlyProtocolExecutor.STEP_CREATE_DIARY, 
+                            NightlyProtocolExecutor.StepProgress.STATUS_COMPLETED, 
+                            "Diary ready", diaryUrl)
+                    }
+                }
+                NightlyProtocolExecutor.STATE_ANALYZING -> {
+                    binding.btnStartNightly.text = "Resume Analysis"
+                }
+                NightlyProtocolExecutor.STATE_PLANNING_READY -> {
+                    binding.btnStartNightly.text = "Create Plan"
+                }
+                NightlyProtocolExecutor.STATE_COMPLETE -> {
+                     binding.btnStartNightly.text = "Review Complete"
+                     binding.btnStartNightly.isEnabled = false // Disable if done for today
+                }
             }
         }
     }
@@ -622,7 +792,9 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
             
             if (diaryUrl != null) {
                 this.diaryUrl = diaryUrl
-                binding.btnOpenDiary.visibility = View.VISIBLE
+                // Update step 5 with link
+                stepAdapter.updateStep(NightlyProtocolExecutor.STEP_CREATE_DIARY, 
+                    NightlyProtocolExecutor.StepProgress.STATUS_COMPLETED, "Diary ready", diaryUrl)
             }
         }
     }
@@ -646,33 +818,39 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
         return String.format("%02d:%02d", h, m)
     }
     
+    // --- UI Polish: Visual Locking & Animations ---
+    
+    // Obsolete animations and card getters removed
+
+
+    // NightlyProgressListener Implementation
+    
     // NightlyProgressListener Implementation
     
     override fun onStepStarted(step: Int, stepName: String) {
         runOnUiThread {
             TerminalLogger.log("Nightly: Step $step started - $stepName")
-            getStepIcon(step).setImageResource(com.neubofy.reality.R.drawable.baseline_sync_24)
-            getStepIcon(step).setColorFilter(getColor(com.neubofy.reality.R.color.blue_500))
+            stepAdapter.updateStep(step, NightlyProtocolExecutor.StepProgress.STATUS_RUNNING, "Running...")
             appendLog("Step $step: $stepName...")
         }
     }
     
-    override fun onStepCompleted(step: Int, stepName: String, details: String?) {
+    override fun onStepCompleted(step: Int, stepName: String, details: String?, linkUrl: String?) {
         runOnUiThread {
             TerminalLogger.log("Nightly: Step $step completed - $stepName ${details?.let { "($it)" } ?: ""}")
-            getStepIcon(step).setImageResource(com.neubofy.reality.R.drawable.baseline_check_circle_24)
-            getStepIcon(step).setColorFilter(getColor(com.neubofy.reality.R.color.green_500))
-            getStepText(step).text = details ?: "Completed"
+            stepAdapter.updateStep(step, NightlyProtocolExecutor.StepProgress.STATUS_COMPLETED, details ?: "Completed", linkUrl)
             appendLog("Step $step OK: ${details ?: "Done"}")
             
-            // Auto-check Verification Trigger
-             val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
-            if (step == 5) { // Plan Doc Created
-                val planVerified = prefs.getBoolean(NightlyProtocolExecutor.getPlanVerifiedKey(selectedDate), false)
-                if (!planVerified) {
-                    binding.layoutVerificationActions.visibility = View.VISIBLE
-                    appendLog("Waiting for Plan Verification...")
-                }
+            // Enable next step if exists
+            val nextStepIndex = stepItems.indexOfFirst { it.stepId == step } + 1
+            if (nextStepIndex < stepItems.size) {
+                 stepAdapter.setStepEnabled(stepItems[nextStepIndex].stepId, true)
+            }
+            
+            // Auto-check Verification Trigger (Step 8 - Plan)
+            if (step == NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC) { 
+                // Plan verification checkbox was removed, step 9 is enabled automatically above.
+                appendLog("Plan Document Created.")
             }
         }
     }
@@ -680,9 +858,7 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
     override fun onStepSkipped(step: Int, stepName: String, reason: String) {
         runOnUiThread {
             TerminalLogger.log("Nightly: Step $step skipped - $reason")
-            getStepIcon(step).setImageResource(com.neubofy.reality.R.drawable.baseline_arrow_forward_24)
-            getStepIcon(step).setColorFilter(getColor(com.google.android.material.R.color.material_on_surface_disabled))
-            getStepText(step).text = reason
+            stepAdapter.updateStep(step, NightlyProtocolExecutor.StepProgress.STATUS_SKIPPED, reason)
             appendLog("Step $step Skipped: $reason")
         }
     }
@@ -691,9 +867,7 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
         runOnUiThread {
             TerminalLogger.log("Nightly: Error at step $step - $error")
             if (step > 0) {
-                getStepIcon(step).setImageResource(com.neubofy.reality.R.drawable.baseline_error_24)
-                getStepIcon(step).setColorFilter(getColor(com.neubofy.reality.R.color.status_error))
-                getStepText(step).text = error
+                stepAdapter.updateStep(step, NightlyProtocolExecutor.StepProgress.STATUS_ERROR, error)
             }
             appendLog("ERROR (Step $step): $error")
             Toast.makeText(this, "Error: $error", Toast.LENGTH_LONG).show()
@@ -709,10 +883,10 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
             TerminalLogger.log("Nightly: ${questions.size} questions ready")
             appendLog("Generated ${questions.size} questions.")
             
-            binding.cardQuestions.visibility = View.VISIBLE
-            binding.tvQuestionsList.text = questions.mapIndexed { index, q -> 
-                "${index + 1}. $q"
-            }.joinToString("\n\n")
+            // Update step adapter instead of showing separate card
+            stepAdapter.updateStep(NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS, 
+                NightlyProtocolExecutor.StepProgress.STATUS_COMPLETED,
+                "${questions.size} questions generated")
         }
     }
     
@@ -729,7 +903,9 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
                 .setPositiveButton("I'll Edit It") { dialog, _ ->
                     dialog.dismiss()
                     // Open the diary for them to edit
-                    binding.btnOpenDiary.performClick()
+                    diaryUrl?.let { url ->
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    }
                 }
                 .setCancelable(false)
                 .show()
@@ -739,25 +915,5 @@ class NightlyActivity : AppCompatActivity(), NightlyProtocolExecutor.NightlyProg
         }
     }
     
-
-    
-    private fun getStepIcon(step: Int) = when (step) {
-        1 -> binding.iconStepData
-        2 -> binding.iconStepQuestions
-        3 -> binding.iconStepDiary
-        4 -> binding.iconStepAnalysis
-        5 -> binding.iconStepCreatePlan
-        6 -> binding.iconStepProcessPlan
-        else -> binding.iconStepData
-    }
-    
-    private fun getStepText(step: Int) = when (step) {
-        1 -> binding.tvStepDataDetail
-        2 -> binding.tvStepQuestionsDetail
-        3 -> binding.tvStepDiaryDetail
-        4 -> binding.tvStepAnalysisDetail
-        5 -> binding.tvStepCreatePlanDetail
-        6 -> binding.tvStepProcessPlanDetail
-        else -> binding.tvStepDataDetail
-    }
+    // Legacy getStepIcon and getStepText removed - now using RecyclerView adapter
 }
