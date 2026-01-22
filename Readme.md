@@ -1,19 +1,21 @@
 <div align="center">
 
+<img src="https://res.cloudinary.com/dnh4fonis/image/upload/v1766755541/gk1gp3sf5ihygmo9wfv8.png" width="180" alt="Reality Logo" style="border-radius: 20px; margin-bottom: 20px;">
+
 # Reality
 ### The Intelligent Life OS
 
 **Developed by Pawan Washudev | Neubofy**
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com)
-[![Status](https://img.shields.io/badge/Status-Active-success.svg)]()
-[![Privacy](https://img.shields.io/badge/Privacy-Local%20%2B%20G--Drive-lock.svg)]()
-[![AI](https://img.shields.io/badge/AI-Bring%20Your%20Own%20Key-purple.svg)]()
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/pawanwashudev-official/Reality?style=for-the-badge&color=orange)](https://github.com/pawanwashudev-official/Reality/releases)
+[![GitHub All Releases](https://img.shields.io/github/downloads/pawanwashudev-official/Reality/total?style=for-the-badge&color=success)](https://github.com/pawanwashudev-official/Reality/releases)
+[![License](https://img.shields.io/github/license/pawanwashudev-official/Reality?style=for-the-badge&color=blue)](https://opensource.org/licenses/Apache-2.0)
+
+[![Platform](https://img.shields.io/badge/Platform-Android-green.svg?style=for-the-badge)](https://www.android.com)
+[![Privacy](https://img.shields.io/badge/Privacy-Local%20%2B%20G--Drive-lock.svg?style=for-the-badge)]()
+[![AI](https://img.shields.io/badge/AI-Bring%20Your%20Own%20Key-purple.svg?style=for-the-badge)]()
 
 > **"Stop managing your life. Start commanding it."**
-
-<img src="https://res.cloudinary.com/dnh4fonis/image/upload/v1766755541/gk1gp3sf5ihygmo9wfv8.png" width="100%" alt="Reality Dashboard" style="border-radius: 10px; margin-top: 20px; margin-bottom: 20px;">
 
 ### Open Source • Free Forever • Any AI (BYO Key)
 
