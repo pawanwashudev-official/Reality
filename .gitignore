@@ -55,4 +55,5 @@ google-services.json
 # Build error logs
 build_error.txt
 final_build_log.txt
+build_log*.txt
 kotlin_errors.txt
