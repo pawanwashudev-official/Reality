@@ -98,19 +98,23 @@ Ready for the upgrade?
 
 ---
 
-## 🛠️ Technical & Open Source
+## �️ Verify & Build (100% Transparency)
 
-Built with the latest Android technology stack:
-*   **Language**: Kotlin
-*   **Architecture**: MVVM + Clean Architecture
-*   **UI**: Material Design 3
-*   **Storage**: Room Database + Encrypted SharedPreferences
+**Don't trust the APK? Build it yourself.**
+We believe in radical transparency. You can clone the entire source code and build your own version of Reality in 5 minutes.
 
-**Build it yourself:**
-1.  Clone: `git clone https://github.com/pawanwashudev-official/Reality.git`
-2.  Open in Android Studio.
-3.  Add `client_secret.json` to `app/src/main/assets/`.
-4.  Build & Run!
+**How to Build Your Own Copy:**
+1.  **Clone the Repo**:
+    ```bash
+    git clone https://github.com/pawanwashudev-official/Reality.git
+    ```
+2.  **Open in Android Studio**: File -> Open -> Select `Reality` folder.
+3.  **Add Google Auth** (Optional):
+    *   Place your `client_secret.json` in `app/src/main/assets/`.
+    *   (Or skip this if you don't need Google Drive backup).
+4.  **Hit Run**: Press the ▶️ button.
+
+**That's it.** No hidden compilation steps. No obfuscated code. What you see is what you run.
 
 ---
 
