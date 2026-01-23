@@ -7,6 +7,12 @@
         tools:ignore="QueryAllPackagesPermission" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    
+    <!-- Health Connect -->
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
@@ -24,6 +30,17 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />
+
+    <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+        <intent>
+            <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
 
     <application
         android:name=".RealityApp"
@@ -196,10 +213,20 @@
 
         <activity
             android:name=".ui.activity.AISettingsActivity"
-            android:exported="false"
+            android:exported="true"
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustResize" />
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".ui.activity.NightlyActivity"
@@ -262,6 +289,17 @@
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
 
+        <receiver
+            android:name=".widget.AIChatWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info" />
+        </receiver>
+        
         <activity
             android:name=".ui.activity.MainActivity"
             android:exported="true">
@@ -376,6 +414,14 @@
             android:name=".ui.activity.ReflectionSettingsActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
+
+        <meta-data
+            android:name="health_permissions_rationale"
+            android:value="com.neubofy.reality.ui.activity.AISettingsActivity" />
+
+        <property
+            android:name="android.health.PROPERTY_HEALTH_CONNECT_PERMISSION_RATIONALE"
+            android:value="com.neubofy.reality.ui.activity.AISettingsActivity" />
 
     </application>
 

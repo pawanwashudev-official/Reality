@@ -24,14 +24,22 @@
         app:cardElevation="0dp"
         app:strokeWidth="0dp">
 
-        <TextView
-            android:id="@+id/tv_message"
+        <HorizontalScrollView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Message"
-            android:textSize="16sp"
-            android:padding="12dp"
-            android:textColor="?attr/colorOnSurface"/>
+            android:fillViewport="true"
+            android:scrollbars="none">
+
+            <TextView
+                android:id="@+id/tv_message"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Message"
+                android:textSize="16sp"
+                android:padding="12dp"
+                android:textColor="?attr/colorOnSurface"/>
+        
+        </HorizontalScrollView>
 
     </com.google.android.material.card.MaterialCardView>
 

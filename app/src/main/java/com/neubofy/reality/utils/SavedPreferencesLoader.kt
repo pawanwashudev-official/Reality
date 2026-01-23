@@ -122,6 +122,10 @@ class SavedPreferencesLoader(private val context: Context) {
         val type = object : TypeToken<Constants.StrictModeData>() {}.type
         return gson.fromJson(json, type)
     }
+
+    fun isStrictModeEnabled(): Boolean {
+        return getStrictModeData().isEnabled
+    }
     
     // Learned Settings Pages (for Settings Page Learning feature)
     fun saveLearnedSettingsPages(data: Constants.LearnedSettingsPages) {

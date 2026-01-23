@@ -27,6 +27,7 @@ object XPManager {
         val sessionXP: Int = 0,
         val screenTimeXP: Int = 0,
         val reflectionXP: Int = 0,
+        val bonusXP: Int = 0,
         val penaltyXP: Int = 0,
         val totalDailyXP: Int = 0,
         val level: Int = 1,
@@ -284,7 +285,7 @@ object XPManager {
             )
         }
         val totalDaily = updatedBreakdown.tapasyaXP + updatedBreakdown.taskXP + updatedBreakdown.sessionXP + 
-                         updatedBreakdown.screenTimeXP + updatedBreakdown.reflectionXP - updatedBreakdown.penaltyXP
+                         updatedBreakdown.screenTimeXP + updatedBreakdown.reflectionXP + updatedBreakdown.bonusXP - updatedBreakdown.penaltyXP
                          
         val finalBreakdown = updatedBreakdown.copy(totalDailyXP = totalDaily)
         
@@ -430,6 +431,10 @@ object XPManager {
     suspend fun setReflectionXP(context: Context, xp: Int, date: String = LocalDate.now().toString()) {
         updateDailyStats(context, date) { it.copy(reflectionXP = xp) }
     }
+
+    suspend fun addBonusXP(context: Context, xp: Int, date: String = LocalDate.now().toString()) {
+        updateDailyStats(context, date) { it.copy(bonusXP = it.bonusXP + xp) }
+    }
     
     // --- Global Stats (SharedPreferences) ---
 
@@ -505,6 +510,7 @@ object XPManager {
             put("sessionXP", bd.sessionXP)
             put("screenTimeXP", bd.screenTimeXP)
             put("reflectionXP", bd.reflectionXP)
+            put("bonusXP", bd.bonusXP)
             put("penaltyXP", bd.penaltyXP)
             put("totalDailyXP", bd.totalDailyXP)
             put("level", bd.level)
@@ -523,6 +529,7 @@ object XPManager {
                 sessionXP = obj.optInt("sessionXP", 0),
                 screenTimeXP = obj.optInt("screenTimeXP", 0),
                 reflectionXP = obj.optInt("reflectionXP", 0),
+                bonusXP = obj.optInt("bonusXP", 0),
                 penaltyXP = obj.optInt("penaltyXP", 0),
                 totalDailyXP = obj.optInt("totalDailyXP", 0),
                 level = obj.optInt("level", 1),
@@ -585,7 +592,7 @@ object XPManager {
         )
         
         val totalDaily = combined.tapasyaXP + combined.taskXP + combined.sessionXP + 
-                         combined.screenTimeXP + combined.reflectionXP - combined.penaltyXP
+                         combined.screenTimeXP + combined.reflectionXP + combined.bonusXP - combined.penaltyXP
                          
         return@withContext combined.copy(totalDailyXP = totalDaily)
     }

@@ -145,6 +145,18 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btn_voice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:contentDescription="Voice Input"
+                android:src="@drawable/baseline_mic_24"
+                app:backgroundTint="?attr/colorSurfaceVariant"
+                app:elevation="0dp"
+                app:fabSize="mini" 
+                app:tint="?attr/colorOnSurfaceVariant" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/btn_send"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -159,14 +171,24 @@
         </LinearLayout>
 
         <!-- Thinking Indicator (Hidden by default) -->
-        <ProgressBar
-            android:id="@+id/progress_thinking"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+        <TextView
+            android:id="@+id/tv_thinking"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_background_widget"
+            android:backgroundTint="?attr/colorSurfaceVariant"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:text="Reality is thinking..."
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="12sp"
             android:visibility="gone"
             app:layout_constraintBottom_toTopOf="@+id/input_area"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginBottom="8dp"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

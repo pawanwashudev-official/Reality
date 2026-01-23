@@ -26,8 +26,9 @@ android {
         applicationId = "com.neubofy.reality"
         minSdk = 26
         targetSdk = 35  // Android 15
-        versionCode = 12
-        versionName = "1.0.1"
+        versionCode = 18
+        versionName = "1.0.2"
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
         setProperty("archivesBaseName", "Reality-v${versionName}")
@@ -139,6 +140,9 @@ dependencies {
 
     implementation(libs.mpandroidchart)
     implementation(libs.timerangepicker)
+    
+    // Health Connect
+    implementation("androidx.health.connect:connect-client:1.1.0-alpha07")
 
     // Room
     implementation(libs.room.runtime)

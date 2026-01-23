@@ -98,6 +98,11 @@ class NightlyProtocolExecutor(
         const val STATE_PENDING_REFLECTION = 2
         const val STATE_ANALYZING = 3
         const val STATE_COMPLETE = 4
+
+        fun mockLoadStepDataForAgent(context: android.content.Context, date: java.time.LocalDate, stepId: Int): String? {
+            val prefs = context.getSharedPreferences("nightly_diary_${date}", android.content.Context.MODE_PRIVATE)
+            return prefs.getString("step_${stepId}_result", null)
+        }
         const val STATE_PLANNING_READY = 5
         
         private const val PREFS_NAME = "nightly_prefs"
@@ -2474,4 +2479,6 @@ class NightlyProtocolExecutor(
             saveStepState(context, diaryDate, STEP_GENERATE_PDF, StepProgress.STATUS_ERROR, err)
         }
     }
+
+
 }
