@@ -79,9 +79,9 @@ android {
     buildTypes {
         release {
             // Enable R8/ProGuard for smaller APK and better performance
-            // DISABLED for debugging crashes
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // ENABLED per user request
+            isMinifyEnabled = true
+            isShrinkResources = true
             
             // Only use release signing if credentials are available
             val releaseConfig = signingConfigs.findByName("release")

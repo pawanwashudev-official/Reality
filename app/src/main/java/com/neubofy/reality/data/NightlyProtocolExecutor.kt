@@ -1200,101 +1200,51 @@ class NightlyProtocolExecutor(
         saveStepState(context, diaryDate, STEP_FINALIZE_XP, StepProgress.STATUS_RUNNING, "Calculating...")
         
         try {
-            // Ensure data available
-            val summary = daySummary ?: run {
-                collectDayDataSilently()
-                daySummary ?: throw IllegalStateException("No day data available")
-            }
+            // UNIFICATION STRATEGY: 
+            // 1. Fetch Cloud Events (Nightly uses Cloud API as source of truth for Plan).
+            //    We filter out All-Day/Family keys internally in GoogleCalendarManager.
             
-            // Get Reflection XP from Step 6 resultJson
-            if (reflectionXp == 0) {
-                val step6Data = loadStepData(context, diaryDate, STEP_ANALYZE_REFLECTION)
-                if (step6Data.resultJson != null) {
-                    try {
-                        val json = JSONObject(step6Data.resultJson)
-                        reflectionXp = json.optInt("xp", 0)
-                    } catch (e: Exception) { /* ignore */ }
-                }
-            }
-            val finalReflectionXp = reflectionXp
+            val startOfDay = diaryDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val endOfDay = diaryDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
             
-            // Get Screen Time XP delta from Step 3 resultJson
-            if (screenTimeXpDelta == 0) {
-                val step3Data = loadStepData(context, diaryDate, STEP_CALC_SCREEN_TIME)
-                if (step3Data.resultJson != null) {
-                    try {
-                        val json = JSONObject(step3Data.resultJson)
-                        screenTimeXpDelta = json.optInt("xpDelta", 0)
-                        screenTimeMinutes = json.optInt("usedMinutes", 0)
-                    } catch (e: Exception) { /* ignore */ }
-                }
-            }
+            val cloudEvents = com.neubofy.reality.google.GoogleCalendarManager.getEvents(context, startOfDay, endOfDay)
             
-            val stBonus = if (screenTimeXpDelta > 0) screenTimeXpDelta else 0
-            val stPenalty = if (screenTimeXpDelta < 0) -screenTimeXpDelta else 0
-            
-            // Task Stats
-            val tasksCompleted = summary.tasksCompleted.size
-            val tasksIncomplete = summary.tasksDue.size
-            
-            // Session Stats
-            var sessionsAttended = 0
-            var sessionsMissed = 0
-            var earlyStarts = 0
-            for (event in summary.calendarEvents) {
-                val matchingSession = summary.completedSessions.find { 
-                    it.startTime < event.endTime && it.endTime > event.startTime 
-                }
-                if (matchingSession != null) {
-                    sessionsAttended++
-                    if (matchingSession.startTime <= event.startTime && matchingSession.startTime >= event.startTime - 300000) earlyStarts++
-                } else if (event.endTime < System.currentTimeMillis()) {
-                    sessionsMissed++
-                }
-            }
-
-            // Calculate Base Diary XP (Fixed 50 for completion + Quality)
-            val totalDiaryXp = 50 + finalReflectionXp
-            
-            // Commit to Database using New XPManager
-            val taskXpResult = XPManager.finalizeNightlyTaskXP(
-                context, 
-                diaryDate.toString(), 
-                summary.tasksCompleted, 
-                summary.tasksDue
-            )
-            // Session and Screen Time XP are calculated live/dynamically, so we don't overwrite them here.
-            
-            XPManager.updateDailyStats(
-                context = context, 
-                date = diaryDate.toString(), 
-                plannedMins = summary.totalPlannedMinutes,
-                effectiveMins = summary.totalEffectiveMinutes
-            ) { current ->
-                current.copy(
-                    reflectionXP = totalDiaryXp,
-                    screenTimeXP = stBonus,
-                    penaltyXP = stPenalty
+            // Map to Internal Format
+            val mappedEvents = cloudEvents.map { event ->
+                com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent(
+                    id = 0, // Not needed for logic
+                    title = event.summary ?: "No Title",
+                    description = event.description,
+                    startTime = event.start.dateTime.value,
+                    endTime = event.end.dateTime.value,
+                    color = 0,
+                    location = event.location
                 )
             }
             
-            // Legacy Call (Stubbed/Removed)
-            // XPManager.performNightlyReflection(...)
+            TerminalLogger.log("Nightly Step 7: Fetched ${mappedEvents.size} cloud events for XP calculation.")
+        
+            // 2. Force recalculation of ALL stats using Cloud Events for Session XP
+            // This ensures Nightly Report is authoritative.
+            XPManager.recalculateDailyStats(context, diaryDate.toString(), externalEvents = mappedEvents)
             
-            val totalXp = totalDiaryXp + taskXpResult // + other existing XP (not added here)
-            val details = "XP Finalized: +$totalXp"
+            // Get Updated Stats to display in report
+            val finalStats = XPManager.getDailyStats(context, diaryDate.toString())
+                ?: throw IllegalStateException("Failed to retrieve stats after calc")
             
             // Build resultJson
             val resultJson = JSONObject().apply {
-                put("diaryXp", totalDiaryXp)
-                put("reflectionXp", finalReflectionXp)
-                put("screenTimeBonus", stBonus)
-                put("screenTimePenalty", stPenalty)
-                put("tasksCompleted", tasksCompleted)
-                put("sessionsAttended", sessionsAttended)
-                put("totalXp", totalXp)
+                put("diaryXp", 50) 
+                put("reflectionXp", finalStats.reflectionXP)
+                put("sessionXp", finalStats.sessionXP)
+                put("tapasyaXp", finalStats.tapasyaXP)
+                put("taskXp", finalStats.taskXP)
+                put("screenTimeXp", finalStats.screenTimeXP) // Bonus
+                put("penaltyXp", finalStats.penaltyXP)
+                put("totalXp", finalStats.totalDailyXP)
             }.toString()
             
+            val details = "XP Finalized: +${finalStats.totalDailyXP}"
             listener.onStepCompleted(STEP_FINALIZE_XP, "Day Complete", details)
             saveStepState(context, diaryDate, STEP_FINALIZE_XP, StepProgress.STATUS_COMPLETED, details, resultJson)
             

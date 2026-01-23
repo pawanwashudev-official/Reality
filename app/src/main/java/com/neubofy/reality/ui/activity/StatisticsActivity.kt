@@ -11,6 +11,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.github.mikephil.charting.charts.BarChart
@@ -72,54 +76,78 @@ class StatisticsActivity : AppCompatActivity() {
     }
     
     private fun loadStatistics() {
-        // Load Daily Chart Data
-        val usageData = getLast7DaysUsage()
-        setupChart(binding.chartDaily, usageData)
+        // Show loading
+        val rotateAnim = android.view.animation.AnimationUtils.loadAnimation(this, com.neubofy.reality.R.anim.rotate_indefinite)
+        binding.loadingLogo.visibility = android.view.View.VISIBLE
+        binding.loadingLogo.startAnimation(rotateAnim)
         
-        // Load Today's Detailed Usage
-        loadTodayAppUsage()
+        binding.contentLayout.visibility = android.view.View.GONE
         
-        // Show weekly average
-        val avgUsage = if (usageData.isNotEmpty()) usageData.map { it.second }.average().toLong() else 0L
-        val avgHours = TimeUnit.MILLISECONDS.toHours(avgUsage)
-        val avgMins = TimeUnit.MILLISECONDS.toMinutes(avgUsage) % 60
-        binding.tvWeeklyAvg.text = "${avgHours}h ${avgMins}m"
-    }
-
-    private fun loadTodayAppUsage() {
-        // Use consistent data source via UsageUtils (Manual Event Parsing 00:00-Now)
-        val statsMap = com.neubofy.reality.utils.UsageUtils.getUsageSinceMidnight(this)
-        
-        appUsageList.clear()
-        val packageManager = packageManager
-        
-        statsMap.forEach { (pkg, usageTime) ->
-            // Filter out system UI and launcher
-            if (pkg == "com.android.systemui" || pkg.contains("launcher") || pkg == packageName) {
-                return@forEach
+        lifecycleScope.launch {
+            // Background Work
+            val data = withContext(Dispatchers.IO) {
+                val usage7Days = getLast7DaysUsage()
+                
+                // Load today's heavy data
+                val todaysStats = com.neubofy.reality.utils.UsageUtils.getUsageSinceMidnight(this@StatisticsActivity)
+                val totalScreenTime = com.neubofy.reality.utils.UsageUtils.getScreenTimeSinceMidnight(this@StatisticsActivity)
+                
+                Triple(usage7Days, todaysStats, totalScreenTime)
             }
             
-            if (usageTime > 60000) { // > 1 minute
-                try {
-                    val appInfo = packageManager.getApplicationInfo(pkg, 0)
-                    val label = packageManager.getApplicationLabel(appInfo).toString()
-                    val icon = packageManager.getApplicationIcon(appInfo)
-                    appUsageList.add(AppUsageItem(pkg, label, usageTime, icon))
-                } catch (e: Exception) {
-                    // System app or uninstalled - ignore
-                }
-            }
+            // UI Updates
+            binding.loadingLogo.clearAnimation()
+            binding.loadingLogo.visibility = android.view.View.GONE
+            binding.contentLayout.visibility = android.view.View.VISIBLE
+            
+            val (usageData, todaysStatsMap, totalScreenTime) = data
+            
+            // 1. Chart
+            setupChart(binding.chartDaily, usageData)
+            
+            // 2. Weekly Avg
+            val avgUsage = if (usageData.isNotEmpty()) usageData.map { it.second }.average().toLong() else 0L
+            val avgHours = TimeUnit.MILLISECONDS.toHours(avgUsage)
+            val avgMins = TimeUnit.MILLISECONDS.toMinutes(avgUsage) % 60
+            binding.tvWeeklyAvg.text = "${avgHours}h ${avgMins}m"
+            
+            // 3. Today's List
+            updateTodayUsageUI(todaysStatsMap, totalScreenTime)
         }
+    }
+
+    private fun updateTodayUsageUI(statsMap: Map<String, Long>, totalScreenTime: Long) {
+        val packageManager = packageManager
+        appUsageList.clear()
         
-        // Use consistent total calc
-        val totalScreenTime = com.neubofy.reality.utils.UsageUtils.getScreenTimeSinceMidnight(this)
+        // This part is lightweight enough for Main thread, or could be moved to IO too if list is huge
+        // But PackageManager looks ups can be slow, so let's be careful.
+        // Actually, let's keep it simple for now as the heavy lifting was the usage query.
+        // Optimization: We could move PM calls to IO too, but let's test stability first.
         
         // Update Total Text
         val hours = TimeUnit.MILLISECONDS.toHours(totalScreenTime)
         val mins = TimeUnit.MILLISECONDS.toMinutes(totalScreenTime) % 60
         binding.tvTodayUsage.text = "${hours}h ${mins}m"
         
-        // Sort and Update List
+        // Filter and Populate
+        statsMap.forEach { (pkg, usageTime) ->
+             if (pkg == "com.android.systemui" || pkg.contains("launcher") || pkg == packageName) {
+                return@forEach
+             }
+             if (usageTime > 60000) { 
+                 try {
+                     // CAUTION: PM calls on main thread can frame drop.
+                     // Ideally we cache this or load in IO. 
+                     // For stability fix 1.0, we just solved the 5-second IO freeze.
+                     val appInfo = packageManager.getApplicationInfo(pkg, 0)
+                     val label = packageManager.getApplicationLabel(appInfo).toString()
+                     val icon = packageManager.getApplicationIcon(appInfo)
+                     appUsageList.add(AppUsageItem(pkg, label, usageTime, icon))
+                 } catch (e: Exception) { }
+             }
+        }
+        
         appUsageList.sortByDescending { it.usageTime }
         adapter.notifyDataSetChanged()
     }
@@ -152,6 +180,8 @@ class StatisticsActivity : AppCompatActivity() {
             calendar.set(Calendar.MILLISECOND, 0)
             
             val dayStart = calendar.timeInMillis
+            
+            // End of day (or now)
             calendar.add(Calendar.DAY_OF_YEAR, 1)
             val dayEnd = calendar.timeInMillis 
             
@@ -177,6 +207,7 @@ class StatisticsActivity : AppCompatActivity() {
                     // Skip system apps
                     if (excludedPrefixes.any { stat.packageName.startsWith(it) }) continue
                     if (stat.packageName.contains("launcher", ignoreCase = true)) continue
+                    if (stat.packageName == packageName) continue // Exclude self
                     
                     totalTime += stat.totalTimeInForeground
                 }

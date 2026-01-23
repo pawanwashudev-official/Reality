@@ -12,12 +12,14 @@
 [![License](https://img.shields.io/github/license/pawanwashudev-official/Reality?style=for-the-badge&color=blue)](https://opensource.org/licenses/Apache-2.0)
 
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg?style=for-the-badge)](https://www.android.com)
-[![Privacy](https://img.shields.io/badge/Privacy-Local%20%2B%20G--Drive-lock.svg?style=for-the-badge)]()
+[![Privacy](https://img.shields.io/badge/Data-Local%20%2B%20Your%20G--Drive-lock.svg?style=for-the-badge&color=teal)]()
 [![AI](https://img.shields.io/badge/AI-Bring%20Your%20Own%20Key-purple.svg?style=for-the-badge)]()
+[![Ads](https://img.shields.io/badge/Ads-ZERO-red.svg?style=for-the-badge)]()
+[![Trackers](https://img.shields.io/badge/Trackers-ZERO-red.svg?style=for-the-badge)]()
 
 > **"Stop managing your life. Start commanding it."**
 
-### Open Source • Free Forever • Any AI (BYO Key)
+### 🌟 100% Open Source • Free Forever • No Ads • No Trackers • Any AI (BYO Key)
 
 [**🌐 Official Website**](https://neubofyreality.vercel.app) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
 
@@ -25,70 +27,117 @@
 
 ---
 
+## 🤔 Why Does Reality Exist?
+
+We searched for the **perfect productivity app**. We found:
+- ❌ **Paid Apps**: Want $50/year just to block Instagram? No thanks.
+- ❌ **"Free" Apps**: Selling your data to advertisers. You're the product.
+- ❌ **One-Trick Apps**: A timer here. A to-do list there. No integration.
+- ❌ **Closed Ecosystems**: Your data locked in proprietary servers.
+
+**Reality was born from frustration.** Built by two friends who lost control of their own fingers. Designed for students and working professionals who want to use their phone **for getting things done**, not doom-scrolling.
+
+---
+
 ## 🏆 Reality vs. The Industry
 
-Most apps solve *one* problem. Reality solves the *entire ecosystem* of productivity.
+Most apps solve *one* problem. Reality solves the **entire ecosystem** of productivity.
 
-| Feature | 🌌 Reality (Life OS) | 🌳 Forest | 🛡️ Freedom | 📝 Notion |
-| :--- | :--- | :--- | :--- | :--- |
-| **Philosophy** | **Holistic AI Agent** | Planting Trees | Brute Force Blocking | Manual Note Taking |
-| **Intelligence** | **Active AI Coach** | None | None | Passive AI Writer |
-| **Privacy** | **Local + Your G-Drive** | Cloud Server | Cloud Server | Cloud Server |
-| **Deep Work** | **Box Strategy + Tapasya** | Gentle Guilt Trip | VPN Blocking | N/A |
-| **Gamification** | **XP + Penalties** | Trees | None | None |
-| **Ecosystem** | **Google Workspace Sync** | Isolated | Isolated | Isolated |
-| **Battery** | **Native API (0% Drain)** | Standard | Standard | High Drain |
-| **Price** | **Free & Open Source** | Paid Features | Subscription | Subscription |
+| Feature | 🌌 Reality (Free & Open) | 🌳 Forest ($) | 🛡️ Freedom ($$) | ⛔ AppBlock ($) | 📝 Notion ($) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Open Source** | ✅ **100%** | ❌ | ❌ | ❌ | ❌ |
+| **Price** | ✅ **Free Forever** | Paid Features | Subscription | Freemium | Subscription |
+| **Ads / Trackers** | ✅ **ZERO** | Has Ads (Free) | ❌ | Has Ads | ❌ |
+| **Data Sovereignty** | ✅ **Local + YOUR G-Drive** | Their Servers | Their Servers | Their Servers | Their Servers |
+| **AI Agent** | ✅ **Plans, Sets Alarms, Creates Reports** | ❌ | ❌ | ❌ | Passive Writer |
+| **Google Ecosystem Sync** | ✅ **Tasks, Calendar, Docs, Drive** | ❌ | ❌ | ❌ | ❌ |
+| **Gemini Agent Integration** | ✅ **Indirectly via G-Workspace** | ❌ | ❌ | ❌ | ❌ |
+| **Military-Grade Blocker** | ✅ **Armored Strict Mode** | Gentle Guilt Trip | VPN Blocking | Standard | N/A |
+| **Battery Impact** | ✅ **<1% (Native APIs)** | Standard | High (VPN) | Standard | High |
 
 ---
 
-## 🚀 World's Best Features
+## 💡 The Google Ecosystem Advantage
+
+Reality doesn't reinvent the wheel. It **weaponizes Google's own tools** for your productivity.
+
+### 📄 Google Docs Integration
+- **AI Diary & Reflection**: Your daily journal is written directly to **Google Docs**.
+- **AI Plans**: Tomorrow's plan is a structured document in your Drive.
+- **Gemini Ready**: Because your data is in Docs, Google's Gemini can analyze and assist with it natively!
+
+### ✅ Google Tasks & Calendar
+- **Native Sync**: Add a task in Reality → it appears in Google Tasks instantly.
+- **Schedule Adherence XP**: Earn XP for attending your planned calendar blocks.
+- **Gemini Control**: Google's Gemini app can see and manage your tasks/events seamlessly.
+
+### ☁️ Google Drive Backup
+- **Automatic Reports**: Your daily PDF reports are uploaded to **YOUR** Drive folder.
+- **Full Control**: Access, share, or delete them anytime. It's your data.
+- **No Our Servers**: We have **literally zero servers**. Your data never touches us.
+
+> **The result?** Reality becomes a power-user extension of the **Gemini-powered Google Workspace**. Not a separate silo.
+
+---
+
+## ⚔️ Military-Grade App Blocking: The "Armored Strict Mode"
+
+Standard blockers are weak. A 5-year-old can bypass them. Reality creates an **impenetrable fortress** around your focus.
+
+### 🔒 Armored Strict Mode
+- **Device Admin Protection**: Blocks uninstall attempts during active focus.
+- **Time Tampering Detection**: Changing system time to bypass? **Detected immediately.**
+- **Accessibility Guard**: Catches sneaky app launches via overlays and intent hijacks.
+- **Loop Hole Closers**: We didn't just build a blocker. We analyzed every single bypass on the internet and **closed them all**.
+
+### 🔥 Tapasya Mode
+A focus mode so intense, it's named after the Sanskrit word for "deep, burning discipline".
+- Starts Focus Mode automatically.
+- Saves state even if your phone reboots.
+- Plays warning sounds when your break is about to end.
+
+---
+
+## 🚀 Core Features
 
 ### 🧠 Hybrid Agentic AI
-We don't just use AI to write text. We use AI to **run your life**.
-*   **Active Agent**: The AI understands your plan and **auto-sets your system alarm** for the perfect wake-up time.
-*   **Bring Your Own Key**: Use **OpenAI, Gemini, Groq, or OpenRouter**. No boundaries.
-*   **Ready-to-Use**: Includes a powerful **GPT-OSS-120B** preset model. Install and go.
+- **Active Agent**: AI sets your **system alarm** based on your plan.
+- **Bring Your Own Key**: Use **OpenAI, Gemini, Groq, Claude, or any OpenRouter model**.
+- **Ready-to-Use Preset**: Comes with a powerful **GPT-OSS-120B** free model out of the box.
 
-### 📄 Daily PDF Reports
-**Proof of Work**. Every single day.
-*   Reality generates a beautiful, detailed **PDF Report** of your day.
-*   Analyzing your efficiency, task completion, and focus sessions down to the minute.
-*   Stored locally or shared directly to your Google Drive.
+### � Daily PDF Reports (Proof of Work)
+- Beautiful, detailed PDF report generated every night.
+- Tracks task completion, focus sessions, and phone usage.
+- Auto-uploaded to Google Drive.
 
 ### 🎮 Next-Gen Gamification
-Make discipline addictive.
-*   **Dynamic XP**: Earn XP for Deep Work sessions and completing tasks.
-*   **Real Penalties**: Using your phone during a focus block? You lose XP.
-*   **Usage-Based Levels**: Your level reflects your actual digital discipline, not just "time spent in app".
+- **Dynamic XP System**: Earn XP for deep work. Lose XP for breaking focus.
+- **Screen Time Bonus/Penalty**: Stay under your limit? Bonus XP. Go over? Penalty.
+- **Levels**: Your level reflects **actual digital discipline**, not just time in-app.
 
-### 🔒 Sovereign Privacy Architecture
-Your data is yours. Period. We have **NO SERVERS**.
-*   **Local Processing**: All blocking and logic happens on-device.
-*   **Your Cloud**: We back up strictly to **Your Personal Google Drive**.
-*   **Transient Storage**: Detailed data lives on your device for 3 days for analysis, then is wiped or synced.
-
-### ⚔️ The "Box Strategy" Blocker
-Standard blockers are weak. Reality creates an impenetrable **Box** around your focus.
-*   **Strict Mode**: Prevents uninstalls and time-tampering during active sessions.
-*   **Context Aware**: Blocks based on your current *intent*, not just a static list.
-*   **Tapasya Mode**: A hardcore focus state designed for extreme achievers.
+### 🌙 The Nightly Protocol
+Your evening ritual to win tomorrow.
+1.  **Reflect**: AI asks dynamic questions based on your day's actual data.
+2.  **Plan**: Schedule tasks and events (synced to Google).
+3.  **Coach**: AI gives **personalized mentorship advice**.
+4.  **Sleep**: Alarm is set. The "Box" is armed for tomorrow.
 
 ### 🔋 Engineering Perfection
-We optimized every line of code for flagship performance.
-*   **Battery**: Uses native **AlarmManager** & **JobScheduler** APIs. Zero background drain.
-*   **Precision**: Direct access to **UsageStatsManager** for 100% accurate reporting.
-*   **Global Timer**: Floating timer uses **System Alert Window** to keep you focused in *any* app.
+- **<1% Battery**: Uses native `AlarmManager` & `JobScheduler`. Zero background drain.
+- **100% Accurate Stats**: Direct `UsageStatsManager` access.
+- **Floating Timer**: A global overlay keeps you accountable in *any* app.
 
 ---
 
-## 🌙 The Nightly Protocol
+## 🔐 Privacy Architecture: Zero Trust
 
-The ultimate evening ritual to win tomorrow.
-1.  **Reflect**: AI asks dynamic questions based on your day's actual data.
-2.  **Plan**: Schedule tasks and events (synced to Google Tasks/Calendar).
-3.  **Coach**: AI analyzes your plan and gives **Mentorship Advice**.
-4.  **Sleep**: Auto-sets your alarm and prepares the "Box" for tomorrow.
+| Principle | How Reality Implements It |
+| :--- | :--- |
+| **No Servers** | We have zero backend infrastructure. Your data never touches our systems. |
+| **Local-First** | All blocking logic, XP calculation, and app state runs 100% on-device. |
+| **Your Cloud, Your Rules** | Backups go to **your personal Google Drive**. We can't access it. |
+| **Transient Storage** | Detailed analytics live locally for 3 days, then are wiped or synced to your Drive. |
+| **Open Source Audit** | Every line of code is public. Build the APK yourself if you don't trust us. |
 
 ---
 
@@ -100,12 +149,10 @@ Ready for the upgrade?
 
 ---
 
-## �️ Verify & Build (100% Transparency)
+## 🛠️ Build It Yourself (100% Transparency)
 
 **Don't trust the APK? Build it yourself.**
-We believe in radical transparency. You can clone the entire source code and build your own version of Reality in 5 minutes.
 
-**How to Build Your Own Copy:**
 1.  **Clone the Repo**:
     ```bash
     git clone https://github.com/pawanwashudev-official/Reality.git
@@ -113,11 +160,23 @@ We believe in radical transparency. You can clone the entire source code and bui
 2.  **Open in Android Studio**: File -> Open -> Select `Reality` folder.
 3.  **Add Google Auth** (Optional):
     *   Place your `client_secret.json` in `app/src/main/assets/`.
-    *   (Or skip this if you don't need Google Drive backup).
+    *   (Or skip this if you don't need Google sync).
 4.  **Hit Run**: Press the ▶️ button.
 
-**That's it.** No hidden compilation steps. No obfuscated code. What you see is what you run.
+**That's it.** No hidden steps. No obfuscated code. What you see is what you run.
 
 ---
 
-*Made with ❤️ and Intelligence by the Reality Team.*
+## 🤝 Contributing
+
+Reality is built by the community, for the community. Pull requests are welcome!
+
+---
+
+<div align="center">
+
+*Made with ❤️ and Intelligence by Pawan Washudev.*
+
+**"Your data. Your focus. Your life. On YOUR terms."**
+
+</div>

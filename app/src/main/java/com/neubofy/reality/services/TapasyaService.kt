@@ -43,7 +43,10 @@ class TapasyaService : Service() {
     
     // XP tracking
     private var lastCompletedFragment = 0
+    private var warningPlayed = false // For pause warning
 
+    private val PREFS_NAME = "tapasya_service_prefs"
+    
     companion object {
         const val CHANNEL_ID = "tapasya_channel"
         const val NOTIFICATION_ID = 2001
@@ -84,6 +87,7 @@ class TapasyaService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        restoreState()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -123,11 +127,13 @@ class TapasyaService : Service() {
         isSessionActive = true
         isRunning = true
         isPaused = false
-        lastCompletedFragment = 0  // Reset XP fragment counter
+        lastCompletedFragment = 0
+        warningPlayed = false
         
         // Start Focus Mode
         startFocusMode()
         
+        saveState() // Persist
         startForeground(NOTIFICATION_ID, buildNotification("Focusing: $sessionName", "00:00:00"))
         startTimerLoop()
         emitState()
@@ -143,6 +149,7 @@ class TapasyaService : Service() {
         isRunning = false
         isPaused = true
         
+        saveState() // Persist
         updateNotification("Paused: $sessionName", formatTime(elapsedRunningTime))
         emitState()
     }
@@ -162,7 +169,9 @@ class TapasyaService : Service() {
         runningStartTime = System.currentTimeMillis()
         isRunning = true
         isPaused = false
+        warningPlayed = false // Reset warning
         
+        saveState() // Persist
         updateNotification("Focusing: $sessionName", formatTime(elapsedRunningTime))
         emitState()
     }
@@ -193,6 +202,8 @@ class TapasyaService : Service() {
         elapsedRunningTime = 0L
         totalPauseTime = 0L
         
+        clearState() // Clear Persistence
+        
         timerJob?.cancel()
         _clockState.value = ClockState()
         
@@ -212,6 +223,8 @@ class TapasyaService : Service() {
         isPaused = false
         elapsedRunningTime = 0L
         totalPauseTime = 0L
+        
+        clearState() // Clear Persistence
         
         // Cancel timer
         timerJob?.cancel()
@@ -243,7 +256,7 @@ class TapasyaService : Service() {
             }
         }
     }
-    
+
     private fun updateStartTime(newStartTime: Long) {
         if (!isSessionActive) return
         
@@ -266,6 +279,7 @@ class TapasyaService : Service() {
         
         // Update notification immediately
         emitState()
+        saveState() // Persist change
     }
 
     private fun startFocusMode() {
@@ -296,6 +310,56 @@ class TapasyaService : Service() {
         })
     }
 
+    private fun saveState() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        prefs.edit()
+            .putBoolean("is_active", true)
+            .putLong("session_start", sessionStartTime)
+            .putLong("running_start", runningStartTime)
+            .putLong("elapsed_running", elapsedRunningTime)
+            .putLong("pause_start", pauseStartTime)
+            .putLong("total_pause", totalPauseTime)
+            .putString("session_name", sessionName)
+            .putLong("target_time", targetTimeMs)
+            .putLong("pause_limit", pauseLimitMs)
+            .putBoolean("is_running", isRunning)
+            .putBoolean("is_paused", isPaused)
+            .putInt("last_completed_fragment", lastCompletedFragment)
+            .apply()
+    }
+    
+    private fun restoreState() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        if (!prefs.getBoolean("is_active", false)) return
+
+        sessionStartTime = prefs.getLong("session_start", 0L)
+        runningStartTime = prefs.getLong("running_start", 0L)
+        elapsedRunningTime = prefs.getLong("elapsed_running", 0L)
+        pauseStartTime = prefs.getLong("pause_start", 0L)
+        totalPauseTime = prefs.getLong("total_pause", 0L)
+        sessionName = prefs.getString("session_name", "Tapasya") ?: "Tapasya"
+        targetTimeMs = prefs.getLong("target_time", 60 * 60 * 1000L)
+        pauseLimitMs = prefs.getLong("pause_limit", 15 * 60 * 1000L)
+        isRunning = prefs.getBoolean("is_running", false)
+        isPaused = prefs.getBoolean("is_paused", false)
+        lastCompletedFragment = prefs.getInt("last_completed_fragment", 0)
+        
+        isSessionActive = true
+        warningPlayed = false // Reset warning on restore to be safe
+
+        // Restart Loop if needed
+        startTimerLoop()
+        
+        // Re-show notification
+        val text = if (isRunning) formatTime(elapsedRunningTime) else "Paused"
+        startForeground(NOTIFICATION_ID, buildNotification(if (isPaused) "Paused: $sessionName" else "Focusing: $sessionName", text))
+        emitState()
+    }
+    
+    private fun clearState() {
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().clear().apply()
+    }
+
     private fun startTimerLoop() {
         timerJob?.cancel()
         timerJob = serviceScope.launch {
@@ -312,12 +376,28 @@ class TapasyaService : Service() {
                     totalPauseTime
                 }
                 
-                // Check pause limit auto-stop
-                if (isPaused && currentPause >= pauseLimitMs) {
-                    withContext(Dispatchers.Main) {
-                        stopSession(wasAutoStopped = true)
+                // Check pause limit auto-stop & Warning
+                if (isPaused) {
+                    val remainingPause = pauseLimitMs - currentPause
+                    
+                    if (remainingPause <= 10000 && remainingPause > 0 && !warningPlayed) {
+                        try {
+                            val notification = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+                            val r = android.media.RingtoneManager.getRingtone(applicationContext, notification)
+                            r.play()
+                            warningPlayed = true
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
-                    return@launch
+                    
+                    if (currentPause >= pauseLimitMs) {
+                        // Play stop sound? Maybe later.
+                        withContext(Dispatchers.Main) {
+                            stopSession(wasAutoStopped = true)
+                        }
+                        return@launch
+                    }
                 }
                 
                 // Calculate effective time and check for new fragment completion
@@ -334,6 +414,7 @@ class TapasyaService : Service() {
                         XPManager.addTapasyaXP(this@TapasyaService, deltaXP)
                     }
                     lastCompletedFragment = currentFragment
+                    saveState() // Save XP state
                 }
                 
                 // Update notification

@@ -14,7 +14,18 @@
         app:titleTextColor="?attr/colorOnBackground"
         app:navigationIconTint="?attr/colorOnSurface" />
 
+    <ImageView
+        android:id="@+id/loadingLogo"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="64dp"
+        android:src="@drawable/app_logo"
+        android:visibility="gone"
+        android:contentDescription="Loading" />
+
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/contentLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 

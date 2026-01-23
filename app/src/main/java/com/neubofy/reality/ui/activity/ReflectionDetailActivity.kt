@@ -104,6 +104,10 @@ class ReflectionDetailActivity : AppCompatActivity() {
     private fun setupCharts() {
         setupLineChart(binding.chartXpHistory)
         setupBarChart(binding.chartStudyTime)
+        
+        // Setup History Recycler
+        binding.rvXpHistory.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+        binding.rvXpHistory.adapter = com.neubofy.reality.ui.adapter.XpHistoryAdapter(emptyList())
     }
     
     private fun setupLineChart(chart: LineChart) {
@@ -273,11 +277,20 @@ class ReflectionDetailActivity : AppCompatActivity() {
             // Sync Global Stats first (Recalculate Totals from DB)
             XPManager.recalculateGlobalStats(applicationContext) 
             
-            // Use Projected breakdown for live "Expected" values
-            val xp = XPManager.getProjectedDailyXP(applicationContext) 
+            // UNIFICATION: Force recalculation of today's stats on load/refresh
+            val today = java.time.LocalDate.now().toString()
+            XPManager.recalculateDailyStats(applicationContext, today)
+            
+            // Use Real breakdown from DB (Projected is no longer needed if we recalculate live)
+            val xp = XPManager.getDailyStats(applicationContext, today) ?: XPManager.XPBreakdown(today) 
+            
+            // Fetch History list (All dates)
+            val historyDates = XPManager.getAllStatsDates(applicationContext)
+            val historyItems = historyDates.mapNotNull { XPManager.getDailyStats(applicationContext, it) }
             
             withContext(Dispatchers.Main) {
                 updateBreakdownUI(xp)
+                (binding.rvXpHistory.adapter as? com.neubofy.reality.ui.adapter.XpHistoryAdapter)?.updateData(historyItems)
                 binding.swipeRefresh.isRefreshing = false
             }
         }

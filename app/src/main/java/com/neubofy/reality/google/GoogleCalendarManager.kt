@@ -69,4 +69,34 @@ object GoogleCalendarManager {
             }
         }
     }
+    /**
+     * Get events for a specific day from Google Calendar API.
+     */
+    suspend fun getEvents(context: Context, startTimeMs: Long, endTimeMs: Long, calendarId: String = "primary"): List<Event> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val service = getCalendarService(context) ?: return@withContext emptyList()
+                
+                val events = service.events().list(calendarId)
+                    .setTimeMin(DateTime(Date(startTimeMs)))
+                    .setTimeMax(DateTime(Date(endTimeMs)))
+                    .setSingleEvents(true)
+                    .setOrderBy("startTime")
+                    .execute()
+                
+                TerminalLogger.log("CALENDAR API: Fetched ${events.items?.size ?: 0} events")
+                
+                // Filter: Exclude All-Day (dateTime is null) and Family events
+                events.items?.filter { event ->
+                    val isAllDay = event.start.dateTime == null
+                    val isFamily = (event.summary ?: "").contains("family", ignoreCase = true) ||
+                                  (event.description ?: "").contains("family", ignoreCase = true)
+                    !isAllDay && !isFamily
+                } ?: emptyList()
+            } catch (e: Exception) {
+                TerminalLogger.log("CALENDAR API: Error fetching events - ${e.message}")
+                emptyList()
+            }
+        }
+    }
 }

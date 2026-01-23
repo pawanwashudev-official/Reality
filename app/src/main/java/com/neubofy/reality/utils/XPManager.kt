@@ -251,6 +251,142 @@ object XPManager {
         return@withContext xp
     }
     
+    // --- Core Logic: Screen Time XP (Bonus/Penalty) ---
+    private suspend fun calculateScreenTimeXP(context: Context, date: String): Pair<Int, Int> = withContext(Dispatchers.IO) {
+        val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
+        val limitMins = prefs.getInt("screen_time_limit_minutes", 0)
+        
+        if (limitMins <= 0) return@withContext Pair(0, 0)
+        
+        // We need UsageStats for that specific date.
+        // UsageUtils.getUsageSinceMidnight is for TODAY.
+        // If date != Today, we might not get accurate historical usage easily without UsageStats query.
+        // However, for Nightly Protocol (usually run for 'Yesterday' or 'Today'), we need to be careful.
+        // If user runs nightly for Yesterday, we need Yesterday's usage.
+        // NOTE: StatisticsActivity.getLast7DaysUsage() does this.
+        
+        // Let's implement a helper here or reuse UsageUtils if extended.
+        // For now, assuming Live Refresh (Today) and Nightly (Yesterday/Today).
+        
+        val dateObj = LocalDate.parse(date)
+        val startOfDay = dateObj.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val endOfDay = dateObj.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
+        
+        // Use UsageStatsManager to get time for that range
+        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? android.app.usage.UsageStatsManager
+        var totalUsedMillis = 0L
+        
+        if (usageStatsManager != null) {
+             val stats = usageStatsManager.queryUsageStats(
+                android.app.usage.UsageStatsManager.INTERVAL_DAILY,
+                startOfDay,
+                endOfDay
+            )
+            // Filter logic same as StatisticsActivity (exclude system/launcher)
+             val excludedPrefixes = listOf("com.android.", "android", "com.google.android.inputmethod", "com.sec.android.app.launcher", "com.miui.home", "com.huawei.android.launcher")
+             
+             for (stat in stats) {
+                if (stat.totalTimeInForeground <= 0) continue
+                if (excludedPrefixes.any { stat.packageName.startsWith(it) }) continue
+                if (stat.packageName.contains("launcher", ignoreCase = true)) continue
+                if (stat.packageName == context.packageName) continue
+                
+                totalUsedMillis += stat.totalTimeInForeground
+             }
+        }
+        
+        val usedMins = (totalUsedMillis / 60000).toInt()
+        
+        var bonus = 0
+        var penalty = 0
+        
+        if (usedMins > limitMins) {
+            val over = usedMins - limitMins
+            penalty = (over * 10).coerceAtMost(500)
+        } else {
+            val left = limitMins - usedMins
+            bonus = (left * 10).coerceAtMost(500)
+        }
+        
+        // Save to DB (partial update helper)
+        updateDailyStats(context, date) { current ->
+            current.copy(screenTimeXP = bonus, penaltyXP = penalty)
+        }
+        
+        return@withContext Pair(bonus, penalty)
+    }
+
+    suspend fun calculateSessionXP(context: Context, date: String, externalEvents: List<com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent>? = null): Int = withContext(Dispatchers.IO) {
+        val db = AppDatabase.getDatabase(context)
+        val dateObj = LocalDate.parse(date)
+        val startOfDay = dateObj.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val endOfDay = dateObj.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
+        
+        // 1. Fetch Data
+        val plannedEvents = if (externalEvents != null) {
+            externalEvents // Use Cloud Events if provided (Nightly)
+        } else {
+            val calendarRepo = com.neubofy.reality.data.repository.CalendarRepository(context)
+            calendarRepo.getEventsInRange(startOfDay, endOfDay) // Use Device Events (Live)
+        }
+        
+        val actualSessions = db.tapasyaSessionDao().getSessionsForDay(startOfDay, endOfDay)
+        
+        var xp = 0
+        
+        plannedEvents.forEach { event ->
+            val matchingSession = actualSessions.find { session ->
+                session.startTime < event.endTime && session.endTime > event.startTime
+            }
+            
+            if (matchingSession != null) {
+                xp += 100
+                val diffStart = matchingSession.startTime - event.startTime
+                val fifteenMins = 15 * 60 * 1000L
+                if (diffStart <= -fifteenMins) xp += 50
+                else if (diffStart >= fifteenMins) xp -= 50
+            } else {
+                if (event.endTime < System.currentTimeMillis()) {
+                    xp -= 100
+                }
+            }
+        }
+        
+        updateDailyStats(context, date) { current ->
+            current.copy(sessionXP = xp)
+        }
+        
+        return@withContext xp
+    }
+
+    /**
+     * UNIFIED RECALCULATION:
+     * Re-runs ALL XP formulas for a specific date using strict DB data.
+     * Trusted source of truth for both Live Refresh and Nightly Protocol.
+     * @param externalEvents Optional list of events (e.g. from Cloud API) to override device calendar.
+     */
+    suspend fun recalculateDailyStats(context: Context, date: String, externalEvents: List<com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent>? = null) {
+        calculateTaskXP(context) // Updates taskXP
+        calculateSessionXP(context, date, externalEvents) // Updates sessionXP
+        calculateScreenTimeXP(context, date) // Updates screenTimeXP/penaltyXP
+        
+        // Re-sum Tapasya XP
+        val db = AppDatabase.getDatabase(context)
+        val dateObj = LocalDate.parse(date)
+        val startOfDay = dateObj.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val endOfDay = dateObj.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
+        val sessions = db.tapasyaSessionDao().getSessionsForDay(startOfDay, endOfDay)
+        
+        var totalTapasyaXP = 0
+        sessions.forEach { session ->
+             totalTapasyaXP += calculateTapasyaXP((session.effectiveTimeMs / 60000).toInt())
+        }
+        
+        updateDailyStats(context, date) { current ->
+            current.copy(tapasyaXP = totalTapasyaXP)
+        }
+    }
+
     // Removed private isTaskDue as logic is now embedded in calculateTaskXP per spec
 
     // --- Persistence & Updates ---

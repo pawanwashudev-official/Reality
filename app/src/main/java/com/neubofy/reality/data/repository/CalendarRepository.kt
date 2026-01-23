@@ -62,7 +62,8 @@ class CalendarRepository(private val context: Context) {
             CalendarContract.Instances.BEGIN,
             CalendarContract.Instances.END,
             CalendarContract.Instances.DISPLAY_COLOR,
-            CalendarContract.Instances.EVENT_LOCATION
+            CalendarContract.Instances.EVENT_LOCATION,
+            CalendarContract.Instances.ALL_DAY
         )
 
         // Construct the query with the Instances URI
@@ -70,10 +71,13 @@ class CalendarRepository(private val context: Context) {
         android.content.ContentUris.appendId(builder, startMillis)
         android.content.ContentUris.appendId(builder, endMillis)
 
+        // Filter: Exclude All Day Events (Holidays, Birthdays, etc.)
+        val selection = "${CalendarContract.Instances.ALL_DAY} = 0"
+
         val cursor: Cursor? = context.contentResolver.query(
             builder.build(),
             projection,
-            null,
+            selection,
             null,
             "${CalendarContract.Instances.BEGIN} ASC"
         )
@@ -89,6 +93,9 @@ class CalendarRepository(private val context: Context) {
 
             while (it.moveToNext()) {
                 val title = it.getString(titleIndex) ?: "No Title"
+                // Filter: Exclude "Family" events
+                if (title.contains("family", ignoreCase = true)) continue
+
                 val begin = it.getLong(beginIndex)
                 val end = it.getLong(endIndex)
                 
