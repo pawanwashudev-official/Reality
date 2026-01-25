@@ -33,6 +33,13 @@ object BlockCache {
      */
     @Volatile private var blockedApps: Map<String, Set<String>> = emptyMap()
     
+    /** 
+     * CACHED WEBSITE BLOCKLIST
+     * Updated by rebuildBox from Focus Mode data.
+     */
+    @Volatile var blockedWebsites: Set<String> = emptySet()
+        private set
+    
     /** Last time the cache was updated */
     var lastUpdateTime = 0L
         private set
@@ -71,6 +78,22 @@ object BlockCache {
         } else {
             Pair(false, emptyList())
         }
+    }
+
+    /**
+     * Check if a website URL should be blocked.
+     * Uses the cached blocklist.
+     */
+    fun shouldBlockWebsite(url: String): String? {
+        if (emergencySessionEndTime > System.currentTimeMillis()) return null
+        if (!isAnyBlockingModeActive) return null
+        if (StrictLockUtils.isMaintenanceWindow()) return null
+        
+        val currentList = blockedWebsites
+        if (currentList.isEmpty()) return null
+        
+        val cleanUrl = url.lowercase()
+        return currentList.find { it.isNotEmpty() && cleanUrl.contains(it.lowercase()) }
     }
     
     /**
@@ -138,7 +161,11 @@ object BlockCache {
                 
                 // === STEP 2: Add apps from blocklist if ANY mode is active ===
                 // Now with per-app mode filtering
+
                 if (isAnyBlockingModeActive) {
+                    // Update Cached Website List
+                    blockedWebsites = focusData.blockedWebsites
+                    
                     val blocklist = focusData.selectedApps
                     val modeType = focusData.modeType
                     

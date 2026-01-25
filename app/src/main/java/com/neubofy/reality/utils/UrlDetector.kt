@@ -26,11 +26,19 @@ object UrlDetector {
         "org.chromium.chrome",           // Chromium
         "com.yandex.browser",            // Yandex Browser
         "com.uc.browser.en",             // UC Browser
-        "mark.via.gp"                    // Via Browser
+        "mark.via.gp",                   // Via Browser
+        "com.lemur.browser",             // Lemur
+        "com.cloudmosa.puffinFree",      // Puffin
+        "org.torproject.torbrowser",     // Tor
+        "com.pure.browser",              // Pure Browser
+        "acr.browser.barebones"          // Lightning Browser
     )
 
     // Dynamic list populated at runtime
     private var dynamicBrowserPackages: Set<String> = emptySet()
+    
+    // Cache for successful View IDs per package to avoid scanning all IDs every time
+    private val successfulViewIdCache = java.util.HashMap<String, String>()
 
     fun init(context: android.content.Context) {
         try {
@@ -71,6 +79,25 @@ object UrlDetector {
     fun getUrl(rootNode: AccessibilityNodeInfo?, packageName: String): String? {
         if (rootNode == null) return null
         
+        // 0. Try Cached ID first (Optimization)
+        val cachedId = successfulViewIdCache[packageName]
+        if (cachedId != null) {
+            val nodes = rootNode.findAccessibilityNodeInfosByViewId(cachedId)
+            if (!nodes.isNullOrEmpty()) {
+                try {
+                    for (node in nodes) {
+                        val text = extractValidUrl(node)
+                        if (text != null) {
+                            // Cache Match!
+                            return text
+                        }
+                    }
+                } finally {
+                    nodes.forEach { try { it.recycle() } catch(e: Exception){} }
+                }
+            }
+        }
+        
         // 1. Try View ID lookup (Fastest & Most Accurate)
         val urlBarIds = listOf(
             // Chrome
@@ -99,6 +126,9 @@ object UrlDetector {
         )
 
         for (id in urlBarIds) {
+            // Skip cached ID check since we already did it (unless it failed, then we retry here essentially)
+            if (id == cachedId) continue 
+            
             val nodes = rootNode.findAccessibilityNodeInfosByViewId(id)
             if (!nodes.isNullOrEmpty()) {
                 try {
@@ -106,6 +136,10 @@ object UrlDetector {
                         val text = extractValidUrl(node)
                         if (text != null) {
                             com.neubofy.reality.utils.TerminalLogger.log("URL (ID): $text")
+                            
+                            // Success! Cache this ID for next time
+                            successfulViewIdCache[packageName] = id
+                            
                             return text
                         }
                     }

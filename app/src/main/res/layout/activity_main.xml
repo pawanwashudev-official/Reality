@@ -100,7 +100,7 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:padding="8dp"
-            android:src="@drawable/baseline_info_24"
+            android:src="@drawable/baseline_menu_24"
             app:tint="?attr/colorOnSurface"
             android:background="@drawable/rounded_button_bg"/>
 

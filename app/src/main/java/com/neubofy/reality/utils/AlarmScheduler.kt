@@ -313,5 +313,34 @@ object AlarmScheduler {
             e.printStackTrace()
         }
     }
+
+    /**
+     * Housekeeping: Ensure old fired events are cleared from cache.
+     * Called by HeartbeatWorker every 15 mins.
+     */
+    fun cleanupOldEvents(context: Context) {
+        try {
+            // Implicitly clears if new day
+            // We force a check by calling hasFiredRecently with a dummy ID
+            FiredEventsCache.hasFiredRecently(context, "cleanup_check")
+            TerminalLogger.log("ALARM: Cleanup routine executed")
+        } catch (e: Exception) {}
+    }
+
+    /**
+     * Cancels alarm for a specific event ID.
+     * Used when a schedule is deleted to perform a Cascading Delete.
+     */
+    fun cancelAlarmForId(context: Context, id: String) {
+        // If the deleted event was the NEXT scheduled one, we need to reschedule.
+        // We can't easily know if it was *the* next one without checking,
+        // so the safest and robust way is simply to run the scheduler again.
+        // It will rebuild the schedule excluding the deleted ID.
+        TerminalLogger.log("ALARM: Event $id deleted/disabled. Rescheduling...")
+        scheduleNextAlarm(context)
+        
+        // Also cancel any active snoozes for this ID
+        cancelSnooze(context, id)
+    }
 }
 

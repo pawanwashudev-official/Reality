@@ -54,7 +54,7 @@ class ReflectionDetailActivity : AppCompatActivity() {
                 XPManager.calculateTaskXP(applicationContext)
                 withContext(Dispatchers.Main) {
                     android.widget.Toast.makeText(this@ReflectionDetailActivity, "Task XP Updated", android.widget.Toast.LENGTH_SHORT).show()
-                    loadData()
+                    loadData(true)
                 }
             }
         }
@@ -65,10 +65,10 @@ class ReflectionDetailActivity : AppCompatActivity() {
         setupCharts()
         
         binding.swipeRefresh.setOnRefreshListener {
-            loadData()
+            loadData(isRefresh = true)
         }
         
-        loadData()
+        loadData(isRefresh = false)
     }
     
     private fun setupSpinners() {
@@ -232,7 +232,7 @@ class ReflectionDetailActivity : AppCompatActivity() {
 
                     override fun onNothingSelected() {
                         // Revert to Today/Projected
-                        loadData()
+                        loadData(false)
                     }
                 })
             }
@@ -271,16 +271,22 @@ class ReflectionDetailActivity : AppCompatActivity() {
         binding.tvPenaltyXp.text = if (xp.penaltyXP > 0) "-${xp.penaltyXP}" else "0"
     }
 
-    private fun loadData() {
-        binding.swipeRefresh.isRefreshing = true
+    private fun loadData(isRefresh: Boolean = false) {
+        if (isRefresh) {
+            binding.swipeRefresh.isRefreshing = true
+        }
+        
         lifecycleScope.launch(Dispatchers.IO) {
-            // Sync Global Stats first (Recalculate Totals from DB)
-            XPManager.recalculateGlobalStats(applicationContext) 
+            if (isRefresh) {
+                // Sync Global Stats first (Recalculate Totals from DB)
+                XPManager.recalculateGlobalStats(applicationContext) 
+                
+                // UNIFICATION: Force recalculation of today's stats on load/refresh
+                val today = java.time.LocalDate.now().toString()
+                XPManager.recalculateDailyStats(applicationContext, today)
+            }
             
-            // UNIFICATION: Force recalculation of today's stats on load/refresh
             val today = java.time.LocalDate.now().toString()
-            XPManager.recalculateDailyStats(applicationContext, today)
-            
             // Use Real breakdown from DB (Projected is no longer needed if we recalculate live)
             val xp = XPManager.getDailyStats(applicationContext, today) ?: XPManager.XPBreakdown(today) 
             
@@ -291,7 +297,9 @@ class ReflectionDetailActivity : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 updateBreakdownUI(xp)
                 (binding.rvXpHistory.adapter as? com.neubofy.reality.ui.adapter.XpHistoryAdapter)?.updateData(historyItems)
-                binding.swipeRefresh.isRefreshing = false
+                if (isRefresh) {
+                    binding.swipeRefresh.isRefreshing = false
+                }
             }
         }
         

@@ -17,9 +17,11 @@ class UnifiedBlocklistActivity : AppCompatActivity() {
         binding = ActivityUnifiedBlocklistBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
-        setSupportActionBar(binding.toolbar)
+        val toolbar = binding.includeHeader.toolbar
+        setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        binding.toolbar.setNavigationOnClickListener { finish() }
+        supportActionBar?.title = "Manage Blocklist"
+        toolbar.setNavigationOnClickListener { finish() }
         
         val adapter = ViewPagerAdapter(this)
         binding.viewPager.adapter = adapter

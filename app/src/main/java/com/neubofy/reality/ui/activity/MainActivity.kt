@@ -20,6 +20,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.pm.ShortcutInfoCompat
@@ -42,17 +43,36 @@ import com.neubofy.reality.ui.fragments.installation.AccessibilityGuide
 import com.neubofy.reality.ui.fragments.installation.PermissionsFragment
 import com.neubofy.reality.ui.fragments.installation.WelcomeFragment
 import com.neubofy.reality.utils.SavedPreferencesLoader
-import java.util.Calendar
-
 import kotlinx.coroutines.*
 import com.neubofy.reality.utils.FocusStatusManager
 import com.neubofy.reality.utils.FocusType
 import com.neubofy.reality.utils.TimeTools
 import com.neubofy.reality.utils.ThemeManager
+import java.time.LocalDate
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import android.view.LayoutInflater
+import android.widget.TextView
 
 class MainActivity : AppCompatActivity() {
 
+    private val PERMISSIONS = setOf(
+        androidx.health.connect.client.permission.HealthPermission.getReadPermission(androidx.health.connect.client.records.StepsRecord::class),
+        androidx.health.connect.client.permission.HealthPermission.getReadPermission(androidx.health.connect.client.records.TotalCaloriesBurnedRecord::class),
+        androidx.health.connect.client.permission.HealthPermission.getReadPermission(androidx.health.connect.client.records.SleepSessionRecord::class),
+        androidx.health.connect.client.permission.HealthPermission.getWritePermission(androidx.health.connect.client.records.SleepSessionRecord::class)
+    )
 
+    private val requestPermissions = registerForActivityResult(androidx.health.connect.client.PermissionController.createRequestPermissionResultContract()) { granted ->
+        if (granted.containsAll(PERMISSIONS)) {
+            // Permissions successfully granted
+            Log.d("HealthConnect", "All permissions granted")
+        } else {
+            // Not all permissions granted
+            Log.d("HealthConnect", "Not all permissions granted")
+        }
+    }
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var selectFocusModeUnblockedAppsLauncher: ActivityResultLauncher<Intent>
@@ -123,16 +143,26 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        
+        checkAndShowSleepVerification()
+        
+        loadStatistics()
         checkAndRequestNextPermission()
         startStatusUpdater()
-        updateEmergencyUI()
-        updateUsageLimitUI()
         updateGreeting()
         updateThemeVisuals()
         updateTerminalLogVisibility()
-        loadReflectionCard()
+        ThemeManager.applyToAllCards(binding.root)
+
         
 
+    }
+
+    private fun loadStatistics() {
+        updateEmergencyUI()
+        updateBedtimeUI()
+        updateUsageLimitUI()
+        loadReflectionCard()
     }
     
     private fun updateGreeting() {
@@ -202,7 +232,14 @@ class MainActivity : AppCompatActivity() {
         statusUpdaterJob = scope.launch {
             while (isActive) {
                 updateFocusStatus()
-                delay(1000)
+                
+                // SMART POLLING: Wait until the start of the next minute
+                val now = System.currentTimeMillis()
+                val millisPassedInCurrentMinute = now % 60000
+                val millisToNextMinute = 60000 - millisPassedInCurrentMinute
+                
+                // Add tiny buffer (50ms) to ensure we seek into the next minute
+                delay(millisToNextMinute + 50)
             }
         }
     }
@@ -222,9 +259,12 @@ class MainActivity : AppCompatActivity() {
                  val data = savedPreferencesLoader.getFocusModeData()
                  if (data.isTapasyaTriggered) {
                      binding.tvFocusCardStatus.text = "Active until stopped"
+                 } else if (remaining > 60_000) {
+                     // Minute-only precision
+                     val mins = (remaining / 60000) + 1 // Ceiling
+                     binding.tvFocusCardStatus.text = "Ends in ~ $mins min"
                  } else if (remaining > 0) {
-                     val timeStr = com.neubofy.reality.utils.TimeTools.formatTime(remaining, showSeconds = true)
-                     binding.tvFocusCardStatus.text = "Ends in $timeStr"
+                     binding.tvFocusCardStatus.text = "Ends in < 1 min"
                  } else {
                      binding.tvFocusCardStatus.text = "Completing..."
                  }
@@ -296,13 +336,13 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent, options.toBundle())
         }
         
-        // Info Button - Show menu with User Manual and App Info
+        // Menu Button - Show menu with options
         binding.btnInfo.setOnClickListener { view ->
             val popup = android.widget.PopupMenu(this, view)
             popup.menu.add(0, 1, 0, "📖 User Manual")
-            popup.menu.add(0, 2, 1, "ℹ️ App Status & Rules")
-            popup.menu.add(0, 3, 2, "📱 About Reality")
-            popup.menu.add(0, 4, 3, "🔓 Unlock Capabilities")
+            popup.menu.add(0, 5, 1, "❤️ Health Dashboard") // Added Health Dashboard
+            popup.menu.add(0, 2, 2, "ℹ️ App Status & Rules")
+            popup.menu.add(0, 3, 3, "📱 About Reality")
             
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
@@ -312,16 +352,16 @@ class MainActivity : AppCompatActivity() {
                         startActivity(intent)
                         true
                     }
+                    5 -> {
+                        startActivity(Intent(this, HealthDashboardActivity::class.java))
+                        true
+                    }
                     2 -> {
                         showRulesDialog()
                         true
                     }
                     3 -> {
                         startActivity(Intent(this, AboutActivity::class.java))
-                        true
-                    }
-                    4 -> {
-                        startActivity(Intent(this, AdbSetupActivity::class.java))
                         true
                     }
                     else -> false
@@ -986,5 +1026,116 @@ class MainActivity : AppCompatActivity() {
                 terminalCard.visibility = if (showTerminalLog) android.view.View.VISIBLE else android.view.View.GONE
             }
         }
+    }
+
+    private fun checkAndShowSleepVerification() {
+        val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this)
+        if (!loader.isSmartSleepEnabled()) return
+
+        lifecycleScope.launch {
+            val healthManager = com.neubofy.reality.health.HealthManager(this@MainActivity)
+            val today = LocalDate.now()
+            
+            if (healthManager.isSleepSyncedToday(today)) return@launch
+
+            val session = com.neubofy.reality.utils.SleepInferenceHelper.inferSleepSession(this@MainActivity, today)
+            if (session != null) {
+                showSleepVerificationDialog(session.first, session.second)
+            }
+        }
+    }
+
+    private fun showSleepVerificationDialog(startTime: Instant, endTime: Instant) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_smart_sleep_confirm, null)
+        val tvStart = dialogView.findViewById<TextView>(R.id.tv_sleep_start)
+        val tvEnd = dialogView.findViewById<TextView>(R.id.tv_sleep_end)
+        
+        val timeFormatter = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault())
+        tvStart.text = timeFormatter.format(startTime)
+        tvEnd.text = timeFormatter.format(endTime)
+
+        val dialog = MaterialAlertDialogBuilder(this, R.style.GlassDialog)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        dialogView.findViewById<android.view.View>(R.id.btn_correct).setOnClickListener {
+            lifecycleScope.launch {
+                val healthManager = com.neubofy.reality.health.HealthManager(this@MainActivity)
+                // 1. Delete existing
+                healthManager.deleteSleepSessions(startTime.minus(java.time.Duration.ofHours(2)), endTime.plus(java.time.Duration.ofHours(2)))
+                // 2. Write new
+                healthManager.writeSleepSession(startTime, endTime)
+                
+                Toast.makeText(this@MainActivity, "Sleep data synced", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+            }
+        }
+
+        dialogView.findViewById<android.view.View>(R.id.btn_wrong).setOnClickListener {
+            dialog.dismiss()
+            showSleepEditDialog(startTime, endTime)
+        }
+
+        dialogView.findViewById<android.view.View>(R.id.btn_still_sleeping).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun showSleepEditDialog(oldStart: Instant, oldEnd: Instant) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_smart_sleep_edit, null)
+        val pickerStart = dialogView.findViewById<android.widget.TimePicker>(R.id.time_picker_start)
+        val pickerEnd = dialogView.findViewById<android.widget.TimePicker>(R.id.time_picker_end)
+
+        pickerStart.setIs24HourView(true)
+        pickerEnd.setIs24HourView(true)
+
+        val startCal = java.util.Calendar.getInstance().apply { timeInMillis = oldStart.toEpochMilli() }
+        val endCal = java.util.Calendar.getInstance().apply { timeInMillis = oldEnd.toEpochMilli() }
+
+        pickerStart.hour = startCal.get(java.util.Calendar.HOUR_OF_DAY)
+        pickerStart.minute = startCal.get(java.util.Calendar.MINUTE)
+        pickerEnd.hour = endCal.get(java.util.Calendar.HOUR_OF_DAY)
+        pickerEnd.minute = endCal.get(java.util.Calendar.MINUTE)
+
+        MaterialAlertDialogBuilder(this, R.style.GlassDialog)
+            .setView(dialogView)
+            .setTitle("✏️ Adjust Sleep Time")
+            .setPositiveButton("Save & Sync") { _, _ ->
+                // Smart Inference logic (mirrors HealthDashboardActivity)
+                val today = LocalDate.now()
+                val startHour = pickerStart.hour
+                val endHour = pickerEnd.hour
+                
+                val startDate = if (startHour > 14) today.minusDays(1) else today
+                
+                var newStart = startDate.atTime(startHour, pickerStart.minute).atZone(ZoneId.systemDefault()).toInstant()
+                var newEnd = startDate.atTime(endHour, pickerEnd.minute).atZone(ZoneId.systemDefault()).toInstant()
+                
+                if (newEnd.isBefore(newStart)) {
+                    newEnd = newEnd.plus(java.time.Duration.ofDays(1))
+                }
+                
+                if (newStart.isAfter(Instant.now())) {
+                     newStart = newStart.minus(java.time.Duration.ofDays(1))
+                     newEnd = newEnd.minus(java.time.Duration.ofDays(1))
+                }
+
+                lifecycleScope.launch {
+                    val healthManager = com.neubofy.reality.health.HealthManager(this@MainActivity)
+                    // 1. Delete existing
+                    healthManager.deleteSleepSessions(newStart.minus(java.time.Duration.ofHours(12)), newEnd.plus(java.time.Duration.ofHours(12)))
+                    // 2. Write new
+                    healthManager.writeSleepSession(newStart, newEnd)
+                    
+                    Toast.makeText(this@MainActivity, "Adjusted sleep data synced", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel") { _, _ ->
+                showSleepVerificationDialog(oldStart, oldEnd)
+            }
+            .show()
     }
 }

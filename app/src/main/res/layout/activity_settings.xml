@@ -15,44 +15,18 @@
         android:alpha="0.15"
         app:layout_constraintTop_toTopOf="parent"/>
 
-    <!-- Premium Header with proper separation -->
-    <LinearLayout
-        android:id="@+id/header"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="16dp"
-        android:paddingTop="16dp"
-        android:paddingBottom="16dp"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <!-- Circular Back Button -->
-        <ImageView
-            android:id="@+id/btn_back"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:padding="10dp"
-            android:src="@drawable/ic_arrow_back"
-            app:tint="?attr/colorOnSurface"
-            android:background="@drawable/back_button_bg"
-            android:contentDescription="Back"/>
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Settings"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="?attr/colorOnSurface"
-            android:layout_marginStart="16dp"/>
-    </LinearLayout>
+    <!-- Standard Header -->
+    <include
+        android:id="@+id/include_header"
+        layout="@layout/include_standard_header"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/header"
+        app:layout_constraintTop_toBottomOf="@id/include_header"
         app:layout_constraintBottom_toBottomOf="parent"
         android:padding="20dp"
         android:clipToPadding="false">

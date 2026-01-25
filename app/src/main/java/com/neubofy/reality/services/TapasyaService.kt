@@ -119,8 +119,8 @@ class TapasyaService : Service() {
         targetTimeMs = target
         pauseLimitMs = pauseLimit
         
-        sessionStartTime = System.currentTimeMillis()
-        runningStartTime = sessionStartTime
+        sessionStartTime = System.currentTimeMillis() // Keep this for display/DB (Calendar time)
+        runningStartTime = android.os.SystemClock.elapsedRealtime() // Use monotonic clock for duration
         elapsedRunningTime = 0L
         totalPauseTime = 0L
         
@@ -143,8 +143,8 @@ class TapasyaService : Service() {
         if (!isRunning || !isSessionActive) return
         
         // Save elapsed running time
-        elapsedRunningTime += System.currentTimeMillis() - runningStartTime
-        pauseStartTime = System.currentTimeMillis()
+        elapsedRunningTime += android.os.SystemClock.elapsedRealtime() - runningStartTime
+        pauseStartTime = android.os.SystemClock.elapsedRealtime()
         
         isRunning = false
         isPaused = true
@@ -158,7 +158,7 @@ class TapasyaService : Service() {
         if (!isPaused || !isSessionActive) return
         
         // Add pause duration to total
-        totalPauseTime += System.currentTimeMillis() - pauseStartTime
+        totalPauseTime += android.os.SystemClock.elapsedRealtime() - pauseStartTime
         
         // Check if exceeded pause limit
         if (totalPauseTime >= pauseLimitMs) {
@@ -166,7 +166,7 @@ class TapasyaService : Service() {
             return
         }
         
-        runningStartTime = System.currentTimeMillis()
+        runningStartTime = android.os.SystemClock.elapsedRealtime()
         isRunning = true
         isPaused = false
         warningPlayed = false // Reset warning
@@ -181,9 +181,9 @@ class TapasyaService : Service() {
         
         // Finalize elapsed time
         if (isRunning) {
-            elapsedRunningTime += System.currentTimeMillis() - runningStartTime
+            elapsedRunningTime += android.os.SystemClock.elapsedRealtime() - runningStartTime
         } else if (isPaused) {
-            totalPauseTime += System.currentTimeMillis() - pauseStartTime
+            totalPauseTime += android.os.SystemClock.elapsedRealtime() - pauseStartTime
         }
         
         val endTime = System.currentTimeMillis()
@@ -208,6 +208,12 @@ class TapasyaService : Service() {
         _clockState.value = ClockState()
         
         stopForeground(true)
+        
+        // Final Summary Notification
+        val finalTitle = "Session Complete: $sessionName"
+        val finalMsg = "Effective: ${formatTime(effectiveTime)} / Total: ${formatTime(elapsedRunningTime)}"
+        com.neubofy.reality.utils.NotificationHelper.showNotification(this, finalTitle, finalMsg, NOTIFICATION_ID + 1)
+        
         stopSelf()
     }
 
@@ -364,14 +370,16 @@ class TapasyaService : Service() {
         timerJob?.cancel()
         timerJob = serviceScope.launch {
             while (isActive && isSessionActive) {
+                val now = android.os.SystemClock.elapsedRealtime()
+                
                 val currentElapsed = if (isRunning) {
-                    elapsedRunningTime + (System.currentTimeMillis() - runningStartTime)
+                    elapsedRunningTime + (now - runningStartTime)
                 } else {
                     elapsedRunningTime
                 }
                 
                 val currentPause = if (isPaused) {
-                    totalPauseTime + (System.currentTimeMillis() - pauseStartTime)
+                    totalPauseTime + (now - pauseStartTime)
                 } else {
                     totalPauseTime
                 }

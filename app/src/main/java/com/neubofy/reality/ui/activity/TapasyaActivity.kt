@@ -660,6 +660,38 @@ class TapasyaActivity : AppCompatActivity() {
             sheetBinding.tvSyncSourceDesc.text = if (useInternalSync) "Device Calendar (Local Sync)" else "Google Calendar API (Online)"
         }
         
+        // Lock Start Time Switch
+        val lockPrefs = getSharedPreferences("tapasya_prefs", MODE_PRIVATE) // Move to tapasya prefs
+        var isStartLocked = lockPrefs.getBoolean("lock_start_time_edit", false)
+        sheetBinding.switchLockStartTime.isChecked = isStartLocked
+        
+        // Strict Mode Check for this switch
+        sheetBinding.switchLockStartTime.setOnClickListener {
+             val isTryingToTurnOff = !sheetBinding.switchLockStartTime.isChecked
+             
+             // Check if Strict Mode is blocking *this specific action* (unlocking the lock)
+             // The FeatureType.TAPASYA controls whether we can modify Tapasya Settings.
+             // If StrictMode(TAPASYA) is ON, we cannot disable 'lock_start_time_edit'.
+             
+             val isAllowed = com.neubofy.reality.utils.StrictLockUtils.isModificationAllowedFor(
+                 this, 
+                 com.neubofy.reality.utils.StrictLockUtils.FeatureType.TAPASYA
+             )
+             
+             if (isTryingToTurnOff && !isAllowed) {
+                 sheetBinding.switchLockStartTime.isChecked = true // Revert
+                 android.widget.Toast.makeText(this, "Strict Mode prevents unlocking Start Time Edit.", android.widget.Toast.LENGTH_SHORT).show()
+             } else {
+                 isStartLocked = sheetBinding.switchLockStartTime.isChecked
+                 lockPrefs.edit().putBoolean("lock_start_time_edit", isStartLocked).apply()
+                 // Force UI refresh if needed
+                 val state = TapasyaService.clockState.value
+                 if (state.isRunning) {
+                      binding.btnEditTime.visibility = if (isStartLocked) View.GONE else View.VISIBLE
+                 }
+             }
+        }
+        
         sheetBinding.btnSaveSettings.setOnClickListener {
             saveSettings()
             
@@ -711,7 +743,7 @@ class TapasyaActivity : AppCompatActivity() {
                 binding.tvLiveFragment.text = "Fragment ${state.currentFragment}"
                 
                 // Edit Start Time (Check Lock)
-                val lockEdit = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
+                val lockEdit = getSharedPreferences("tapasya_prefs", MODE_PRIVATE)
                     .getBoolean("lock_start_time_edit", false)
                 binding.btnEditTime.visibility = if (lockEdit) View.GONE else View.VISIBLE
                 

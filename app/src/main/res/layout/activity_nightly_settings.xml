@@ -4,6 +4,7 @@
     android:id="@+id/root_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="?android:colorBackground">
 
     <!-- Gradient Glow at Top -->
@@ -16,52 +17,16 @@
         app:layout_constraintTop_toTopOf="parent"/>
 
     <!-- Header -->
-    <LinearLayout
-        android:id="@+id/header"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="16dp"
-        android:paddingBottom="16dp"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ImageView
-            android:id="@+id/btn_back"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:padding="10dp"
-            android:src="@drawable/ic_arrow_back"
-            app:tint="?attr/colorOnSurface"
-            android:background="@drawable/back_button_bg"
-            android:contentDescription="Back"/>
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Nightly Settings"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="?attr/colorOnSurface"
-            android:layout_marginStart="16dp"/>
-
-        <ImageView
-            android:id="@+id/btn_info_nightly"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:padding="10dp"
-            android:src="@drawable/baseline_info_24"
-            app:tint="?attr/colorOnSurfaceVariant"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Info"/>
-    </LinearLayout>
+    <include
+        android:id="@+id/include_header"
+        layout="@layout/include_standard_header"
+        app:layout_constraintTop_toTopOf="parent"/>
 
     <!-- Content -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/header"
+        app:layout_constraintTop_toBottomOf="@id/include_header"
         app:layout_constraintBottom_toBottomOf="parent"
         android:padding="20dp"
         android:clipToPadding="false">
@@ -416,50 +381,7 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"/>
 
-            <!-- Lock Start Time Toggle -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
-                app:strokeWidth="1dp"
-                android:layout_marginBottom="100dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:padding="16dp">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Lock Start Time Edit"
-                            android:textSize="16sp"
-                            android:textColor="?attr/colorOnSurface"/>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Prevent changing start time after it passes"
-                            android:textSize="12sp"
-                            android:textColor="?attr/colorOnSurfaceVariant"/>
-                    </LinearLayout>
-
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switch_lock_start_time_edit"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
     </ScrollView>

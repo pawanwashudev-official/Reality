@@ -37,7 +37,12 @@ class HeartbeatWorker(context: Context, params: WorkerParameters) : CoroutineWor
             intent.setPackage(applicationContext.packageName)
             applicationContext.sendBroadcast(intent)
             
-            // 4. Trigger Calendar Sync (If Enabled)
+            // 4. Housekeeping: Clean up old alarm history and refresh schedule
+            TerminalLogger.log("HEARTBEAT: Cleaning up old alarm history...")
+            com.neubofy.reality.utils.AlarmScheduler.cleanupOldEvents(applicationContext)
+            com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(applicationContext)
+            
+            // 5. Trigger Calendar Sync (If Enabled)
             val prefs = applicationContext.getSharedPreferences("reality_prefs", Context.MODE_PRIVATE)
             val isAutoSyncEnabled = prefs.getBoolean("calendar_sync_auto_enabled", true)
             

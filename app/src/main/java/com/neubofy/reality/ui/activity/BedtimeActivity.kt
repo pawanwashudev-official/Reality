@@ -29,7 +29,11 @@ class BedtimeActivity : AppCompatActivity() {
         
         isLocked = !StrictLockUtils.isModificationAllowedFor(this, StrictLockUtils.FeatureType.BEDTIME)
         
-        binding.btnBack.setOnClickListener { finish() }
+        val toolbar = binding.includeHeader.toolbar
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = "Sleep Mode"
+        toolbar.setNavigationOnClickListener { finish() }
         
         updateUI()
         

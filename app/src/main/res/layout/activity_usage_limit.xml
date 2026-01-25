@@ -6,22 +6,9 @@
     android:fitsSystemWindows="true"
     android:background="?attr/colorSurface">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="?attr/colorSurface">
-
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="Usage Limits"
-            app:titleCentered="true"
-            app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge"
-            app:navigationIcon="@drawable/baseline_arrow_back_24"
-            app:navigationIconTint="?attr/colorOnSurface" />
-
-    </com.google.android.material.appbar.AppBarLayout>
+    <include
+        android:id="@+id/include_header"
+        layout="@layout/include_standard_header"/>
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"

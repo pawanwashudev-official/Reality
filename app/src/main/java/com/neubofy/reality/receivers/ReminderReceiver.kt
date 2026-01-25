@@ -31,12 +31,46 @@ class ReminderReceiver : BroadcastReceiver() {
         val title = intent.getStringExtra("title") ?: "Reminder"
         val url = intent.getStringExtra("url")
         val mins = intent.getIntExtra("mins", 0)
+        val type = intent.getStringExtra("type") ?: "ALARM" // Default to ALARM
 
-        TerminalLogger.log("ALARM: Waking up for reminder: $title")
+        TerminalLogger.log("ALARM: Waking up for $type: $title")
         
         // Mark as fired to prevent same-minute re-triggering
         FiredEventsCache.markAsFired(context, id)
+        
+        // CHECK FIRE LIMIT (User requested 10x limit)
+        val fireCount = FiredEventsCache.incrementFireCount(context, id)
+        val maxRetries = 10 // Hardcoded default as per request
+        
+        if (fireCount > maxRetries) {
+            TerminalLogger.log("ALARM: Limit reached ($fireCount/$maxRetries). Auto-dismissing '$title'")
+            // Auto-dismiss logic (simulating user dismiss)
+            val dismissIntent = Intent(context, ReminderReceiver::class.java).apply {
+                action = "ACTION_DISMISS"
+                putExtra("id", id)
+                putExtra("explicit_dismiss", true) // Treat as explicit to stop snoozing
+                putExtra("source", intent.getStringExtra("source"))
+            }
+            context.sendBroadcast(dismissIntent)
+            return
+        }
 
+        // ROUTING: Notification vs Alarm
+        if (type == "NOTIFICATION") {
+            // Lightweight: Just post to system tray
+            val notifMessage = intent.getStringExtra("notification_message") ?: "Reality Alert"
+            com.neubofy.reality.utils.NotificationHelper.showNotification(context, title, notifMessage, id.hashCode())
+            
+            // Re-schedule next if needed (important for recurring checks)
+            try {
+                AlarmScheduler.scheduleNextAlarm(context)
+            } catch(e: Exception) {
+                TerminalLogger.log("ERROR rescheduling: ${e.message}")
+            }
+            return
+        }
+
+        // HEAVY ALARM LOGIC (WakeLock + Service)
         // Acquire WakeLock (Force Screen Wake)
         val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         val wakeLock = pm.newWakeLock(

@@ -13,6 +13,7 @@
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <uses-permission android:name="android.permission.health.WRITE_SLEEP" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
@@ -203,6 +204,15 @@
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
+            
+        <activity
+            android:name=".ui.activity.PopupAIChatActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality.TransparentDialog"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize"
+            android:taskAffinity=""
+            android:excludeFromRecents="true" />
 
         <activity
             android:name=".ui.activity.ProfileActivity"
@@ -227,6 +237,13 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ui.activity.HealthDashboardActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".ui.activity.NightlyActivity"

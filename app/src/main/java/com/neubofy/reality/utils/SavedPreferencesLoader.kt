@@ -19,8 +19,10 @@ class SavedPreferencesLoader(private val context: Context) {
         val sharedPreferences = context.getSharedPreferences("auto_focus_hours", Context.MODE_PRIVATE)
         val json = sharedPreferences.getString("auto_focus_list", null)
         if (json.isNullOrEmpty()) return mutableListOf()
-        val type = object : TypeToken<MutableList<Constants.AutoTimedActionItem>>() {}.type
-        return gson.fromJson(json, type)
+        return try {
+            val type = object : TypeToken<MutableList<Constants.AutoTimedActionItem>>() {}.type
+            gson.fromJson(json, type) ?: mutableListOf()
+        } catch (e: Exception) { mutableListOf() }
     }
 
     fun saveAppBlockerWarningInfo(warningData: Constants.WarningData) {
@@ -32,8 +34,10 @@ class SavedPreferencesLoader(private val context: Context) {
         val sharedPreferences = context.getSharedPreferences("warning_data", Context.MODE_PRIVATE)
         val json = sharedPreferences.getString("app_blocker", null)
         if (json.isNullOrEmpty()) return Constants.WarningData()
-        val type = object : TypeToken<Constants.WarningData>() {}.type
-        return gson.fromJson(json, type)
+        return try {
+            val type = object : TypeToken<Constants.WarningData>() {}.type
+            gson.fromJson(json, type) ?: Constants.WarningData()
+        } catch (e: Exception) { Constants.WarningData() }
     }
     
     fun loadBlockedApps(): Set<String> {
@@ -50,8 +54,10 @@ class SavedPreferencesLoader(private val context: Context) {
         val sharedPreferences = context.getSharedPreferences("focus_mode", Context.MODE_PRIVATE)
         val json = sharedPreferences.getString("focus_mode_v2", null)
         if (json.isNullOrEmpty()) return RealityBlocker.FocusModeData()
-        val type = object : TypeToken<RealityBlocker.FocusModeData>() {}.type
-        return gson.fromJson(json, type)
+        return try {
+            val type = object : TypeToken<RealityBlocker.FocusModeData>() {}.type
+            gson.fromJson(json, type) ?: RealityBlocker.FocusModeData()
+        } catch (e: Exception) { RealityBlocker.FocusModeData() }
     }
 
     fun saveFocusModeSelectedApps(appList: List<String>) {
@@ -63,8 +69,10 @@ class SavedPreferencesLoader(private val context: Context) {
         val sharedPreferences = context.getSharedPreferences("focus_mode", Context.MODE_PRIVATE)
         val json = sharedPreferences.getString("selected_apps", null)
         if (json.isNullOrEmpty()) return listOf()
-        val type = object : TypeToken<List<String>>() {}.type
-        return gson.fromJson(json, type)
+        return try {
+            val type = object : TypeToken<List<String>>() {}.type
+            gson.fromJson(json, type) ?: listOf()
+        } catch (e: Exception) { listOf() }
     }
     
     // Bedtime Mode
@@ -77,8 +85,10 @@ class SavedPreferencesLoader(private val context: Context) {
         val sharedPreferences = context.getSharedPreferences("bedtime_mode", Context.MODE_PRIVATE)
         val json = sharedPreferences.getString("bedtime_data", null)
         if (json.isNullOrEmpty()) return Constants.BedtimeData()
-        val type = object : TypeToken<Constants.BedtimeData>() {}.type
-        return gson.fromJson(json, type)
+        return try {
+            val type = object : TypeToken<Constants.BedtimeData>() {}.type
+            gson.fromJson(json, type) ?: Constants.BedtimeData()
+        } catch (e: Exception) { Constants.BedtimeData() }
     }
     
     // Emergency Mode
@@ -91,8 +101,10 @@ class SavedPreferencesLoader(private val context: Context) {
         val sharedPreferences = context.getSharedPreferences("emergency_mode", Context.MODE_PRIVATE)
         val json = sharedPreferences.getString("emergency_data", null)
         if (json.isNullOrEmpty()) return Constants.EmergencyModeData()
-        val type = object : TypeToken<Constants.EmergencyModeData>() {}.type
-        return gson.fromJson(json, type)
+        return try {
+            val type = object : TypeToken<Constants.EmergencyModeData>() {}.type
+            gson.fromJson(json, type) ?: Constants.EmergencyModeData()
+        } catch (e: Exception) { Constants.EmergencyModeData() }
     }
     
     // Usage Limit Data
@@ -105,8 +117,10 @@ class SavedPreferencesLoader(private val context: Context) {
         val sharedPreferences = context.getSharedPreferences("usage_limit", Context.MODE_PRIVATE)
         val json = sharedPreferences.getString("usage_data", null)
         if (json.isNullOrEmpty()) return Constants.UsageLimitData()
-        val type = object : TypeToken<Constants.UsageLimitData>() {}.type
-        return gson.fromJson(json, type)
+        return try {
+            val type = object : TypeToken<Constants.UsageLimitData>() {}.type
+            gson.fromJson(json, type) ?: Constants.UsageLimitData()
+        } catch (e: Exception) { Constants.UsageLimitData() }
     }
 
     // Strict Mode Data
@@ -119,8 +133,10 @@ class SavedPreferencesLoader(private val context: Context) {
         val sharedPreferences = context.getSharedPreferences("strict_mode", Context.MODE_PRIVATE)
         val json = sharedPreferences.getString("strict_data", null)
         if (json.isNullOrEmpty()) return Constants.StrictModeData()
-        val type = object : TypeToken<Constants.StrictModeData>() {}.type
-        return gson.fromJson(json, type)
+        return try {
+            val type = object : TypeToken<Constants.StrictModeData>() {}.type
+            gson.fromJson(json, type) ?: Constants.StrictModeData()
+        } catch (e: Exception) { Constants.StrictModeData() }
     }
 
     fun isStrictModeEnabled(): Boolean {
@@ -156,6 +172,27 @@ class SavedPreferencesLoader(private val context: Context) {
         return sharedPreferences.getBoolean("auto_dnd_enabled", false)
     }
 
+    // Smart Sleep Monitoring
+    fun saveSmartSleepEnabled(enabled: Boolean) {
+        val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putBoolean("smart_sleep_enabled", enabled).apply()
+    }
+
+    fun isSmartSleepEnabled(): Boolean {
+        val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        return sharedPreferences.getBoolean("smart_sleep_enabled", false)
+    }
+
+    fun saveSleepSyncConfirmed(date: String, confirmed: Boolean) {
+        val sharedPreferences = context.getSharedPreferences("health_sync_prefs", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putBoolean("confirmed_$date", confirmed).apply()
+    }
+
+    fun isSleepSyncConfirmed(date: String): Boolean {
+        val sharedPreferences = context.getSharedPreferences("health_sync_prefs", Context.MODE_PRIVATE)
+        return sharedPreferences.getBoolean("confirmed_$date", false)
+    }
+
     // Custom Block Messages
     fun saveBlockMessages(messages: List<Constants.BlockMessage>) {
         val sharedPreferences = context.getSharedPreferences("block_messages", Context.MODE_PRIVATE)
@@ -174,8 +211,10 @@ class SavedPreferencesLoader(private val context: Context) {
                 Constants.BlockMessage(message = "Go to sleep, tomorrow is a new day.", tags = listOf("BEDTIME"))
             )
         }
-        val type = object : TypeToken<MutableList<Constants.BlockMessage>>() {}.type
-        return gson.fromJson(json, type)
+        return try {
+            val type = object : TypeToken<MutableList<Constants.BlockMessage>>() {}.type
+            gson.fromJson(json, type) ?: mutableListOf()
+        } catch (e: Exception) { mutableListOf() }
     }
     // Custom Reminders
     fun saveCustomReminders(list: List<com.neubofy.reality.data.CustomReminder>) {
@@ -187,8 +226,13 @@ class SavedPreferencesLoader(private val context: Context) {
         val sharedPreferences = context.getSharedPreferences("custom_reminders", Context.MODE_PRIVATE)
         val json = sharedPreferences.getString("reminders_list", null)
         if (json.isNullOrEmpty()) return mutableListOf()
-        val type = object : TypeToken<MutableList<com.neubofy.reality.data.CustomReminder>>() {}.type
-        return gson.fromJson(json, type)
+        return try {
+            val type = object : TypeToken<MutableList<com.neubofy.reality.data.CustomReminder>>() {}.type
+            gson.fromJson(json, type) ?: mutableListOf()
+        } catch (e: Exception) {
+            com.neubofy.reality.utils.TerminalLogger.log("DATA ERROR: Failed to load reminders - ${e.message}")
+            mutableListOf()
+        }
     }
 
     fun saveBoolean(key: String, value: Boolean) {
@@ -223,8 +267,10 @@ class SavedPreferencesLoader(private val context: Context) {
         val sharedPreferences = context.getSharedPreferences("blocked_app_configs", Context.MODE_PRIVATE)
         val json = sharedPreferences.getString("configs_list", null)
         if (json.isNullOrEmpty()) return mutableListOf()
-        val type = object : TypeToken<MutableList<Constants.BlockedAppConfig>>() {}.type
-        return gson.fromJson(json, type)
+        return try {
+            val type = object : TypeToken<MutableList<Constants.BlockedAppConfig>>() {}.type
+            gson.fromJson(json, type) ?: mutableListOf()
+        } catch (e: Exception) { mutableListOf() }
     }
     
     /**

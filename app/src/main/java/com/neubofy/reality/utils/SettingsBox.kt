@@ -84,9 +84,14 @@ object SettingsBox {
         "com.realme.security"
     )
     
-    // === HARDCODED FALLBACKS REMOVED ===
-    // Per user POV: Learning is ALWAYS required. No fallbacks.
     // The getHardcodedPages() function has been removed.
+    
+    /**
+     * Get snapshot of all currently protected pages (for UI display).
+     */
+    fun getAllProtectedPages(): List<BlockedPageConfig> {
+        return settingsBox.values.toList() + wildcardPages
+    }
     
     /**
      * REBUILD THE BOX - Call when strict mode settings change or pages are learned

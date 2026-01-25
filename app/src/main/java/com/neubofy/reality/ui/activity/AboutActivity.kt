@@ -25,10 +25,11 @@ class AboutActivity : AppCompatActivity() {
         binding = ActivityAboutBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setSupportActionBar(binding.toolbar)
+        val toolbar = binding.includeHeader.toolbar
+        setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setDisplayShowTitleEnabled(false)
-        binding.toolbar.setNavigationOnClickListener { finish() }
+        toolbar.setNavigationOnClickListener { finish() }
 
         // Version
         try {

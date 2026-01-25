@@ -6,68 +6,22 @@
     android:background="?android:colorBackground"
     android:fitsSystemWindows="true">
 
-    <!-- Header - Separated from status bar -->
-    <LinearLayout
-        android:id="@+id/header"
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:background="?android:colorBackground"
-        android:paddingTop="8dp">
-        
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:gravity="center_vertical"
-            android:paddingHorizontal="12dp">
-            
-            <ImageView
-                android:id="@+id/btn_back"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:padding="10dp"
-                android:src="@drawable/baseline_arrow_back_24"
-                app:tint="?attr/colorOnSurface"
-                android:background="?attr/selectableItemBackground"
-                android:contentDescription="Back"/>
-            
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Reminders"
-                android:textColor="?attr/colorOnSurface"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:layout_marginStart="12dp"/>
-            
-            <ImageView
-                android:id="@+id/btn_recycle"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:padding="10dp"
-                android:src="@drawable/baseline_delete_24"
-                app:tint="?attr/colorOnSurfaceVariant"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Recycle Bin"/>
-            
-            <ImageView
-                android:id="@+id/btn_settings"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:padding="10dp"
-                android:src="@drawable/baseline_settings_24"
-                app:tint="?attr/colorOnSurface"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Settings"/>
-        </LinearLayout>
-        
+        app:elevation="0dp">
+
+        <include
+            android:id="@+id/include_header"
+            layout="@layout/include_standard_header"/>
+
         <!-- Master Toggle Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="16dp"
             app:cardBackgroundColor="?attr/colorSurface"
             app:cardCornerRadius="16dp"
             app:strokeWidth="1dp"
@@ -117,14 +71,13 @@
                     android:checked="true"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-    </LinearLayout>
+    </com.google.android.material.appbar.AppBarLayout>
 
     <!-- Reminders List -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_reminders"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="160dp"
         android:paddingHorizontal="16dp"
         android:paddingBottom="80dp"
         android:clipToPadding="false"
@@ -135,10 +88,10 @@
         android:id="@+id/empty_state"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="160dp"
         android:gravity="center"
         android:orientation="vertical"
-        android:visibility="gone">
+        android:visibility="gone"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
         
         <ImageView
             android:layout_width="80dp"

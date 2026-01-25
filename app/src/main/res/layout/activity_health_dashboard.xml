@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:colorBackground">
+
+    <!-- Standard Header -->
+    <include
+        android:id="@+id/include_header"
+        layout="@layout/include_standard_header"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_health"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/include_header"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="20dp"
+            android:clipToPadding="false">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Digital Wellbeing Section -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Digital Wellbeing"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
+                    android:layout_marginBottom="12dp"
+                    android:layout_marginStart="4dp"/>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_digital_wellbeing"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <!-- Phoneless Time (Hero) -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="16dp">
+                            
+                            <ImageView
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:src="@drawable/ic_launcher_foreground" 
+                                android:background="@drawable/circle_background"
+                                android:backgroundTint="?attr/colorPrimary"
+                                android:padding="8dp"
+                                app:tint="?attr/colorOnPrimary"/> 
+                                     
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:layout_marginStart="16dp">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Phoneless Time"
+                                    android:textSize="14sp"
+                                    android:textColor="?attr/colorOnSurfaceVariant"/>
+                                <TextView
+                                    android:id="@+id/tv_phoneless_time"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="-- h -- m"
+                                    android:textSize="28sp"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorPrimary"/>
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Time spent living in reality today"
+                                    android:textSize="12sp"
+                                    android:textColor="?attr/colorTertiary" 
+                                    android:alpha="1.0"/>
+                            </LinearLayout>
+                        </LinearLayout>
+                        
+                        <com.google.android.material.divider.MaterialDivider
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"/>
+
+                        <!-- Row 2: Reality Ratio & Unlocks -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginBottom="16dp">
+
+                            <!-- Reality Ratio -->
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:gravity="center_horizontal">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Reality Ratio"
+                                    android:textSize="12sp"
+                                    android:textColor="?attr/colorOnSurfaceVariant"/>
+                                <TextView
+                                    android:id="@+id/tv_reality_ratio"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="--%"
+                                    android:textSize="20sp"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorPrimary"/>
+                            </LinearLayout>
+
+                            <View
+                                 android:layout_width="1dp"
+                                 android:layout_height="match_parent"
+                                 android:background="?attr/colorOutlineVariant"
+                                 android:layout_marginHorizontal="8dp"/>
+
+                            <!-- Unlocks / Pickups -->
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:gravity="center_horizontal">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Unlocks"
+                                    android:textSize="12sp"
+                                    android:textColor="?attr/colorOnSurfaceVariant"/>
+                                <TextView
+                                    android:id="@+id/tv_unlock_count"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="--"
+                                    android:textSize="20sp"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurface"/>
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <com.google.android.material.divider.MaterialDivider
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"/>
+                            
+                        <!-- Row 3: Screen Time Details -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+                            
+                            <!-- Longest Streak -->
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:gravity="center_horizontal">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Best Streak"
+                                    android:textSize="12sp"
+                                    android:textColor="?attr/colorOnSurfaceVariant"/>
+                                <TextView
+                                    android:id="@+id/tv_longest_streak"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="-- h -- m"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorTertiary"/>
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="1dp"
+                                android:layout_height="match_parent"
+                                android:background="?attr/colorOutlineVariant"
+                                android:layout_marginHorizontal="8dp"/>
+                            
+                            <!-- Screen Time -->
+                             <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:gravity="center_horizontal">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Screen Time"
+                                    android:textSize="12sp"
+                                    android:textColor="?attr/colorOnSurfaceVariant"/>
+                                <TextView
+                                    android:id="@+id/tv_screen_time"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="-- h -- m"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurface"/>
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_grant_usage"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Grant Usage Access"
+                            android:layout_marginTop="16dp"
+                            android:visibility="gone"/>
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Physical Health Section -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Physical Health"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
+                    android:layout_marginBottom="12dp"
+                    android:layout_marginStart="4dp"/>
+
+                <!-- Smart Sleep Monitoring Toggle -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="16dp"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/baseline_bedtime_24"
+                            android:background="@drawable/circle_background"
+                            android:backgroundTint="?attr/colorTertiary"
+                            android:padding="8dp"
+                            app:tint="?attr/colorOnTertiary"/>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Smart Sleep Monitoring"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnSurface"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Auto-sync sleep data to Health Connect"
+                                android:textSize="12sp"
+                                android:textColor="?attr/colorOnSurfaceVariant"/>
+                        </LinearLayout>
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/switch_smart_sleep"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:id="@+id/tv_health_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Enable Health Access in settings to view physical data"
+                    android:gravity="center"
+                    android:padding="24dp"
+                    android:textSize="13sp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:visibility="gone"/>
+
+                <!-- Data Dashboard Grid -->
+                <GridLayout
+                    android:id="@+id/grid_health_dashboard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="2"
+                    android:alignmentMode="alignMargins"
+                    android:columnOrderPreserved="false"
+                    android:visibility="visible">
+
+                    <!-- Steps Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_margin="4dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                        app:strokeWidth="0dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="👣 Steps"
+                                android:textSize="12sp"
+                                android:textColor="?attr/colorOnSurfaceVariant"/>
+                            <TextView
+                                android:id="@+id/tv_dashboard_steps"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="--"
+                                android:textSize="20sp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnSurface"
+                                android:layout_marginTop="4dp"/>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Calories Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_margin="4dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                        app:strokeWidth="0dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="🔥 Calories"
+                                android:textSize="12sp"
+                                android:textColor="?attr/colorOnSurfaceVariant"/>
+                            <TextView
+                                android:id="@+id/tv_dashboard_calories"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="--"
+                                android:textSize="20sp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnSurface"
+                                android:layout_marginTop="4dp"/>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Sleep Card (Full Width) -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnSpan="2"
+                        android:layout_columnWeight="1"
+                        android:layout_margin="4dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                        app:strokeWidth="0dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:padding="12dp">
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="😴 Sleep Duration"
+                                    android:textSize="12sp"
+                                    android:textColor="?attr/colorOnSurfaceVariant"/>
+                                <TextView
+                                    android:id="@+id/tv_dashboard_sleep"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="--"
+                                    android:textSize="18sp"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurface"
+                                    android:layout_marginTop="2dp"/>
+                            </LinearLayout>
+
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </GridLayout>
+                
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_manage_health_perms"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="System Permissions"
+                    android:textSize="12sp"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="8dp"/>
+                    
+            </LinearLayout>
+        </ScrollView>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

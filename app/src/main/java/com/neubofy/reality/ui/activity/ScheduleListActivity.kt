@@ -61,9 +61,27 @@ class ScheduleListActivity : AppCompatActivity() {
     }
     
     private fun setupToolbar() {
-        binding.btnBack.setOnClickListener { finish() }
-        binding.btnSettings.setOnClickListener { showSyncSettingsDialog() }
+        val toolbar = binding.includeHeader.toolbar
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = "Auto-Focus"
+        toolbar.setNavigationOnClickListener { finish() }
+        
         binding.fabAddSchedule.setOnClickListener { showAddScheduleDialog() }
+    }
+    
+    override fun onCreateOptionsMenu(menu: android.view.Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_schedule_list, menu)
+        return true
+    }
+    
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+        return if (item.itemId == R.id.action_settings) {
+            showSyncSettingsDialog()
+            true
+        } else {
+            super.onOptionsItemSelected(item)
+        }
     }
     
     private fun setupSwipeRefresh() {

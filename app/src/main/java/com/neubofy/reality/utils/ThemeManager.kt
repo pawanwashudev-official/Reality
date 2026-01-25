@@ -171,68 +171,10 @@ object ThemeManager {
                  context.window.decorView.setBackgroundColor(android.graphics.Color.BLACK)
              }
         }
-    }
-    
-    /**
-     * Applies glassmorphism or solid color styling to a MaterialCardView based on preferences.
-     */
-    fun applyCardAppearance(card: com.google.android.material.card.MaterialCardView) {
-        val context = card.context
-        val pattern = getBackgroundPattern(context)
-        val glass = getGlassIntensity(context)
         
-        // Background Color
-        // If AMOLED -> Black, otherwise Glass color
-        if (isAmoledMode(context) && (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
-             card.setCardBackgroundColor(android.graphics.Color.BLACK)
-             card.strokeColor = android.graphics.Color.DKGRAY
-             card.strokeWidth = 2
-        } else {
-             // Glass Logic
-             val alpha = (glass.alpha * 255).toInt()
-             // Use surface color with alpha? Or white with alpha? 
-             // Usually glass is white with low alpha on light, and black/grey with alpha on dark.
-             // We'll use the theme's surface color but modify alpha.
-             val typedValue = android.util.TypedValue()
-             context.theme.resolveAttribute(com.google.android.material.R.attr.colorSurface, typedValue, true)
-             val surfaceColor = typedValue.data
-             
-             // If pattern is NOT NONE, we want glass. If NONE, solid.
-             if (pattern == BackgroundPattern.NONE) {
-                 // Solid Surface
-                 card.setCardBackgroundColor(surfaceColor)
-                 card.strokeWidth = 0
-             } else {
-                 // Glass Effect
-                 val glassyColor = androidx.core.graphics.ColorUtils.setAlphaComponent(surfaceColor, (255 * (if(isDark(context)) 0.7f else 0.9f)).toInt()) 
-                 // Actually, true glass is usually a tint.
-                 // Let's use getGlassBackgroundColor
-                 card.setCardBackgroundColor(getGlassBackgroundColor(context))
-                 card.strokeColor = getGlassStrokeColor(context)
-                 card.strokeWidth = (1 * context.resources.displayMetrics.density).toInt()
-             }
-        }
-    }
-    
-    private fun isDark(context: Context): Boolean {
-        return (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
-    }
-    
-    /**
-     * Get the current primary color int value for programmatic use.
-     */
-    fun getCurrentPrimaryColorInt(context: Context): Int {
-        return getAccentColor(context).primaryColor
-    }
-    
-    /**
-     * Get glass background color with current intensity.
-     * Call this to get the color for programmatic glass effect.
-     */
-    fun getGlassBackgroundColor(context: Context): Int {
-        val intensity = getGlassIntensity(context)
-        val alpha = (intensity.alpha * 255).toInt()
-        return android.graphics.Color.argb(alpha, 255, 255, 255) // White with alpha
+        // Ensure Status Bar is transparent for edge-to-edge effect with our new header
+        context.window.statusBarColor = android.graphics.Color.TRANSPARENT
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(context.window, false)
     }
     
     /**
@@ -243,10 +185,155 @@ object ThemeManager {
         val alpha = (intensity.strokeAlpha * 255).toInt()
         return android.graphics.Color.argb(alpha, 255, 255, 255) // White stroke with alpha
     }
+    
+    // ========== PRO CUSTOMIZATION: SHAPES ==========
+    private const val KEY_CORNER_RADIUS = "corner_radius" // Int dp
+    private const val KEY_CARD_STYLE = "card_style" // Enum
+    
+    enum class CardStyle(val displayName: String) {
+        FILLED("Filled"),
+        OUTLINED("Outlined"),
+        GLASS("Smart Glass")
+    }
+    
+    fun getCornerRadius(context: Context): Int {
+        return getPrefs(context).getInt(KEY_CORNER_RADIUS, 16) // Default 16dp
+    }
+    
+    fun setCornerRadius(context: Context, radiusDp: Int) {
+        getPrefs(context).edit().putInt(KEY_CORNER_RADIUS, radiusDp).apply()
+    }
+    
+    fun getCardStyle(context: Context): CardStyle {
+        val name = getPrefs(context).getString(KEY_CARD_STYLE, CardStyle.GLASS.name) ?: CardStyle.GLASS.name
+        return CardStyle.valueOf(name)
+    }
+    
+    fun setCardStyle(context: Context, style: CardStyle) {
+        getPrefs(context).edit().putString(KEY_CARD_STYLE, style.name).apply()
+    }
+    
+    /**
+     * Get glass background color with current intensity.
+     */
+    fun getGlassBackgroundColor(context: Context): Int {
+        val intensity = getGlassIntensity(context)
+        val alpha = (intensity.alpha * 255).toInt()
+        return android.graphics.Color.argb(alpha, 255, 255, 255) // White with alpha
+    }
+
+    private fun isDark(context: Context): Boolean {
+        return (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+    }
+
+    /**
+     * Applies glassmorphism, shapes, and styles to a MaterialCardView based on preferences.
+     */
+    fun applyCardAppearance(card: com.google.android.material.card.MaterialCardView) {
+        val context = card.context
+        val pattern = getBackgroundPattern(context)
+        val glass = getGlassIntensity(context)
+        val style = getCardStyle(context)
+        val radius = getCornerRadius(context).toFloat()
+        
+        // Apply Corner Radius
+        val density = context.resources.displayMetrics.density
+        card.radius = radius * density
+        
+        // Background Color & Style Logic
+        if (isAmoledMode(context) && isDark(context)) {
+             card.setCardBackgroundColor(android.graphics.Color.BLACK)
+             card.strokeColor = android.graphics.Color.DKGRAY
+             card.strokeWidth = (1 * density).toInt()
+        } else {
+             val typedValue = android.util.TypedValue()
+             context.theme.resolveAttribute(com.google.android.material.R.attr.colorSurface, typedValue, true)
+             val surfaceColor = typedValue.data
+             
+             when (style) {
+                 CardStyle.FILLED -> {
+                     card.setCardBackgroundColor(surfaceColor)
+                     card.strokeWidth = 0
+                 }
+                 CardStyle.OUTLINED -> {
+                     card.setCardBackgroundColor(android.graphics.Color.TRANSPARENT)
+                     card.strokeColor = getGlassStrokeColor(context) // Re-use stroke logic or standard outline
+                     // Use simpler outline color for non-glass outline
+                     val outValue = android.util.TypedValue()
+                     context.theme.resolveAttribute(com.google.android.material.R.attr.colorOutline, outValue, true)
+                     card.strokeColor = if(outValue.resourceId != 0) context.getColor(outValue.resourceId) else android.graphics.Color.GRAY
+                     card.strokeWidth = (1 * density).toInt()
+                 }
+                 CardStyle.GLASS -> {
+                     // Existing Glass Logic
+                     if (pattern == BackgroundPattern.NONE) {
+                         // Fallback to Solid Surface if no pattern
+                         card.setCardBackgroundColor(surfaceColor)
+                         card.strokeWidth = 0
+                     } else {
+                         card.setCardBackgroundColor(getGlassBackgroundColor(context))
+                         card.strokeColor = getGlassStrokeColor(context)
+                         card.strokeWidth = (1 * density).toInt()
+                     }
+                 }
+             }
+        }
+    }
+    
+    /**
+     * Recursively applies card appearance to all MaterialCardViews in the view hierarchy.
+     */
+    fun applyToAllCards(view: android.view.View) {
+        if (view is com.google.android.material.card.MaterialCardView) {
+            applyCardAppearance(view)
+        } else if (view is android.view.ViewGroup) {
+            for (i in 0 until view.childCount) {
+                applyToAllCards(view.getChildAt(i))
+            }
+        }
+    }
 
 
 
-    // ========== PRO CUSTOMIZATION: POPUP BG ==========
+    // ========== PRO CUSTOMIZATION: APP BACKGROUND ==========
+    private const val KEY_APP_BACKGROUND_COLOR = "app_background_color" // Hex
+    private const val KEY_HEADER_STYLE = "header_style" // String enum
+
+    enum class HeaderStyle(val displayName: String) {
+        TRANSPARENT("Transparent"),
+        SOLID("Solid Surface"),
+        BLENDED("Blended/Glass")
+    }
+
+    fun getAppBackgroundColor(context: Context): Int? {
+         val hex = getPrefs(context).getString(KEY_APP_BACKGROUND_COLOR, null)
+         return try { if (hex != null) android.graphics.Color.parseColor(hex) else null } catch (e: Exception) { null }
+    }
+
+    fun setAppBackgroundColor(context: Context, hex: String?) {
+        getPrefs(context).edit().putString(KEY_APP_BACKGROUND_COLOR, hex).apply()
+    }
+    
+    fun getHeaderStyle(context: Context): HeaderStyle {
+        val name = getPrefs(context).getString(KEY_HEADER_STYLE, HeaderStyle.TRANSPARENT.name) ?: HeaderStyle.TRANSPARENT.name
+        return HeaderStyle.valueOf(name)
+    }
+    
+    fun setHeaderStyle(context: Context, style: HeaderStyle) {
+        getPrefs(context).edit().putString(KEY_HEADER_STYLE, style.name).apply()
+    }
+
+    /**
+     * Applies the custom app background color to a root view.
+     */
+    fun applyAppBackground(view: android.view.View) {
+        val color = getAppBackgroundColor(view.context)
+        if (color != null) {
+            view.setBackgroundColor(color)
+        }
+    }
+    
+    // Existing PRO keys...
     fun getPopupBackgroundColor(context: Context): Int? {
         val hex = getPrefs(context).getString(KEY_POPUP_BG_COLOR, null)
         return try { if (hex != null) android.graphics.Color.parseColor(hex) else null } catch (e: Exception) { null }

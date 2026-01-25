@@ -7,30 +7,18 @@
     android:fitsSystemWindows="true"
     android:background="?android:colorBackground">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <include
+        android:id="@+id/include_header"
+        layout="@layout/include_standard_header"/>
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?android:colorBackground"
-        app:elevation="0dp">
-
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="Manage Blocklist"
-            app:titleTextColor="?attr/colorOnBackground"
-            android:background="?android:colorBackground"/>
-
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tabLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?android:colorBackground"
-            app:tabTextColor="?attr/colorOnSurfaceVariant"
-            app:tabSelectedTextColor="?attr/colorPrimary"
-            app:tabIndicatorColor="?attr/colorPrimary"/>
-            
-    </com.google.android.material.appbar.AppBarLayout>
+        app:tabTextColor="?attr/colorOnSurfaceVariant"
+        app:tabSelectedTextColor="?attr/colorPrimary"
+        app:tabIndicatorColor="?attr/colorPrimary"/>
 
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/viewPager"

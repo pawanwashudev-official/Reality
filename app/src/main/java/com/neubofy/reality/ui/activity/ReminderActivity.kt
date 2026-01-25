@@ -44,14 +44,29 @@ class ReminderActivity : AppCompatActivity() {
     }
     
     private fun setupHeader() {
-        binding.btnBack.setOnClickListener { finish() }
-        
-        binding.btnRecycle.setOnClickListener {
-            showRecycleBinDialog()
-        }
-        
-        binding.btnSettings.setOnClickListener {
-            showSettingsDialog()
+        val toolbar = binding.includeHeader.toolbar
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = "Reminders"
+        toolbar.setNavigationOnClickListener { finish() }
+    }
+    
+    override fun onCreateOptionsMenu(menu: android.view.Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_reminder, menu)
+        return true
+    }
+    
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_recycle_bin -> {
+                showRecycleBinDialog()
+                true
+            }
+            R.id.action_settings -> {
+                showSettingsDialog()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
     }
     

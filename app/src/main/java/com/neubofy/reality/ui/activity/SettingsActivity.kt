@@ -43,11 +43,16 @@ class SettingsActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateUI()
+        ThemeManager.applyToAllCards(binding.root)
     }
 
     private fun setupToolbar() {
-        // Using custom header instead of standard Toolbar
-        binding.btnBack.setOnClickListener { finish() }
+        // Standard Toolbar logic
+        val toolbar = binding.includeHeader.toolbar
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = "Settings"
+        toolbar.setNavigationOnClickListener { finish() }
     }
 
     private fun setupListeners() {

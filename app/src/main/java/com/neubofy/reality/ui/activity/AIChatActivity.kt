@@ -23,15 +23,17 @@ import com.neubofy.reality.utils.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Job
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import org.json.JSONArray
 import org.json.JSONObject
+import com.neubofy.reality.utils.ConversationMemoryManager
 
-class AIChatActivity : AppCompatActivity() {
+open class AIChatActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityAiChatBinding
+    protected lateinit var binding: ActivityAiChatBinding
     private val messages = mutableListOf<ChatMessage>()
     private lateinit var adapter: ChatAdapter
     private lateinit var sessionAdapter: ChatSessionAdapter
@@ -43,6 +45,9 @@ class AIChatActivity : AppCompatActivity() {
     
     // State
     private var isProMode = false
+    private var hasTriggeredVoiceAuto = false
+    private var isGenerating = false
+    private var currentGenerationJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)
@@ -80,6 +85,15 @@ class AIChatActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refreshModels()
+        
+        // Check for voice auto-trigger (from Widget with setting enabled)
+        if (!hasTriggeredVoiceAuto && intent.getBooleanExtra("voice_auto", false)) {
+            hasTriggeredVoiceAuto = true
+            // Delay slightly to let UI initialize, then trigger voice input
+            binding.root.postDelayed({
+                binding.btnVoice.performClick()
+            }, 300)
+        }
     }
 
     private fun setupUI() {
@@ -136,12 +150,29 @@ class AIChatActivity : AppCompatActivity() {
             }
         }
 
-        // Send Button
+        // Send / Stop Button
         binding.btnSend.setOnClickListener {
-            val text = binding.etMessage.text.toString().trim()
-            if (text.isNotEmpty()) {
-                sendMessage(text)
-                binding.etMessage.text?.clear()
+            if (isGenerating) {
+                // STOP LOGIC
+                currentGenerationJob?.cancel()
+                currentGenerationJob = null
+                isGenerating = false
+                
+                // UI Feedback
+                binding.tvThinking.text = "Stopped by user."
+                adapter.addMessage(ChatMessage("⛔ Stopped by user.", false, false))
+                saveBotMessage("Stopped by user.")
+                
+                // Reset UI
+                binding.btnSend.setImageResource(R.drawable.baseline_send_24)
+                binding.tvThinking.visibility = View.GONE
+            } else {
+                // SEND LOGIC
+                val text = binding.etMessage.text.toString().trim()
+                if (text.isNotEmpty()) {
+                    sendMessage(text)
+                    binding.etMessage.text?.clear()
+                }
             }
         }
     }
@@ -319,7 +350,7 @@ class AIChatActivity : AppCompatActivity() {
                      if (isProMode) {
                          // Update UI with "Acting..." if using tools (could be callback based in future)
                          withContext(Dispatchers.Main) { binding.tvThinking.text = "Reality is working..." }
-                         processAgenticChat(history, apiKey, model, provider)
+                         runAgentLoop(history, apiKey, model, provider)
                      } else {
                          processStandardChat(history, apiKey, model, provider)
                      }
@@ -348,21 +379,18 @@ class AIChatActivity : AppCompatActivity() {
             else -> "https://api.openai.com/v1/chat/completions"
         }
 
-        val jsonMessages = JSONArray()
-        
-        // 1. System Prompt (Minimal)
-        jsonMessages.put(JSONObject().apply {
-            put("role", "system")
-            put("content", "You are a helpful, intelligent assistant.")
-        })
-        
-        // 2. Add History
-        for (msg in history) {
-            jsonMessages.put(JSONObject().apply {
-                put("role", if (msg.isUser) "user" else "assistant")
-                put("content", msg.message)
-            })
+        // System prompt with user introduction
+        val userIntro = com.neubofy.reality.ui.activity.AISettingsActivity.getUserIntroduction(this) ?: ""
+        val systemPrompt = buildString {
+            append("You are a helpful, intelligent assistant.")
+            if (userIntro.isNotEmpty()) append(" User context: $userIntro")
         }
+        
+        // OPTIMIZED: Use sliding window + token management
+        val optimizedContext = ConversationMemoryManager.buildOptimizedHistory(
+            this, history, currentSessionId, systemPrompt
+        )
+        val jsonMessages = ConversationMemoryManager.toJsonMessages(systemPrompt, optimizedContext)
         
         // 3. Construct Request (NO TOOLS)
         val jsonBody = JSONObject().apply {
@@ -396,128 +424,137 @@ class AIChatActivity : AppCompatActivity() {
         return message.optString("content", "")
     }
 
-    // --- Agentic Chat (Pro Mode) ---
-    private suspend fun processAgenticChat(history: List<ChatMessage>, apiKey: String, model: String, provider: String, depth: Int = 0): String {
-        if (depth > 5) return "Error: Maximum agent steps reached."
-
-        val url = when(provider) {
-            "OpenAI" -> "https://api.openai.com/v1/chat/completions"
-            "Groq" -> "https://api.groq.com/openai/v1/chat/completions"
-            "OpenRouter" -> "https://openrouter.ai/api/v1/chat/completions"
-            else -> "https://api.openai.com/v1/chat/completions"
-        }
-
-        val jsonMessages = JSONArray()
-        
-        // 1. System Prompt (Agentic)
-        jsonMessages.put(JSONObject().apply {
-            put("role", "system")
-            put("content", "You are Reality Pro, an intelligent Life OS Agent. You have access to the user's real-time data via tools. Use them whenever needed to give accurate, personalized answers. If you perform an action or fetch data, summarize the results clearly.")
-        })
-        
-        // 2. Add History
-        for (msg in history) {
-            jsonMessages.put(JSONObject().apply {
-                put("role", if (msg.isUser) "user" else "assistant")
-                put("content", msg.message)
-            })
-        }
-        
-        // 3. Construct Request (WITH TOOLS)
-        val jsonBody = JSONObject().apply {
-            put("model", model)
-            put("messages", jsonMessages)
-            put("tools", com.neubofy.reality.utils.AgentTools.definitions)
-            put("tool_choice", "auto")
-        }
-
-        // 4. API Call
-        val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
-        conn.requestMethod = "POST"
-        conn.connectTimeout = 30000
-        conn.readTimeout = 30000
-        conn.setRequestProperty("Content-Type", "application/json")
-        conn.setRequestProperty("Authorization", "Bearer $apiKey")
-        if (provider == "OpenRouter") {
-             conn.setRequestProperty("HTTP-Referer", "https://neubofy.com")
-             conn.setRequestProperty("X-Title", "Reality App")
-        }
-        conn.doOutput = true
-        
-        conn.outputStream.write(jsonBody.toString().toByteArray())
-        
-        if (conn.responseCode != 200) {
-            return "Error: ${conn.responseCode} - ${conn.errorStream?.bufferedReader()?.use { it.readText() }}"
-        }
-
-        val resp = conn.inputStream.bufferedReader().use { it.readText() }
-        val responseJson = JSONObject(resp)
-        val choice = responseJson.getJSONArray("choices").getJSONObject(0)
-        val message = choice.getJSONObject("message")
-        val content = message.optString("content", "")
-        
-        // 5. Handle Tool Calls
-        val toolCalls = message.optJSONArray("tool_calls")
-        
-        if (toolCalls != null && toolCalls.length() > 0) {
-            withContext(Dispatchers.Main) {
-                val toolName = toolCalls.getJSONObject(0).getJSONObject("function").getString("name")
-                adapter.addMessage(ChatMessage("🧠 Using tool: $toolName...", false, false)) 
+    // --- Agentic Chat (Pro Mode - Iterative Loop) ---
+    private suspend fun runAgentLoop(history: List<ChatMessage>, apiKey: String, model: String, provider: String): String {
+        return withContext(Dispatchers.IO) {
+            val maxTurns = 10
+            var turnCount = 0
+            val toolRetryCounts = mutableMapOf<String, Int>() // Track retries per tool+args
+            
+            // 1. Prepare Initial Context
+            val userIntro = com.neubofy.reality.ui.activity.AISettingsActivity.getUserIntroduction(this@AIChatActivity) ?: ""
+            val toolDiscovery = com.neubofy.reality.utils.ToolRegistry.getDiscoveryPrompt(this@AIChatActivity)
+            val systemPrompt = buildString {
+                append("You are Reality Pro, an intelligent Life OS Agent. ")
+                append("You have access to the user's real-time data via tools. ")
+                append("Use them whenever needed to give accurate, personalized answers. ")
+                append("All times are in IST (India Standard Time). ")
+                if (userIntro.isNotEmpty()) append("\n\nUser context: $userIntro")
+                append("\n\n$toolDiscovery")
             }
             
-            for (i in 0 until toolCalls.length()) {
-                val toolCall = toolCalls.getJSONObject(i)
-                val id = toolCall.getString("id")
-                val function = toolCall.getJSONObject("function")
-                val name = function.getString("name")
-                val args = function.getString("arguments")
+            val optimizedContext = ConversationMemoryManager.buildOptimizedHistory(
+                this@AIChatActivity, history, currentSessionId, systemPrompt
+            )
+            val messagesJson = ConversationMemoryManager.toJsonMessages(systemPrompt, optimizedContext)
+            
+            // 2. Start Loop
+            var finalResponse = ""
+            
+            while (turnCount < maxTurns) {
+                turnCount++
                 
-                val result = com.neubofy.reality.utils.AgentTools.execute(this@AIChatActivity, name, args)
+                // Construct API Request
+                val jsonBody = JSONObject().apply {
+                    put("model", model)
+                    put("messages", messagesJson)
+                    // Only send tools if we haven't hit the limit? No, always send, AI decides.
+                    put("tools", com.neubofy.reality.utils.AgentTools.definitions)
+                    put("tool_choice", "auto")
+                }
                 
-                // Construct messages for next turn
-                jsonMessages.put(message) 
-                jsonMessages.put(JSONObject().apply {
-                    put("role", "tool")
-                    put("tool_call_id", id)
-                    put("name", name)
-                    put("content", result)
-                })
+                val url = when(provider) {
+                    "OpenAI" -> "https://api.openai.com/v1/chat/completions"
+                    "Groq" -> "https://api.groq.com/openai/v1/chat/completions"
+                    "OpenRouter" -> "https://openrouter.ai/api/v1/chat/completions"
+                    else -> "https://api.openai.com/v1/chat/completions"
+                }
+                
+                // Execute Request
+                val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.connectTimeout = 45000 // Extended timeout for agent
+                conn.readTimeout = 45000
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.setRequestProperty("Authorization", "Bearer $apiKey")
+                if (provider == "OpenRouter") {
+                     conn.setRequestProperty("HTTP-Referer", "https://neubofy.com")
+                     conn.setRequestProperty("X-Title", "Reality App")
+                }
+                conn.doOutput = true
+                
+                try {
+                    conn.outputStream.write(jsonBody.toString().toByteArray())
+                    
+                    if (conn.responseCode != 200) {
+                        val err = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown error"
+                        return@withContext "API Error ($turnCount): $err"
+                    }
+                    
+                    val resp = conn.inputStream.bufferedReader().use { it.readText() }
+                    val responseJson = JSONObject(resp)
+                    val choice = responseJson.getJSONArray("choices").getJSONObject(0)
+                    val message = choice.getJSONObject("message")
+                    val content = message.optString("content", "")
+                    val toolCalls = message.optJSONArray("tool_calls")
+                    
+                    // Add AI response to context for next turn
+                    messagesJson.put(message)
+                    
+                    // Check if done (no tool calls)
+                    if (toolCalls == null || toolCalls.length() == 0) {
+                        finalResponse = content
+                        break // Loop finishes
+                    }
+                    
+                    // Handle Tool Calls
+                    for (i in 0 until toolCalls.length()) {
+                        val toolCall = toolCalls.getJSONObject(i)
+                        val id = toolCall.getString("id")
+                        val function = toolCall.getJSONObject("function")
+                        val name = function.getString("name")
+                        val args = function.getString("arguments")
+                        
+                        // Retry Logic Check
+                        val callSignature = "$name:$args"
+                        val currentRetries = toolRetryCounts.getOrDefault(callSignature, 0)
+                        
+                        val result = if (currentRetries >= 3) {
+                             "Error: Max retries (3) reached for this specific tool call. Do not try it again with same arguments."
+                        } else {
+                            toolRetryCounts[callSignature] = currentRetries + 1
+                            
+                            // UI Feedback
+                            withContext(Dispatchers.Main) {
+                                binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
+                                adapter.addMessage(ChatMessage("⚙️ Executing: $name...", false, false))
+                            }
+                            
+                            com.neubofy.reality.utils.AgentTools.execute(this@AIChatActivity, name, args)
+                        }
+                        
+                        // Add Result to Context
+                        messagesJson.put(JSONObject().apply {
+                            put("role", "tool")
+                            put("tool_call_id", id)
+                            put("name", name)
+                            put("content", result)
+                        })
+                    }
+                    
+                    // Loop continues to next turn with new context (AI message + Tool results)
+                    
+                } catch (e: Exception) {
+                    return@withContext "Agent Loop Error: ${e.localizedMessage}"
+                }
             }
             
-            return processChatLoopWithContext(jsonMessages, apiKey, model, provider, depth + 1)
+            if (turnCount >= maxTurns && finalResponse.isEmpty()) {
+                finalResponse = "I reached the limit of 10 steps. Here is what I found so far."
+            }
+            
+            finalResponse
         }
-        
-        return content
-    }
-    
-    // Helper to continue the conversation (2nd leg)
-    private suspend fun processChatLoopWithContext(messagesJson: JSONArray, apiKey: String, model: String, provider: String, depth: Int): String {
-        if (depth > 5) return "Error: Maximum recursion."
-        
-        val url = when(provider) {
-            "Groq" -> "https://api.groq.com/openai/v1/chat/completions"
-            else -> "https://api.openai.com/v1/chat/completions"
-        }
-        
-        val jsonBody = JSONObject().apply {
-            put("model", model)
-            put("messages", messagesJson)
-        }
-
-        val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
-        conn.requestMethod = "POST"
-        conn.setRequestProperty("Content-Type", "application/json")
-        conn.setRequestProperty("Authorization", "Bearer $apiKey")
-        conn.doOutput = true
-        conn.outputStream.write(jsonBody.toString().toByteArray())
-        
-        if (conn.responseCode != 200) {
-             return "Error sub-loop: ${conn.responseCode}"
-        }
-        
-        val resp = conn.inputStream.bufferedReader().use { it.readText() }
-        val currMsg = JSONObject(resp).getJSONArray("choices").getJSONObject(0).getJSONObject("message")
-        return currMsg.optString("content", "")
     }
 
     // Replace the dispatching logic in sendMessage

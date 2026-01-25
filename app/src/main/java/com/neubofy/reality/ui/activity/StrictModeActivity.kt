@@ -55,11 +55,19 @@ class StrictModeActivity : AppCompatActivity() {
         devicePolicyManager = getSystemService(DEVICE_POLICY_SERVICE) as DevicePolicyManager
         adminComponent = ComponentName(this, AdminLockReceiver::class.java)
         
-        binding.toolbar.setNavigationOnClickListener { finish() }
+        setupToolbar()
         
         loadSettings()
         attachListeners()
         updateUIState()
+    }
+
+    private fun setupToolbar() {
+        val toolbar = binding.includeHeader.toolbar
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = "Strict Mode"
+        toolbar.setNavigationOnClickListener { finish() }
     }
     
     override fun onResume() {
@@ -82,6 +90,7 @@ class StrictModeActivity : AppCompatActivity() {
         binding.switchAppLimitLock.isChecked = strictData.isAppLimitLocked
         binding.switchGroupLimitLock.isChecked = strictData.isGroupLimitLocked
         binding.switchScheduleLock.isChecked = strictData.isScheduleLocked
+        binding.switchTapasyaLock.isChecked = strictData.isTapasyaLocked
 
         binding.switchAutoDndLock.isChecked = strictData.isAutoDndLocked
         binding.switchCalendarLock.isChecked = strictData.isCalendarLocked
@@ -239,6 +248,7 @@ class StrictModeActivity : AppCompatActivity() {
         binding.switchAppLimitLock.isEnabled = true
         binding.switchGroupLimitLock.isEnabled = true
         binding.switchScheduleLock.isEnabled = true
+        binding.switchTapasyaLock.isEnabled = true
 
         binding.switchAutoDndLock.isEnabled = true
         binding.switchCalendarLock.isEnabled = true
@@ -257,6 +267,7 @@ class StrictModeActivity : AppCompatActivity() {
             binding.switchAppLimitLock to { v: Boolean -> strictData.isAppLimitLocked = v },
             binding.switchGroupLimitLock to { v: Boolean -> strictData.isGroupLimitLocked = v },
             binding.switchScheduleLock to { v: Boolean -> strictData.isScheduleLocked = v },
+            binding.switchTapasyaLock to { v: Boolean -> strictData.isTapasyaLocked = v },
 
             binding.switchAutoDndLock to { v: Boolean -> strictData.isAutoDndLocked = v },
             binding.switchCalendarLock to { v: Boolean -> strictData.isCalendarLocked = v },

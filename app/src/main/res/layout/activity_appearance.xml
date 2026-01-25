@@ -139,6 +139,67 @@
                 </LinearLayout>
             </HorizontalScrollView>
 
+            <!-- APP BACKGROUND -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="App Background"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp"/>
+                
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginBottom="8dp">
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chips_app_bg"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true">
+                    <com.google.android.material.chip.Chip android:text="#F0F2F5" android:tag="#F0F2F5" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#FFFFFF" android:tag="#FFFFFF" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#000000" android:tag="#000000" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#121212" android:tag="#121212" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    <com.google.android.material.chip.Chip android:text="#001F1F" android:tag="#001F1F" style="@style/Widget.MaterialComponents.Chip.Action" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                </com.google.android.material.chip.ChipGroup>
+            </HorizontalScrollView>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Custom Hex (e.g. #F0F2F5)"
+                android:layout_marginBottom="24dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/input_app_bg"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            
+            <!-- HEADER STYLE -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Header Style"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+                
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                android:layout_marginBottom="24dp">
+                <com.google.android.material.chip.Chip android:id="@+id/chip_header_transparent" android:text="Transparent" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <com.google.android.material.chip.Chip android:id="@+id/chip_header_solid" android:text="Solid Surface" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <com.google.android.material.chip.Chip android:id="@+id/chip_header_blended" android:text="Blended (Glass)" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            </com.google.android.material.chip.ChipGroup>
+            
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOutlineVariant" android:alpha="0.2" android:layout_marginBottom="24dp"/>
+
             <!-- PRO: POPUP BACKGROUND -->
             <TextView
                 android:layout_width="wrap_content"
@@ -274,6 +335,45 @@
                 android:valueTo="2.0"
                 android:stepSize="0.1"
                 android:value="1.0"
+                android:layout_marginBottom="24dp"/>
+
+            <!-- CARD STYLE -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Card Style"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+                
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group_card_style"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                android:layout_marginBottom="24dp">
+                <com.google.android.material.chip.Chip android:id="@+id/style_glass" android:text="Smart Glass" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <com.google.android.material.chip.Chip android:id="@+id/style_filled" android:text="Filled" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <com.google.android.material.chip.Chip android:id="@+id/style_outlined" android:text="Outlined" android:checkable="true" style="@style/Widget.MaterialComponents.Chip.Choice" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            </com.google.android.material.chip.ChipGroup>
+
+            <!-- CORNER RADIUS -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Corner Radius (Shape)"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+                
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_radius"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="0"
+                android:valueTo="32"
+                android:stepSize="2"
+                android:value="16"
                 android:layout_marginBottom="24dp"/>
 
             <!-- BACKGROUND & GLASS -->

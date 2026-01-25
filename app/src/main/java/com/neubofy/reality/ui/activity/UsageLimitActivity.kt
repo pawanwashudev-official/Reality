@@ -40,11 +40,23 @@ class UsageLimitActivity : AppCompatActivity() {
         savedPreferencesLoader = SavedPreferencesLoader(this)
         usageData = savedPreferencesLoader.getUsageLimitData()
         
+        
+        setupToolbar()
         setupGlobalLimitUI()
         
         binding.recyclerAppUsage.layoutManager = LinearLayoutManager(this)
         
         loadAppsAndUsage()
+    }
+    
+
+
+    private fun setupToolbar() {
+        val toolbar = binding.includeHeader.toolbar
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = "Usage Limits"
+        toolbar.setNavigationOnClickListener { finish() }
     }
     
     private fun setupGlobalLimitUI() {

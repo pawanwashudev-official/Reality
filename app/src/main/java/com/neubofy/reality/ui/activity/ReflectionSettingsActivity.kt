@@ -33,9 +33,11 @@ class ReflectionSettingsActivity : AppCompatActivity() {
     }
 
     private fun setupHeader() {
-        binding.btnBack.setOnClickListener {
-            finish()
-        }
+        val toolbar = binding.includeHeader.toolbar
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = "Reflection Settings"
+        toolbar.setNavigationOnClickListener { finish() }
     }
 
     private fun setupRetentionSpinner() {

@@ -52,13 +52,22 @@ class AppearanceActivity : AppCompatActivity() {
         
         // Colors
         val popupBg = ThemeManager.getPopupBackgroundColor(this)
+        val appBg = ThemeManager.getAppBackgroundColor(this)
         val primaryText = ThemeManager.getPrimaryTextColor(this)
         val secondaryText = ThemeManager.getSecondaryTextColor(this)
         
         if (popupBg != null) binding.inputPopupBg.setText(String.format("#%06X", (0xFFFFFF and popupBg)))
+        if (appBg != null) binding.inputAppBg.setText(String.format("#%06X", (0xFFFFFF and appBg)))
         if (primaryText != null) binding.inputPrimaryText.setText(String.format("#%06X", (0xFFFFFF and primaryText)))
         if (secondaryText != null) binding.inputSecondaryText.setText(String.format("#%06X", (0xFFFFFF and secondaryText)))
         
+        // Header Style
+        when (ThemeManager.getHeaderStyle(this)) {
+            ThemeManager.HeaderStyle.TRANSPARENT -> binding.chipHeaderTransparent.isChecked = true
+            ThemeManager.HeaderStyle.SOLID -> binding.chipHeaderSolid.isChecked = true
+            ThemeManager.HeaderStyle.BLENDED -> binding.chipHeaderBlended.isChecked = true
+        }
+
         // Animation
         binding.sliderAnimation.value = ThemeManager.getAnimationSpeed(this)
         
@@ -76,12 +85,27 @@ class AppearanceActivity : AppCompatActivity() {
             ThemeManager.GlassIntensity.MEDIUM -> binding.chipGlassMedium.isChecked = true
             ThemeManager.GlassIntensity.STRONG -> binding.chipGlassStrong.isChecked = true
         }
+        
+        // Card Style
+        when (ThemeManager.getCardStyle(this)) {
+            ThemeManager.CardStyle.GLASS -> binding.styleGlass.isChecked = true
+            ThemeManager.CardStyle.FILLED -> binding.styleFilled.isChecked = true
+            ThemeManager.CardStyle.OUTLINED -> binding.styleOutlined.isChecked = true
+        }
+        
+        // Corner Radius
+        binding.sliderRadius.value = ThemeManager.getCornerRadius(this).toFloat()
+        
+        // Live Preview Listeners for new controls
+        binding.sliderRadius.addOnChangeListener { _, _, _ -> updatePreview() }
+        binding.chipGroupCardStyle.setOnCheckedStateChangeListener { _, _ -> updatePreview() }
     }
     
     private fun setupListeners() {
         // Mode Chips
         binding.chipGroupMode.setOnCheckedStateChangeListener { _, _ ->
             updateAmoledVisibility()
+            updatePreview()
         }
 
         // Accent Colors
@@ -105,6 +129,7 @@ class AppearanceActivity : AppCompatActivity() {
         
         // Color Suggestions Listeners
         setupSuggestionChips(binding.chipsPopupBg, binding.inputPopupBg)
+        setupSuggestionChips(binding.chipsAppBg, binding.inputAppBg)
         setupSuggestionChips(binding.chipsPrimaryText, binding.inputPrimaryText)
         setupSuggestionChips(binding.chipsSecondaryText, binding.inputSecondaryText)
         
@@ -116,6 +141,7 @@ class AppearanceActivity : AppCompatActivity() {
         }
         
         binding.inputPopupBg.addTextChangedListener(textWatcher)
+        binding.inputAppBg.addTextChangedListener(textWatcher)
         binding.inputPrimaryText.addTextChangedListener(textWatcher)
         binding.inputSecondaryText.addTextChangedListener(textWatcher)
         
@@ -142,7 +168,35 @@ class AppearanceActivity : AppCompatActivity() {
         binding.previewTitle.setTextColor(selectedAccent.primaryColor)
         binding.previewButton.backgroundTintList = android.content.res.ColorStateList.valueOf(selectedAccent.primaryColor)
         
-        // Apply Custom Colors
+        // Apply Radius
+        val radius = binding.sliderRadius.value
+        binding.cardPreview.radius = radius * resources.displayMetrics.density
+        
+        // Apply Card Style (Partial Preview)
+        val style = when {
+            binding.styleFilled.isChecked -> ThemeManager.CardStyle.FILLED
+            binding.styleOutlined.isChecked -> ThemeManager.CardStyle.OUTLINED
+            binding.styleGlass.isChecked -> ThemeManager.CardStyle.GLASS
+            else -> ThemeManager.CardStyle.GLASS
+        }
+        
+        if (style == ThemeManager.CardStyle.OUTLINED) {
+            binding.cardPreview.setCardBackgroundColor(Color.TRANSPARENT)
+            binding.cardPreview.strokeWidth = (1 * resources.displayMetrics.density).toInt()
+            binding.cardPreview.strokeColor = Color.GRAY
+        } else if (style == ThemeManager.CardStyle.FILLED) {
+             val typedValue = android.util.TypedValue()
+             theme.resolveAttribute(com.google.android.material.R.attr.colorSurface, typedValue, true)
+             binding.cardPreview.setCardBackgroundColor(typedValue.data)
+             binding.cardPreview.strokeWidth = 0
+        } else {
+             // Glass - roughly white with alpha (hard to perfect without recreating ThemeManager logic locally)
+             binding.cardPreview.setCardBackgroundColor(Color.parseColor("#1AFFFFFF"))
+             binding.cardPreview.strokeWidth = (1 * resources.displayMetrics.density).toInt()
+             binding.cardPreview.strokeColor = Color.parseColor("#33FFFFFF")
+        }
+        
+        // Apply Custom Colors overwrites
         try {
             val bgText = binding.inputPopupBg.text.toString()
             if (bgText.isNotEmpty()) binding.cardPreview.setCardBackgroundColor(Color.parseColor(bgText))
@@ -177,11 +231,22 @@ class AppearanceActivity : AppCompatActivity() {
         val bgText = binding.inputPopupBg.text.toString()
         if (isValidHex(bgText)) ThemeManager.setPopupBackgroundColor(this, bgText) else ThemeManager.setPopupBackgroundColor(this, null)
         
+        val appBgText = binding.inputAppBg.text.toString()
+        if (isValidHex(appBgText)) ThemeManager.setAppBackgroundColor(this, appBgText) else ThemeManager.setAppBackgroundColor(this, null)
+        
         val primText = binding.inputPrimaryText.text.toString()
         if (isValidHex(primText)) ThemeManager.setPrimaryTextColor(this, primText) else ThemeManager.setPrimaryTextColor(this, null)
-
+ 
         val secText = binding.inputSecondaryText.text.toString()
         if (isValidHex(secText)) ThemeManager.setSecondaryTextColor(this, secText) else ThemeManager.setSecondaryTextColor(this, null)
+        
+        // Header Style
+        val headerStyle = when {
+            binding.chipHeaderSolid.isChecked -> ThemeManager.HeaderStyle.SOLID
+            binding.chipHeaderBlended.isChecked -> ThemeManager.HeaderStyle.BLENDED
+            else -> ThemeManager.HeaderStyle.TRANSPARENT
+        }
+        ThemeManager.setHeaderStyle(this, headerStyle)
         
         // Pattern & Glass
         val pattern = when {
@@ -198,6 +263,16 @@ class AppearanceActivity : AppCompatActivity() {
             else -> ThemeManager.GlassIntensity.LIGHT
         }
         ThemeManager.setGlassIntensity(this, glass)
+        
+        // Save Card Style & Radius
+        val cardStyle = when {
+            binding.styleFilled.isChecked -> ThemeManager.CardStyle.FILLED
+            binding.styleOutlined.isChecked -> ThemeManager.CardStyle.OUTLINED
+            binding.styleGlass.isChecked -> ThemeManager.CardStyle.GLASS
+            else -> ThemeManager.CardStyle.GLASS
+        }
+        ThemeManager.setCardStyle(this, cardStyle)
+        ThemeManager.setCornerRadius(this, binding.sliderRadius.value.toInt())
         
         // Restart App to apply changes
         val intent = Intent(this, MainActivity::class.java)

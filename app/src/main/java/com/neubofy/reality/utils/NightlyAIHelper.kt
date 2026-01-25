@@ -30,7 +30,8 @@ object NightlyAIHelper {
         context: Context,
         modelString: String,
         userIntroduction: String,
-        daySummary: DaySummary
+        daySummary: DaySummary,
+        healthData: String
     ): List<String> = withContext(Dispatchers.IO) {
         
         TerminalLogger.log("Nightly AI: Generating questions with model: $modelString")
@@ -41,7 +42,7 @@ object NightlyAIHelper {
         val (provider, apiKey) = providerAndKey
         val modelName = modelString.substringAfter(": ")
         
-        val prompt = buildPrompt(context, userIntroduction, daySummary)
+        val prompt = buildPrompt(context, userIntroduction, daySummary, healthData)
         TerminalLogger.log("Nightly AI: Prompt built, calling $provider API...")
         
         val response = when (provider) {
@@ -57,7 +58,7 @@ object NightlyAIHelper {
         parseQuestions(response)
     }
     
-    private fun buildPrompt(context: Context, userIntro: String, summary: DaySummary): String {
+    private fun buildPrompt(context: Context, userIntro: String, summary: DaySummary, healthData: String): String {
         val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
         
         // Calendar events from device
@@ -124,6 +125,7 @@ object NightlyAIHelper {
                 .replace("{tasks_due}", tasksDueList)
                 .replace("{tasks_completed}", tasksCompletedList)
                 .replace("{sessions}", sessionsList)
+                .replace("{health}", healthData)
                 .replace("{stats}", statsStr)
         } else {
             // Use default prompt
@@ -144,6 +146,9 @@ $tasksCompletedList
 
 ⏱️ STUDY/WORK SESSIONS (Tapasya):
 $sessionsList
+
+📱 DIGITAL WELLBEING (Health):
+$healthData
 
 📊 STATISTICS:
 $statsStr
@@ -190,9 +195,9 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         // Build List Context
         val listsContext = if (taskListConfigs.isNotEmpty()) {
             val details = taskListConfigs.joinToString("\n") { 
-                "- List Name: \"${it.displayName}\" (ID: ${it.googleListId})\n  Description: ${it.description}" 
+                "Task List Goal: \"${it.description}\" -> USE ID: ${it.googleListId}" 
             }
-            "\n[AVAILABLE TASK LISTS]\n$details\n"
+            "\n[CRITICAL: AVAILABLE TASK LISTS]\n$details\n"
         } else {
             ""
         }
@@ -233,6 +238,9 @@ Today is {date}.
 
 ⏱️ STUDY/WORK SESSIONS (Tapasya):
 {sessions}
+
+📱 DIGITAL WELLBEING (Health):
+{health}
 
 📊 STATISTICS:
 {stats}
@@ -326,25 +334,30 @@ OUTPUT FORMAT:
             [STRICT EXTRACTION RULES]
             1. TASKS:
                - Extract ONLY actionable task mentions that are explicitly listed.
-               - NEGATIVE CONSTRAINT: Do NOT infer or "hallucinate" tasks that are not clearly written (e.g. don't turn general advice into tasks).
+               - NEGATIVE CONSTRAINT: Do NOT infer or "hallucinate" tasks that are not clearly written.
                - TITLE: Clean title only.
-               - CATEGORIZATION: Select the best "taskListId" from the [AVAILABLE TASK LISTS].
-               - CRITICAL: You MUST use one of the "ID"s provided in the context. Do NOT use names like "inbox", "work", or "personal" unless they are explicitly listed with that ID.
-               - IF NO MATCH: Use "@default".
-               - Distribute tasks appropriately based on the list descriptions. 
-               - DUE TIME: If a specific time is mentioned (e.g., "14:00 Finish report"), extract it as "startTime" in 24h HH:mm format. 
+               - CATEGORIZATION: Map each task to the most relevant "taskListId" from the [AVAILABLE TASK LISTS].
+               - CRITICAL: You MUST use one of the "ID"s provided (e.g. "MTIzNDU..."). Do NOT use names or labels.
+               - SELECTION LOGIC: If a task matches a specific list description, use that ID. Only use "@default" if NO other list matches.
+               - DISTRIBUTE tasks wisely across specialized lists.
+               - DUE TIME: If a specific time is mentioned (e.g., "14:00 Finish report"), extract it as "startTime" in STRICT 24-hour HH:mm format. 
             
             2. CALENDAR EVENTS: 
                - ONLY extract productive/focused study or work sessions.
                - NEGATIVE CONSTRAINT: DO NOT extract Sleep, Travel, Commute, Relax, Eating, Gym, or Leisure activities as events.
-               - TIME: Must have both "startTime" and "endTime" in HH:mm.
+               - TIME: Must have both "startTime" and "endTime" in STRICT 24-hour HH:mm format.
             
             4. WAKE UP TIME: (Constraint: AI Decision)
-               - Based on the plan's first activity, determine the optimal "wakeupTime" (HH:mm).
+               - Based on the plan's first activity, determine the optimal "wakeupTime" (STRICT 24-hour HH:mm).
                - If the plan starts at 06:00, wake up might be 05:30.
                - IMPORTANT: If no clear start time is found, return empty string "".
-            
-            5. MENTORSHIP (Short Advice):
+             
+             5. SLEEP START TIME: (Constraint: AI Decision)
+                - Determine the planned "sleepStartTime" (STRICT 24-hour HH:mm).
+                - Look for "Sleep", "Bed", "Wind down" at the end of the plan.
+                - If not explicitly stated, infer a reasonable time (e.g. 23:00) based on the day's intensity.
+             
+             6. MENTORSHIP (Short Advice):
                - Provide a 2-3 sentence punchy piece of advice for the user to succeed tomorrow.
                - Focus on mindset, energy, or specific focus from the plan.
             
@@ -368,7 +381,8 @@ OUTPUT FORMAT:
                   "endTime": "HH:mm",
                   "description": "Details"
                 }
-              ]
+              ],
+              "sleepStartTime": "HH:mm or empty"
             }
         """.trimIndent()
     }

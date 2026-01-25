@@ -15,6 +15,7 @@ import com.neubofy.reality.databinding.ActivityNightlySettingsBinding
 import com.neubofy.reality.utils.ThemeManager
 import kotlinx.coroutines.launch
 import com.neubofy.reality.utils.SavedPreferencesLoader
+import com.neubofy.reality.R
 
 class NightlySettingsActivity : AppCompatActivity() {
 
@@ -33,21 +34,36 @@ class NightlySettingsActivity : AppCompatActivity() {
         binding = ActivityNightlySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupInsets()
         setupListeners()
         loadSavedData()
-        setupLockSettings()
-        setupInfoButton()
+        loadSavedData()
+        setupToolbar()
         setupAutoAlarm()
     }
 
-    private fun setupInfoButton() {
-        binding.btnInfoNightly.setOnClickListener {
+    private fun setupToolbar() {
+        val toolbar = binding.includeHeader.toolbar
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = "Nightly Settings"
+        toolbar.setNavigationOnClickListener { finish() }
+    }
+    
+    override fun onCreateOptionsMenu(menu: android.view.Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_nightly_settings, menu)
+        return true
+    }
+    
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+        return if (item.itemId == R.id.action_info) {
             MaterialAlertDialogBuilder(this)
                 .setTitle("Nightly Customization")
                 .setMessage("You can customize the allowed time window for your nightly review and enable features like Auto-Alarm.\n\nTo manage AI Prompts and Document Templates, use the 'Manage AI Prompts' button below.")
                 .setPositiveButton("Got it", null)
                 .show()
+            true
+        } else {
+            super.onOptionsItemSelected(item)
         }
     }
     
@@ -82,40 +98,13 @@ class NightlySettingsActivity : AppCompatActivity() {
         }
     }
     
-    private fun setupLockSettings() {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val strictData = SavedPreferencesLoader(this).getStrictModeData()
-        
-        binding.switchLockStartTimeEdit.isChecked = prefs.getBoolean("lock_start_time_edit", false)
-        
-        if (strictData.isEnabled) {
-            binding.switchLockStartTimeEdit.isEnabled = false
-            binding.switchLockStartTimeEdit.alpha = 0.5f // Visual indication
-        } else {
-            binding.switchLockStartTimeEdit.isEnabled = true
-            binding.switchLockStartTimeEdit.alpha = 1.0f
-        }
-        
-        binding.switchLockStartTimeEdit.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("lock_start_time_edit", isChecked).apply()
-        }
-    }
 
-    private fun setupInsets() {
-        ViewCompat.setOnApplyWindowInsetsListener(binding.rootLayout) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            binding.header.setPadding(
-                binding.header.paddingLeft,
-                systemBars.top + 16,
-                binding.header.paddingRight,
-                binding.header.paddingBottom
-            )
-            insets
-        }
-    }
+
+
 
     private fun setupListeners() {
-        binding.btnBack.setOnClickListener { finish() }
+        // binding.btnBack handled by toolbar
+
 
         // Clear Nightly Memory - Day Selector Dialog
         binding.btnClearNightlyMemory.setOnClickListener {

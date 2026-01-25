@@ -8,24 +8,30 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.neubofy.reality.R
 import com.neubofy.reality.utils.BlockCache
+import com.neubofy.reality.utils.SettingsBox
+import com.neubofy.reality.utils.SavedPreferencesLoader
 
 /**
- * ActiveBlocksActivity - Shows all currently blocked apps from THE BOX.
+ * ActiveBlocksActivity - Shows all currently blocked entities.
  * 
- * This reads directly from BlockCache (persisted to disk).
- * Always shows the exact same data that the blocker is using.
+ * 1. Apps (from BlockCache.packages)
+ * 2. Settings Pages (from SettingsBox)
+ * 3. Websites (from BlockCache.FocusModeData.blockedWebsites)
+ * 
+ * Reads directly from MEMORY/DISK cache (Truth), ignoring Database.
  */
 class ActiveBlocksActivity : AppCompatActivity() {
     
     private lateinit var recyclerView: RecyclerView
     private lateinit var emptyView: TextView
     private lateinit var statusText: TextView
-    private val adapter = BlockedAppAdapter()
+    private val adapter = UnifiedBlockAdapter()
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +41,7 @@ class ActiveBlocksActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         toolbar.setNavigationOnClickListener { finish() }
+        supportActionBar?.title = "Active Blocks"
         
         recyclerView = findViewById(R.id.recyclerBlocked)
         emptyView = findViewById(R.id.emptyView)
@@ -43,97 +50,106 @@ class ActiveBlocksActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
         
-        loadBlockedApps()
+        loadAllBlocks()
     }
     
     override fun onResume() {
         super.onResume()
-        loadBlockedApps()
+        loadAllBlocks()
     }
     
-    private fun loadBlockedApps() {
-        // Load from disk first (in case RAM was cleared) - same as blocker does
+    private fun loadAllBlocks() {
+        // Force refresh from disk
         BlockCache.loadFromDisk(this)
+        val unifiedList = mutableListOf<BlockItem>()
         
-        // THE ACTUAL DATA THE BLOCKER USES
-        val blockedApps = BlockCache.getAllBlockedApps()
+        // 1. APPS from BlockCache
+        val blockedApps = BlockCache.getAllBlockedApps() // Returns map<pkg, reasons>
         
-        // Check if emergency mode is ACTUALLY active by testing the shouldBlock function
-        // This is exactly what the blocker does for each app
-        val isEmergencyActive = BlockCache.emergencySessionEndTime > System.currentTimeMillis()
-        
-        // The REAL source of truth: Is there anything in the BOX?
-        // If blockedApps has entries, blocking IS active (regardless of the flag)
-        val hasBlockedApps = blockedApps.isNotEmpty()
-        
-        // Build UI list - but check if each app would ACTUALLY be blocked
-        val list = mutableListOf<BlockedAppItem>()
-        
-        for ((packageName, reasons) in blockedApps) {
-            // This is EXACTLY what the blocker checks
-            val (wouldBlock, _) = BlockCache.shouldBlock(packageName)
-            
+        for ((pkg, reasons) in blockedApps) {
             try {
-                val appInfo = packageManager.getApplicationInfo(packageName, 0)
+                // Verify if actually blocked
+                val (shouldBlock, _) = BlockCache.shouldBlock(pkg)
+                val appInfo = packageManager.getApplicationInfo(pkg, 0)
                 val label = packageManager.getApplicationLabel(appInfo).toString()
-                val icon = packageManager.getApplicationIcon(appInfo)
                 
-                list.add(BlockedAppItem(
-                    name = label,
-                    packageName = packageName,
-                    icon = icon,
+                unifiedList.add(BlockItem(
+                    type = BlockType.APP,
+                    title = label,
+                    subtitle = pkg,
                     reasons = reasons.toList(),
-                    // isPaused = in box but NOT actually blocked (emergency mode)
-                    isPaused = !wouldBlock
+                    isActive = shouldBlock, // If false, means paused/emergency
+                    iconPackage = pkg
                 ))
             } catch (e: PackageManager.NameNotFoundException) {
-                // App uninstalled, skip
+                // App uninstalled
             }
         }
         
-        // Sort alphabetically
-        list.sortBy { it.name.lowercase() }
-        
-        adapter.setData(list)
-        
-        // Count actually blocked vs paused
-        val actuallyBlocked = list.count { !it.isPaused }
-        val paused = list.count { it.isPaused }
-        
-        // Update status - based on REAL data
-        statusText.text = when {
-            isEmergencyActive && hasBlockedApps -> "⏸️ Emergency Mode - ${list.size} apps paused"
-            actuallyBlocked > 0 -> "🛡️ Blocking $actuallyBlocked apps"
-            hasBlockedApps && paused > 0 -> "⏸️ ${paused} apps in list (paused)"
-            else -> "😊 No active blocking"
+        // 2. SETTINGS PAGES from SettingsBox
+        val settings = SettingsBox.getAllProtectedPages()
+        for (page in settings) {
+             unifiedList.add(BlockItem(
+                 type = BlockType.SETTING,
+                 title = page.blockReason, // e.g. "Time Settings Protection"
+                 subtitle = "${page.packageName}/${page.className}",
+                 reasons = listOf(page.pageType.name),
+                 isActive = SettingsBox.isAnyProtectionActive(), 
+                 iconPackage = "com.android.settings"
+             ))
         }
         
-        if (list.isEmpty()) {
-            emptyView.visibility = View.VISIBLE
-            emptyView.text = "No apps in blocklist"
-        } else {
-            emptyView.visibility = View.GONE
+        // 3. WEBSITES from Focus Mode / Schedules
+        // BlockCache tracks if website blocking is active, but individual sites are in Prefs
+        val prefs = SavedPreferencesLoader(this)
+        val blockedSites = prefs.getFocusModeData().blockedWebsites
+        val isWebBlockActive = BlockCache.isAnyBlockingModeActive
+        
+        for (site in blockedSites) {
+            if (site.isNotBlank()) {
+                unifiedList.add(BlockItem(
+                    type = BlockType.WEBSITE,
+                    title = site,
+                    subtitle = "Browser Block",
+                    reasons = listOf("Focus Mode"),
+                    isActive = isWebBlockActive,
+                    iconPackage = "com.android.chrome" // Default to chrome icon
+                ))
+            }
         }
+        
+        // Sort: Apps Name -> Settings -> Websites
+        unifiedList.sortWith(compareBy({ it.type.ordinal }, { it.title.lowercase() }))
+        
+        adapter.setData(unifiedList)
+        
+        val activeCount = unifiedList.count { it.isActive }
+        statusText.text = if (activeCount > 0) "🛡️ ${activeCount} active blocks" else "😊 No active blocks"
+        
+        emptyView.isVisible = unifiedList.isEmpty()
     }
     
-    data class BlockedAppItem(
-        val name: String,
-        val packageName: String,
-        val icon: android.graphics.drawable.Drawable,
+    enum class BlockType { APP, SETTING, WEBSITE }
+    
+    data class BlockItem(
+        val type: BlockType,
+        val title: String,
+        val subtitle: String,
         val reasons: List<String>,
-        val isPaused: Boolean
+        val isActive: Boolean,
+        val iconPackage: String
     )
     
-    class BlockedAppAdapter : RecyclerView.Adapter<BlockedAppAdapter.ViewHolder>() {
-        private val items = mutableListOf<BlockedAppItem>()
+    inner class UnifiedBlockAdapter : RecyclerView.Adapter<UnifiedBlockAdapter.ViewHolder>() {
+        private val items = mutableListOf<BlockItem>()
         
-        fun setData(newItems: List<BlockedAppItem>) {
+        fun setData(newItems: List<BlockItem>) {
             items.clear()
             items.addAll(newItems)
             notifyDataSetChanged()
         }
         
-        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val icon: ImageView = view.findViewById(R.id.appIcon)
             val name: TextView = view.findViewById(R.id.appName)
             val reasons: TextView = view.findViewById(R.id.appReasons)
@@ -148,17 +164,34 @@ class ActiveBlocksActivity : AppCompatActivity() {
         
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
-            holder.icon.setImageDrawable(item.icon)
-            holder.name.text = item.name
-            holder.reasons.text = item.reasons.joinToString(" • ")
             
-            if (item.isPaused) {
-                holder.status.text = "PAUSED"
-                holder.status.setTextColor(android.graphics.Color.parseColor("#FFA500"))
-            } else {
-                holder.status.text = "BLOCKED"
-                holder.status.setTextColor(android.graphics.Color.parseColor("#FF4444"))
+            holder.name.text = item.title
+            holder.reasons.text = item.subtitle
+            
+            // Icon Logic
+            try {
+                val icon = packageManager.getApplicationIcon(item.iconPackage)
+                holder.icon.setImageDrawable(icon)
+            } catch (e: Exception) {
+                holder.icon.setImageResource(android.R.drawable.sym_def_app_icon)
             }
+            
+            // Status Logic
+            if (item.isActive) {
+                holder.status.text = when(item.type) {
+                    BlockType.APP -> "BLOCKED"
+                    BlockType.SETTING -> "PROTECTED"
+                    BlockType.WEBSITE -> "BLOCKED"
+                }
+                holder.status.setTextColor(checkColor("#FF4444")) // Red
+            } else {
+                holder.status.text = "PAUSED"
+                holder.status.setTextColor(checkColor("#FFA500")) // Orange
+            }
+        }
+        
+        private fun checkColor(hex: String): Int {
+            return android.graphics.Color.parseColor(hex)
         }
         
         override fun getItemCount() = items.size

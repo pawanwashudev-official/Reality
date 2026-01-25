@@ -113,4 +113,18 @@ object FiredEventsCache {
         prefs.edit().clear().putLong(KEY_LAST_CLEAR_DATE, System.currentTimeMillis()).apply()
         TerminalLogger.log("FIRED_CACHE: Cleared all")
     }
+    
+    // === FIRE COUNT LOGIC (10x Limit) ===
+    fun incrementFireCount(context: Context, eventId: String): Int {
+        val prefs = getPrefs(context)
+        val key = "count_$eventId"
+        val current = prefs.getInt(key, 0)
+        val newCount = current + 1
+        prefs.edit().putInt(key, newCount).apply()
+        return newCount
+    }
+    
+    fun getFireCount(context: Context, eventId: String): Int {
+        return getPrefs(context).getInt("count_$eventId", 0)
+    }
 }

@@ -64,6 +64,10 @@
 # Keep data classes used with Gson
 -keepclassmembers class com.neubofy.reality.data.db.* { *; }
 -keep class com.neubofy.reality.data.db.* { *; }
+-keep class com.neubofy.reality.blockers.RealityBlocker$* { *; }
+-keep class com.neubofy.reality.data.CustomReminder { *; }
+-keep class com.neubofy.reality.data.model.** { *; }
+-keep class com.neubofy.reality.google.GoogleTasksManager$TaskStats { *; }
 
 # Keep Accessibility Service
 -keep class com.neubofy.reality.services.AppBlockerService { *; }
@@ -74,6 +78,8 @@
 -keep class com.neubofy.reality.receivers.AdminLockReceiver { *; }
 -keep class com.neubofy.reality.receivers.BootReceiver { *; }
 -keep class com.neubofy.reality.receivers.ReminderReceiver { *; }
+-keep class com.neubofy.reality.utils.AlarmScheduler { *; }
+-keep class com.neubofy.reality.services.AlarmService { *; }
 
 # Keep WorkManager Workers
 -keep class com.neubofy.reality.workers.* { *; }
@@ -181,3 +187,8 @@
 -dontwarn org.slf4j.**
 -dontwarn java.beans.**
 -dontwarn javax.security.**
+
+# ========== iText PDF ==========
+-keep class com.itextpdf.** { *; }
+-dontwarn com.itextpdf.**
+-keep class com.neubofy.reality.utils.PdfGenerator { *; }

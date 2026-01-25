@@ -11,6 +11,8 @@ import com.neubofy.reality.ui.activity.AISettingsActivity
 import com.neubofy.reality.utils.NightlyAIHelper
 import com.neubofy.reality.utils.TerminalLogger
 import com.neubofy.reality.utils.XPManager
+import com.neubofy.reality.health.HealthManager
+// UsageUtils is used via full path com.neubofy.reality.utils.UsageUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -415,7 +417,7 @@ class NightlyProtocolExecutor(
             }
             
             // Step 7: Calculate XP
-            calculateReflection(diaryContent, qualityXP)
+            step7_finalizeXp()
             
             // --- BREAK: End of Phase 2 ---
             setProtocolState(STATE_PLANNING_READY)
@@ -533,10 +535,18 @@ class NightlyProtocolExecutor(
             
             // Build resultJson
             val resultJson = JSONObject().apply {
+                put("input", JSONObject().apply {
+                    put("date", diaryDate.toString())
+                })
+                put("output", JSONObject().apply {
+                    put("dueTasks", JSONArray(fetchedTasks?.dueTasks ?: emptyList<String>()))
+                    put("completedTasks", JSONArray(fetchedTasks?.completedTasks ?: emptyList<String>()))
+                    put("pendingCount", fetchedTasks?.pendingCount ?: 0)
+                    put("completedCount", fetchedTasks?.completedCount ?: 0)
+                })
+                // Legacy compatibility
                 put("dueTasks", JSONArray(fetchedTasks?.dueTasks ?: emptyList<String>()))
                 put("completedTasks", JSONArray(fetchedTasks?.completedTasks ?: emptyList<String>()))
-                put("pendingCount", fetchedTasks?.pendingCount ?: 0)
-                put("completedCount", fetchedTasks?.completedCount ?: 0)
             }.toString()
             
             listener.onStepCompleted(STEP_FETCH_TASKS, "Tasks Fetched", details)
@@ -623,10 +633,20 @@ class NightlyProtocolExecutor(
             
             // Build resultJson
             val resultJson = JSONObject().apply {
-                put("sessionCount", daySummary?.completedSessions?.size ?: 0)
-                put("eventCount", daySummary?.calendarEvents?.size ?: 0)
+                put("input", JSONObject().apply {
+                   put("date", diaryDate.toString())
+                })
+                put("output", JSONObject().apply {
+                    put("sessionCount", daySummary?.completedSessions?.size ?: 0)
+                    put("eventCount", daySummary?.calendarEvents?.size ?: 0)
+                    put("plannedMinutes", daySummary?.totalPlannedMinutes ?: 0)
+                    put("effectiveMinutes", daySummary?.totalEffectiveMinutes ?: 0)
+                })
+                // Legacy compatibility
                 put("plannedMinutes", daySummary?.totalPlannedMinutes ?: 0)
                 put("effectiveMinutes", daySummary?.totalEffectiveMinutes ?: 0)
+                put("sessionCount", daySummary?.completedSessions?.size ?: 0)
+                put("eventCount", daySummary?.calendarEvents?.size ?: 0)
             }.toString()
             
             listener.onStepCompleted(STEP_FETCH_SESSIONS, "Sessions Fetched", details)
@@ -639,30 +659,59 @@ class NightlyProtocolExecutor(
     
     private suspend fun step3_calcScreenTime() {
         val stepData = loadStepData(context, diaryDate, STEP_CALC_SCREEN_TIME)
-        
-        // If completed, restore from saved resultJson
-        if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
-            try {
-                val json = JSONObject(stepData.resultJson)
-                screenTimeMinutes = json.optInt("usedMinutes", 0)
-                screenTimeXpDelta = json.optInt("xpDelta", 0)
-                TerminalLogger.log("Nightly: Step 3 restored from DB (${screenTimeMinutes}m, XP: $screenTimeXpDelta)")
-                return
-            } catch (e: Exception) {
-                TerminalLogger.log("Nightly: Step 3 JSON parse failed, recalculating: ${e.message}")
+        if (stepData.status == StepProgress.STATUS_COMPLETED) {
+            // Restore local calculation results if needed for other steps
+             if (stepData.resultJson != null) {
+                try {
+                    val json = JSONObject(stepData.resultJson)
+                    screenTimeMinutes = json.optInt("usedMinutes", 0)
+                    screenTimeXpDelta = json.optInt("xpDelta", 0)
+                } catch (e: Exception) { }
             }
+            return
         }
         
-        listener.onStepStarted(STEP_CALC_SCREEN_TIME, "Calculating Screen Time")
-        saveStepState(context, diaryDate, STEP_CALC_SCREEN_TIME, StepProgress.STATUS_RUNNING, "Calculating...")
+        listener.onStepStarted(STEP_CALC_SCREEN_TIME, "Calculating Health & Screen Time")
+        saveStepState(context, diaryDate, STEP_CALC_SCREEN_TIME, StepProgress.STATUS_RUNNING, "Analyzing Usage...")
         
         try {
             val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
             val limitMinutes = prefs.getInt("screen_time_limit_minutes", 0)
             
-            val totalUsedMillis = com.neubofy.reality.utils.UsageUtils.getFocusedAppsUsageForDate(context, diaryDate)
-            screenTimeMinutes = (totalUsedMillis / 60000).toInt()
+            // 1. Fetch DIGITAL Usage (Screen Time, Unlocks, Streak) for specific Diary Date
+            // 1. Fetch DIGITAL Usage (Screen Time, Unlocks, Streak) for specific Diary Date
+            val usageMetrics = com.neubofy.reality.utils.UsageUtils.getProUsageMetrics(context, diaryDate)
             
+            screenTimeMinutes = (usageMetrics.screenTimeMs / 60000).toInt()
+            val unlocks = usageMetrics.pickupCount
+            val streakMins = (usageMetrics.longestStreakMs / 60000).toInt()
+            
+            // 2. Fetch PHYSICAL Health (Steps, Sleep) via HealthManager
+            // Note: HealthManager might require permissions. We handle gracefully if 0/empty.
+            val healthManager = HealthManager(context)
+            val steps = try { healthManager.getSteps(diaryDate) } catch (e: Exception) { 0L }
+            val sleepInfo = try { healthManager.getSleep(diaryDate) } catch (e: Exception) { "No data" }
+            val sleepMins = if (sleepInfo.contains("h")) {
+                // simple parse estimation or just pass string? Let's pass string to report, store raw?
+                // For JSON data, maybe 0 if complexity. Let's just store the string representation for AI.
+                0 
+            } else 0
+            
+            // 3. Calculate Reality Ratio
+            // If today: use minutes since midnight. If past: use 1440 (24h).
+            val totalMinutesAvailable = if (diaryDate == LocalDate.now()) {
+                val now = java.time.LocalTime.now()
+                (now.hour * 60) + now.minute
+            } else {
+                1440
+            }
+            
+            val phonelessMinutes = (totalMinutesAvailable - screenTimeMinutes).coerceAtLeast(0)
+            val realityRatio = if (totalMinutesAvailable > 0) {
+                (phonelessMinutes * 100) / totalMinutesAvailable
+            } else 0
+            
+            // 4. Calculate XP (Bonus/Penalty)
             if (limitMinutes > 0) {
                 if (screenTimeMinutes > limitMinutes) {
                     val over = screenTimeMinutes - limitMinutes
@@ -673,19 +722,34 @@ class NightlyProtocolExecutor(
                 }
             }
             
-            val details = "${screenTimeMinutes}m used (XP: ${if (screenTimeXpDelta >= 0) "+" else ""}$screenTimeXpDelta)"
+            val details = "${screenTimeMinutes}m • $unlocks Unlocks • $realityRatio% Reality"
             
-            // Build resultJson
+            // Build resultJson with ALL metrics
             val resultJson = JSONObject().apply {
+                put("input", JSONObject().apply {
+                    put("limitMinutes", limitMinutes)
+                    put("date", diaryDate.toString())
+                })
+                put("output", JSONObject().apply {
+                    put("usedMinutes", screenTimeMinutes)
+                    put("limitMinutes", limitMinutes)
+                    put("xpDelta", screenTimeXpDelta)
+                    put("unlocks", unlocks)
+                    put("streakMinutes", streakMins)
+                    put("phonelessMinutes", phonelessMinutes)
+                    put("realityRatio", realityRatio)
+                    put("steps", steps)
+                    put("sleepInfo", sleepInfo)
+                })
+                // Legacy compatibility
                 put("usedMinutes", screenTimeMinutes)
-                put("limitMinutes", limitMinutes)
                 put("xpDelta", screenTimeXpDelta)
             }.toString()
             
-            listener.onStepCompleted(STEP_CALC_SCREEN_TIME, "Screen Time Calculated", details)
+            listener.onStepCompleted(STEP_CALC_SCREEN_TIME, "Health Metrics Calculated", details)
             saveStepState(context, diaryDate, STEP_CALC_SCREEN_TIME, StepProgress.STATUS_COMPLETED, details, resultJson)
         } catch (e: Exception) {
-            listener.onError(STEP_CALC_SCREEN_TIME, "Screen Time Failed: ${e.message}")
+            listener.onError(STEP_CALC_SCREEN_TIME, "Health Calc Failed: ${e.message}")
             saveStepState(context, diaryDate, STEP_CALC_SCREEN_TIME, StepProgress.STATUS_ERROR, e.message)
         }
     }
@@ -739,12 +803,37 @@ class NightlyProtocolExecutor(
             return
         }
         
+        // Prepare Health Data from Step 3 (reuse logic)
+        var healthDataStr = "No health data collected."
+        val step3Data = loadStepData(context, diaryDate, STEP_CALC_SCREEN_TIME)
+        if (step3Data.resultJson != null) {
+            try {
+                val json = JSONObject(step3Data.resultJson)
+                val used = json.optInt("usedMinutes", 0)
+                val unlocks = json.optInt("unlocks", 0)
+                val steps = json.optLong("steps", 0)
+                val sleep = json.optString("sleepInfo", "No data")
+                val ratio = json.optInt("realityRatio", 0)
+                val streak = json.optInt("streakMinutes", 0)
+                
+                healthDataStr = """
+                    - Screen Time: ${used / 60}h ${used % 60}m
+                    - Reality Ratio: $ratio% (Phoneless Time)
+                    - Unlocks: $unlocks
+                    - Longest Focus Streak: ${streak / 60}h ${streak % 60}m
+                    - Steps: $steps
+                    - Sleep: $sleep
+                """.trimIndent()
+            } catch (e: Exception) { }
+        }
+
         try {
             generatedQuestions = NightlyAIHelper.generateQuestions(
                 context = context,
                 modelString = nightlyModel,
                 userIntroduction = userIntro ?: "",
-                daySummary = summary
+                daySummary = summary,
+                healthData = healthDataStr
             )
         } catch (e: Exception) {
             generatedQuestions = getFallbackQuestions()
@@ -833,10 +922,10 @@ class NightlyProtocolExecutor(
         if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
             try {
                 val json = JSONObject(stepData.resultJson)
-                val savedDocId = json.optString("docId", null)
-                val savedUrl = json.optString("docUrl", null)
+                val savedDocId = json.optString("docId")
+                val savedUrl = json.optString("docUrl")
                 
-                if (savedDocId != null) {
+                if (savedDocId.isNotEmpty()) {
                     diaryDocId = savedDocId
                     TerminalLogger.log("Nightly: Step 5 restored diaryDocId from DB: $savedDocId")
                     // Notify UI with the link
@@ -882,20 +971,57 @@ class NightlyProtocolExecutor(
              return
         }
         
+        // Prepare Health Data from Step 3
+        var healthDataStr = "No health data collected."
+        val step3Data = loadStepData(context, diaryDate, STEP_CALC_SCREEN_TIME)
+        if (step3Data.resultJson != null) {
+            try {
+                val json = JSONObject(step3Data.resultJson)
+                val used = json.optInt("usedMinutes", 0)
+                val unlocks = json.optInt("unlocks", 0)
+                val steps = json.optLong("steps", 0)
+                val sleep = json.optString("sleepInfo", "No data")
+                val ratio = json.optInt("realityRatio", 0)
+                val streak = json.optInt("streakMinutes", 0)
+                
+                healthDataStr = """
+                    - Screen Time: ${used / 60}h ${used % 60}m
+                    - Reality Ratio: $ratio% (Phoneless Time)
+                    - Unlocks: $unlocks
+                    - Longest Focus Streak: ${streak / 60}h ${streak % 60}m
+                    - Steps: $steps
+                    - Sleep: $sleep
+                """.trimIndent()
+            } catch (e: Exception) {
+                healthDataStr = "Error parsing health data."
+            }
+        }
+        
         try {
             generatedQuestions = NightlyAIHelper.generateQuestions(
                 context = context,
                 modelString = nightlyModel,
                 userIntroduction = userIntro ?: "",
-                daySummary = summary
+                daySummary = summary,
+                healthData = healthDataStr
             )
             listener.onQuestionsReady(generatedQuestions)
             
             // Build resultJson for persistence
             val resultJson = JSONObject().apply {
+                put("input", JSONObject().apply {
+                    put("daySummarySnippet", summary.toString().take(1000))
+                    put("healthDataSnippet", healthDataStr.take(1000))
+                    put("model", nightlyModel)
+                    put("userIntro", userIntro?.take(500))
+                })
+                put("output", JSONObject().apply {
+                    put("questions", JSONArray(generatedQuestions))
+                    put("count", generatedQuestions.size)
+                    put("source", "ai")
+                })
+                // Legacy compatibility
                 put("questions", JSONArray(generatedQuestions))
-                put("count", generatedQuestions.size)
-                put("source", "ai")
             }.toString()
             
             val details = "${generatedQuestions.size} AI Questions"
@@ -1054,6 +1180,16 @@ class NightlyProtocolExecutor(
                 
                 // Build resultJson for persistence
                 val resultJson = JSONObject().apply {
+                    put("input", JSONObject().apply {
+                        put("title", diaryTitle)
+                        put("folderId", diaryFolderId)
+                        put("questionsCount", generatedQuestions.size)
+                    })
+                    put("output", JSONObject().apply {
+                        put("docId", docId)
+                        put("docUrl", processedUrl)
+                    })
+                    // Legacy compatibility
                     put("docId", docId)
                     put("docUrl", processedUrl)
                     put("title", diaryTitle)
@@ -1167,12 +1303,26 @@ class NightlyProtocolExecutor(
                 reflectionXp = result.xp
                 val details = "Accepted! XP: ${result.xp}. \"${result.feedback}\""
                 
+                // CRITICAL: Save directly to XPManager (Daily Stats) AND NightlyRepository (Session Log)
+                // This ensures Step 7 (Finalize) reads the correct value from DB.
+                XPManager.setReflectionXP(context, result.xp, diaryDate.toString())
+                NightlyRepository.setReflectionXp(context, diaryDate, result.xp)
+                
                 // Build resultJson for persistence
                 val resultJson = JSONObject().apply {
+                    put("input", JSONObject().apply {
+                        put("diarySnippet", content.take(1000) + (if (content.length > 1000) "..." else ""))
+                        put("model", nightlyModel)
+                    })
+                    put("output", JSONObject().apply {
+                        put("accepted", true)
+                        put("xp", result.xp)
+                        put("feedback", result.feedback)
+                    })
+                    // Legacy compatibility
                     put("accepted", true)
                     put("xp", result.xp)
                     put("feedback", result.feedback)
-                    put("content", content) // Store input for "Completed" check
                 }.toString()
                 
                 listener.onStepCompleted(STEP_ANALYZE_REFLECTION, "Reflection Accepted", details)
@@ -1234,13 +1384,21 @@ class NightlyProtocolExecutor(
             
             // Build resultJson
             val resultJson = JSONObject().apply {
-                put("diaryXp", 50) 
-                put("reflectionXp", finalStats.reflectionXP)
-                put("sessionXp", finalStats.sessionXP)
-                put("tapasyaXp", finalStats.tapasyaXP)
-                put("taskXp", finalStats.taskXP)
-                put("screenTimeXp", finalStats.screenTimeXP) // Bonus
-                put("penaltyXp", finalStats.penaltyXP)
+                put("input", JSONObject().apply {
+                    put("cloudEventsCount", mappedEvents.size)
+                    put("cloudEventsSummary", mappedEvents.joinToString { it.title }.take(500))
+                })
+                put("output", JSONObject().apply {
+                    put("diaryXp", 50) 
+                    put("reflectionXp", finalStats.reflectionXP)
+                    put("sessionXp", finalStats.sessionXP)
+                    put("tapasyaXp", finalStats.tapasyaXP)
+                    put("taskXp", finalStats.taskXP)
+                    put("screenTimeXp", finalStats.screenTimeXP) 
+                    put("penaltyXp", finalStats.penaltyXP)
+                    put("totalXp", finalStats.totalDailyXP)
+                })
+                // Legacy compatibility
                 put("totalXp", finalStats.totalDailyXP)
             }.toString()
             
@@ -1340,6 +1498,15 @@ class NightlyProtocolExecutor(
             
             // Build resultJson for persistence
             val resultJson = JSONObject().apply {
+                put("input", JSONObject().apply {
+                    put("title", title)
+                    put("folderId", planFolderId)
+                })
+                put("output", JSONObject().apply {
+                    put("docId", planId)
+                    put("docUrl", docUrl)
+                })
+                // Legacy compatibility
                 put("docId", planId)
                 put("docUrl", docUrl)
                 put("title", title)
@@ -1372,7 +1539,18 @@ class NightlyProtocolExecutor(
             val step9Json = JSONObject(step9Data.resultJson)
             val tasks = step9Json.optJSONArray("tasks") ?: JSONArray()
             val events = step9Json.optJSONArray("events") ?: JSONArray()
-            val wakeupTime = step9Json.optString("wakeupTime", "")
+            val wakeupTime = step9Json.optString("wakeupTime")
+            val sleepStartTime = step9Json.optString("sleepStartTime")
+            
+            // Persist Sleep/Wake times for global access (Bedtime Mode, etc.)
+            val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
+            prefs.edit().apply {
+                putString("planner_wakeup_time", wakeupTime)
+                putString("planner_sleep_time", sleepStartTime)
+                if (sleepStartTime.isNotEmpty()) {
+                    TerminalLogger.log("Nightly: Saved planned sleep time: $sleepStartTime")
+                }
+            }.apply()
             
             val createdItems = JSONArray() // Moved up
             val nextDay = diaryDate.plusDays(1)
@@ -1501,9 +1679,9 @@ class NightlyProtocolExecutor(
                 try {
                     val taskObj = tasks.getJSONObject(i)
                     val title = taskObj.optString("title", "").trim()
-                    val notes = taskObj.optString("notes", null)
+                    val notes = taskObj.optString("notes")
                     val rawListId = taskObj.optString("taskListId", "@default")
-                    val startTime = taskObj.optString("startTime", null)
+                    val startTime = taskObj.optString("startTime")
                     
                     taskLog.put("inputTitle", title)
                     taskLog.put("inputStartTime", startTime)
@@ -1558,7 +1736,7 @@ class NightlyProtocolExecutor(
                     val title = eventObj.optString("title", "").trim()
                     val startTime = eventObj.optString("startTime", "")
                     val endTime = eventObj.optString("endTime", "")
-                    val description = eventObj.optString("description", null)
+                    val description = eventObj.optString("description")
                     
                     eventLog.put("inputTitle", title)
                     eventLog.put("inputTime", "$startTime - $endTime")
@@ -1603,6 +1781,18 @@ class NightlyProtocolExecutor(
             
             // Build resultJson
             val resultJson = JSONObject().apply {
+                put("input", JSONObject().apply {
+                    put("tasksCount", tasks.length())
+                    put("eventsCount", events.length())
+                    put("wakeupTime", wakeupTime)
+                    put("sleepStartTime", sleepStartTime)
+                })
+                put("output", JSONObject().apply {
+                    put("tasksCreated", tasksCreated)
+                    put("eventsCreated", eventsCreated)
+                    put("items", createdItems)
+                })
+                // Legacy compatibility
                 put("tasksCreated", tasksCreated)
                 put("eventsCreated", eventsCreated)
                 put("items", createdItems)
@@ -1611,10 +1801,59 @@ class NightlyProtocolExecutor(
             listener.onStepCompleted(STEP_PROCESS_PLAN, "Plan Processed", details)
             saveStepState(context, diaryDate, STEP_PROCESS_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
             
+            // 5. GLOBAL SYNC: Update Bedtime Start/End Times
+            syncBedtime(wakeupTime, sleepStartTime)
+            
         } catch (e: Exception) {
             listener.onError(STEP_PROCESS_PLAN, "Process Failed: ${e.message}")
             saveStepState(context, diaryDate, STEP_PROCESS_PLAN, StepProgress.STATUS_ERROR, e.message)
         }
+    }
+
+    private fun syncBedtime(wakeupTimeStr: String, sleepTimeStr: String) {
+        try {
+            if (wakeupTimeStr.isEmpty() && sleepTimeStr.isEmpty()) return
+            
+            val prefs = com.neubofy.reality.utils.SavedPreferencesLoader(context)
+            val bedtime = prefs.getBedtimeData()
+            var modified = false
+            
+            if (sleepTimeStr.isNotEmpty()) {
+                val mins = timeToMinutes(sleepTimeStr)
+                if (mins >= 0) {
+                    bedtime.startTimeInMins = mins
+                    modified = true
+                }
+            }
+            
+            if (wakeupTimeStr.isNotEmpty()) {
+                val mins = timeToMinutes(wakeupTimeStr)
+                if (mins >= 0) {
+                    bedtime.endTimeInMins = mins
+                    modified = true
+                }
+            }
+            
+            if (modified) {
+                // Ensure enabled if we are syncing from protocol
+                bedtime.isEnabled = true
+                prefs.saveBedtimeData(bedtime)
+                TerminalLogger.log("Nightly: Bedtime Synced -> Start: $sleepTimeStr, End: $wakeupTimeStr")
+            }
+        } catch (e: Exception) {
+            TerminalLogger.log("Nightly: Bedtime sync error - ${e.message}")
+        }
+    }
+
+    private fun timeToMinutes(timeStr: String): Int {
+        return try {
+            val parts = timeStr.trim().split(":")
+            if (parts.size >= 2) {
+                val h = parts[0].toInt()
+                val m = parts[1].toInt()
+                (h * 60) + m
+            } else -1
+        } catch (e: Exception) { -1 }
     }
 
     
@@ -1823,18 +2062,28 @@ class NightlyProtocolExecutor(
                 val details = "${tasks.length()} tasks, ${events.length()} events extracted"
                 val mentorship = json.optString("mentorship", "No advice generated.")
                 val wakeupTime = json.optString("wakeupTime", "")
+                val sleepStartTime = json.optString("sleepStartTime", "")
                 
                 val resultJson = JSONObject().apply {
+                    put("input", JSONObject().apply {
+                        put("planContent", planContent)
+                        put("model", nightlyModel)
+                        put("planDocId", planId)
+                    })
+                    put("output", JSONObject().apply {
+                        put("tasks", tasks)
+                        put("events", events)
+                        put("mentorship", mentorship)
+                        put("wakeupTime", wakeupTime)
+                        put("sleepStartTime", sleepStartTime)
+                    })
+                    // Legacy compatibility (DO NOT CHANGE THESE KEYS)
                     put("tasks", tasks)
                     put("events", events)
-                    put("mentorship", mentorship)
                     put("wakeupTime", wakeupTime)
-                    put("planId", planId)
+                    put("sleepStartTime", sleepStartTime)
                     put("rawResponse", aiResponse)
                     put("sanitizedJson", jsonStr)
-                    put("planSnippet", if (planContent.length > 500) planContent.take(500) + "..." else planContent)
-                    put("tasksCount", tasks.length())
-                    put("eventsCount", events.length())
                 }.toString()
                 
                 listener.onStepCompleted(STEP_GENERATE_PLAN, "Plan Parsed", details)
@@ -2040,193 +2289,100 @@ class NightlyProtocolExecutor(
         }
     }
 
-    private suspend fun calculateReflection(diaryContent: String, qualityXP: Int) {
-        // Reuse step7 logic but ensure we use the passed qualityXP if needed
-        // Since step7_finalizeXp reads from prefs/memory which step6 writes to, 
-        // we can essentially just run step7_finalizeXp logic here, but forcing qualityXP update if needed.
-        
-        // Update reflectionXp in case it differed (though it shouldn't if flow is correct)
-        reflectionXp = qualityXP
-        reflectionXp = qualityXP
-        NightlyRepository.setReflectionXp(context, diaryDate, qualityXP)
-            
-        step7_finalizeXp()
-    }
+    // Removed redundant calculateReflection bridge as per refactor.
+    // Step 6 now saves XP directly, and Step 7 reads it via XPManager/Repository flow.
 
 
     suspend fun getStepDebugData(step: Int): String {
         return withContext(Dispatchers.IO) {
-            val sb = StringBuilder()
             val stepData = loadStepData(context, diaryDate, step)
+            val rawJson = stepData.resultJson ?: return@withContext "Step: ${getStepName(step)}\nStatus: ${getStatusText(stepData.status)}\n\nNo detailed data stored for this step."
             
-            // Common Header
-            sb.append("Step $step: ${getStepName(step)}\n")
-            sb.append("Status: ${getStatusText(stepData.status)}\n")
-            sb.append("────────────────────────\n\n")
-            
-            if (stepData.details != null) {
-                sb.append("MESSAGE: ${stepData.details}\n")
-            }
-            if (stepData.linkUrl != null) {
-                sb.append("LINK: ${stepData.linkUrl}\n")
-            }
-            sb.append("\n")
+            val sb = StringBuilder()
+            sb.appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            sb.appendLine("📌 STEP ${step}: ${getStepName(step).uppercase()}")
+            sb.appendLine("📟 STATUS: ${getStatusText(stepData.status)}")
+            if (!stepData.details.isNullOrEmpty()) sb.appendLine("📝 DETAILS: ${stepData.details}")
+            sb.appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
 
             try {
-                when (step) {
-                    STEP_FETCH_TASKS -> {
-                        val json = stepData.resultJson?.let { JSONObject(it) }
-                        val tasks = json?.optJSONArray("completedTasks")
-                        val due = json?.optJSONArray("dueTasks")
-                        
-                        sb.append("• Resolved Tasks:\n")
-                        if (tasks != null) {
-                            for (i in 0 until tasks.length()) sb.append("  - ✓ ${tasks.getString(i)}\n")
-                        }
-                        sb.append("\n• Pending Tasks:\n")
-                        if (due != null) {
-                            for (i in 0 until due.length()) sb.append("  - ${due.getString(i)}\n")
-                        }
-                        
-                        if (tasks == null && due == null) sb.append("No task data found in DB.")
-                    }
-                    
-                    STEP_FETCH_SESSIONS -> {
-                        val json = stepData.resultJson?.let { JSONObject(it) }
-                        if (json != null) {
-                            sb.append("• Planned: ${json.optLong("plannedMinutes")}m\n")
-                            sb.append("• Effective: ${json.optLong("effectiveMinutes")}m\n")
-                            sb.append("• Sessions: ${json.optInt("sessionCount")}\n")
-                            sb.append("• Calendar Events: ${json.optInt("eventCount")}\n")
-                        } else {
-                            sb.append("No session data summary found.")
-                        }
-                    }
-                    
-                    STEP_CALC_SCREEN_TIME -> {
-                        val json = stepData.resultJson?.let { JSONObject(it) }
-                        sb.append("• Total Screen Time: ${json?.optInt("minutes") ?: 0} mins\n")
-                        sb.append("• XP Delta: ${json?.optInt("xpDelta") ?: 0} XP\n")
-                    }
-                    
-                    STEP_GENERATE_QUESTIONS -> {
-                        val json = stepData.resultJson?.let { JSONObject(it) }
-                        val questions = json?.optJSONArray("questions")
-                        if (questions != null) {
-                            for (i in 0 until questions.length()) sb.append("${i+1}. ${questions.getString(i)}\n\n")
-                        } else {
-                            sb.append("No questions found in result data.")
-                        }
-                    }
-                    
-                    STEP_CREATE_DIARY -> {
-                        sb.append("DIARY DOC ID: $diaryDocId\n")
-                        sb.append("URL: https://docs.google.com/document/d/$diaryDocId/edit\n")
-                    }
-                    
-                    STEP_ANALYZE_REFLECTION -> {
-                        val json = stepData.resultJson?.let { JSONObject(it) }
-                        if (json != null) {
-                            sb.append("XP EARNED: ${json.optInt("xp")}\n")
-                            sb.append("SATISFIED: ${json.optBoolean("satisfied")}\n")
-                            sb.append("FEEDBACK: ${json.optString("feedback")}\n")
-                        }
-                        sb.append("\nDIARY ID USED: $diaryDocId\n")
-                    }
-                    
-                    STEP_FINALIZE_XP -> {
-                        sb.append("XP finalizing completed.\n")
-                    }
-
-                    STEP_CREATE_PLAN_DOC -> {
-                        val id = NightlyRepository.getPlanDocId(context, diaryDate)
-                        sb.append("PLAN DOC ID: $id\n")
-                    }
-                    
-                    STEP_GENERATE_PLAN -> {
-                        val json = stepData.resultJson?.let { JSONObject(it) }
-                        sb.append("INPUT PLAN SNIPPET:\n")
-                        sb.append(json?.optString("planSnippet") ?: "N/A")
-                        sb.append("\n\nAI RAW OUTPUT:\n")
-                        sb.append(json?.optString("rawResponse") ?: "N/A")
-                    }
-
-                    STEP_PROCESS_PLAN -> {
-                        val json = stepData.resultJson?.let { JSONObject(it) }
-                        sb.append("EXECUTION SUMMARY:\n")
-                        sb.append("• Tasks Created: ${json?.optInt("tasksCreated")}\n")
-                        sb.append("• Events Created: ${json?.optInt("eventsCreated")}\n\n")
-                        
-                        val items = json?.optJSONArray("items")
-                        if (items != null && items.length() > 0) {
-                            sb.append("DETAILED LOGS:\n")
-                            for (i in 0 until items.length()) {
-                                val item = items.getJSONObject(i)
-                                val type = item.optString("type")
-                                val status = item.optString("status")
-                                val title = item.optString("inputTitle")
-                                val info = when(type) {
-                                    "TASK" -> "List: ${item.optString("inputList")}, Time: ${item.optString("inputStartTime", "N/A")}"
-                                    "EVENT" -> "Time: ${item.optString("inputTime")}"
-                                    else -> ""
-                                }
-                                
-                                val emoji = if (status.startsWith("SUCCESS")) "✅" else "❌"
-                                sb.append("$emoji [$type] $title\n")
-                                sb.append("   $info\n")
-                                
-                                val warning = item.optString("warning")
-                                if (warning.isNotEmpty()) {
-                                    sb.append("   ⚠️ $warning\n")
-                                }
-                                
-                                if (!status.startsWith("SUCCESS")) {
-                                    sb.append("   Result: $status\n")
-                                }
-                            }
-                        }
-                    }
-
-                    STEP_GENERATE_REPORT -> {
-                        sb.append("INPUTS:\n")
-                        val json = stepData.resultJson?.let { JSONObject(it) }
-                        if (json != null) {
-                            sb.append("- Diary ID: ${json.optString("diaryDocId")}\n")
-                            sb.append("- Diary: ${json.optInt("diaryLength")} chars\n")
-                            val diarySnippet = json.optString("diarySnippet")
-                            if (diarySnippet.isNotEmpty()) sb.append("  Snippet: $diarySnippet\n\n")
-                            
-                            sb.append("- Plan ID: ${json.optString("planDocId")}\n")
-                            sb.append("- Plan: ${json.optInt("planLength")} chars\n")
-                            val planSnippet = json.optString("planSnippet")
-                            if (planSnippet.isNotEmpty()) sb.append("  Snippet: $planSnippet\n\n")
-                            
-                            sb.append("- Day Data (Efficiency): ${json.optString("efficiency")}\n")
-                        }
-                        
-                        sb.append("\nOUTPUT:\n")
-                        val content = NightlyRepository.getReportContent(context, diaryDate)
-                        if (content != null) {
-                            sb.append(content.take(1000) + (if (content.length > 1000) "..." else ""))
-                        } else {
-                            sb.append("Report content is missing from repository.")
-                        }
-                    }
-
-                    STEP_GENERATE_PDF -> {
-                        val pdfId = NightlyRepository.getReportPdfId(context, diaryDate)
-                        sb.append("PDF FILE ID: $pdfId\n")
-                        if (pdfId != null) {
-                            sb.append("Link: https://drive.google.com/file/d/$pdfId/view\n")
-                        }
-                    }
-                    
-                    else -> sb.append("No detailed debug info for this step.")
+                val json = JSONObject(rawJson)
+                
+                // 1. INPUT SECTION
+                if (json.has("input")) {
+                    sb.appendLine("📥 [INPUT DATA]")
+                    val input = json.getJSONObject("input")
+                    formatJsonBlock(input, sb)
+                    sb.appendLine()
                 }
+
+                // 2. OUTPUT SECTION
+                if (json.has("output")) {
+                    sb.appendLine("📤 [OUTPUT DATA]")
+                    val output = json.getJSONObject("output")
+                    formatJsonBlock(output, sb)
+                    sb.appendLine()
+                }
+
+                // 3. LEGACY/OTHER DATA (if not in input/output)
+                val otherKeys = json.keys().asSequence().filter { it != "input" && it != "output" && !it.startsWith("_") }.toList()
+                if (otherKeys.isNotEmpty()) {
+                    sb.appendLine("📋 [OTHER DATA]")
+                    otherKeys.forEach { key ->
+                        val value = json.get(key)
+                        sb.appendLine("  • $key: $value")
+                    }
+                    sb.appendLine()
+                }
+
+                // 4. METADATA (Internal)
+                sb.appendLine("⚙️ [RAW JSON REFERENCE]")
+                sb.appendLine(json.toString())
+
             } catch (e: Exception) {
-                sb.append("Error parsing debug data: ${e.message}")
+                sb.appendLine("❌ [FORMATTING ERROR]")
+                sb.appendLine("Failed to parse structure: ${e.message}")
+                sb.appendLine("\n[RAW DATA]")
+                sb.appendLine(rawJson)
             }
             sb.toString()
+        }
+    }
+
+    private fun formatJsonBlock(json: JSONObject, sb: StringBuilder) {
+        val keys = json.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            val value = json.get(key)
+            
+            if (value is JSONArray) {
+                sb.appendLine("  • $key (${value.length()} items):")
+                for (i in 0 until value.length()) {
+                    val item = value.get(i)
+                    if (item is JSONObject) {
+                        // For structured items (like tasks/events)
+                        val title = item.optString("title").ifEmpty { item.optString("inputTitle") }
+                        val status = item.optString("status")
+                        val prefix = if (status == "SUCCESS") "✅" else if (status.startsWith("FAILED") || status.startsWith("ERROR")) "❌" else "○"
+                        sb.appendLine("    $prefix $title")
+                        
+                        // Show extra info for processed items
+                        val type = item.optString("type")
+                        if (type == "TASK") {
+                             val list = item.optString("inputList")
+                             val time = item.optString("inputStartTime")
+                             if (list.isNotEmpty() || time.isNotEmpty()) sb.appendLine("       └ $list @ $time")
+                        }
+                    } else {
+                        sb.appendLine("    - $item")
+                    }
+                }
+            } else {
+                // Shorten very long strings for readability (like raw responses)
+                val valStr = value.toString()
+                val displayVal = if (valStr.length > 500) valStr.take(500) + "... [truncated]" else valStr
+                sb.appendLine("  • $key: $displayVal")
+            }
         }
     }
 
@@ -2323,26 +2479,37 @@ class NightlyProtocolExecutor(
             
             // 6. Save results with detailed snippets for debug transparency
             val resultJson = JSONObject().apply {
+                put("input", JSONObject().apply {
+                    put("diarySnippet", if (diaryContent.length > 1000) diaryContent.take(1000) + "..." else diaryContent)
+                    put("planSnippet", if (planContent.length > 1000) planContent.take(1000) + "..." else planContent)
+                    put("efficiency", "${summary.totalEffectiveMinutes} / ${summary.totalPlannedMinutes} mins")
+                })
+                put("output", JSONObject().apply {
+                    put("reportLength", report.length)
+                    put("reportSnippet", if (report.length > 1000) report.take(1000) + "..." else report)
+                    put("date", diaryDate.toString())
+                })
+                // Legacy compatibility
                 put("diaryDocId", dId ?: "N/A")
                 put("planDocId", pId ?: "N/A")
-                put("diaryLength", diaryContent.length)
-                put("planLength", planContent.length)
-                put("diarySnippet", if (diaryContent.length > 500) diaryContent.take(500) + "..." else diaryContent)
-                put("planSnippet", if (planContent.length > 500) planContent.take(500) + "..." else planContent)
                 put("efficiency", "${summary.totalEffectiveMinutes} / ${summary.totalPlannedMinutes} mins")
-                put("tasksCompleted", summary.tasksCompleted.size)
-                put("date", diaryDate.toString())
             }.toString()
             
             val details = "Report generated (${report.length} chars)"
             listener.onStepCompleted(STEP_GENERATE_REPORT, "Report Generated", details)
             saveStepState(context, diaryDate, STEP_GENERATE_REPORT, StepProgress.STATUS_COMPLETED, details, resultJson)
             
+            // SMART ALERT
+            com.neubofy.reality.utils.NotificationHelper.showNotification(context, "Nightly: Report Ready", "Analysis complete. Tap to view.", STEP_GENERATE_REPORT)
+            
         } catch (e: Exception) {
             val err = "Step 11 Error: ${e.message}"
             TerminalLogger.log("Nightly Protocol ERROR (Step 11): $err")
             listener.onError(STEP_GENERATE_REPORT, err)
             saveStepState(context, diaryDate, STEP_GENERATE_REPORT, StepProgress.STATUS_ERROR, err)
+            
+            // SMART ALERT ERROR
+            com.neubofy.reality.utils.NotificationHelper.showNotification(context, "Nightly: Failed", "Report generation failed. Checking logs.", STEP_GENERATE_REPORT)
         }
     }
     
@@ -2418,8 +2585,23 @@ class NightlyProtocolExecutor(
             NightlyRepository.saveReportPdfId(context, diaryDate, pdfFileId)
             
             val details = "PDF uploaded: $pdfFileId"
-            listener.onStepCompleted(STEP_GENERATE_PDF, "PDF Created", details, "https://drive.google.com/file/d/$pdfFileId/view")
-            saveStepState(context, diaryDate, STEP_GENERATE_PDF, StepProgress.STATUS_COMPLETED, details)
+            val pdfUrl = "https://drive.google.com/file/d/$pdfFileId/view"
+            listener.onStepCompleted(STEP_GENERATE_PDF, "PDF Created", details, pdfUrl)
+            
+            val resultJson = JSONObject().apply {
+                put("input", JSONObject().apply {
+                    put("reportSnippet", if (reportContent.length > 1000) reportContent.take(1000) + "..." else reportContent)
+                    put("folderId", reportFolderId)
+                })
+                put("output", JSONObject().apply {
+                    put("pdfId", pdfFileId)
+                    put("pdfUrl", pdfUrl)
+                })
+            }.toString()
+            saveStepState(context, diaryDate, STEP_GENERATE_PDF, StepProgress.STATUS_COMPLETED, details, resultJson)
+            
+            // SMART ALERT
+            com.neubofy.reality.utils.NotificationHelper.showNotification(context, "Nightly: PDF Saved", "Report uploaded to Drive.", STEP_GENERATE_PDF)
             
         } catch (e: Exception) {
             val err = "PDF generation failed: ${e.message}"
@@ -2427,8 +2609,9 @@ class NightlyProtocolExecutor(
             e.printStackTrace()
             listener.onError(STEP_GENERATE_PDF, err)
             saveStepState(context, diaryDate, STEP_GENERATE_PDF, StepProgress.STATUS_ERROR, err)
+            
+            // SMART ALERT ERROR
+            com.neubofy.reality.utils.NotificationHelper.showNotification(context, "Nightly: PDF Error", "Failed to create/upload PDF.", STEP_GENERATE_PDF)
         }
     }
-
-
 }

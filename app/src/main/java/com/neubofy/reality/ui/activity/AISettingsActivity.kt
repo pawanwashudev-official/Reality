@@ -7,6 +7,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.neubofy.reality.databinding.ActivityAiSettingsBinding
 import com.neubofy.reality.utils.ThemeManager
+import com.neubofy.reality.utils.ToolRegistry
+import com.neubofy.reality.ui.adapter.ToolToggleAdapter
 import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
 
@@ -16,6 +18,7 @@ class AISettingsActivity : AppCompatActivity() {
     private val providers = listOf("OpenAI", "Gemini", "Groq", "OpenRouter", "Perplexity")
     private lateinit var chatModelsAdapter: com.neubofy.reality.ui.adapter.SavedModelsAdapter
     private lateinit var nightlyModelsAdapter: com.neubofy.reality.ui.adapter.SavedModelsAdapter
+    private lateinit var toolToggleAdapter: ToolToggleAdapter
     
     // Track which section triggered the form
     private var addingForSection: String = "" // "CHAT" or "NIGHTLY"
@@ -32,7 +35,11 @@ class AISettingsActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
-        binding.btnBack.setOnClickListener { finish() }
+        val toolbar = binding.includeHeader.toolbar
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = "AI Model Settings"
+        toolbar.setNavigationOnClickListener { finish() }
 
         // Provider spinner setup
         val adapter = ArrayAdapter(this, com.neubofy.reality.R.layout.spinner_item, providers)
@@ -167,6 +174,40 @@ class AISettingsActivity : AppCompatActivity() {
         }
         
         setupHealthDashboard()
+        setupToolToggles()
+        setupWidgetVoice()
+    }
+    
+    // --- Widget Voice Setting ---
+    private fun setupWidgetVoice() {
+        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+        val isEnabled = prefs.getBoolean("widget_voice_auto", false)
+        binding.switchWidgetVoice.isChecked = isEnabled
+        
+        binding.switchWidgetVoice.setOnCheckedChangeListener { _, checked ->
+            prefs.edit().putBoolean("widget_voice_auto", checked).apply()
+            
+            // Force update widget to refresh PendingIntent
+            val widgetIntent = android.content.Intent(this, com.neubofy.reality.widget.AIChatWidget::class.java)
+            widgetIntent.action = android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE
+            val ids = android.appwidget.AppWidgetManager.getInstance(application).getAppWidgetIds(
+                android.content.ComponentName(application, com.neubofy.reality.widget.AIChatWidget::class.java)
+            )
+            widgetIntent.putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+            sendBroadcast(widgetIntent)
+        }
+    }
+    
+    // --- Tool Toggles ---
+    private fun setupToolToggles() {
+        toolToggleAdapter = ToolToggleAdapter(ToolRegistry.ALL_TOOLS) { toolId, enabled ->
+            ToolRegistry.setToolEnabled(this, toolId, enabled)
+        }
+        binding.recyclerToolToggles.adapter = toolToggleAdapter
+        
+        // Load current states
+        val states = ToolRegistry.ALL_TOOLS.associate { it.id to ToolRegistry.isToolEnabled(this, it.id) }
+        toolToggleAdapter.setEnabledStates(states)
     }
     
     // --- Health Connect ---
@@ -182,9 +223,7 @@ class AISettingsActivity : AppCompatActivity() {
              
              if (hasPerms) {
                  Toast.makeText(this@AISettingsActivity, "Health Access Granted!", Toast.LENGTH_SHORT).show()
-                 refreshHealthDashboard()
              } else {
-                 updateDashboardVisibility(false)
                  Toast.makeText(this@AISettingsActivity, "Health Permissions: $granted", Toast.LENGTH_SHORT).show()
              }
         }
@@ -195,96 +234,25 @@ class AISettingsActivity : AppCompatActivity() {
         val isEnabled = prefs.getBoolean("health_access_enabled", false)
         binding.switchHealthAccess.isChecked = isEnabled
         
-        // Initial visibility check
-        if (isEnabled) {
-            refreshHealthDashboard()
-        } else {
-            updateDashboardVisibility(false)
-        }
-        
+        // Switch listener - Controls "Policy" (Does user WANT this?)
         binding.switchHealthAccess.setOnCheckedChangeListener { _, isChecked ->
              prefs.edit().putBoolean("health_access_enabled", isChecked).apply()
              if (isChecked) {
                  checkAndRequestHealthPermissions()
-             } else {
-                 updateDashboardVisibility(false)
              }
         }
         
-        binding.btnManageHealthPerms.setOnClickListener {
-            lifecycleScope.launch {
-                try {
-                    val intent = android.content.Intent("android.settings.HEALTH_CONNECT_SETTINGS")
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    try {
-                        val intent = android.content.Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS")
-                        startActivity(intent)
-                    } catch (e2: Exception) {
-                        try {
-                            val intent = packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
-                            if (intent != null) {
-                                startActivity(intent)
-                            } else {
-                                val storeIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=com.google.android.apps.healthdata"))
-                                startActivity(storeIntent)
-                            }
-                        } catch (e3: Exception) {
-                            Toast.makeText(this@AISettingsActivity, "Unable to open Health Settings", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-            }
+        // Row Click - Navigate to Dashboard
+        binding.btnHealthAccessRow.setOnClickListener {
+            // Only allow navigation if it's "conceptually" enabled, or just let them go and see the "Enable" prompt there?
+            // User UX: Let them go. The dashboard handles the "Enable" prompt.
+            startActivity(android.content.Intent(this, com.neubofy.reality.ui.activity.HealthDashboardActivity::class.java))
         }
     }
+    
+    // refreshHealthDashboard and updateDashboardVisibility REMOVED (Moved to HealthDashboardActivity)
 
-    private fun refreshHealthDashboard() {
-        if (!com.neubofy.reality.health.HealthManager.isHealthConnectAvailable(this)) return
-
-        val healthManager = com.neubofy.reality.health.HealthManager(this)
-        lifecycleScope.launch {
-            if (!healthManager.hasPermissions()) {
-                updateDashboardVisibility(false)
-                return@launch
-            }
-
-            // Show loading
-            binding.layoutHealthLoading.visibility = android.view.View.VISIBLE
-            binding.gridHealthDashboard.visibility = android.view.View.GONE
-            binding.tvHealthStatus.visibility = android.view.View.GONE
-
-            try {
-                val today = java.time.LocalDate.now()
-                val steps = healthManager.getSteps(today)
-                val calories = healthManager.getCalories(today)
-                val sleep = healthManager.getSleep(today)
-
-                // Update UI
-                binding.tvDashboardSteps.text = if (steps > 0) String.format("%,d", steps) else "0"
-                binding.tvDashboardCalories.text = if (calories > 0) String.format("%.0f kcal", calories) else "0 kcal"
-                binding.tvDashboardSleep.text = if (sleep.contains("m")) sleep.split("\n")[0] else "No data"
-
-                binding.layoutHealthLoading.visibility = android.view.View.GONE
-                binding.gridHealthDashboard.visibility = android.view.View.VISIBLE
-            } catch (e: Exception) {
-                binding.layoutHealthLoading.visibility = android.view.View.GONE
-                binding.tvHealthStatus.visibility = android.view.View.VISIBLE
-                binding.tvHealthStatus.text = "Error fetching data"
-            }
-        }
-    }
-
-    private fun updateDashboardVisibility(granted: Boolean) {
-        if (granted) {
-            binding.tvHealthStatus.visibility = android.view.View.GONE
-            binding.gridHealthDashboard.visibility = android.view.View.VISIBLE
-        } else {
-            binding.tvHealthStatus.visibility = android.view.View.VISIBLE
-            binding.tvHealthStatus.text = "Enable access to view dashboard"
-            binding.gridHealthDashboard.visibility = android.view.View.GONE
-            binding.layoutHealthLoading.visibility = android.view.View.GONE
-        }
-    }
+    // Old Dashboard Logic Removed (Moved to HealthDashboardActivity)
     
     private fun checkAndRequestHealthPermissions() {
         if (!com.neubofy.reality.health.HealthManager.isHealthConnectAvailable(this)) return

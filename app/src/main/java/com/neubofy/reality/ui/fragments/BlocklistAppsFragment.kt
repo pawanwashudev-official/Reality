@@ -229,22 +229,33 @@ class BlocklistAppsFragment : Fragment() {
             holder.cbCalendar.isChecked = config.blockInCalendar
             
             // Mode checkbox listeners - save immediately AND refresh service
-            val modeChangeListener = { _: android.widget.CompoundButton, _: Boolean ->
-                val updatedConfig = com.neubofy.reality.Constants.BlockedAppConfig(
-                    packageName = item.packageName,
-                    blockInFocus = holder.cbFocus.isChecked,
-                    blockInAutoFocus = holder.cbAutoFocus.isChecked,
-                    blockInBedtime = holder.cbBedtime.isChecked,
-                    blockInCalendar = holder.cbCalendar.isChecked
-                )
-                savedPreferencesLoader.updateBlockedAppConfig(updatedConfig)
-                onConfigChanged() // Trigger refresh
+            val modeChangeListener = object : android.widget.CompoundButton.OnCheckedChangeListener {
+                override fun onCheckedChanged(buttonView: android.widget.CompoundButton, isChecked: Boolean) {
+                    if (!StrictLockUtils.isModificationAllowedFor(requireContext(), StrictLockUtils.FeatureType.BLOCKLIST)) {
+                        // Strict Mode is Active -> Block change
+                        Toast.makeText(requireContext(), "Strict Mode Active. Cannot modify block modes.", Toast.LENGTH_SHORT).show()
+                        buttonView.setOnCheckedChangeListener(null)
+                        buttonView.isChecked = !isChecked // Revert
+                        buttonView.setOnCheckedChangeListener(this) // Re-attach SELF
+                    } else {
+                        val updatedConfig = com.neubofy.reality.Constants.BlockedAppConfig(
+                            packageName = item.packageName,
+                            blockInFocus = holder.cbFocus.isChecked,
+                            blockInAutoFocus = holder.cbAutoFocus.isChecked,
+                            blockInBedtime = holder.cbBedtime.isChecked,
+                            blockInCalendar = holder.cbCalendar.isChecked
+                        )
+                        savedPreferencesLoader.updateBlockedAppConfig(updatedConfig)
+                        onConfigChanged() // Trigger refresh
+                    }
+                }
             }
+
             holder.cbFocus.setOnCheckedChangeListener(modeChangeListener)
             holder.cbAutoFocus.setOnCheckedChangeListener(modeChangeListener)
             holder.cbBedtime.setOnCheckedChangeListener(modeChangeListener)
             holder.cbCalendar.setOnCheckedChangeListener(modeChangeListener)
-            
+
             // Expand button click
             holder.btnExpand.setOnClickListener {
                 if (expandedPositions.contains(position)) {

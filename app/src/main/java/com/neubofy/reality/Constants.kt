@@ -112,6 +112,9 @@ class Constants {
         // Grayscale Mode - REMOVED (requires ADB)
         var isGrayscaleEnabled: Boolean = false,
         
+        // Lock Tapasya Settings (Start Time Edit)
+        var isTapasyaLocked: Boolean = true,
+        
 
     ) {
         companion object {

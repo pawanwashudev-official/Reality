@@ -223,11 +223,8 @@ class AppBlockerService : BaseBlockingService() {
         // This is CRITICAL for scheduled/auto focus to detect when a session starts.
         // Manual focus works via intent, but scheduled focus needs this time-based check.
         // Interval: 60 seconds (was 120 seconds before).
-        val now = System.currentTimeMillis()
-        if (now - lastBackgroundUpdate > 60_000) {
-            lastBackgroundUpdate = now
-            performBackgroundUpdates()
-        }
+        // SMART BATTERY OPTIMIZATION:
+        // Polling removed. We now rely on 'Screen On' broadcasts and 'HeartbeatWorker'.
         scanEventsCount++
         
         if (event == null) return
@@ -404,8 +401,21 @@ class AppBlockerService : BaseBlockingService() {
                 
                 kotlinx.coroutines.withContext(Dispatchers.Main) {
                     // Update blocking status based on BlockCache
-                    isBlockingActive = com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive ||
+                    val wasActive = isBlockingActive
+                    val nowActive = com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive ||
                                        com.neubofy.reality.utils.BlockCache.getBlockedCount() > 0
+                    
+                    isBlockingActive = nowActive
+                    
+                    // SMART ALERT: Transition to Blocked State from Unblocked
+                    if (nowActive && !wasActive) {
+                        com.neubofy.reality.utils.NotificationHelper.showNotification(
+                            applicationContext, 
+                            "Reality Blocker", 
+                            "Schedule Started: Apps are now blocked. Stay focused!", 
+                            3001
+                        )
+                    }
                     
                     val isAnyModeActive = com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive
                     
@@ -1149,11 +1159,9 @@ class AppBlockerService : BaseBlockingService() {
              return false
         }
 
-        // Get blocked websites from saved preferences
-        val blockedWebsites = savedPreferencesLoader.getFocusModeData().blockedWebsites
-        
-        // If no websites are blocked, don't run checks
-        if (blockedWebsites.isEmpty()) {
+        // Optimized: Check Cached List directly
+        // If no websites are blocked, don't run checks (saving battery)
+        if (com.neubofy.reality.utils.BlockCache.blockedWebsites.isEmpty()) {
             return false
         }
         
@@ -1200,11 +1208,8 @@ class AppBlockerService : BaseBlockingService() {
                 if (url != null && url.contains(".")) {
                     val cleanUrl = url.lowercase()
                     
-                    // Get blocked websites from saved preferences (works for schedules too)
-                    val blockedWebsites = savedPreferencesLoader.getFocusModeData().blockedWebsites
-                    
-                    // Check against blocklist (case-insensitive)
-                    val blockedItem = blockedWebsites.find { it.isNotEmpty() && cleanUrl.contains(it.lowercase()) }
+                    // Optimized Check: Use BlockCache (validates session, schedule, blocklist)
+                    val blockedItem = com.neubofy.reality.utils.BlockCache.shouldBlockWebsite(cleanUrl)
                     
                     if (blockedItem != null) {
                         com.neubofy.reality.utils.TerminalLogger.log("BLOCKED SITE: $cleanUrl") 

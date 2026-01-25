@@ -143,4 +143,7 @@
     <color name="interactive_pressed">#1A000000</color>
     <color name="interactive_disabled">#61000000</color>
     
+    <!-- Health - Red -->
+    <color name="accent_health">#FF5252</color>
+
 </resources>

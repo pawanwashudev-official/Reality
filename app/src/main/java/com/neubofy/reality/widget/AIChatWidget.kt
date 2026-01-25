@@ -15,6 +15,8 @@ import android.widget.RemoteViews
 class AIChatWidget : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        // Refresh preferences to ensure latest state is used
+        // Helper method to update all widgets
         for (appWidgetId in appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId)
         }
@@ -22,10 +24,15 @@ class AIChatWidget : AppWidgetProvider() {
 
     companion object {
         fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
-            // Intent to launch AI Chat
-            val intent = Intent(context, AIChatActivity::class.java).apply {
+            // Check if voice auto-trigger is enabled
+            val prefs = context.getSharedPreferences("ai_prefs", Context.MODE_PRIVATE)
+            val voiceAuto = prefs.getBoolean("widget_voice_auto", false)
+            
+            // Intent to launch AI Chat (Popup Version)
+            val intent = Intent(context, com.neubofy.reality.ui.activity.PopupAIChatActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                putExtra("extra_mode", "pro") // Optional: Launch directly into Pro Mode?
+                putExtra("extra_mode", "pro") // Launch directly into Pro Mode
+                putExtra("voice_auto", voiceAuto) // Auto-trigger voice if enabled
             }
             
             val pendingIntent = PendingIntent.getActivity(
