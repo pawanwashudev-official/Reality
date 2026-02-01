@@ -316,7 +316,7 @@
                         android:id="@+id/tv_screen_limit_info"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="• Under limit: Bonus XP\n• Over limit: Penalty XP"
+                        android:text="• Under limit: +3 XP/min\n• Over limit: -3 XP/min"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:textSize="11sp"
                         android:layout_marginTop="8dp"/>

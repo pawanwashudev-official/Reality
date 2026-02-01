@@ -436,7 +436,6 @@
                                     android:textColor="?attr/colorOnSurface"
                                     android:layout_marginTop="2dp"/>
                             </LinearLayout>
-
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
                 </GridLayout>

@@ -1,75 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000">
+    tools:context=".ui.activity.BlockActivity">
 
-    <!-- Abstract Background Blob (Optional, simpler solid black for now) -->
-    
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:padding="24dp">
+    <!-- The background is applied by BaseActivity to window.decorView -->
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_block"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="32dp"
+        app:cardCornerRadius="32dp"
+        app:cardElevation="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:gravity="center"
-            android:background="@drawable/glass_card_bg"
+            android:orientation="vertical"
             android:padding="32dp">
 
             <ImageView
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_marginBottom="24dp"
                 android:src="@drawable/baseline_block_24"
-                app:tint="#FF5252"
-                android:layout_marginBottom="24dp" />
+                app:tint="?attr/colorError" />
 
             <TextView
                 android:id="@+id/tvMessage"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:gravity="center"
                 android:text="Stay Focused."
                 android:textColor="?attr/colorOnSurface"
                 android:textSize="28sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:layout_marginBottom="16dp" />
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvReason"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="32dp"
+                android:gravity="center"
                 android:text="Blocked by Focus Mode"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                android:textSize="14sp"
-                android:gravity="center"
-                android:layout_marginBottom="32dp" />
+                android:textSize="14sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnHome"
+                style="@style/Widget.Material3.Button"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="64dp"
+                android:layout_marginBottom="16dp"
                 android:text="Go Home"
-                android:textColor="#000000"
-                app:backgroundTint="#FFFFFF"
-                app:cornerRadius="28dp"
-                android:layout_marginBottom="12dp" />
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="32dp" />
 
-            <TextView
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEmergency"
+                style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Emergency Access"
-                android:textColor="#80FFFFFF"
-                android:textSize="14sp"
-                android:padding="8dp" />
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="14sp" />
 
         </LinearLayout>
-    </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
-</FrameLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
+

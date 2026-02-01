@@ -38,6 +38,7 @@ class PromptEditorActivity : AppCompatActivity() {
         setupInsets()
         parseIntent()
         setupToolbar()
+        setupSaveButton()
         loadCurrentPrompt()
     }
 
@@ -86,16 +87,18 @@ class PromptEditorActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener { finish() }
         binding.toolbar.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
-                R.id.action_save -> {
-                    savePrompt()
-                    true
-                }
                 R.id.action_reset -> {
                     resetPrompt()
                     true
                 }
                 else -> false
             }
+        }
+    }
+    
+    private fun setupSaveButton() {
+        binding.btnSavePrompt.setOnClickListener {
+            savePrompt()
         }
     }
 

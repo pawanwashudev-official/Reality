@@ -15,6 +15,7 @@ import android.widget.SearchView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -24,7 +25,7 @@ import kotlinx.coroutines.withContext
 import com.neubofy.reality.R
 import com.neubofy.reality.databinding.ActivitySelectAppsBinding
 
-class SelectAppsActivity : AppCompatActivity() {
+class SelectAppsActivity : BaseActivity() {
 
     private lateinit var binding: ActivitySelectAppsBinding
     private lateinit var selectedAppList: HashSet<String>

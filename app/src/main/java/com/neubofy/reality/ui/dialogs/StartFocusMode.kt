@@ -44,6 +44,7 @@ class StartFocusMode(private val loader: SavedPreferencesLoader, private val onP
                 )
                 loader.saveFocusModeData(newData)
                 sendRefreshRequest(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE)
+                android.widget.Toast.makeText(requireContext(), "Focus Started: ${totalMs / 60000} mins", android.widget.Toast.LENGTH_SHORT).show()
                 
                 NotificationTimerManager(requireContext()).startTimer(totalMs)
                 onPositiveButtonPressed()

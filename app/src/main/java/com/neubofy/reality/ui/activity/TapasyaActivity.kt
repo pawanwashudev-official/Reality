@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -24,7 +25,7 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class TapasyaActivity : AppCompatActivity() {
+class TapasyaActivity : BaseActivity() {
 
     private lateinit var binding: ActivityTapasyaBinding
     private lateinit var sessionAdapter: TapasyaSessionAdapter
@@ -56,9 +57,8 @@ class TapasyaActivity : AppCompatActivity() {
     private lateinit var calendarAdapter: com.neubofy.reality.ui.adapter.CalendarEventAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        ThemeManager.applyTheme(this)
-        ThemeManager.applyAccentTheme(this)
         super.onCreate(savedInstanceState)
+
         enableEdgeToEdge()
         binding = ActivityTapasyaBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -617,8 +617,8 @@ class TapasyaActivity : AppCompatActivity() {
                 startTime = todayStart + (uEvent.startTimeMins * 60 * 1000L),
                 endTime = todayStart + (uEvent.endTimeMins * 60 * 1000L),
                 color = if (uEvent.source == com.neubofy.reality.data.EventSource.MANUAL) 
-                            android.graphics.Color.parseColor("#4CAF50") // Green for Focus
-                        else android.graphics.Color.parseColor("#2196F3"), // Blue for Others
+                            ThemeManager.getSuccessColor(this@TapasyaActivity) ?: android.graphics.Color.parseColor("#4CAF50")
+                        else ThemeManager.getInfoColor(this@TapasyaActivity) ?: android.graphics.Color.parseColor("#2196F3"),
                 location = null,
                 isInternal = true
             )

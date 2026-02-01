@@ -8,12 +8,13 @@
     tools:context=".ui.activity.AIChatActivity">
 
     <!-- Main Content -->
+    <!-- Main Content -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="?attr/colorSurface">
 
-        <!-- Popup Header (Hidden by default) -->
+        <!-- Popup Header (Hidden by default, used by PopupAIChatActivity) -->
         <LinearLayout
             android:id="@+id/popup_header"
             android:layout_width="match_parent"
@@ -61,7 +62,7 @@
                 android:tooltipText="Close"/>
         </LinearLayout>
 
-        <!-- Main Toolbar (Moved below popup header) -->
+        <!-- Clean Toolbar (Menu + New Chat Only) -->
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
@@ -86,48 +87,24 @@
                     android:src="@drawable/baseline_menu_24"
                     app:tint="?attr/colorOnSurface" />
 
-                <androidx.appcompat.widget.AppCompatSpinner
-                    android:id="@+id/spinner_chat_model"
+                <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginStart="8dp" />
-                    
-                <!-- Removed Space, Spinner takes space -->
+                    android:text="Reality"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:textColor="?attr/colorOnSurface"/>
 
-                <com.google.android.material.button.MaterialButtonToggleGroup
-                    android:id="@+id/mode_toggle_group"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:singleSelection="true"
-                    app:selectionRequired="true"
-                    app:checkedButton="@id/btn_mode_normal">
-                    
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_mode_normal"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Normal"
-                        android:textSize="12sp"
-                        android:minHeight="36dp"
-                        android:padding="0dp"/>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_mode_pro"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Pro"
-                        android:textSize="12sp"
-                        android:minHeight="36dp"
-                        android:padding="0dp"/>
-                </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                <Space
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1" />
+                <ImageButton
+                    android:id="@+id/btn_settings"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="AI Settings"
+                    android:src="@drawable/baseline_settings_24"
+                    app:tint="?attr/colorOnSurface" />
 
                 <ImageButton
                     android:id="@+id/btn_new_chat"
@@ -150,75 +127,98 @@
             android:paddingBottom="16dp"
             android:paddingTop="8dp"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-            app:layout_constraintBottom_toTopOf="@+id/input_area"
+            app:layout_constraintBottom_toTopOf="@+id/bottom_container"
             app:layout_constraintTop_toBottomOf="@+id/toolbar"
             tools:listitem="@layout/item_chat_message" />
 
-        <!-- Input Area -->
+        <!-- Bottom Container (Input + Controls) -->
         <LinearLayout
-            android:id="@+id/input_area"
+            android:id="@+id/bottom_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical"
             android:background="?attr/colorSurface"
-            android:orientation="horizontal"
-            android:padding="8dp"
-            android:gravity="bottom"
+            android:paddingBottom="8dp"
             app:layout_constraintBottom_toBottomOf="parent">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="0dp"
+            <!-- Input Row -->
+            <LinearLayout
+                android:id="@+id/input_area"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                app:boxCornerRadiusBottomEnd="24dp"
-                app:boxCornerRadiusBottomStart="24dp"
-                app:boxCornerRadiusTopEnd="24dp"
-                app:boxCornerRadiusTopStart="24dp"
-                app:boxStrokeWidth="0dp"
-                app:boxBackgroundColor="?attr/colorSurfaceVariant"
-                app:hintEnabled="false">
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:gravity="bottom">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_message"
-                    android:layout_width="match_parent"
+                <ImageButton
+                    android:id="@+id/btn_mode"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/baseline_auto_awesome_24"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="?attr/colorOnSurfaceVariant"
+                    android:contentDescription="Toggle Pro Mode"
+                    android:layout_marginEnd="8dp"
+                    android:layout_marginBottom="4dp"/>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:background="@android:color/transparent"
-                    android:hint="Message Reality..."
-                    android:inputType="textCapSentences|textMultiLine"
-                    android:maxLines="5"
-                    android:paddingTop="12dp"
-                    android:paddingBottom="12dp"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:textColor="?attr/colorOnSurface" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:layout_weight="1"
+                    app:boxCornerRadiusBottomEnd="24dp"
+                    app:boxCornerRadiusBottomStart="24dp"
+                    app:boxCornerRadiusTopEnd="24dp"
+                    app:boxCornerRadiusTopStart="24dp"
+                    app:boxStrokeWidth="0dp"
+                    app:boxBackgroundColor="?attr/colorSurfaceVariant"
+                    app:hintEnabled="false">
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/btn_voice"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:contentDescription="Voice Input"
-                android:src="@drawable/baseline_mic_24"
-                app:backgroundTint="?attr/colorSurfaceVariant"
-                app:elevation="0dp"
-                app:fabSize="mini" 
-                app:tint="?attr/colorOnSurfaceVariant" />
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_message"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/transparent"
+                        android:hint="Message Reality..."
+                        android:inputType="textCapSentences|textMultiLine"
+                        android:maxLines="5"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:textColor="?attr/colorOnSurface" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/btn_send"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:contentDescription="Send"
-                android:src="@drawable/baseline_send_24"
-                app:backgroundTint="?attr/colorPrimary"
-                app:elevation="0dp"
-                app:fabSize="mini" 
-                app:tint="?attr/colorOnPrimary" />
-                
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btn_voice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="Voice Input"
+                    android:src="@drawable/baseline_mic_24"
+                    app:backgroundTint="?attr/colorSurfaceVariant"
+                    app:elevation="0dp"
+                    app:fabSize="mini" 
+                    app:tint="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btn_send"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="Send"
+                    android:src="@drawable/baseline_send_24"
+                    app:backgroundTint="?attr/colorPrimary"
+                    app:elevation="0dp"
+                    app:fabSize="mini" 
+                    app:tint="?attr/colorOnPrimary" />
+            </LinearLayout>
+
         </LinearLayout>
 
-        <!-- Thinking Indicator (Hidden by default) -->
+        <!-- Thinking Indicator (Floating above bottom container) -->
         <TextView
             android:id="@+id/tv_thinking"
             android:layout_width="wrap_content"
@@ -233,7 +233,7 @@
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="12sp"
             android:visibility="gone"
-            app:layout_constraintBottom_toTopOf="@+id/input_area"
+            app:layout_constraintBottom_toTopOf="@+id/bottom_container"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginBottom="8dp"/>

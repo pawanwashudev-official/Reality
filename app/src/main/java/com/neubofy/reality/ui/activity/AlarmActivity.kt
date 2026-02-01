@@ -1,5 +1,8 @@
 package com.neubofy.reality.ui.activity
 
+import com.neubofy.reality.ui.base.BaseActivity
+
+
 import android.app.AlarmManager
 import android.app.KeyguardManager
 import android.app.PendingIntent
@@ -19,8 +22,11 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.neubofy.reality.R
 import kotlin.math.abs
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 
-class AlarmActivity : AppCompatActivity() {
+class AlarmActivity : BaseActivity() {
+
 
     private var isHandled = false
     private var autoSnoozeTimer: CountDownTimer? = null
@@ -172,6 +178,13 @@ class AlarmActivity : AppCompatActivity() {
         autoSnoozeTimer?.cancel()
         stopAlarmService()
         
+        // For nightly wakeup alarm, auto-confirm sleep if snoozed (user didn't interact)
+        if (id == "nightly_wakeup" && url == "reality://sleep_verify") {
+            MainScope().launch {
+                com.neubofy.reality.utils.SleepInferenceHelper.autoConfirmSleep(applicationContext)
+            }
+        }
+        
         // Schedule snooze alarm
         scheduleSnoozeAlarm(id, title, url, mins)
         
@@ -233,6 +246,17 @@ class AlarmActivity : AppCompatActivity() {
         }
         
         if (target.isNullOrEmpty()) return
+        
+        // Handle special Reality deep links
+        if (target == "reality://sleep_verify" || target == "reality://smart_sleep") {
+            // Launch MainActivity with sleep verification intent
+            val intent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("action", "smart_sleep")
+            }
+            startActivity(intent)
+            return
+        }
         
         // Check if it's a package name (no slashes, has dots, starts with letter)
         if (target.matches(Regex("^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+$"))) {

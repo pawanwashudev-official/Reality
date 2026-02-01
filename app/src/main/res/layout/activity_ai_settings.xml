@@ -80,6 +80,77 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- ==================== IMAGE GENERATION SETTINGS ==================== -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Image Generation"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_image_models"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:strokeColor="?attr/colorOutline"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                android:layout_marginBottom="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Header row with + button -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Saved Image Models"
+                            android:textSize="14sp"
+                            android:textColor="?attr/colorOnSurface"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_add_image_model"
+                            style="@style/Widget.Material3.Button.TonalButton.Icon"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            app:icon="@drawable/baseline_add_24"
+                            app:iconGravity="textStart"
+                            app:iconPadding="0dp"
+                            app:cornerRadius="20dp"/>
+                    </LinearLayout>
+
+                    <!-- Saved image models list -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recycler_image_models"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="AI uses the selected provider to create images. Images saved to Pictures/Reality folder."
+                android:textSize="12sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:layout_marginBottom="24dp"/>
+
             <!-- ==================== CHAT MODELS CARD ==================== -->
             <TextView
                 android:layout_width="wrap_content"
@@ -147,6 +218,77 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Multiple models can be added. Select one as default for chat features."
+                android:textSize="12sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:layout_marginBottom="24dp"/>
+
+            <!-- ==================== WEB SEARCH ENGINE CARD ==================== -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Web Search Engine"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_search_engines"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:strokeColor="?attr/colorOutline"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                android:layout_marginBottom="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Header row with + button -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Tavily Search API"
+                            android:textSize="14sp"
+                            android:textColor="?attr/colorOnSurface"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_add_search_engine"
+                            style="@style/Widget.Material3.Button.TonalButton.Icon"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            app:icon="@drawable/baseline_add_24"
+                            app:iconGravity="textStart"
+                            app:iconPadding="0dp"
+                            app:cornerRadius="20dp"/>
+                    </LinearLayout>
+
+                    <!-- Saved search engines list -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recycler_search_engines"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="AI uses Tavily for real-time web search. Enter your API key to enable."
                 android:textSize="12sp"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginBottom="24dp"/>
@@ -466,142 +608,6 @@
                 android:layout_marginBottom="24dp"/>
 
             <!-- ==================== ADD MODEL FORM (Hidden by default) ==================== -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_add_model_form"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorPrimary"
-                app:strokeWidth="2dp"
-                app:cardBackgroundColor="?attr/colorSurfaceVariant"
-                android:layout_marginBottom="24dp"
-                android:visibility="gone">
-                
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <!-- Form Title -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="16dp">
-
-                        <TextView
-                            android:id="@+id/tv_form_title"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Add Model"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:textColor="?attr/colorOnSurface"/>
-
-                        <ImageView
-                            android:id="@+id/btn_close_form"
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:padding="6dp"
-                            android:src="@drawable/baseline_close_24"
-                            app:tint="?attr/colorOnSurfaceVariant"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="Close"/>
-                    </LinearLayout>
-
-                    <!-- Provider Spinner -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Provider"
-                        android:textSize="12sp"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:layout_marginBottom="4dp"/>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:cardCornerRadius="8dp"
-                        app:strokeColor="?attr/colorOutline"
-                        app:strokeWidth="1dp"
-                        app:cardBackgroundColor="?attr/colorSurface"
-                        android:layout_marginBottom="12dp">
-
-                        <Spinner
-                            android:id="@+id/spinner_provider"
-                            android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:paddingHorizontal="12dp"/>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <!-- API Key -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="API Key"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                        android:layout_marginBottom="12dp">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/et_api_key"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="textPassword"/>
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- Verify Button -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_verify"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Verify &amp; Fetch Models"
-                        android:textAllCaps="false"
-                        app:cornerRadius="8dp"
-                        android:layout_marginBottom="12dp"/>
-
-                    <!-- Model Spinner (shown after verify) -->
-                    <TextView
-                        android:id="@+id/lbl_select_model"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Select Model"
-                        android:textSize="12sp"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:layout_marginBottom="4dp"
-                        android:visibility="gone"/>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/card_model_spinner"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:cardCornerRadius="8dp"
-                        app:strokeColor="?attr/colorOutline"
-                        app:strokeWidth="1dp"
-                        app:cardBackgroundColor="?attr/colorSurface"
-                        android:layout_marginBottom="16dp"
-                        android:visibility="gone">
-
-                        <Spinner
-                            android:id="@+id/spinner_model"
-                            android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:paddingHorizontal="12dp"/>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <!-- Save Button -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_save_model"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:text="Save Model"
-                        android:textAllCaps="false"
-                        app:cornerRadius="8dp"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

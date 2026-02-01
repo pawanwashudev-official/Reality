@@ -53,6 +53,9 @@
         <!-- Global Glass Dialog -->
         <item name="materialAlertDialogTheme">@style/GlassDialog</item>
         <item name="android:alertDialogTheme">@style/GlassDialog</item>
+        
+        <!-- Global Typography (Outfit) -->
+        <item name="android:fontFamily">@font/outfit</item>
     </style>
 
     <style name="Theme.Reality" parent="Base.Theme.Reality" />

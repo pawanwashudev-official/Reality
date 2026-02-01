@@ -5,9 +5,13 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.databinding.ActivityAboutBinding
+import com.neubofy.reality.utils.UpdateManager
+import android.view.View
+import android.widget.Toast
 
-class AboutActivity : AppCompatActivity() {
+class AboutActivity : BaseActivity() {
 
     private lateinit var binding: ActivityAboutBinding
 
@@ -76,6 +80,21 @@ class AboutActivity : AppCompatActivity() {
         }
         binding.cardSupportUs.setOnClickListener {
             startActivity(Intent(this, SupportUsActivity::class.java))
+        }
+
+        // Update Check
+        binding.cardUpdate.setOnClickListener {
+            binding.progressUpdate.visibility = View.VISIBLE
+            binding.tvUpdateStatus.text = "Checking for updates..."
+            
+            UpdateManager.checkForUpdates(this, silent = false) {
+                // This callback only runs if NO update is found (silent=false)
+                runOnUiThread {
+                    binding.progressUpdate.visibility = View.GONE
+                    binding.tvUpdateStatus.text = "You're on the latest version"
+                    Toast.makeText(this, "Reality is up to date!", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 

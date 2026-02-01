@@ -13,6 +13,9 @@ interface NightlyDao {
     @Query("SELECT * FROM nightly_sessions WHERE date = :date")
     suspend fun getSession(date: String): NightlySession?
 
+    @Query("SELECT * FROM nightly_sessions WHERE date = :date")
+    fun observeSession(date: String): kotlinx.coroutines.flow.Flow<NightlySession?>
+
     @Query("SELECT * FROM nightly_sessions ORDER BY date DESC")
     suspend fun getAllSessions(): List<NightlySession>
 
@@ -28,6 +31,9 @@ interface NightlyDao {
 
     @Query("SELECT * FROM nightly_steps WHERE sessionDate = :date ORDER BY stepId ASC")
     suspend fun getSteps(date: String): List<NightlyStep>
+
+    @Query("SELECT * FROM nightly_steps WHERE sessionDate = :date ORDER BY stepId ASC")
+    fun observeSteps(date: String): kotlinx.coroutines.flow.Flow<List<NightlyStep>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateStep(step: NightlyStep)

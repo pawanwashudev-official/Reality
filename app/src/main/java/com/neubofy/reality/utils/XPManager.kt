@@ -15,9 +15,11 @@ object XPManager {
 
     private const val PREFS_NAME = "xp_prefs"
     private const val PREF_TOTAL_XP = "total_xp"
+    private const val PREF_ACCUMULATED_XP = "accumulated_xp" // The Vault
     private const val PREF_LEVEL = "current_level"
     private const val PREF_STREAK = "current_streak"
     private const val PREF_RETENTION_DAYS = "xp_retention_days"
+    private const val PREF_VAULT_LAST_DATE = "vault_last_date" // Last date added to vault
 
     // Data Class for XP Breakdown
     data class XPBreakdown(
@@ -25,7 +27,7 @@ object XPManager {
         val tapasyaXP: Int = 0,
         val taskXP: Int = 0,
         val sessionXP: Int = 0,
-        val screenTimeXP: Int = 0,
+        val distractionXP: Int = 0,  // Renamed from screenTimeXP
         val reflectionXP: Int = 0,
         val bonusXP: Int = 0,
         val penaltyXP: Int = 0,
@@ -251,22 +253,18 @@ object XPManager {
         return@withContext xp
     }
     
-    // --- Core Logic: Screen Time XP (Bonus/Penalty) ---
+    // --- Core Logic: Distraction Penalty (formerly Screen Time XP) ---
     private suspend fun calculateScreenTimeXP(context: Context, date: String): Pair<Int, Int> = withContext(Dispatchers.IO) {
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val limitMins = prefs.getInt("screen_time_limit_minutes", 0)
         
-        if (limitMins <= 0) return@withContext Pair(0, 0)
-        
-        // We need UsageStats for that specific date.
-        // UsageUtils.getUsageSinceMidnight is for TODAY.
-        // If date != Today, we might not get accurate historical usage easily without UsageStats query.
-        // However, for Nightly Protocol (usually run for 'Yesterday' or 'Today'), we need to be careful.
-        // If user runs nightly for Yesterday, we need Yesterday's usage.
-        // NOTE: StatisticsActivity.getLast7DaysUsage() does this.
-        
-        // Let's implement a helper here or reuse UsageUtils if extended.
-        // For now, assuming Live Refresh (Today) and Nightly (Yesterday/Today).
+        // UNIFIED LOGIC: Use SavedPreferencesLoader to get blocked apps
+        val spLoader = SavedPreferencesLoader(context)
+        val blockedApps = spLoader.loadBlockedApps()
+
+        // If no apps are blocked, no penalty logic applies (unless user wants general screen time limit?)
+        // User requested: "apply logic on those app only... list of app came from blocklist"
+        if (blockedApps.isEmpty()) return@withContext Pair(0, 0)
         
         val dateObj = LocalDate.parse(date)
         val startOfDay = dateObj.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -274,7 +272,7 @@ object XPManager {
         
         // Use UsageStatsManager to get time for that range
         val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? android.app.usage.UsageStatsManager
-        var totalUsedMillis = 0L
+        var totalDistractedMillis = 0L
         
         if (usageStatsManager != null) {
              val stats = usageStatsManager.queryUsageStats(
@@ -282,38 +280,51 @@ object XPManager {
                 startOfDay,
                 endOfDay
             )
-            // Filter logic same as StatisticsActivity (exclude system/launcher)
-             val excludedPrefixes = listOf("com.android.", "android", "com.google.android.inputmethod", "com.sec.android.app.launcher", "com.miui.home", "com.huawei.android.launcher")
              
              for (stat in stats) {
                 if (stat.totalTimeInForeground <= 0) continue
-                if (excludedPrefixes.any { stat.packageName.startsWith(it) }) continue
-                if (stat.packageName.contains("launcher", ignoreCase = true)) continue
-                if (stat.packageName == context.packageName) continue
-                
-                totalUsedMillis += stat.totalTimeInForeground
+                // ONLY count apps in the Blocklist
+                if (blockedApps.contains(stat.packageName)) {
+                    totalDistractedMillis += stat.totalTimeInForeground
+                }
              }
         }
         
-        val usedMins = (totalUsedMillis / 60000).toInt()
+        val distractedMins = (totalDistractedMillis / 60000).toInt()
         
-        var bonus = 0
-        var penalty = 0
+        // Logic: 
+        // If Used > Limit: Penalty
+        // If Used < Limit: Bonus? Or purely penalty for distraction?
+        // User said: "screen time xp is not a normal screen time xp... we apply logic on those app only"
+        // Let's keep the Bonus/Penalty structure but apply it to this "Distracted Time"
         
-        if (usedMins > limitMins) {
-            val over = usedMins - limitMins
-            penalty = (over * 10).coerceAtMost(500)
+        var signedXP = 0
+        
+        if (limitMins > 0) {
+            // New Linear Formula requested by User: 
+            // (Limit - Used) * 3
+            // If Used < Limit -> Postive * 3 -> Bonus
+            // If Used > Limit -> Negative * 3 -> Penalty
+            
+            val diff = limitMins - distractedMins
+            signedXP = diff * 3
+            
+            TerminalLogger.log("DistractionXP Calc: Limit=$limitMins, Used=$distractedMins, Diff=$diff, XP=$signedXP (new x3 formula)")
         } else {
-            val left = limitMins - usedMins
-            bonus = (left * 10).coerceAtMost(500)
+            // Fallback if no limit set? 
+            // If Usage Limit is 0 (disabled?), maybe 0 XP. 
+            // Or if they mean strict "0 minute limit", then (0 - used) * 3 = -Used * 3.
+            // Assuming 0 means "Not Configured" -> 0 XP.
+            signedXP = 0
+            TerminalLogger.log("DistractionXP Calc: No limit set, XP=0")
         }
         
-        // Save to DB (partial update helper)
+        // Save to DB (Unified)
         updateDailyStats(context, date) { current ->
-            current.copy(screenTimeXP = bonus, penaltyXP = penalty)
+            current.copy(distractionXP = signedXP, penaltyXP = 0)
         }
         
-        return@withContext Pair(bonus, penalty)
+        return@withContext Pair(signedXP, 0)
     }
 
     suspend fun calculateSessionXP(context: Context, date: String, externalEvents: List<com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent>? = null): Int = withContext(Dispatchers.IO) {
@@ -368,7 +379,7 @@ object XPManager {
     suspend fun recalculateDailyStats(context: Context, date: String, externalEvents: List<com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent>? = null) {
         calculateTaskXP(context) // Updates taskXP
         calculateSessionXP(context, date, externalEvents) // Updates sessionXP
-        calculateScreenTimeXP(context, date) // Updates screenTimeXP/penaltyXP
+        calculateScreenTimeXP(context, date) // Updates distractionXP
         
         // Re-sum Tapasya XP
         val db = AppDatabase.getDatabase(context)
@@ -421,7 +432,7 @@ object XPManager {
             )
         }
         val totalDaily = updatedBreakdown.tapasyaXP + updatedBreakdown.taskXP + updatedBreakdown.sessionXP + 
-                         updatedBreakdown.screenTimeXP + updatedBreakdown.reflectionXP + updatedBreakdown.bonusXP - updatedBreakdown.penaltyXP
+                         updatedBreakdown.distractionXP + updatedBreakdown.reflectionXP + updatedBreakdown.bonusXP - updatedBreakdown.penaltyXP
                          
         val finalBreakdown = updatedBreakdown.copy(totalDailyXP = totalDaily)
         
@@ -452,6 +463,9 @@ object XPManager {
                 .putInt("today_xp", totalDaily)
                 .apply()
         }
+        
+        // Ring Buffer: Archive expired days to vault and delete
+        archiveExpiredDays(context)
     }
     
     // Recalculate Total XP, Level, and Streak from DB History
@@ -462,13 +476,18 @@ object XPManager {
         var calculatedTotalXP = 0
         var currentStreak = 0
         
-        // Calculate Total
+        // Calculate Total from live DB + Vault
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val vaultXP = prefs.getInt(PREF_ACCUMULATED_XP, 0)
         allStats.forEach { calculatedTotalXP += it.totalXP }
+        
+        // Final Total = Vault (Archived) + Live (DB)
+        calculatedTotalXP += vaultXP
         
         // Calculate Streak (Consecutive days ending today/yesterday)
         // Sort by date desc
         val sortedStats = allStats.sortedByDescending { LocalDate.parse(it.date).toEpochDay() }
-        if (sortedStats.isNotEmpty()) {
+if (sortedStats.isNotEmpty()) {
             val today = LocalDate.now()
             val yesterday = today.minusDays(1)
             
@@ -481,7 +500,7 @@ object XPManager {
                 val isFirstDaySuccessful = if (firstDay.totalPlannedMinutes > 0) {
                     firstDay.totalEffectiveMinutes >= (firstDay.totalPlannedMinutes * 0.75)
                 } else {
-                    firstDay.totalEffectiveMinutes > 0 // Or just true? User said "75% of planned". If 0 planned, maybe any work counts.
+                    firstDay.totalEffectiveMinutes > 0 
                 }
 
                 if (isFirstDaySuccessful) {
@@ -513,7 +532,6 @@ object XPManager {
             }
         }
 
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit()
             .putInt(PREF_TOTAL_XP, calculatedTotalXP)
             .putInt(PREF_STREAK, currentStreak)
@@ -557,7 +575,7 @@ object XPManager {
     }
     
     suspend fun addScreenTimeXP(context: Context, xp: Int, date: String = LocalDate.now().toString()) {
-        updateDailyStats(context, date) { it.copy(screenTimeXP = it.screenTimeXP + xp) }
+        updateDailyStats(context, date) { it.copy(distractionXP = it.distractionXP + xp) }
     }
     
     suspend fun addReflectionXP(context: Context, xp: Int, date: String = LocalDate.now().toString()) {
@@ -634,7 +652,108 @@ object XPManager {
         
         val cutoffDate = LocalDate.now().minusDays(retentionDays.toLong()).toString()
         val db = AppDatabase.getDatabase(context)
-        db.dailyStatsDao().deleteOldStats(cutoffDate)
+        
+        // 1. Archive before delete (The Vault Strategy)
+        // Find all rows older than cutoff
+        // Note: deleteOldStats usually deletes WHERE date < cutoff
+        // We need to SELECT sum(totalXP) WHERE date < cutoff first
+        
+        // Since DAO might not have sum query exposed, let's fetch all and filter in memory (dataset is small, <365 rows likely)
+        val allStats = db.dailyStatsDao().getAllStats()
+        val oldStats = allStats.filter { LocalDate.parse(it.date).isBefore(LocalDate.parse(cutoffDate)) }
+        
+        if (oldStats.isNotEmpty()) {
+            val archivedSum = oldStats.sumOf { it.totalXP }
+            val currentVault = prefs.getInt(PREF_ACCUMULATED_XP, 0)
+            
+            // Add to Vault
+            prefs.edit().putInt(PREF_ACCUMULATED_XP, currentVault + archivedSum).apply()
+            
+            // Now safe to delete
+            db.dailyStatsDao().deleteOldStats(cutoffDate)
+            
+            TerminalLogger.log("XPManager: Archived ${oldStats.size} days ($archivedSum XP) to Vault. New Vault Total: ${currentVault + archivedSum}")
+        }
+        
+        // Recalculate to update UI
+        recalculateGlobalStats(context)
+    }
+
+    /**
+     * RING BUFFER: Archive expired days to vault and delete.
+     * Tracks last archived date to only archive 1 day at a time.
+     */
+    private suspend fun archiveExpiredDays(context: Context) = withContext(Dispatchers.IO) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val retentionDays = prefs.getInt(PREF_RETENTION_DAYS, 7)
+        val cutoffDate = LocalDate.now().minusDays(retentionDays.toLong())
+        
+        val vaultLastDateStr = prefs.getString(PREF_VAULT_LAST_DATE, null)
+        val vaultLastDate = vaultLastDateStr?.let { 
+            try { LocalDate.parse(it) } catch (e: Exception) { null }
+        }
+        
+        val db = AppDatabase.getDatabase(context)
+        val dao = db.dailyStatsDao()
+        val allStats = dao.getAllStats()
+        
+        // Find days that need archiving:
+        // - Date is before cutoff (outside retention window)
+        // - Date is after vaultLastDate (not yet archived)
+        val toArchive = allStats.filter { stat ->
+            val date = LocalDate.parse(stat.date)
+            date.isBefore(cutoffDate) && (vaultLastDate == null || date.isAfter(vaultLastDate))
+        }
+        
+        if (toArchive.isNotEmpty()) {
+            val xpToArchive = toArchive.sumOf { it.totalXP }
+            val currentVault = prefs.getInt(PREF_ACCUMULATED_XP, 0)
+            val newestArchivedDate = toArchive.maxOfOrNull { LocalDate.parse(it.date) }
+            
+            prefs.edit()
+                .putInt(PREF_ACCUMULATED_XP, currentVault + xpToArchive)
+                .putString(PREF_VAULT_LAST_DATE, newestArchivedDate?.toString())
+                .apply()
+            
+            // Delete archived rows
+            dao.deleteOldStats(cutoffDate.toString())
+            
+            TerminalLogger.log("Ring Buffer: Archived ${toArchive.size} days ($xpToArchive XP) to vault. New vault: ${currentVault + xpToArchive}")
+        }
+    }
+
+    /**
+     * UNIFIED LIVE STATS
+     * Single source of truth for UI (Home & Reflection).
+     */
+    data class GamificationStats(
+        val totalXP: Int,
+        val todayXP: Int,
+        val level: Int,
+        val streak: Int,
+        val levelName: String,
+        val nextLevelXP: Int
+    )
+
+    fun getLiveGamificationStats(context: Context): GamificationStats {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val totalXP = prefs.getInt(PREF_TOTAL_XP, 0)
+        val todayXP = prefs.getInt("today_xp", 0)
+        val level = prefs.getInt(PREF_LEVEL, 1)
+        val streak = prefs.getInt(PREF_STREAK, 0)
+        
+        val levels = getAllLevels(context)
+        val currentLvl = levels.find { it.level == level }
+        val nextLvl = levels.find { it.level == level + 1 }
+        
+        return GamificationStats(
+            totalXP = totalXP,
+            todayXP = todayXP,
+            level = level,
+            streak = streak,
+            levelName = currentLvl?.name ?: "Unknown",
+            nextLevelXP = nextLvl?.requiredXP ?: currentLvl?.requiredXP ?: 0
+        )
     }
 
     // --- JSON Helpers ---
@@ -644,7 +763,7 @@ object XPManager {
             put("tapasyaXP", bd.tapasyaXP)
             put("taskXP", bd.taskXP)
             put("sessionXP", bd.sessionXP)
-            put("screenTimeXP", bd.screenTimeXP)
+            put("distractionXP", bd.distractionXP)
             put("reflectionXP", bd.reflectionXP)
             put("bonusXP", bd.bonusXP)
             put("penaltyXP", bd.penaltyXP)
@@ -658,15 +777,24 @@ object XPManager {
         if (json.isEmpty()) return XPBreakdown(date)
         return try {
             val obj = JSONObject(json)
+            
+            // Unification Logic:
+            // Combine legacy bonus/penalty/screenTimeXP fields into unified distractionXP
+            val rawScreenTime = obj.optInt("distractionXP", obj.optInt("screenTimeXP", 0))
+            val legacyBonus = obj.optInt("bonusXP", 0)
+            val legacyPenalty = obj.optInt("penaltyXP", 0)
+            
+            val unifiedScreenTime = rawScreenTime + legacyBonus - legacyPenalty
+            
             XPBreakdown(
                 date = date,
                 tapasyaXP = obj.optInt("tapasyaXP", 0),
                 taskXP = obj.optInt("taskXP", 0),
                 sessionXP = obj.optInt("sessionXP", 0),
-                screenTimeXP = obj.optInt("screenTimeXP", 0),
+                distractionXP = unifiedScreenTime, // Unified Field
                 reflectionXP = obj.optInt("reflectionXP", 0),
-                bonusXP = obj.optInt("bonusXP", 0),
-                penaltyXP = obj.optInt("penaltyXP", 0),
+                bonusXP = 0, // Force 0
+                penaltyXP = 0, // Force 0
                 totalDailyXP = obj.optInt("totalDailyXP", 0),
                 level = obj.optInt("level", 1),
                 streak = obj.optInt("streak", 0)
@@ -692,46 +820,7 @@ object XPManager {
             .apply()
     }
     
-    suspend fun getProjectedDailyXP(context: Context): XPBreakdown = withContext(Dispatchers.IO) {
-        val today = LocalDate.now().toString()
-        val db = AppDatabase.getDatabase(context)
-        val stats = db.dailyStatsDao().getStatsForDate(today)
-        val current = if (stats != null) {
-            parseBreakdown(stats.breakdownJson, today).copy(level = stats.level, streak = stats.streak)
-        } else {
-            XPBreakdown(today, level = getLevel(context), streak = getStreak(context))
-        }
-        
-        // Calculate Screen Time XP Live for UI projection
-        val stLimit = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE).getInt("screen_time_limit_minutes", 0)
-        val stUsedMillis = com.neubofy.reality.utils.UsageUtils.getFocusedAppsUsage(context)
-        val stUsedMins = (stUsedMillis / 60000).toInt()
-        
-        var stXp = 0
-        var penaltyXp = current.penaltyXP
-        
-        if (stLimit > 0) {
-            if (stUsedMins > stLimit) {
-                val over = stUsedMins - stLimit
-                penaltyXp = (over * 10).coerceAtMost(500)
-                stXp = 0
-            } else {
-                val left = stLimit - stUsedMins
-                stXp = (left * 10).coerceAtMost(500)
-                penaltyXp = 0 
-            }
-        }
-        
-        val combined = current.copy(
-            screenTimeXP = stXp,
-            penaltyXP = penaltyXp
-        )
-        
-        val totalDaily = combined.tapasyaXP + combined.taskXP + combined.sessionXP + 
-                         combined.screenTimeXP + combined.reflectionXP + combined.bonusXP - combined.penaltyXP
-                         
-        return@withContext combined.copy(totalDailyXP = totalDaily)
-    }
+    // getProjectedDailyXP removed - was using legacy formula
     
     suspend fun performNightlyReflection(context: Context, date: String) {
         // No-op

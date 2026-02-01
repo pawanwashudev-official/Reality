@@ -1,3 +1,19 @@
+# 🎉 Reality v1.0.3 - Stability Update
+
+**Release Date:** 2026-02-01
+**Build:** 23
+
+### ⚠️ Critical Fixes
+- **Screen Time Crash Fixed**: Resolved a "Null Object" crash in the Nightly Process caused by R8 minification stripping data models. Protected `FocusModeData` and added robust null-safety checks.
+- **UI Insets Glitch Fixed**: Fixed an issue where the status bar and navigation bar spacing would break after navigating between pages. Now enforces pixel-perfect Edge-to-Edge layout on every resume.
+
+### 🛡️ Optimizations
+- **R8 Enabled**: Full code shrinking and obfuscation enabled for a smaller, faster, and more secure app.
+- **Code Hardening**: Extensive ProGuard rules added to protect critical components (Nightly Process, Google APIs, Health Connect, Rooms).
+- **API Cleanliness**: Resolved all deprecated API warnings for Android 11+ (API 30+).
+
+---
+
 # 🎉 Reality v1.0.0 - Initial Release
 
 ## 🛡️ The Ultimate Privacy-First Digital Wellbeing App

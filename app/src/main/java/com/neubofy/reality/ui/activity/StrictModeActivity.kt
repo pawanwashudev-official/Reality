@@ -14,6 +14,7 @@ import android.widget.EditText
 import android.widget.NumberPicker
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -28,7 +29,7 @@ import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
 
-class StrictModeActivity : AppCompatActivity() {
+class StrictModeActivity : BaseActivity() {
     
     private lateinit var binding: ActivityStrictModeSettingsBinding
     private lateinit var prefsLoader: SavedPreferencesLoader

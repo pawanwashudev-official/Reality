@@ -11,11 +11,20 @@ object UsageUtils {
 
     fun hasUsageStatsPermission(context: Context): Boolean {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
-        val mode = appOps.checkOpNoThrow(
-            android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
-            android.os.Process.myUid(),
-            context.packageName
-        )
+        val mode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(
+                android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                context.packageName
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(
+                android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                context.packageName
+            )
+        }
         return mode == android.app.AppOpsManager.MODE_ALLOWED
     }
 
@@ -285,7 +294,11 @@ object UsageUtils {
 
         val prefsLoader = SavedPreferencesLoader(context)
         val focusData = prefsLoader.getFocusModeData()
-        val allSelected = if (focusData.selectedApps.isNotEmpty()) focusData.selectedApps else HashSet(prefsLoader.getFocusModeSelectedApps())
+        // Defensive copy with manual null checks to handle Gson/R8 potential failures
+        val apps = focusData.selectedApps
+        val legacyApps = prefsLoader.getFocusModeSelectedApps()
+        
+        val allSelected = if (apps != null && apps.isNotEmpty()) apps else HashSet(legacyApps)
 
         val affectedPkgs = allSelected.filter { pkg ->
             prefsLoader.getBlockedAppConfig(pkg).blockInFocus
@@ -296,6 +309,22 @@ object UsageUtils {
         val usageMap = getUsageForDate(context, date)
         var total = 0L
         affectedPkgs.forEach { pkg ->
+            total += usageMap[pkg] ?: 0L
+        }
+        return total
+    }
+
+    /**
+     * UNIFIED: Get usage for a specific set of blocked apps on a given date.
+     * Use this when you already have the blocklist from loadBlockedApps().
+     */
+    fun getBlockedAppsUsageForDate(context: Context, date: java.time.LocalDate, blockedApps: Set<String>): Long {
+        if (!hasUsageStatsPermission(context)) return 0L
+        if (blockedApps.isEmpty()) return 0L
+
+        val usageMap = getUsageForDate(context, date)
+        var total = 0L
+        blockedApps.forEach { pkg ->
             total += usageMap[pkg] ?: 0L
         }
         return total

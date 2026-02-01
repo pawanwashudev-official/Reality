@@ -11,32 +11,136 @@ import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import com.google.android.material.chip.Chip
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.neubofy.reality.R
 import com.neubofy.reality.databinding.ActivityAppearanceBinding
+import com.neubofy.reality.ui.base.BaseActivity
+import com.neubofy.reality.ui.dialogs.ColorPickerDialog
 import com.neubofy.reality.utils.ThemeManager
+import com.neubofy.reality.ui.viewmodel.AppearanceViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
-class AppearanceActivity : AppCompatActivity() {
+class AppearanceActivity : BaseActivity() {
 
     private lateinit var binding: ActivityAppearanceBinding
+    private lateinit var viewModel: AppearanceViewModel
+    
     private var selectedAccent = ThemeManager.AccentColor.TEAL
+    private var selectedPattern = ThemeManager.BackgroundPattern.ZEN
+    
+    // Track which mode colors we are currently editing ("light" or "dark")
+    private var editingMode = "light"
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        ThemeManager.applyTheme(this)
-        ThemeManager.applyAccentTheme(this)
-        super.onCreate(savedInstanceState)
-        
-        binding = ActivityAppearanceBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.setDisplayShowTitleEnabled(true)
-        
-        loadCurrentState()
-        setupListeners()
-        updatePreview()
+        try {
+            super.onCreate(savedInstanceState)
+            
+            binding = ActivityAppearanceBinding.inflate(layoutInflater)
+            setContentView(binding.root)
+            
+            setSupportActionBar(binding.toolbar)
+            supportActionBar?.setDisplayHomeAsUpEnabled(true)
+            supportActionBar?.setDisplayShowTitleEnabled(true)
+
+            // Setup ViewModel with context
+            val factory = object : ViewModelProvider.Factory {
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                    return AppearanceViewModel(this@AppearanceActivity) as T
+                }
+            }
+            viewModel = ViewModelProvider(this, factory)[AppearanceViewModel::class.java]
+
+            ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+                val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+                view.setPadding(systemBars.left, systemBars.top, systemBars.right, (systemBars.bottom + 16 * resources.displayMetrics.density).toInt())
+                insets
+            }
+            
+            setupTabNavigation()
+            loadCurrentState()
+            setupListeners()
+            observeViewModel()
+            setupColorPickerIntegration()
+        } catch (e: Throwable) {
+            android.util.Log.e("AppearanceActivity", "CRITICAL ERROR during onCreate", e)
+            val errorMsg = "Critical Error: ${e.javaClass.simpleName} - ${e.message}"
+            android.widget.Toast.makeText(this, errorMsg, android.widget.Toast.LENGTH_LONG).show()
+        }
     }
-    
+
+    private fun setupTabNavigation() {
+        binding.tabMainCategories.addOnTabSelectedListener(object : com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
+                binding.sectionPalette.visibility = android.view.View.GONE
+                binding.sectionVisuals.visibility = android.view.View.GONE
+                binding.sectionPrecision.visibility = android.view.View.GONE
+                binding.sectionTypography.visibility = android.view.View.GONE
+                binding.sectionElite.visibility = android.view.View.GONE
+
+                when (tab?.position) {
+                    0 -> binding.sectionPalette.visibility = android.view.View.VISIBLE
+                    1 -> binding.sectionVisuals.visibility = android.view.View.VISIBLE
+                    2 -> binding.sectionPrecision.visibility = android.view.View.VISIBLE
+                    3 -> binding.sectionTypography.visibility = android.view.View.VISIBLE
+                    4 -> binding.sectionElite.visibility = android.view.View.VISIBLE
+                }
+            }
+            override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
+            override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
+        })
+    }
+
+    private fun observeViewModel() {
+        lifecycleScope.launch {
+            viewModel.themeState.collectLatest { state ->
+                updatePreview()
+            }
+        }
+    }
+
+
+    override fun onCreateOptionsMenu(menu: android.view.Menu?): Boolean {
+        menu?.add(0, 1001, 0, "Reset to Default")
+            ?.setIcon(R.drawable.baseline_refresh_24)
+            ?.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == 1001) {
+             showResetConfirmation()
+             return true
+        }
+        if (item.itemId == android.R.id.home) {
+            finish()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    private fun showResetConfirmation() {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Reset Appearance?")
+            .setMessage("This will reset all theme customization to default/system settings. This action cannot be undone.")
+            .setPositiveButton("Reset") { _, _ ->
+                performReset()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun performReset() {
+        ThemeManager.resetToDefaults(this)
+        android.widget.Toast.makeText(this, "Appearance reset to default", android.widget.Toast.LENGTH_SHORT).show()
+        // Restart activity to reflect changes
+        val intent = intent
+        finish()
+        startActivity(intent)
+    }
     private fun loadCurrentState() {
         // Theme Mode
         when (ThemeManager.getDarkMode(this)) {
@@ -69,36 +173,174 @@ class AppearanceActivity : AppCompatActivity() {
         }
 
         // Animation
-        binding.sliderAnimation.value = ThemeManager.getAnimationSpeed(this)
+        binding.sliderAnimationV2.value = ThemeManager.getAnimationSpeed(this)
         
         // Background Pattern
-        when (ThemeManager.getBackgroundPattern(this)) {
-            ThemeManager.BackgroundPattern.ZEN -> binding.chipPatternZen.isChecked = true
-            ThemeManager.BackgroundPattern.NONE -> binding.chipPatternNone.isChecked = true
-            ThemeManager.BackgroundPattern.GRADIENT -> binding.chipPatternGradient.isChecked = true
-        }
+        selectedPattern = ThemeManager.getBackgroundPattern(this)
+        updatePatternSelectionUI()
         
         // Glass Intensity
         when (ThemeManager.getGlassIntensity(this)) {
-            ThemeManager.GlassIntensity.SUBTLE -> binding.chipGlassSubtle.isChecked = true
-            ThemeManager.GlassIntensity.LIGHT -> binding.chipGlassLight.isChecked = true
-            ThemeManager.GlassIntensity.MEDIUM -> binding.chipGlassMedium.isChecked = true
-            ThemeManager.GlassIntensity.STRONG -> binding.chipGlassStrong.isChecked = true
+            ThemeManager.GlassIntensity.SUBTLE -> binding.chipGlassSubtleV2.isChecked = true
+            ThemeManager.GlassIntensity.LIGHT -> binding.chipGlassLightV2.isChecked = true
+            ThemeManager.GlassIntensity.MEDIUM -> binding.chipGlassMediumV2.isChecked = true
+            ThemeManager.GlassIntensity.STRONG -> binding.chipGlassStrongV2.isChecked = true
         }
         
         // Card Style
         when (ThemeManager.getCardStyle(this)) {
-            ThemeManager.CardStyle.GLASS -> binding.styleGlass.isChecked = true
-            ThemeManager.CardStyle.FILLED -> binding.styleFilled.isChecked = true
-            ThemeManager.CardStyle.OUTLINED -> binding.styleOutlined.isChecked = true
+            ThemeManager.CardStyle.GLASS -> binding.styleGlassV2.isChecked = true
+            ThemeManager.CardStyle.FILLED -> binding.styleFilledV2.isChecked = true
+            ThemeManager.CardStyle.OUTLINED -> binding.styleOutlinedV2.isChecked = true
         }
         
+        // Highlight active accent
+        updateAccentSelectionUI()
+        
         // Corner Radius
-        binding.sliderRadius.value = ThemeManager.getCornerRadius(this).toFloat()
+        binding.sliderRadiusV2.value = ThemeManager.getCornerRadius(this).toFloat()
+        
+        // ========== EXTRA CUSTOMIZATION OPTIONS ==========
+        try {
+            binding.sliderFontSize.value = ThemeManager.getFontSizeScale(this)
+            binding.sliderSpacing.value = ThemeManager.getSpacingScale(this)
+            
+            // Icon Style
+            when (ThemeManager.getIconStyle(this)) {
+                ThemeManager.IconStyle.FILLED -> binding.iconFilled.isChecked = true
+                ThemeManager.IconStyle.OUTLINED -> binding.iconOutlined.isChecked = true
+                ThemeManager.IconStyle.ROUNDED -> binding.iconRounded.isChecked = true
+            }
+            
+            // Button Style
+            when (ThemeManager.getButtonStyle(this)) {
+                ThemeManager.ButtonStyle.FILLED -> binding.btnFilled.isChecked = true
+                ThemeManager.ButtonStyle.OUTLINED -> binding.btnOutlined.isChecked = true
+                ThemeManager.ButtonStyle.TEXT -> binding.btnText.isChecked = true
+            }
+            
+            // Compact Mode
+            binding.switchCompactMode.isChecked = ThemeManager.isCompactMode(this)
+            
+            // ========== MODE-SPECIFIC COLOR LOADING ==========
+            // Set default tab to current mode instead of hardcoded Light
+            val currentTab = if (ThemeManager.isDark(this)) 1 else 0
+            binding.tabModeEditor.getTabAt(currentTab)?.select()
+            loadModeSpecificColors(if (currentTab == 0) "light" else "dark")
+            editingMode = if (currentTab == 0) "light" else "dark"
+            binding.textEditingMode.text = "Editing: ${if (editingMode == "light") "Light" else "Dark"} Mode Colors"
+            
+            // Tab listener for switching between Light/Dark mode editing
+            binding.tabModeEditor.addOnTabSelectedListener(object : com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
+                override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
+                    // Save current mode's colors before switching
+                    saveModeSpecificColors(editingMode)
+                    
+                    // Switch to new mode
+                    editingMode = if (tab?.position == 0) "light" else "dark"
+                    binding.textEditingMode.text = "Editing: ${if (editingMode == "light") "Light" else "Dark"} Mode Colors"
+                    loadModeSpecificColors(editingMode)
+                }
+                override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
+                override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
+            })
+            
+            // ========== ELITE AESTHETICS LOADING ==========
+            binding.sliderNoise.value = ThemeManager.getNoiseIntensity(this)
+            
+            when (ThemeManager.getHapticLevel(this)) {
+                ThemeManager.HapticLevel.OFF -> binding.hapticOff.isChecked = true
+                ThemeManager.HapticLevel.SOFT -> binding.hapticSoft.isChecked = true
+                ThemeManager.HapticLevel.MEDIUM -> binding.hapticMedium.isChecked = true
+                ThemeManager.HapticLevel.SHARP -> binding.hapticSharp.isChecked = true
+                ThemeManager.HapticLevel.HEAVY -> binding.hapticHeavy.isChecked = true
+            }
+            
+            when (ThemeManager.getMotionPreset(this)) {
+                ThemeManager.MotionPreset.STIFF -> binding.motionStiff.isChecked = true
+                ThemeManager.MotionPreset.FLUID -> binding.motionFluid.isChecked = true
+                ThemeManager.MotionPreset.BOUNCY -> binding.motionBouncy.isChecked = true
+                ThemeManager.MotionPreset.FAST -> binding.motionFast.isChecked = true
+            }
+            
+            binding.switchShimmer.isChecked = ThemeManager.isShimmerEnabled(this)
+            
+        } catch (e: Exception) {
+            android.util.Log.w("AppearanceActivity", "Some new UI elements not found: ${e.message}")
+        }
         
         // Live Preview Listeners for new controls
-        binding.sliderRadius.addOnChangeListener { _, _, _ -> updatePreview() }
-        binding.chipGroupCardStyle.setOnCheckedStateChangeListener { _, _ -> updatePreview() }
+        binding.sliderRadiusV2.addOnChangeListener { _, _, _ -> updatePreview() }
+        binding.chipGroupCardStyleVisualsV2.setOnCheckedStateChangeListener { _, _ -> updatePreview() }
+    }
+    
+    /**
+     * Load mode-specific colors from preferences into the UI fields.
+     */
+    private fun loadModeSpecificColors(mode: String) {
+        try {
+            val prefs = getSharedPreferences("reality_theme_prefs", Context.MODE_PRIVATE)
+            
+            // Helper to load hex value
+            fun loadHex(key: String): String? = prefs.getString(mode + key, null)
+            
+            // Page Background
+            binding.inputModePageBg.setText(loadHex("_page_bg") ?: "")
+            
+            // Card Colors
+            binding.inputModeCardBg.setText(loadHex("_card_bg") ?: "")
+            binding.inputModeCardStroke.setText(loadHex("_card_stroke") ?: "")
+            
+            // Chat Bubble Colors
+            binding.inputModeAiBubble.setText(loadHex("_ai_bubble_bg") ?: "")
+            binding.inputModeUserBubble.setText(loadHex("_user_bubble_bg") ?: "")
+            
+            // Status Colors
+            binding.inputModeSuccess.setText(loadHex("_success") ?: "")
+            binding.inputModeWarning.setText(loadHex("_warning") ?: "")
+            binding.inputModeError.setText(loadHex("_error") ?: "")
+        } catch (e: Exception) {
+            android.util.Log.w("AppearanceActivity", "loadModeSpecificColors error: ${e.message}")
+        }
+    }
+    
+    /**
+     * Save mode-specific colors from the UI fields to preferences.
+     */
+    private fun saveModeSpecificColors(mode: String) {
+        try {
+            val prefs = getSharedPreferences("reality_theme_prefs", Context.MODE_PRIVATE).edit()
+            
+            // Helper to save hex value
+            fun saveHex(key: String, value: String) {
+                val fullKey = mode + key
+                if (isValidHex(value)) {
+                    prefs.putString(fullKey, value)
+                } else {
+                    prefs.remove(fullKey)
+                }
+            }
+            
+            // Page Background
+            saveHex("_page_bg", binding.inputModePageBg.text.toString())
+            
+            // Card Colors
+            saveHex("_card_bg", binding.inputModeCardBg.text.toString())
+            saveHex("_card_stroke", binding.inputModeCardStroke.text.toString())
+            
+            // Chat Bubble Colors
+            saveHex("_ai_bubble_bg", binding.inputModeAiBubble.text.toString())
+            saveHex("_user_bubble_bg", binding.inputModeUserBubble.text.toString())
+            
+            // Status Colors
+            saveHex("_success", binding.inputModeSuccess.text.toString())
+            saveHex("_warning", binding.inputModeWarning.text.toString())
+            saveHex("_error", binding.inputModeError.text.toString())
+            
+            prefs.apply()
+        } catch (e: Exception) {
+            android.util.Log.w("AppearanceActivity", "saveModeSpecificColors error: ${e.message}")
+        }
     }
     
     private fun setupListeners() {
@@ -123,15 +365,19 @@ class AppearanceActivity : AppCompatActivity() {
         colorMap.forEach { (viewId, accent) ->
             findViewById<ImageView>(viewId).setOnClickListener {
                 selectedAccent = accent
+                updateAccentSelectionUI()
                 updatePreview()
             }
         }
         
         // Color Suggestions Listeners
-        setupSuggestionChips(binding.chipsPopupBg, binding.inputPopupBg)
-        setupSuggestionChips(binding.chipsAppBg, binding.inputAppBg)
-        setupSuggestionChips(binding.chipsPrimaryText, binding.inputPrimaryText)
-        setupSuggestionChips(binding.chipsSecondaryText, binding.inputSecondaryText)
+        try {
+            setupSuggestionChips(binding.chipsAppBg, binding.inputAppBg)
+        } catch (e: Exception) { /* Ignore */ }
+        
+
+        
+        setupColorPickerIntegration()
         
         // Text Watchers for Live Preview
         val textWatcher = object : TextWatcher {
@@ -145,9 +391,62 @@ class AppearanceActivity : AppCompatActivity() {
         binding.inputPrimaryText.addTextChangedListener(textWatcher)
         binding.inputSecondaryText.addTextChangedListener(textWatcher)
         
+        // Mode Specific Live Preview
+        try {
+            binding.inputModePageBg.addTextChangedListener(textWatcher)
+            binding.inputModeCardBg.addTextChangedListener(textWatcher)
+            binding.inputModeCardStroke.addTextChangedListener(textWatcher)
+            binding.inputModeAiBubble.addTextChangedListener(textWatcher)
+            binding.inputModeUserBubble.addTextChangedListener(textWatcher)
+            binding.inputModeSuccess.addTextChangedListener(textWatcher)
+            binding.inputModeWarning.addTextChangedListener(textWatcher)
+            binding.inputModeError.addTextChangedListener(textWatcher)
+        } catch (e: Exception) { /* Ignore safely */ }
+        
+        // Update Start Icon Tints on change
+        binding.inputPopupBg.addTextChangedListener(createIconTintWatcher(binding.inputLayoutPopupBg))
+        binding.inputAppBg.addTextChangedListener(createIconTintWatcher(binding.inputLayoutAppBg))
+        binding.inputPrimaryText.addTextChangedListener(createIconTintWatcher(binding.inputLayoutPrimaryText))
+        binding.inputSecondaryText.addTextChangedListener(createIconTintWatcher(binding.inputLayoutSecondaryText))
+        
+        try {
+            binding.inputModePageBg.addTextChangedListener(createIconTintWatcher(binding.inputLayoutModePageBg))
+            binding.inputModeCardBg.addTextChangedListener(createIconTintWatcher(binding.inputLayoutModeCardBg))
+            binding.inputModeCardStroke.addTextChangedListener(createIconTintWatcher(binding.inputLayoutModeCardStroke))
+            binding.inputModeAiBubble.addTextChangedListener(createIconTintWatcher(binding.inputLayoutModeAiBubble))
+            binding.inputModeUserBubble.addTextChangedListener(createIconTintWatcher(binding.inputLayoutModeUserBubble))
+            binding.inputModeSuccess.addTextChangedListener(createIconTintWatcher(binding.inputLayoutModeSuccess))
+            binding.inputModeWarning.addTextChangedListener(createIconTintWatcher(binding.inputLayoutModeWarning))
+            binding.inputModeError.addTextChangedListener(createIconTintWatcher(binding.inputLayoutModeError))
+        } catch (e: Exception) { /* Ignore safely */ }
+        
         // Save Button
         binding.btnSaveAppearance.setOnClickListener {
             saveAndRestart()
+        }
+        
+        // Elite Listeners for Live Preview
+        binding.sliderNoise.addOnChangeListener { _, _, _ -> updatePreview() }
+        binding.chipGroupHaptics.setOnCheckedStateChangeListener { _, _ -> updatePreview() }
+        binding.chipGroupMotion.setOnCheckedStateChangeListener { _, _ -> updatePreview() }
+        binding.switchShimmer.setOnCheckedChangeListener { _, _ -> updatePreview() }
+
+        binding.btnResetAppearance.setOnClickListener {
+            showResetConfirmation()
+        }
+        
+        // Pattern Selection Listeners
+        binding.optionPatternNone.setOnClickListener { 
+            selectedPattern = ThemeManager.BackgroundPattern.NONE
+            updatePatternSelectionUI()
+        }
+        binding.optionPatternZen.setOnClickListener { 
+            selectedPattern = ThemeManager.BackgroundPattern.ZEN
+            updatePatternSelectionUI()
+        }
+        binding.optionPatternGradient.setOnClickListener { 
+            selectedPattern = ThemeManager.BackgroundPattern.GRADIENT
+            updatePatternSelectionUI()
         }
     }
     
@@ -164,50 +463,164 @@ class AppearanceActivity : AppCompatActivity() {
     }
     
     private fun updatePreview() {
-        // Apply Accent
+        // ========== 1. Apply Accent ==========
         binding.previewTitle.setTextColor(selectedAccent.primaryColor)
-        binding.previewButton.backgroundTintList = android.content.res.ColorStateList.valueOf(selectedAccent.primaryColor)
+        val accentColorStateList = android.content.res.ColorStateList.valueOf(selectedAccent.primaryColor)
+        binding.previewButton.backgroundTintList = accentColorStateList
+        // Also tint chips and sliders for immediate feedback
+        binding.sliderRadiusV2.thumbTintList = accentColorStateList
+        binding.sliderAnimationV2.thumbTintList = accentColorStateList
+        binding.sliderFontSize.thumbTintList = accentColorStateList
+        binding.sliderSpacing.thumbTintList = accentColorStateList
         
-        // Apply Radius
-        val radius = binding.sliderRadius.value
+        // ========== 2. Apply Page Background (Immediate Feedback) ==========
+        // Try Mode Specific first
+        val modePageBgText = binding.inputModePageBg.text.toString()
+        val appBgText = binding.inputAppBg.text.toString()
+        
+        try {
+            if (isValidHex(modePageBgText)) {
+                binding.root.setBackgroundColor(Color.parseColor(modePageBgText))
+                binding.toolbar.setBackgroundColor(Color.parseColor(modePageBgText))
+            } else if (isValidHex(appBgText)) {
+                binding.root.setBackgroundColor(Color.parseColor(appBgText))
+                binding.toolbar.setBackgroundColor(Color.parseColor(appBgText))
+            } else {
+                // Return to default theme background if inputs cleared
+                val typedValue = android.util.TypedValue()
+                theme.resolveAttribute(android.R.attr.colorBackground, typedValue, true)
+                binding.root.setBackgroundColor(typedValue.data)
+                binding.toolbar.setBackgroundColor(typedValue.data)
+            }
+        } catch (e: Exception) { /* Ignore */ }
+
+        // ========== 3. Apply Card Style & Radius ==========
+        val radius = binding.sliderRadiusV2.value
         binding.cardPreview.radius = radius * resources.displayMetrics.density
         
-        // Apply Card Style (Partial Preview)
         val style = when {
-            binding.styleFilled.isChecked -> ThemeManager.CardStyle.FILLED
-            binding.styleOutlined.isChecked -> ThemeManager.CardStyle.OUTLINED
-            binding.styleGlass.isChecked -> ThemeManager.CardStyle.GLASS
+            binding.styleFilledV2.isChecked -> ThemeManager.CardStyle.FILLED
+            binding.styleOutlinedV2.isChecked -> ThemeManager.CardStyle.OUTLINED
+            binding.styleGlassV2.isChecked -> ThemeManager.CardStyle.GLASS
             else -> ThemeManager.CardStyle.GLASS
         }
         
-        if (style == ThemeManager.CardStyle.OUTLINED) {
-            binding.cardPreview.setCardBackgroundColor(Color.TRANSPARENT)
-            binding.cardPreview.strokeWidth = (1 * resources.displayMetrics.density).toInt()
-            binding.cardPreview.strokeColor = Color.GRAY
-        } else if (style == ThemeManager.CardStyle.FILLED) {
-             val typedValue = android.util.TypedValue()
-             theme.resolveAttribute(com.google.android.material.R.attr.colorSurface, typedValue, true)
-             binding.cardPreview.setCardBackgroundColor(typedValue.data)
-             binding.cardPreview.strokeWidth = 0
-        } else {
-             // Glass - roughly white with alpha (hard to perfect without recreating ThemeManager logic locally)
-             binding.cardPreview.setCardBackgroundColor(Color.parseColor("#1AFFFFFF"))
-             binding.cardPreview.strokeWidth = (1 * resources.displayMetrics.density).toInt()
-             binding.cardPreview.strokeColor = Color.parseColor("#33FFFFFF")
+        // Check for Custom Card Colors (Mode Specific)
+        val modeCardBgText = binding.inputModeCardBg.text.toString()
+        val modeCardStrokeText = binding.inputModeCardStroke.text.toString()
+        
+        var appliedCardBg = false
+        if (isValidHex(modeCardBgText)) {
+            binding.cardPreview.setCardBackgroundColor(Color.parseColor(modeCardBgText))
+            appliedCardBg = true
         }
         
-        // Apply Custom Colors overwrites
+        if (!appliedCardBg) {
+             if (style == ThemeManager.CardStyle.OUTLINED) {
+                binding.cardPreview.setCardBackgroundColor(Color.TRANSPARENT)
+                binding.cardPreview.strokeWidth = (1 * resources.displayMetrics.density).toInt()
+                binding.cardPreview.strokeColor = Color.GRAY
+            } else if (style == ThemeManager.CardStyle.FILLED) {
+                 val typedValue = android.util.TypedValue()
+                 theme.resolveAttribute(com.google.android.material.R.attr.colorSurface, typedValue, true)
+                 binding.cardPreview.setCardBackgroundColor(typedValue.data)
+                 binding.cardPreview.strokeWidth = 0
+            } else {
+                 // Glass
+                 binding.cardPreview.setCardBackgroundColor(Color.parseColor("#1AFFFFFF")) // Approx
+                 binding.cardPreview.strokeWidth = (1 * resources.displayMetrics.density).toInt()
+                 binding.cardPreview.strokeColor = Color.parseColor("#33FFFFFF")
+            }
+        }
+        
+        // Apply Stroke Overrides
+        if (isValidHex(modeCardStrokeText)) {
+             binding.cardPreview.strokeColor = Color.parseColor(modeCardStrokeText)
+             binding.cardPreview.strokeWidth = (1 * resources.displayMetrics.density).toInt()
+        }
+        
+        // ========== 4. Apply Text Color Overrides ==========
         try {
-            val bgText = binding.inputPopupBg.text.toString()
-            if (bgText.isNotEmpty()) binding.cardPreview.setCardBackgroundColor(Color.parseColor(bgText))
+            // Mode Specific Text Colors
+            // Note: We don't have direct input fields for mode-specific text colors in the UI yet (except in legacy code)
+            // fallback to legacy inputs
             
             val primText = binding.inputPrimaryText.text.toString()
-            if (primText.isNotEmpty()) binding.previewTitle.setTextColor(Color.parseColor(primText))
+            if (isValidHex(primText)) binding.previewTitle.setTextColor(Color.parseColor(primText))
             
             val secText = binding.inputSecondaryText.text.toString()
-            if (secText.isNotEmpty()) binding.previewBody.setTextColor(Color.parseColor(secText))
+            if (isValidHex(secText)) binding.previewBody.setTextColor(Color.parseColor(secText))
+        } catch (e: Exception) { }
+        
+        // ========== 5. Apply Elite Noise (Subtle Preview) ==========
+        val noiseIntensity = binding.sliderNoise.value
+        if (noiseIntensity > 0) {
+            val noise = com.neubofy.reality.ui.view.NoiseDrawable(noiseIntensity * 0.15f)
+            val currentBg = binding.previewContainer.background
+            if (currentBg != null) {
+                binding.previewContainer.background = android.graphics.drawable.LayerDrawable(arrayOf(currentBg, noise))
+            } else {
+                binding.previewContainer.background = noise
+            }
+        }
+    }
+    
+    private fun setupColorPickerIntegration() {
+        // Legacy color inputs
+        val mapping = mutableListOf(
+            Triple(binding.inputLayoutPopupBg, binding.inputPopupBg, "Popup Background"),
+            Triple(binding.inputLayoutAppBg, binding.inputAppBg, "App Background"),
+            Triple(binding.inputLayoutPrimaryText, binding.inputPrimaryText, "Primary Text"),
+            Triple(binding.inputLayoutSecondaryText, binding.inputSecondaryText, "Secondary Text")
+        )
+        
+        // Add new mode-specific color inputs (wrapped in try-catch for safety)
+        try {
+            mapping.addAll(listOf(
+                Triple(binding.inputLayoutModePageBg, binding.inputModePageBg, "Page Background"),
+                Triple(binding.inputLayoutModeCardBg, binding.inputModeCardBg, "Card Background"),
+                Triple(binding.inputLayoutModeCardStroke, binding.inputModeCardStroke, "Card Stroke"),
+                Triple(binding.inputLayoutModeAiBubble, binding.inputModeAiBubble, "AI Chat Bubble"),
+                Triple(binding.inputLayoutModeUserBubble, binding.inputModeUserBubble, "User Chat Bubble"),
+                Triple(binding.inputLayoutModeSuccess, binding.inputModeSuccess, "Success Color"),
+                Triple(binding.inputLayoutModeWarning, binding.inputModeWarning, "Warning Color"),
+                Triple(binding.inputLayoutModeError, binding.inputModeError, "Error Color")
+            ))
         } catch (e: Exception) {
-            // Ignore parse errors
+            android.util.Log.w("AppearanceActivity", "New color inputs not available: ${e.message}")
+        }
+        
+        mapping.forEach { (layout, input, title) ->
+            layout.setStartIconOnClickListener {
+                val currentColorStr = input.text.toString()
+                val initialColor = try {
+                    if (currentColorStr.isNotEmpty()) Color.parseColor(currentColorStr) else Color.BLACK
+                } catch (e: Exception) { Color.BLACK }
+                
+                ColorPickerDialog(initialColor) { selectedColor ->
+                    val hex = String.format("#%06X", (0xFFFFFF and selectedColor))
+                    input.setText(hex)
+                    layout.setStartIconTintList(android.content.res.ColorStateList.valueOf(selectedColor))
+                }.show(supportFragmentManager, "ColorPicker")
+            }
+            // Initial Tint
+             val initialStr = input.text.toString()
+             if (isValidHex(initialStr)) {
+                 layout.setStartIconTintList(android.content.res.ColorStateList.valueOf(Color.parseColor(initialStr)))
+             }
+        }
+    }
+    
+    private fun createIconTintWatcher(layout: com.google.android.material.textfield.TextInputLayout): TextWatcher {
+        return object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                val colorStr = s.toString()
+                if (isValidHex(colorStr)) {
+                    layout.setStartIconTintList(android.content.res.ColorStateList.valueOf(Color.parseColor(colorStr)))
+                }
+            }
         }
     }
     
@@ -225,7 +638,7 @@ class AppearanceActivity : AppCompatActivity() {
         ThemeManager.setAccentColor(this, selectedAccent)
         
         // Animation
-        ThemeManager.setAnimationSpeed(this, binding.sliderAnimation.value)
+        ThemeManager.setAnimationSpeed(this, binding.sliderAnimationV2.value)
         
         // Save Hex Colors
         val bgText = binding.inputPopupBg.text.toString()
@@ -249,30 +662,73 @@ class AppearanceActivity : AppCompatActivity() {
         ThemeManager.setHeaderStyle(this, headerStyle)
         
         // Pattern & Glass
-        val pattern = when {
-            binding.chipPatternNone.isChecked -> ThemeManager.BackgroundPattern.NONE
-            binding.chipPatternGradient.isChecked -> ThemeManager.BackgroundPattern.GRADIENT
-            else -> ThemeManager.BackgroundPattern.ZEN
-        }
-        ThemeManager.setBackgroundPattern(this, pattern)
+        ThemeManager.setBackgroundPattern(this, selectedPattern)
         
         val glass = when {
-            binding.chipGlassSubtle.isChecked -> ThemeManager.GlassIntensity.SUBTLE
-            binding.chipGlassMedium.isChecked -> ThemeManager.GlassIntensity.MEDIUM
-            binding.chipGlassStrong.isChecked -> ThemeManager.GlassIntensity.STRONG
+            binding.chipGlassSubtleV2.isChecked -> ThemeManager.GlassIntensity.SUBTLE
+            binding.chipGlassMediumV2.isChecked -> ThemeManager.GlassIntensity.MEDIUM
+            binding.chipGlassStrongV2.isChecked -> ThemeManager.GlassIntensity.STRONG
             else -> ThemeManager.GlassIntensity.LIGHT
         }
         ThemeManager.setGlassIntensity(this, glass)
         
         // Save Card Style & Radius
         val cardStyle = when {
-            binding.styleFilled.isChecked -> ThemeManager.CardStyle.FILLED
-            binding.styleOutlined.isChecked -> ThemeManager.CardStyle.OUTLINED
-            binding.styleGlass.isChecked -> ThemeManager.CardStyle.GLASS
+            binding.styleFilledV2.isChecked -> ThemeManager.CardStyle.FILLED
+            binding.styleOutlinedV2.isChecked -> ThemeManager.CardStyle.OUTLINED
+            binding.styleGlassV2.isChecked -> ThemeManager.CardStyle.GLASS
             else -> ThemeManager.CardStyle.GLASS
         }
         ThemeManager.setCardStyle(this, cardStyle)
-        ThemeManager.setCornerRadius(this, binding.sliderRadius.value.toInt())
+        ThemeManager.setCornerRadius(this, binding.sliderRadiusV2.value.toInt())
+        
+        // ========== SAVE EXTRA CUSTOMIZATION OPTIONS ==========
+        ThemeManager.setFontSizeScale(this, binding.sliderFontSize.value)
+        ThemeManager.setSpacingScale(this, binding.sliderSpacing.value)
+        
+        // Icon Style
+        val iconStyle = when {
+            binding.iconOutlined.isChecked -> ThemeManager.IconStyle.OUTLINED
+            binding.iconRounded.isChecked -> ThemeManager.IconStyle.ROUNDED
+            else -> ThemeManager.IconStyle.FILLED
+        }
+        ThemeManager.setIconStyle(this, iconStyle)
+        
+        // Button Style
+        val buttonStyle = when {
+            binding.btnOutlined.isChecked -> ThemeManager.ButtonStyle.OUTLINED
+            binding.btnText.isChecked -> ThemeManager.ButtonStyle.TEXT
+            else -> ThemeManager.ButtonStyle.FILLED
+        }
+        ThemeManager.setButtonStyle(this, buttonStyle)
+        
+        // Compact Mode
+        ThemeManager.setCompactMode(this, binding.switchCompactMode.isChecked)
+        
+        // ========== SAVE ELITE SETTINGS ==========
+        ThemeManager.setNoiseIntensity(this, binding.sliderNoise.value)
+        
+        val haptic = when {
+            binding.hapticSoft.isChecked -> ThemeManager.HapticLevel.SOFT
+            binding.hapticMedium.isChecked -> ThemeManager.HapticLevel.MEDIUM
+            binding.hapticSharp.isChecked -> ThemeManager.HapticLevel.SHARP
+            binding.hapticHeavy.isChecked -> ThemeManager.HapticLevel.HEAVY
+            else -> ThemeManager.HapticLevel.OFF
+        }
+        ThemeManager.setHapticLevel(this, haptic)
+        
+        val motion = when {
+            binding.motionStiff.isChecked -> ThemeManager.MotionPreset.STIFF
+            binding.motionBouncy.isChecked -> ThemeManager.MotionPreset.BOUNCY
+            binding.motionFast.isChecked -> ThemeManager.MotionPreset.FAST
+            else -> ThemeManager.MotionPreset.FLUID
+        }
+        ThemeManager.setMotionPreset(this, motion)
+        ThemeManager.setShimmerEnabled(this, binding.switchShimmer.isChecked)
+        
+        // ========== SAVE MODE-SPECIFIC COLORS ==========
+        // Save the currently editing mode's colors
+        saveModeSpecificColors(editingMode)
         
         // Restart App to apply changes
         val intent = Intent(this, MainActivity::class.java)
@@ -290,13 +746,7 @@ class AppearanceActivity : AppCompatActivity() {
         }
     }
     
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) {
-            finish()
-            return true
-        }
-        return super.onOptionsItemSelected(item)
-    }
+
 
     private fun updateAmoledVisibility() {
         val isDark = binding.modeDark.isChecked || (binding.modeSystem.isChecked && isSystemDark())
@@ -306,5 +756,51 @@ class AppearanceActivity : AppCompatActivity() {
     
     private fun isSystemDark(): Boolean {
         return (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+    }
+    
+    private fun updatePatternSelectionUI() {
+        // Reset all
+        binding.checkPatternNone.visibility = android.view.View.GONE
+        binding.checkPatternZen.visibility = android.view.View.GONE
+        binding.checkPatternGradient.visibility = android.view.View.GONE
+        
+        // Highlight Selected
+        when (selectedPattern) {
+            ThemeManager.BackgroundPattern.NONE -> binding.checkPatternNone.visibility = android.view.View.VISIBLE
+            ThemeManager.BackgroundPattern.ZEN -> binding.checkPatternZen.visibility = android.view.View.VISIBLE
+            ThemeManager.BackgroundPattern.GRADIENT -> binding.checkPatternGradient.visibility = android.view.View.VISIBLE
+        }
+    }
+
+    private fun updateAccentSelectionUI() {
+        val colorMap = mapOf(
+            ThemeManager.AccentColor.TEAL to binding.colorTeal,
+            ThemeManager.AccentColor.PURPLE to binding.colorPurple,
+            ThemeManager.AccentColor.BLUE to binding.colorBlue,
+            ThemeManager.AccentColor.PINK to binding.colorPink,
+            ThemeManager.AccentColor.ORANGE to binding.colorOrange,
+            ThemeManager.AccentColor.CYAN to binding.colorCyan,
+            ThemeManager.AccentColor.GREEN to binding.colorGreen,
+            ThemeManager.AccentColor.RED to binding.colorRed
+        )
+
+        val density = resources.displayMetrics.density
+        val strokeWidth = (3 * density).toInt()
+        val padding = (8 * density).toInt()
+
+        colorMap.forEach { (accent, view) ->
+            if (accent == selectedAccent) {
+                // Apply a white rounded stroke as selection indicator
+                val stroke = android.graphics.drawable.GradientDrawable()
+                stroke.shape = android.graphics.drawable.GradientDrawable.OVAL
+                stroke.setStroke(strokeWidth, Color.WHITE)
+                stroke.setColor(accent.primaryColor)
+                view.background = stroke
+                view.setPadding(padding, padding, padding, padding)
+            } else {
+                view.background = null
+                view.setPadding(padding, padding, padding, padding)
+            }
+        }
     }
 }

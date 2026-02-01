@@ -245,16 +245,16 @@ class ReflectionDetailActivity : AppCompatActivity() {
             binding.tvTodayXp.text = if (xp.totalDailyXP >= 0) "+${xp.totalDailyXP}" else "${xp.totalDailyXP}"
         } else {
             binding.tvBreakdownTitle.text = "Today's XP Breakdown"
-            val totalXP = XPManager.getTotalXP(applicationContext)
-            binding.tvTotalXp.text = "$totalXP" // Cumulative
-            binding.tvTodayXp.text = if (xp.totalDailyXP >= 0) "+${xp.totalDailyXP}" else "${xp.totalDailyXP}"
-            binding.tvStreak.text = "${xp.streak} days"
-            binding.tvLevel.text = "Level ${xp.level}"
             
+            // UNIFIED STATS
             lifecycleScope.launch(Dispatchers.IO) {
-                 val levelName = XPManager.getLevelName(applicationContext, xp.level)
+                 val liveStats = XPManager.getLiveGamificationStats(applicationContext)
                  withContext(Dispatchers.Main) {
-                     binding.tvLevelName.text = levelName
+                     binding.tvTotalXp.text = "${liveStats.totalXP}"
+                     binding.tvTodayXp.text = if (liveStats.todayXP >= 0) "+${liveStats.todayXP}" else "${liveStats.todayXP}"
+                     binding.tvStreak.text = "${liveStats.streak} days"
+                     binding.tvLevel.text = "Level ${liveStats.level}"
+                     binding.tvLevelName.text = liveStats.levelName
                  }
             }
         }
@@ -267,8 +267,19 @@ class ReflectionDetailActivity : AppCompatActivity() {
         binding.tvTaskXp.text = formatXpValue(xp.taskXP) 
         binding.tvSessionXp.text = "+${xp.sessionXP}"
         binding.tvDiaryXp.text = "+${xp.reflectionXP}" 
-        binding.tvBonusXp.text = "+${xp.screenTimeXP}"
-        binding.tvPenaltyXp.text = if (xp.penaltyXP > 0) "-${xp.penaltyXP}" else "0"
+        
+        // Unified Distraction XP
+        val distXP = xp.distractionXP
+        binding.tvBonusXp.text = if (distXP > 0) "+$distXP" else "$distXP"
+        
+        // Dynamic Color: Green if Diff >= 0 (Bonus), Red if Diff < 0 (Penalty)
+        if (distXP >= 0) {
+           binding.tvBonusXp.setTextColor(getColor(R.color.accent_focus))
+        } else {
+           binding.tvBonusXp.setTextColor(getColor(R.color.error_color))
+        }
+        
+
     }
 
     private fun loadData(isRefresh: Boolean = false) {

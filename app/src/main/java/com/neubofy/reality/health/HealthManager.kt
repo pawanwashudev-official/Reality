@@ -49,32 +49,107 @@ class HealthManager(private val context: Context) {
     suspend fun getSleep(date: LocalDate): String {
         if (!hasPermissions()) return "Permission Denied"
         
-        // Sleep usually spans across days. Fetching sessions ending on this date.
-        val start = date.minusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant() // Previous night
-        val end = date.atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant() // Noon today
+        val sessions = getSleepSessions(date)
+        if (sessions.isEmpty()) return "No record"
+        
+        val formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault())
+        val sb = StringBuilder()
+        
+        sessions.forEach { session ->
+            val duration = java.time.Duration.between(session.first, session.second).toMinutes()
+            val hrs = duration / 60
+            val mins = duration % 60
+            val startStr = formatter.format(session.first)
+            val endStr = formatter.format(session.second)
+            sb.append("$startStr - $endStr (${hrs}h ${mins}m)\n")
+        }
+            
+        return sb.toString().trim()
+    }
+
+    suspend fun getSleepSessions(date: LocalDate): List<Pair<Instant, Instant>> {
+        if (!hasPermissions()) return emptyList()
+        
+        val windowStart = date.minusDays(1).atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant()
+        val windowEnd = date.plusDays(1).atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant()
         
         val response = healthConnectClient.readRecords(
             ReadRecordsRequest(
                 recordType = SleepSessionRecord::class,
-                timeRangeFilter = TimeRangeFilter.between(start, end)
+                timeRangeFilter = TimeRangeFilter.between(windowStart, windowEnd)
             )
         )
         
-        if (response.records.isEmpty()) return "No sleep data."
+        val dayStart = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val dayEnd = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         
-        val sb = StringBuilder()
-        val formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault())
+        return response.records.filter { record ->
+             val startMs = record.startTime.toEpochMilli()
+             val endMs = record.endTime.toEpochMilli()
+             val duration = endMs - startMs
+             
+             val overlapStart = maxOf(startMs, dayStart)
+             val overlapEnd = minOf(endMs, dayEnd)
+             val overlap = (overlapEnd - overlapStart).coerceAtLeast(0)
+             
+             overlap > (duration / 2) // Majority Rule for attribution
+        }.sortedBy { it.startTime }.map { it.startTime to it.endTime }
+    }
+
+    suspend fun findOverlappingSessions(startTime: Instant, endTime: Instant, excludeStartTime: Instant? = null): List<Pair<Instant, Instant>> {
+        if (!hasPermissions()) return emptyList()
         
-        response.records.forEach { session ->
-            val duration = java.time.Duration.between(session.startTime, session.endTime).toMinutes()
-            val hrs = duration / 60
-            val mins = duration % 60
-            val startStr = formatter.format(session.startTime)
-            val endStr = formatter.format(session.endTime)
+        // Search wide window around the target
+        val searchStart = startTime.minus(java.time.Duration.ofHours(24))
+        val searchEnd = endTime.plus(java.time.Duration.ofHours(24))
+        
+        val response = healthConnectClient.readRecords(
+            ReadRecordsRequest(
+                recordType = SleepSessionRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(searchStart, searchEnd)
+            )
+        )
+        
+        return response.records.filter { record ->
+            // Skip the one we are editing
+            if (excludeStartTime != null && record.startTime == excludeStartTime) return@filter false
             
-            sb.append("$startStr - $endStr (${hrs}h ${mins}m)\n")
+            val rStart = record.startTime
+            val rEnd = record.endTime
+            
+            // Overlap check: (StartA < EndB) and (EndA > StartB)
+            startTime.isBefore(rEnd) && endTime.isAfter(rStart)
+        }.map { it.startTime to it.endTime }
+    }
+
+    suspend fun getSleepSession(date: LocalDate): Pair<Instant, Instant>? {
+        if (!hasPermissions()) return null
+        
+        // Reuse Majority Rule Logic
+        val windowStart = date.minusDays(1).atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant()
+        val windowEnd = date.plusDays(1).atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant()
+        
+        val response = healthConnectClient.readRecords(
+            ReadRecordsRequest(
+                recordType = SleepSessionRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(windowStart, windowEnd)
+            )
+        )
+        
+        val dayStart = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val dayEnd = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        
+        val session = response.records.firstOrNull { record ->
+             val startMs = record.startTime.toEpochMilli()
+             val endMs = record.endTime.toEpochMilli()
+             val duration = endMs - startMs
+             val overlapStart = maxOf(startMs, dayStart)
+             val overlapEnd = minOf(endMs, dayEnd)
+             val overlap = (overlapEnd - overlapStart).coerceAtLeast(0)
+             overlap > (duration / 2)
         }
-        return sb.toString()
+        
+        return session?.let { it.startTime to it.endTime }
     }
 
     suspend fun hasPermissions(): Boolean {

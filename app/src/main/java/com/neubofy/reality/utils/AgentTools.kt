@@ -11,6 +11,9 @@ import org.json.JSONTokener
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.net.URLEncoder
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 
 /**
  * Agent Tools: Execution Layer
@@ -35,14 +38,10 @@ object AgentTools {
             val args = JSONObject(if (argsInfo.isBlank()) "{}" else argsInfo)
             
             // 1. Check if tool is enabled (Security/Privacy)
-            if (name != "get_tool_schema") {
-                val toolId = ToolRegistry.getToolIdForFunction(name)
-                // If we can map it, check it. If not found, it might be a new tool or internal, allow with caution or block?
-                // For now, if we recognize it, we enforce.
-                if (toolId != null && !ToolRegistry.isToolEnabled(context, toolId)) {
-                     return "⚠️ Tool is disabled: $name. Please enable '${ToolRegistry.ALL_TOOLS.find { it.id == toolId }?.name ?: toolId}' in AI Settings."
+                val recognizedId = ToolRegistry.getToolIdForFunction(name)
+                if (recognizedId != null && !ToolRegistry.isToolEnabled(context, recognizedId)) {
+                     return "⚠️ Tool is disabled: $name. Please enable '${ToolRegistry.ALL_TOOLS.find { it.id == recognizedId }?.name ?: recognizedId}' in AI Settings."
                 }
-            }
             
             when (name) {
                 // META TOOL: Dynamic Schema Discovery
@@ -59,7 +58,7 @@ object AgentTools {
                 }
 
                 // GAMIFICATION
-                "get_xp_stats" -> {
+                "gamification", "get_xp_stats" -> {
                     val dateStr = args.optString("date", "")
                     val date = if (dateStr.isNotEmpty()) LocalDate.parse(dateStr) else LocalDate.now()
                     val type = args.optString("type", "all")
@@ -74,7 +73,7 @@ object AgentTools {
                         
                         if (type == "all" || type == "breakdown") {
                             put("xp_breakdown", JSONObject().apply {
-                                put("screen_time_xp", stats?.screenTimeXP ?: 0)
+                                put("distraction_xp", stats?.distractionXP ?: 0)
                                 put("reflection_xp", stats?.reflectionXP ?: 0)
                                 put("tasks_xp", stats?.taskXP ?: 0)
                                 put("tapasya_xp", stats?.tapasyaXP ?: 0)
@@ -88,7 +87,7 @@ object AgentTools {
                 }
 
                 // TAPASYA (Focus Sessions)
-                "get_tapasya_sessions" -> {
+                "tapasya", "get_tapasya_sessions" -> {
                     val dateStr = args.optString("date", "")
                     val date = if (dateStr.isNotEmpty()) LocalDate.parse(dateStr) else LocalDate.now()
                     val limit = args.optInt("limit", 5)
@@ -122,7 +121,7 @@ object AgentTools {
                 }
 
                 // TASKS
-                "get_tasks" -> {
+                "tasks", "get_tasks" -> {
                     val dateStr = args.optString("date", "")
                     val date = if (dateStr.isNotEmpty()) LocalDate.parse(dateStr) else LocalDate.now()
                     
@@ -138,7 +137,7 @@ object AgentTools {
                 }
 
                 // CALENDAR EVENTS (Study Sessions)
-                "get_calendar_events" -> {
+                "study_sessions", "get_calendar_events" -> {
                     val dateStr = args.optString("date", "")
                     val date = if (dateStr.isNotEmpty()) LocalDate.parse(dateStr) else LocalDate.now()
                     
@@ -169,7 +168,7 @@ object AgentTools {
                 }
 
                 // APP USAGE
-                "get_app_usage_stats" -> {
+                "usage_stats", "get_app_usage_stats" -> {
                     val dateStr = args.optString("date", "")
                     val date = if (dateStr.isNotEmpty()) LocalDate.parse(dateStr) else LocalDate.now()
                     val pkg = args.optString("package_name", "")
@@ -203,7 +202,7 @@ object AgentTools {
                 }
 
                 // APP BLOCKER STATUS
-                "get_blocked_status" -> {
+                "app_blocker", "get_blocked_status" -> {
                     val pkg = args.optString("package_name", "")
                     val prefs = SavedPreferencesLoader(context)
                     
@@ -251,7 +250,7 @@ object AgentTools {
                 }
 
                 // REMINDERS
-                "get_reminders" -> {
+                "reminders", "get_reminders" -> {
                     val prefs = SavedPreferencesLoader(context)
                     val reminders = prefs.loadCustomReminders()
                     
@@ -274,7 +273,7 @@ object AgentTools {
                 }
 
                 // NIGHTLY PROTOCOL DATA
-                "get_nightly_data" -> {
+                "nightly", "get_nightly_data" -> {
                     val dateStr = args.optString("date", "")
                     val date = if (dateStr.isNotEmpty()) LocalDate.parse(dateStr) else LocalDate.now()
                     val dataType = args.optString("data_type")
@@ -301,7 +300,7 @@ object AgentTools {
                 }
 
                 // HEALTH STATS
-                "get_health_stats" -> {
+                "health", "get_health_stats" -> {
                     val prefs = context.getSharedPreferences("ai_prefs", Context.MODE_PRIVATE)
                     if (!prefs.getBoolean("health_access_enabled", false)) {
                         return "Health access is disabled. Enable it in AI Settings."
@@ -335,7 +334,7 @@ object AgentTools {
                 // ==================== ACTION TOOLS ====================
                 
                 // ADD TASK
-                "add_task" -> {
+                "action_add_task", "add_task" -> {
                     val title = args.optString("title", "")
                     if (title.isEmpty()) {
                         return "I need the task title. What would you like the task to say?"
@@ -357,7 +356,7 @@ object AgentTools {
                 
                 // COMPLETE TASK
                 // COMPLETE TASK
-                "complete_task" -> {
+                "action_complete_task", "complete_task" -> {
                     val taskTitle = args.optString("task_title", "")
                     if (taskTitle.isEmpty()) {
                         return "Which task would you like to mark as complete?"
@@ -397,7 +396,7 @@ object AgentTools {
                 }
                 
                 // ADD REMINDER
-                "add_reminder" -> {
+                "action_add_reminder", "add_reminder" -> {
                     val title = args.optString("title", "")
                     val hourStr = args.optString("hour", "")
                     
@@ -434,7 +433,7 @@ object AgentTools {
                 }
                 
                 // START FOCUS MODE
-                "start_focus" -> {
+                "action_start_focus", "start_focus" -> {
                     val durationMins = args.optInt("duration_mins", 25)
                     
                     val prefs = SavedPreferencesLoader(context)
@@ -457,7 +456,7 @@ object AgentTools {
                 }
                 
                 // START TAPASYA
-                "start_tapasya" -> {
+                "action_start_tapasya", "start_tapasya" -> {
                     val name = args.optString("name", "Deep Focus")
                     val durationMins = args.optInt("duration_mins", 0) // 0 = unlimited
                     
@@ -477,7 +476,7 @@ object AgentTools {
                 }
 
                 // ADD MISSED TAPASYA SESSION
-                "add_missed_tapasya" -> {
+                "action_add_missed_tapasya", "add_missed_tapasya" -> {
                     val name = args.optString("name", "Deep Focus")
                     val startTimeStr = args.optString("start_time", "")
                     val endTimeStr = args.optString("end_time", "")
@@ -554,7 +553,7 @@ object AgentTools {
                 }
 
                 // SCHEDULE NOTIFICATION (Lightweight)
-                "schedule_notification" -> {
+                "action_schedule_notification", "schedule_notification" -> {
                     val title = args.optString("title", "Reality Alert")
                     val message = args.optString("message", "")
                     val delayMins = args.optInt("minutes_from_now", 0)
@@ -619,10 +618,665 @@ object AgentTools {
                     return "✅ Notification scheduled in $delayMins mins: \"$title\""
                 }
 
+                // IMAGE GENERATION (Supports multiple providers)
+                "action_generate_image", "generate_image" -> {
+                    val prompt = args.optString("prompt", "")
+                    if (prompt.isEmpty()) {
+                        return "I need a description of the image you want. What should I generate?"
+                    }
+                    
+                    val style = args.optString("style", "")
+                    val saveToGallery = args.optString("save_to_gallery", "true") != "false"
+                    
+                    // Get image model settings (New System)
+                    val aiPrefs = context.getSharedPreferences("ai_prefs", Context.MODE_PRIVATE)
+                    val imageModel = aiPrefs.getString("image_model", "Pollinations: Free") ?: "Pollinations: Free"
+                    
+                    // Build enhanced prompt with style
+                    val fullPrompt = if (style.isNotEmpty()) {
+                        "$prompt, $style style, high quality, detailed"
+                    } else {
+                        "$prompt, high quality, detailed"
+                    }
+                    
+                    val encodedPrompt = java.net.URLEncoder.encode(fullPrompt, "UTF-8")
+                    val seed = System.currentTimeMillis()
+                    
+                    var imageUrl = ""
+                    var statusMessage = "🎨 Image Generated Successfully!"
+                    var errorMessage: String? = null
+                    
+                    // Logic based on provider
+                    try {
+                        if (imageModel.startsWith("Pollinations")) {
+                            imageUrl = "https://image.pollinations.ai/prompt/$encodedPrompt?width=1024&height=1024&seed=$seed&nologo=true"
+                        } else if (imageModel.startsWith("OpenAI")) {
+                            val providerKey = "OpenAI"
+                            val modelName = imageModel.substringAfter(": ").trim()
+                            val apiKey = aiPrefs.getString("api_key_$providerKey", "") ?: ""
+                            
+                            if (apiKey.isNotEmpty()) {
+                                val body = JSONObject().apply {
+                                    put("prompt", fullPrompt)
+                                    put("n", 1)
+                                    put("size", "1024x1024")
+                                    put("model", if (modelName.contains("dall-e")) modelName else "dall-e-3")
+                                }
+                                
+                                val response = makePostRequest("https://api.openai.com/v1/images/generations", apiKey, body)
+                                if (response != null) {
+                                    val json = JSONObject(response)
+                                    imageUrl = json.getJSONArray("data").getJSONObject(0).getString("url")
+                                } else {
+                                    errorMessage = "OpenAI returned no response. Check your API key or balance."
+                                }
+                            } else {
+                                errorMessage = "OpenAI API Key is missing in settings."
+                            }
+                        } else if (imageModel.startsWith("OpenRouter")) {
+                            val providerKey = "OpenRouter"
+                            val modelName = imageModel.substringAfter(": ").trim()
+                            val apiKey = aiPrefs.getString("api_key_$providerKey", "") ?: ""
+                            
+                            if (apiKey.isNotEmpty()) {
+                                // OpenRouter image models are typically invoked via chat API
+                                val body = JSONObject().apply {
+                                    put("model", modelName)
+                                    val messages = JSONArray().apply {
+                                        put(JSONObject().apply {
+                                            put("role", "user")
+                                            put("content", "Generate an image: $fullPrompt")
+                                        })
+                                    }
+                                    put("messages", messages)
+                                }
+                                
+                                val response = makePostRequest("https://openrouter.ai/api/v1/chat/completions", apiKey, body)
+                                if (response != null) {
+                                    val json = JSONObject(response)
+                                    val choice = json.optJSONArray("choices")?.optJSONObject(0)
+                                    val message = choice?.optJSONObject("message")
+                                    
+                                    if (message != null) {
+                                        val content = message.optString("content", "")
+                                        
+                                        // Try 1: Extract from message images array (some providers use this)
+                                        val imagesArr = message.optJSONArray("images")
+                                        if (imagesArr != null && imagesArr.length() > 0) {
+                                            imageUrl = imagesArr.getString(0)
+                                        }
+                                        
+                                        // Try 2: Extract from content if empty
+                                        if (imageUrl.isEmpty()) {
+                                            imageUrl = extractImageUrl(content)
+                                        }
+                                        
+                                        if (imageUrl.isEmpty()) {
+                                            errorMessage = "Model outputted text but no image URL was found: $content"
+                                        }
+                                    } else {
+                                        errorMessage = "OpenRouter response structure invalid."
+                                    }
+                                } else {
+                                    errorMessage = "OpenRouter returned no response. Check your API key or balance."
+                                }
+                            } else {
+                                errorMessage = "OpenRouter API Key is missing in settings."
+                            }
+                        }
+                    } catch (e: Exception) {
+                        errorMessage = e.message
+                        TerminalLogger.log("IMAGE ERROR: $errorMessage")
+                    }
+                    
+                    // Validate result and report error if needed
+                    if (imageUrl.isEmpty()) {
+                        statusMessage = "❌ Image Generation Failed"
+                        val modelLabel = if (imageModel.contains(":")) imageModel.substringAfter(": ") else imageModel
+                        return "$statusMessage\n\n" +
+                               "⚠️ The model '$modelLabel' failed to generate an image.\n" +
+                               "REASON: ${errorMessage ?: "The provider returned an empty response."}\n\n" +
+                               "ADVICE: Check your API key, model permissions, or account balance in Settings."
+                    }
+                    
+                    // Save to gallery in background (non-blocking) using the seed as timestamp
+                    if (saveToGallery) {
+                        Thread {
+                            try {
+                                saveImageToGallery(context, imageUrl, seed) // Use seed as ID
+                            } catch (e: Exception) {
+                                TerminalLogger.log("IMAGE: Failed to save - ${e.message}")
+                            }
+                        }.start()
+                    }
+                    
+                    // Return immediately with markdown image (Coil will load it). 
+                    // CRITICAL: We include a clear instruction for the LLM to pass this through.
+                    return "$statusMessage\n\n" +
+                           "![Generated Image]($imageUrl)\n\n" +
+                           "INSTRUCTION TO AI: You MUST include the exact markdown image link above in your final response to the user so they can see it. Do not just say you generated it; show it using the markdown syntax provided."
+                }
+
+                // ==================== UTILITY TOOLS ====================
+                "utility_time", "get_current_time" -> {
+                    val format = args.optString("format", "full")
+                    val istZone = ZoneId.of("Asia/Kolkata")
+                    val now = java.time.ZonedDateTime.now(istZone)
+                    
+                    val result = JSONObject().apply {
+                        put("timezone", "IST (Asia/Kolkata)")
+                        
+                        when (format) {
+                            "time_only" -> {
+                                put("time", now.format(DateTimeFormatter.ofPattern("HH:mm:ss")))
+                                put("hour_24", now.hour)
+                                put("minute", now.minute)
+                            }
+                            "date_only" -> {
+                                put("date", now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                                put("day_of_week", now.dayOfWeek.toString().lowercase().replaceFirstChar { it.uppercase() })
+                                put("day", now.dayOfMonth)
+                                put("month", now.month.toString().lowercase().replaceFirstChar { it.uppercase() })
+                                put("year", now.year)
+                            }
+                            else -> { // "full"
+                                put("datetime", now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                                put("date", now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                                put("time", now.format(DateTimeFormatter.ofPattern("HH:mm:ss")))
+                                put("day_of_week", now.dayOfWeek.toString().lowercase().replaceFirstChar { it.uppercase() })
+                                put("is_weekend", now.dayOfWeek.value >= 6)
+                                put("hour_24", now.hour)
+                                put("period", if (now.hour < 12) "morning" else if (now.hour < 17) "afternoon" else if (now.hour < 21) "evening" else "night")
+                            }
+                        }
+                    }
+                    
+                    result.toString(2)
+                }
+
+                // ==================== WEB SEARCH TOOL ====================
+                "web_search", "perform_web_search" -> {
+                    val query = args.optString("query")
+                    if (query.isEmpty()) return "Error: 'query' parameter is required."
+                    val maxResults = args.optInt("max_results", 5).coerceIn(1, 10)
+                    
+                    val prefs = context.getSharedPreferences("ai_prefs", Context.MODE_PRIVATE)
+                    val searchEngine = prefs.getString("search_engine", "") ?: ""
+                    
+                    if (searchEngine.isEmpty() || !searchEngine.contains("Tavily")) {
+                        return org.json.JSONObject().apply {
+                            put("error", "Tavily Search not configured. Please add your Tavily API key in AI Settings -> Web Search Engine.")
+                            put("status", "failed")
+                            put("advice", "Direct the user to AI Settings to configure their Tavily API key.")
+                        }.toString()
+                    }
+                    
+                    val apiKey = prefs.getString("api_key_Tavily", "") ?: ""
+                    if (apiKey.isEmpty()) return "Error: Tavily API Key is missing in settings."
+
+                    try {
+                        val body = org.json.JSONObject().apply {
+                            put("api_key", apiKey)
+                            put("query", query)
+                            put("max_results", maxResults)
+                            put("search_depth", "basic")
+                        }
+                        
+                        val conn = java.net.URL("https://api.tavily.com/search").openConnection() as java.net.HttpURLConnection
+                        conn.requestMethod = "POST"
+                        conn.setRequestProperty("Content-Type", "application/json")
+                        conn.doOutput = true
+                        conn.connectTimeout = 15000
+                        conn.readTimeout = 15000
+                        conn.outputStream.use { it.write(body.toString().toByteArray()) }
+                        
+                        if (conn.responseCode != 200) {
+                            val error = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown error"
+                            return org.json.JSONObject().apply {
+                                put("error", "Tavily API Error: $error")
+                                put("status", "failed")
+                            }.toString()
+                        }
+                        
+                        val response = conn.inputStream.bufferedReader().use { it.readText() }
+                        val json = org.json.JSONObject(response)
+                        val results = json.optJSONArray("results") ?: org.json.JSONArray()
+                        
+                        val resultsArr = org.json.JSONArray()
+                        for (i in 0 until results.length()) {
+                            val res = results.getJSONObject(i)
+                            resultsArr.put(org.json.JSONObject().apply {
+                                put("title", res.optString("title"))
+                                put("snippet", res.optString("content").take(500))
+                                put("url", res.optString("url"))
+                            })
+                        }
+                        
+                        org.json.JSONObject().apply {
+                            put("query", query)
+                            put("provider", "Tavily")
+                            put("results", resultsArr)
+                            put("count", resultsArr.length())
+                            put("status", "success")
+                            put("note", "BUDGET EXHAUSTED: This is your ONLY search for this request. Do NOT search again.")
+                            put("search_frugality", "strict")
+                        }.toString()
+                        
+                    } catch (e: Exception) {
+                        org.json.JSONObject().apply {
+                            put("query", query)
+                            put("error", e.message ?: "Unknown search error")
+                            put("status", "failed")
+                        }.toString()
+                    }
+                }
+
+                // ==================== UNIVERSAL QUERY TOOL ====================
+                "universal_query", "query_data" -> {
+                    val sourcesStr = args.optString("sources", "")
+                    if (sourcesStr.isEmpty()) {
+                        return "Error: 'sources' is required. Specify comma-separated: tasks,tapasya,calendar,usage,xp,reminders,health"
+                    }
+                    
+                    val sources = sourcesStr.split(",").map { it.trim().lowercase() }
+                    val dateRange = args.optString("date_range", "today")
+                    val startDateStr = args.optString("start_date", "")
+                    val endDateStr = args.optString("end_date", "")
+                    val format = args.optString("format", "summary")
+                    val limit = args.optInt("limit", 5)
+                    val searchQuery = args.optString("query", "")
+                    
+                    // Calculate date range
+                    val today = LocalDate.now(ZoneId.of("Asia/Kolkata"))
+                    val (startDate, endDate) = when (dateRange) {
+                        "today" -> today to today
+                        "yesterday" -> today.minusDays(1) to today.minusDays(1)
+                        "week" -> today.minusDays(6) to today
+                        "month" -> today.minusDays(29) to today
+                        "custom" -> {
+                            val start = if (startDateStr.isNotEmpty()) LocalDate.parse(startDateStr) else today
+                            val end = if (endDateStr.isNotEmpty()) LocalDate.parse(endDateStr) else today
+                            start to end
+                        }
+                        else -> today to today
+                    }
+                    
+                    val results = JSONObject()
+                    results.put("query_info", JSONObject().apply {
+                        put("sources", JSONArray(sources))
+                        put("date_range", "$startDate to $endDate")
+                        put("format", format)
+                        put("timezone", "IST")
+                    })
+                    
+                    val db = AppDatabase.getDatabase(context)
+                    val istZone = ZoneId.of("Asia/Kolkata")
+                    
+                    // Process each source
+                    for (source in sources) {
+                        try {
+                            when (source) {
+                                "tapasya" -> {
+                                    val startMs = startDate.atStartOfDay(istZone).toInstant().toEpochMilli()
+                                    val endMs = endDate.plusDays(1).atStartOfDay(istZone).toInstant().toEpochMilli()
+                                    val sessions = db.tapasyaSessionDao().getSessionsForDay(startMs, endMs)
+                                    
+                                    // Apply search filter if provided
+                                    val filtered = if (searchQuery.isNotEmpty()) {
+                                        sessions.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                                    } else sessions
+                                    
+                                    val arr = JSONArray()
+                                    filtered.take(limit).forEach { s ->
+                                        arr.put(JSONObject().apply {
+                                            put("name", s.name)
+                                            put("date", ToolRegistry.formatIST(s.startTime).substringBefore(" "))
+                                            put("start_time", ToolRegistry.formatISTTime(s.startTime))
+                                            put("duration_mins", s.effectiveTimeMs / 60000)
+                                            put("was_auto_stopped", s.wasAutoStopped)
+                                        })
+                                    }
+                                    
+                                    results.put("tapasya", JSONObject().apply {
+                                        put("total_sessions", filtered.size)
+                                        put("total_focus_mins", filtered.sumOf { it.effectiveTimeMs / 60000 })
+                                        if (format != "stats") put("sessions", arr)
+                                    })
+                                }
+                                
+                                "xp", "gamification" -> {
+                                    // Use DailyStatsDao for date range queries
+                                    val statsFlow = db.dailyStatsDao().getStatsInRange(startDate.toString(), endDate.toString())
+                                    // Since we're in a suspend function, collect synchronously by using firstOrNull pattern
+                                    // Actually, getStatsInRange returns Flow, need to handle differently
+                                    // Let's use getAllStats and filter for simplicity
+                                    val allStats = db.dailyStatsDao().getAllStats()
+                                    val rangeStats = allStats.filter { 
+                                        it.date >= startDate.toString() && it.date <= endDate.toString() 
+                                    }.sortedByDescending { it.date }
+                                    
+                                    val arr = JSONArray()
+                                    rangeStats.take(limit).forEach { stat ->
+                                        arr.put(JSONObject().apply {
+                                            put("date", stat.date)
+                                            put("total_xp", stat.totalXP)
+                                            put("level", stat.level)
+                                            put("streak", stat.streak)
+                                        })
+                                    }
+                                    
+                                    results.put("xp", JSONObject().apply {
+                                        put("days_with_data", rangeStats.size)
+                                        put("total_xp", rangeStats.sumOf { it.totalXP })
+                                        put("avg_daily_xp", if (rangeStats.isNotEmpty()) rangeStats.sumOf { it.totalXP } / rangeStats.size else 0)
+                                        put("current_level", XPManager.getLevel(context))
+                                        put("current_streak", XPManager.getStreak(context))
+                                        if (format != "stats") put("daily_breakdown", arr)
+                                    })
+                                }
+                                
+                                "tasks" -> {
+                                    // Query tasks for date range
+                                    val taskData = JSONObject()
+                                    var totalPending = 0
+                                    var totalCompleted = 0
+                                    val allTasks = JSONArray()
+                                    
+                                    // For each date in range (limit to avoid too many API calls)
+                                    var currentDate = startDate
+                                    var dateCount = 0
+                                    while (currentDate <= endDate && dateCount < 7) {
+                                        val stats = GoogleTasksManager.getTasksForDate(context, currentDate.toString())
+                                        totalPending += stats.pendingCount
+                                        totalCompleted += stats.completedCount
+                                        
+                                        // Add tasks with search filter
+                                        val dueTasks = if (searchQuery.isNotEmpty()) {
+                                            stats.dueTasks.filter { it.contains(searchQuery, ignoreCase = true) }
+                                        } else stats.dueTasks
+                                        
+                                        dueTasks.take(limit / (endDate.toEpochDay() - startDate.toEpochDay() + 1).toInt().coerceAtLeast(1)).forEach { t ->
+                                            allTasks.put(JSONObject().apply {
+                                                put("title", t)
+                                                put("status", "pending")
+                                                put("date", currentDate.toString())
+                                            })
+                                        }
+                                        
+                                        currentDate = currentDate.plusDays(1)
+                                        dateCount++
+                                    }
+                                    
+                                    results.put("tasks", JSONObject().apply {
+                                        put("total_pending", totalPending)
+                                        put("total_completed", totalCompleted)
+                                        put("completion_rate", if (totalPending + totalCompleted > 0) 
+                                            "${(totalCompleted * 100 / (totalPending + totalCompleted))}%" else "N/A")
+                                        if (format != "stats") put("pending_tasks", allTasks)
+                                    })
+                                }
+                                
+                                "calendar" -> {
+                                    val repo = CalendarRepository(context)
+                                    val startMs = startDate.atStartOfDay(istZone).toInstant().toEpochMilli()
+                                    val endMs = endDate.plusDays(1).atStartOfDay(istZone).toInstant().toEpochMilli()
+                                    val events = repo.getEventsInRange(startMs, endMs)
+                                    
+                                    // Apply search filter
+                                    val filtered = if (searchQuery.isNotEmpty()) {
+                                        events.filter { it.title.contains(searchQuery, ignoreCase = true) }
+                                    } else events
+                                    
+                                    val arr = JSONArray()
+                                    filtered.take(limit).forEach { e ->
+                                        arr.put(JSONObject().apply {
+                                            put("title", e.title)
+                                            put("date", ToolRegistry.formatIST(e.startTime).substringBefore(" "))
+                                            put("start", ToolRegistry.formatISTTime(e.startTime))
+                                            put("end", ToolRegistry.formatISTTime(e.endTime))
+                                        })
+                                    }
+                                    
+                                    results.put("calendar", JSONObject().apply {
+                                        put("total_events", filtered.size)
+                                        if (format != "stats") put("events", arr)
+                                    })
+                                }
+                                
+                                "usage" -> {
+                                    // For usage, just get today's data (can't easily query range)
+                                    val usageMap = UsageUtils.getUsageForDate(context, startDate)
+                                    val sorted = usageMap.entries.sortedByDescending { it.value }.take(limit)
+                                    
+                                    val arr = JSONArray()
+                                    sorted.forEach { entry ->
+                                        arr.put(JSONObject().apply {
+                                            put("app", entry.key.substringAfterLast("."))
+                                            put("package", entry.key)
+                                            put("minutes", entry.value / 60000)
+                                        })
+                                    }
+                                    
+                                    results.put("usage", JSONObject().apply {
+                                        put("date", startDate.toString())
+                                        put("total_screen_time_mins", usageMap.values.sum() / 60000)
+                                        put("app_count", usageMap.size)
+                                        if (format != "stats") put("top_apps", arr)
+                                    })
+                                }
+                                
+                                "reminders" -> {
+                                    val prefs = SavedPreferencesLoader(context)
+                                    val reminders = prefs.loadCustomReminders().filter { it.isEnabled }
+                                    
+                                    // Apply search filter
+                                    val filtered = if (searchQuery.isNotEmpty()) {
+                                        reminders.filter { it.title.contains(searchQuery, ignoreCase = true) }
+                                    } else reminders
+                                    
+                                    val arr = JSONArray()
+                                    filtered.take(limit).forEach { r ->
+                                        arr.put(JSONObject().apply {
+                                            put("title", r.title)
+                                            put("time", String.format("%02d:%02d", r.hour, r.minute))
+                                            put("repeat_days", JSONArray(r.repeatDays))
+                                        })
+                                    }
+                                    
+                                    results.put("reminders", JSONObject().apply {
+                                        put("total_active", filtered.size)
+                                        if (format != "stats") put("reminders", arr)
+                                    })
+                                }
+                                
+                                "health" -> {
+                                    val prefs = context.getSharedPreferences("ai_prefs", Context.MODE_PRIVATE)
+                                    if (!prefs.getBoolean("health_access_enabled", false)) {
+                                        results.put("health", JSONObject().put("error", "Health access disabled"))
+                                    } else if (!com.neubofy.reality.health.HealthManager.isHealthConnectAvailable(context)) {
+                                        results.put("health", JSONObject().put("error", "Health Connect not available"))
+                                    } else {
+                                        val manager = com.neubofy.reality.health.HealthManager(context)
+                                        if (!manager.hasPermissions()) {
+                                            results.put("health", JSONObject().put("error", "Health permissions not granted"))
+                                        } else {
+                                            // Get health data for the date
+                                            val steps = manager.getSteps(startDate)
+                                            val cals = manager.getCalories(startDate)
+                                            val sleep = manager.getSleep(startDate)
+                                            
+                                            results.put("health", JSONObject().apply {
+                                                put("date", startDate.toString())
+                                                put("steps", steps)
+                                                put("calories", String.format("%.1f", cals))
+                                                put("sleep", sleep)
+                                            })
+                                        }
+                                    }
+                                }
+                                
+                                else -> {
+                                    results.put(source, JSONObject().put("error", "Unknown source: $source"))
+                                }
+                            }
+                        } catch (e: Exception) {
+                            results.put(source, JSONObject().put("error", e.message ?: "Query failed"))
+                        }
+                    }
+                    
+                    results.toString(2)
+                }
+
                 else -> "Unknown tool: $name. Use get_tool_schema to discover available tools."
             }
         } catch (e: Exception) {
             "Tool Error: ${e.message}"
+        }
+    }
+    
+    /**
+     * Downloads an image from URL and saves it to Pictures/Reality folder.
+     * Uses MediaStore for proper gallery integration on Android 10+.
+     */
+    private fun saveImageToGallery(context: Context, imageUrl: String, timestamp: Long): String {
+        val fileName = "reality_img_$timestamp.jpg"
+        
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            // Android 10+ - Use MediaStore
+            val contentValues = android.content.ContentValues().apply {
+                put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+                put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/Reality")
+                put(android.provider.MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+            
+            val resolver = context.contentResolver
+            val uri = resolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                ?: throw Exception("Failed to create MediaStore entry")
+            
+            try {
+                // Download image
+                val connection = java.net.URL(imageUrl).openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 30000
+                connection.readTimeout = 30000
+                connection.connect()
+                
+                if (connection.responseCode == 200) {
+                    resolver.openOutputStream(uri)?.use { outputStream ->
+                        connection.inputStream.use { inputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
+                    
+                    // Mark as complete
+                    contentValues.clear()
+                    contentValues.put(android.provider.MediaStore.MediaColumns.IS_PENDING, 0)
+                    resolver.update(uri, contentValues, null, null)
+                    
+                    TerminalLogger.log("IMAGE: Saved to gallery - $fileName")
+                    "Pictures/Reality/$fileName"
+                } else {
+                    resolver.delete(uri, null, null)
+                    throw Exception("Download failed: ${connection.responseCode}")
+                }
+            } catch (e: Exception) {
+                resolver.delete(uri, null, null)
+                throw e
+            }
+        } else {
+            // Android 9 and below - Direct file access
+            val picturesDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES)
+            val realityDir = java.io.File(picturesDir, "Reality")
+            if (!realityDir.exists()) realityDir.mkdirs()
+            
+            val imageFile = java.io.File(realityDir, fileName)
+            
+            val connection = java.net.URL(imageUrl).openConnection() as java.net.HttpURLConnection
+            connection.connectTimeout = 30000
+            connection.readTimeout = 30000
+            connection.connect()
+            
+            if (connection.responseCode == 200) {
+                java.io.FileOutputStream(imageFile).use { outputStream ->
+                    connection.inputStream.use { inputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                
+                // Notify gallery
+                val mediaScanIntent = android.content.Intent(android.content.Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+                mediaScanIntent.data = android.net.Uri.fromFile(imageFile)
+                context.sendBroadcast(mediaScanIntent)
+                
+                TerminalLogger.log("IMAGE: Saved to - ${imageFile.absolutePath}")
+                imageFile.absolutePath
+            } else {
+                throw Exception("Download failed: ${connection.responseCode}")
+            }
+        }
+    }
+
+    /**
+     * Extracts a URL (preferably an image URL) from a string.
+     * Supports Markdown format ![alt](url) and raw URLs.
+     */
+    private fun extractImageUrl(content: String): String {
+        if (content.isEmpty()) return ""
+        
+        // 1. Try Markdown Image Pattern: ![description](url)
+        val markdownRegex = Regex("""!\[.*?\]\((https?://\S+)\)""")
+        val match = markdownRegex.find(content)
+        if (match != null) return match.groupValues[1]
+        
+        // 2. Try Naked URL Pattern
+        val urlRegex = Regex("""(https?://\S+)""")
+        val urlMatch = urlRegex.find(content)
+        if (urlMatch != null) {
+             val url = urlMatch.groupValues[1]
+             // Basic check if it looks like an image URL or if it's the only thing in the response
+             if (url.contains(Regex("""\.(jpg|jpeg|png|webp|gif)""", RegexOption.IGNORE_CASE)) || content.trim() == url) {
+                 return url
+             }
+        }
+        
+        return ""
+    }
+
+    /**
+     * Helper for making POST requests to AI APIs (Images)
+     */
+    private fun makePostRequest(urlString: String, apiKey: String, body: JSONObject): String? {
+        return try {
+            val url = java.net.URL(urlString)
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Authorization", "Bearer $apiKey")
+            
+            // OpenRouter specific headers
+            if (urlString.contains("openrouter.ai")) {
+                conn.setRequestProperty("HTTP-Referer", "https://neubofy.com")
+                conn.setRequestProperty("X-Title", "Reality App")
+            }
+
+            conn.doOutput = true
+            conn.connectTimeout = 30000
+            conn.readTimeout = 30000
+
+            conn.outputStream.use { os ->
+                os.write(body.toString().toByteArray())
+            }
+            
+            if (conn.responseCode == 200) {
+                conn.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                val error = conn.errorStream?.bufferedReader()?.use { it.readText() }
+                TerminalLogger.log("HTTP ERROR: ${conn.responseCode} - $error")
+                null
+            }
+        } catch (e: Exception) {
+            TerminalLogger.log("HTTP ERROR: ${e.message}")
+            null
         }
     }
 }

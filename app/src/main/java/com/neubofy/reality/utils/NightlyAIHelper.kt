@@ -129,7 +129,7 @@ object NightlyAIHelper {
                 .replace("{stats}", statsStr)
         } else {
             // Use default prompt
-            """You are a supportive but honest personal productivity coach.
+            """You are a master productivity analyst and life coach. Your goal is to help the user identify patterns of failure and opportunities for growth.
 
 $userIntroStr
 
@@ -138,7 +138,7 @@ Today is ${summary.date.format(dateFormatter)}.
 📅 SCHEDULED CALENDAR EVENTS:
 $calendarList
 
-📋 TASKS DUE TODAY:
+📋 TASKS PLANNED FOR TODAY:
 $tasksDueList
 
 ✅ TASKS COMPLETED TODAY:
@@ -147,25 +147,27 @@ $tasksCompletedList
 ⏱️ STUDY/WORK SESSIONS (Tapasya):
 $sessionsList
 
-📱 DIGITAL WELLBEING (Health):
+📱 DIGITAL WELLBEING (Health & Previous Day Comparison):
 $healthData
 
-📊 STATISTICS:
+📊 PERFORMANCE STATISTICS:
 $statsStr
 
-Based on this comprehensive data, generate EXACTLY 5 personalized reflection questions.
+---
+[INSTRUCTIONS]
+Analyze the data above deeply. Look for:
+1. Gaps between what was planned (Calendar/Tasks) and what was actually achieved (Completed Tasks/Tapasya Sessions).
+2. Signs of procrastination or distraction (High phone usage, low Reality Ratio, missed tasks).
+3. Inconsistencies between health habits (Sleep/Steps) and work performance.
 
-Guidelines:
-1. If there's a gap between planned and actual, ask about what happened (gently but directly)
-2. If they completed many tasks, acknowledge and ask what helped them succeed
-3. If tasks are pending, ask about priorities and blockers
-4. Ask about their emotional/mental state during work
-5. Help them plan improvements for tomorrow
+Generate EXACTLY 5 high-impact, analytical reflection questions.
+These questions must:
+- Challenge the user to confront their specific mistakes today (e.g., "Why were these 3 tasks ignored despite being planned?").
+- Ask the "WHY" behind failures to find root causes (burnout, lack of priority, phone addiction).
+- Reference the comparison with yesterday if data is available to highlight trends.
+- Force the user to propose a CONCRETE strategy to avoid repeating today's mistakes tomorrow.
 
-Be warm and supportive, but also honest. Don't sugarcoat if they underperformed.
-If no plan was set, ask about setting intentions.
-If no work was done, be compassionate but encourage reflection on barriers.
-
+Be direct, analytical, and uncompromising but constructive. Avoid generic fluff.
 Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         }
     }
@@ -220,6 +222,64 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         response
     }
     
+    /**
+     * Normalize tasks (deduplicate & reschedule) using AI.
+     */
+    suspend fun normalizeTasks(
+        context: Context,
+        modelString: String,
+        tasksJson: String,
+        targetDate: String,
+        taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig> = emptyList()
+    ): String = withContext(Dispatchers.IO) {
+        
+        TerminalLogger.log("Nightly AI: Normalizing tasks with model: $modelString")
+        
+        val providerAndKey = AISettingsActivity.getProviderAndKeyFromModel(context, modelString)
+            ?: throw IllegalStateException("Invalid model configuration: $modelString")
+        
+        val (provider, apiKey) = providerAndKey
+        val modelName = modelString.substringAfter(": ")
+        
+        // Build list context (same logic as plan extraction)
+        val listsContext = if (taskListConfigs.isNotEmpty()) {
+            val details = taskListConfigs.joinToString("\n") { 
+                "- List Name: \"${it.displayName}\" (ID: ${it.googleListId})\n  Description: ${it.description}" 
+            }
+            "\n[AVAILABLE TASK LISTS]\n$details\n"
+        } else {
+            ""
+        }
+
+        // Load custom or default prompt
+        val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
+        val customPrompt = prefs.getString("custom_task_cleanup_prompt", null)
+        
+        val systemPrompt = if (customPrompt != null) {
+            customPrompt.replace("{tasks_json}", tasksJson)
+                .replace("{target_date}", targetDate)
+                .replace("{list_context}", listsContext)
+        } else {
+            com.neubofy.reality.data.nightly.NightlySteps.DEFAULT_TASK_NORMALIZER_TEMPLATE
+                .replace("{tasks_json}", tasksJson)
+                .replace("{target_date}", targetDate)
+                .replace("{list_context}", listsContext)
+        }
+            
+        TerminalLogger.log("Nightly AI: Task Cleanup prompt built, calling $provider API...")
+        
+        val response = when (provider) {
+            "OpenAI" -> callOpenAI(apiKey, modelName, systemPrompt)
+            "Gemini" -> callGemini(apiKey, modelName, systemPrompt)
+            "Groq" -> callGroq(apiKey, modelName, systemPrompt)
+            "OpenRouter" -> callOpenRouter(apiKey, modelName, systemPrompt)
+            "Perplexity" -> callPerplexity(apiKey, modelName, prompt = systemPrompt)
+            else -> throw IllegalStateException("Unsupported provider: $provider")
+        }
+        
+        response
+    }
+
     fun getDefaultQuestionsPromptTemplate(): String {
         return """You are a supportive but honest personal productivity coach.
 

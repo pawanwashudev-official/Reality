@@ -5,6 +5,12 @@ import java.util.LinkedList
 import java.util.Queue
 
 object UrlDetector {
+    @Suppress("DEPRECATION")
+    private fun safeRecycle(node: AccessibilityNodeInfo?) {
+        if (node != null && android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) {
+            try { node.recycle() } catch(e: Exception){}
+        }
+    }
     val BROWSER_PACKAGES = setOf(
         "com.android.chrome",
         "com.chrome.beta",
@@ -38,7 +44,7 @@ object UrlDetector {
     private var dynamicBrowserPackages: Set<String> = emptySet()
     
     // Cache for successful View IDs per package to avoid scanning all IDs every time
-    private val successfulViewIdCache = java.util.HashMap<String, String>()
+    private val successfulViewIdCache = java.util.concurrent.ConcurrentHashMap<String, String>()
 
     fun init(context: android.content.Context) {
         try {
@@ -93,7 +99,7 @@ object UrlDetector {
                         }
                     }
                 } finally {
-                    nodes.forEach { try { it.recycle() } catch(e: Exception){} }
+                    nodes.forEach { safeRecycle(it) }
                 }
             }
         }
@@ -145,7 +151,7 @@ object UrlDetector {
                     }
                 } finally {
                     // IMPORTANT: Recycle nodes to prevent memory leaks
-                    nodes.forEach { try { it.recycle() } catch(e: Exception){} }
+                    nodes.forEach { safeRecycle(it) }
                 }
             }
         }
@@ -205,13 +211,13 @@ object UrlDetector {
                     }
                 } finally {
                     // Recycle processed node
-                    try { node.recycle() } catch(e: Exception){}
+                    safeRecycle(node)
                 }
             }
         } finally {
              // Recycle remaining in queue
              while(!queue.isEmpty()) {
-                 try { queue.poll()?.recycle() } catch(e: Exception){}
+                 safeRecycle(queue.poll())
              }
         }
 

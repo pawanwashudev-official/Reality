@@ -1,33 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
+
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/md_theme_background">
+    tools:context=".ui.activity.MainActivity">
 
-    <!-- Background Element -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="?android:colorBackground"/>
-
-    <!-- Pattern Overlay -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/bg_pattern_zen"
-        android:alpha="0.6"/>
-
-    <!-- Gradient Gradient (Top Glow) -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="300dp"
-        android:background="@drawable/dialog_gradient_background"
-        app:layout_constraintTop_toTopOf="parent"
-        android:alpha="0.2"/>
+    <!-- The background and patterns are now handled universally by BaseActivity -->
 
     <!-- Header -->
+
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="match_parent"

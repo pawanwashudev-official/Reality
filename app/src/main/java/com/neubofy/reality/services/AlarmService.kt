@@ -57,6 +57,7 @@ class AlarmService : Service() {
         val autoSnoozeEnabled = intent?.getBooleanExtra("autoSnoozeEnabled", true) ?: true
         val autoSnoozeTimeoutSecs = intent?.getIntExtra("autoSnoozeTimeoutSecs", 30) ?: 30
 
+        stopAlarm() // Stop any ongoing alarm before starting a new one
         startForeground(NOTIFICATION_ID, buildNotification(id, title, mins, url, snoozeEnabled, snoozeIntervalMins, autoSnoozeEnabled, autoSnoozeTimeoutSecs, source))
         startAlarm()
         

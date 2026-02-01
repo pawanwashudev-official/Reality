@@ -1,12 +1,13 @@
 package com.neubofy.reality.data.repository
 
 import android.content.Context
-import com.neubofy.reality.data.NightlyProtocolExecutor
 import com.neubofy.reality.data.db.AppDatabase
 import com.neubofy.reality.data.db.NightlySession
 import com.neubofy.reality.data.db.NightlyStep
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.flow.map
+
 
 /**
  * Extended step data including result JSON for persistence
@@ -18,7 +19,7 @@ data class StepData(
     val linkUrl: String?
 ) {
     companion object {
-        fun pending() = StepData(NightlyProtocolExecutor.StepProgress.STATUS_PENDING, null, null, null)
+        fun pending() = StepData(com.neubofy.reality.data.nightly.StepProgress.STATUS_PENDING, null, null, null)
     }
 }
 
@@ -42,9 +43,9 @@ object NightlyRepository {
     /**
      * Legacy method for backward compatibility
      */
-    suspend fun loadStepState(context: Context, date: LocalDate, step: Int): NightlyProtocolExecutor.StepProgress {
+    suspend fun loadStepState(context: Context, date: LocalDate, step: Int): com.neubofy.reality.data.nightly.StepProgress {
         val data = loadStepData(context, date, step)
-        return NightlyProtocolExecutor.StepProgress(data.status, data.details)
+        return com.neubofy.reality.data.nightly.StepProgress(data.status, data.details)
     }
 
     /**
@@ -172,6 +173,15 @@ object NightlyRepository {
         return db.nightlyDao().getAllSessions()
     }
 
+    suspend fun getAvailableDates(context: Context): List<LocalDate> {
+        val sessions = getAllSessions(context)
+        return sessions.mapNotNull { 
+            try {
+                LocalDate.parse(it.date, DateTimeFormatter.ISO_LOCAL_DATE)
+            } catch (e: Exception) { null }
+        }.sorted()
+    }
+
     suspend fun cleanupOldData(context: Context, cutoffDate: LocalDate) {
         val db = AppDatabase.getDatabase(context)
         val dateStr = formatDate(cutoffDate)
@@ -181,6 +191,17 @@ object NightlyRepository {
     
     private fun formatDate(date: LocalDate): String {
         return date.format(DateTimeFormatter.ISO_LOCAL_DATE)
+    }
+
+    fun observeSteps(context: Context, date: LocalDate): kotlinx.coroutines.flow.Flow<List<NightlyStep>> {
+        val db = AppDatabase.getDatabase(context)
+        return db.nightlyDao().observeSteps(formatDate(date))
+    }
+
+    fun observeSessionStatus(context: Context, date: LocalDate): kotlinx.coroutines.flow.Flow<Int> {
+        val db = AppDatabase.getDatabase(context)
+        return db.nightlyDao().observeSession(formatDate(date))
+            .map { session -> session?.status ?: 0 }
     }
 
     suspend fun getSessionStatus(context: Context, date: LocalDate): Int {

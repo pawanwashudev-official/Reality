@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.R
 import com.neubofy.reality.databinding.ActivityReminderBinding
 import com.neubofy.reality.utils.SavedPreferencesLoader
@@ -14,7 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ReminderActivity : AppCompatActivity() {
+class ReminderActivity : BaseActivity() {
 
     private lateinit var binding: ActivityReminderBinding
     private lateinit var prefs: SharedPreferences
@@ -245,9 +246,11 @@ class ReminderActivity : AppCompatActivity() {
             if (existingReminder.customOffsetMins != null) {
                 etOffset.setText(existingReminder.customOffsetMins.toString())
             }
-            spinnerUrlSource.setSelection(existingReminder.urlSource)
-            if (existingReminder.urlSource == 2) {
+            if (existingReminder.urlSource == 2 || !existingReminder.redirectUrl.isNullOrEmpty()) {
+                spinnerUrlSource.setSelection(2)
                 layoutCustomUrl.visibility = View.VISIBLE
+            } else {
+                spinnerUrlSource.setSelection(existingReminder.urlSource)
             }
             for (day in existingReminder.repeatDays) {
                 chips[day]?.let { id ->

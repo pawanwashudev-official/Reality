@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.content.ContextCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.neubofy.reality.Constants
@@ -18,7 +19,7 @@ import kotlinx.coroutines.launch
 import coil.load
 import coil.transform.CircleCropTransformation
 
-class SettingsActivity : AppCompatActivity() {
+class SettingsActivity : BaseActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var prefs: SavedPreferencesLoader
@@ -28,8 +29,6 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        ThemeManager.applyTheme(this)
-        ThemeManager.applyAccentTheme(this)
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -43,7 +42,6 @@ class SettingsActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateUI()
-        ThemeManager.applyToAllCards(binding.root)
     }
 
     private fun setupToolbar() {
@@ -88,11 +86,6 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(Intent(this, AboutActivity::class.java))
         }
         
-        // Appearance (Pro Theme Picker)
-        binding.cardTheme.setOnClickListener {
-            startActivity(Intent(this, AppearanceActivity::class.java))
-        }
-
         // AI Settings
         binding.cardAiSettings.setOnClickListener {
             startActivity(Intent(this, AISettingsActivity::class.java))
@@ -218,14 +211,6 @@ class SettingsActivity : AppCompatActivity() {
             binding.tvAccountStatus.text = "Sync Tasks, Docs & Drive"
             binding.ivProfile.setColorFilter(android.graphics.Color.GRAY)
         }
-        // Theme Status
-        val themeMode = prefs.getThemeMode()
-        binding.tvThemeStatus.text = when (themeMode) {
-            1 -> "Light Mode"
-            2 -> "Dark Mode"
-            else -> "System Default"
-        }
-
         // Strict Mode
         val data = prefs.getStrictModeData()
         

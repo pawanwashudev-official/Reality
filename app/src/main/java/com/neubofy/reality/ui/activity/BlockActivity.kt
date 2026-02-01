@@ -1,5 +1,8 @@
 package com.neubofy.reality.ui.activity
 
+import com.neubofy.reality.ui.base.BaseActivity
+
+
 import android.content.Intent
 import android.os.Bundle
 import android.os.CountDownTimer
@@ -13,7 +16,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.neubofy.reality.databinding.ActivityBlockBinding
 import com.neubofy.reality.utils.SavedPreferencesLoader
 
-class BlockActivity : AppCompatActivity() {
+class BlockActivity : BaseActivity() {
+
 
     private lateinit var binding: ActivityBlockBinding
     private lateinit var prefs: SavedPreferencesLoader
@@ -27,7 +31,11 @@ class BlockActivity : AppCompatActivity() {
         binding = ActivityBlockBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
+        // Apply Glassmorphism/Premium Styling to the main card
+        com.neubofy.reality.utils.ThemeManager.applyGlobalPersonalization(binding.root)
+        
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
+
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(0, insets.top, 0, insets.bottom)
             WindowInsetsCompat.CONSUMED

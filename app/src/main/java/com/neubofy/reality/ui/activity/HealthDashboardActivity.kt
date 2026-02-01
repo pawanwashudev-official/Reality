@@ -69,7 +69,6 @@ class HealthDashboardActivity : AppCompatActivity() {
         }
         
         binding.btnManageHealthPerms.setOnClickListener {
-            // ... existing health permission logic ... (keep it concise or extract method if needed, but here simple intent launch is fine)
             launchHealthPermissionIntent()
         }
         
@@ -92,6 +91,10 @@ class HealthDashboardActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_smart_sleep -> {
+                startActivity(android.content.Intent(this, SmartSleepActivity::class.java))
+                true
+            }
             R.id.action_delete_data -> {
                 showResetSleepSyncDialog()
                 true
@@ -229,7 +232,7 @@ class HealthDashboardActivity : AppCompatActivity() {
 
                         binding.tvDashboardSteps.text = String.format("%,d", steps)
                         binding.tvDashboardCalories.text = String.format("%.0f kcal", calories)
-                        binding.tvDashboardSleep.text = if (sleep.contains("m")) sleep.split("\n")[0] else "No data"
+                        binding.tvDashboardSleep.text = if (sleep != "No record" && sleep != "Permission Denied") sleep else "No data"
                     } else {
                         binding.tvHealthStatus.visibility = android.view.View.VISIBLE
                         binding.tvHealthStatus.text = "Click System Permissions below to enable Health Access"

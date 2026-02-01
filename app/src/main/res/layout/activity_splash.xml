@@ -1,14 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#121212"> <!-- Dark Gray/Merged Background -->
 
-    <ImageView
-        android:layout_width="160dp"
-        android:layout_height="160dp"
+    <!-- Background Gradient -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_splash_gradient" />
+
+    <!-- Center Content -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:src="@drawable/app_logo"
-        android:contentDescription="@string/app_name" />
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <!-- Lottie Animation (Logo Reveal) -->
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            
+            <com.airbnb.lottie.LottieAnimationView
+                android:id="@+id/lottie_splash"
+                android:layout_width="280dp"
+                android:layout_height="280dp"
+                android:layout_gravity="center"
+                app:lottie_rawRes="@raw/anim_logo_reveal"
+                app:lottie_autoPlay="true"
+                app:lottie_loop="false"
+                app:lottie_speed="1.8"/>
+                
+            <ImageView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_gravity="center"
+                android:src="@drawable/app_logo"
+                android:contentDescription="Reality Logo" />
+        </FrameLayout>
+
+        <!-- Branding Text -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="REALITY"
+            android:textColor="#FFFFFF"
+            android:textSize="32sp"
+            android:letterSpacing="0.2"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-black"
+            android:layout_marginTop="-40dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="The Intelligent Life OS"
+            android:textColor="#B0BEC5"
+            android:textSize="14sp"
+            android:letterSpacing="0.1"
+            android:layout_marginTop="4dp"/>
+            
+    </LinearLayout>
+
+    <!-- Tagline at Bottom -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:text="Stop managing your life. Start commanding it."
+        android:textColor="#66FFFFFF"
+        android:textSize="12sp"
+        android:layout_marginBottom="48dp"
+        android:letterSpacing="0.05"
+        android:gravity="center"/>
 
 </FrameLayout>

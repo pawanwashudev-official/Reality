@@ -1,8 +1,14 @@
-# Reality App ProGuard Rules
-# Optimized for maximum shrinking while preserving essential functionality
+# General Rules
+-ignorewarnings
+-keepattributes *Annotation*
+-keepattributes Signature
+-keepattributes InnerClasses
+-keepattributes EnclosingMethod
+-keepattributes SourceFile,LineNumberTable
+-keep class **.R$* { *; }
+-keep class **.R { *; }
 
-# ========== GENERAL ANDROID ==========
-# Keep Android components
+# Android Components
 -keep public class * extends android.app.Activity
 -keep public class * extends android.app.Application
 -keep public class * extends android.app.Service
@@ -10,185 +16,99 @@
 -keep public class * extends android.content.ContentProvider
 -keep public class * extends android.app.backup.BackupAgentHelper
 -keep public class * extends android.preference.Preference
--keep public class * extends android.accessibilityservice.AccessibilityService
--keep public class * extends android.app.admin.DeviceAdminReceiver
+-keep public class * extends android.view.View
 
-# Keep Parcelables
--keepclassmembers class * implements android.os.Parcelable {
-    public static final ** CREATOR;
-}
-
-# Keep Serializable
--keepclassmembers class * implements java.io.Serializable {
-    static final long serialVersionUID;
-    private static final java.io.ObjectStreamField[] serialPersistentFields;
-    !static !transient <fields>;
-    private void writeObject(java.io.ObjectOutputStream);
-    private void readObject(java.io.ObjectInputStream);
-    java.lang.Object writeReplace();
-    java.lang.Object readResolve();
-}
-
-# ========== KOTLIN ==========
--dontwarn kotlin.**
--keep class kotlin.** { *; }
+# Kotlin
 -keep class kotlin.Metadata { *; }
--keepclassmembers class kotlin.Metadata {
-    public <methods>;
-}
+-dontwarn kotlin.**
 
-# Kotlin Coroutines
+# Coroutines
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
--keepclassmembers class kotlinx.coroutines.** {
-    volatile <fields>;
+-keepclassmembers class kotlinx.coroutines.android.AndroidExceptionPreHandler {
+    <init>();
 }
--dontwarn kotlinx.coroutines.**
 
-# ========== ROOM DATABASE ==========
--keep class * extends androidx.room.RoomDatabase
--keep @androidx.room.Entity class *
--keepclassmembers @androidx.room.Entity class * {
-    <fields>;
-}
--keep @androidx.room.Dao class *
+# Room Database
+-keep class androidx.room.RoomDatabase { *; }
 -keep class * extends androidx.room.RoomDatabase { *; }
--dontwarn androidx.room.**
+-keep class * implements androidx.room.RoomDatabase { *; }
+-keep @androidx.room.Entity class * { *; }
+-keep @androidx.room.Dao class * { *; }
+-keep @androidx.room.Database class * { *; }
+-keepclassmembers class * {
+    @androidx.room.PrimaryKey *;
+    @androidx.room.ColumnInfo *;
+    @androidx.room.Ignore *;
+    @androidx.room.Relation *;
+    @androidx.room.ForeignKey *;
+    @androidx.room.Embedded *;
+}
 
-# ========== REALITY APP SPECIFICS ==========
-
-# Keep all data classes (used for SharedPreferences serialization)
--keep class com.neubofy.reality.Constants$* { *; }
--keepclassmembers class com.neubofy.reality.Constants$* { *; }
-
-# Keep data classes used with Gson
--keepclassmembers class com.neubofy.reality.data.db.* { *; }
--keep class com.neubofy.reality.data.db.* { *; }
--keep class com.neubofy.reality.blockers.RealityBlocker$* { *; }
--keep class com.neubofy.reality.data.CustomReminder { *; }
--keep class com.neubofy.reality.data.model.** { *; }
--keep class com.neubofy.reality.google.GoogleTasksManager$TaskStats { *; }
-
-# Keep Accessibility Service
--keep class com.neubofy.reality.services.AppBlockerService { *; }
--keep class com.neubofy.reality.services.GeneralFeaturesService { *; }
--keep class com.neubofy.reality.services.AlarmService { *; }
-
-# Keep Device Admin Receiver
--keep class com.neubofy.reality.receivers.AdminLockReceiver { *; }
--keep class com.neubofy.reality.receivers.BootReceiver { *; }
--keep class com.neubofy.reality.receivers.ReminderReceiver { *; }
--keep class com.neubofy.reality.utils.AlarmScheduler { *; }
--keep class com.neubofy.reality.services.AlarmService { *; }
-
-# Keep WorkManager Workers
--keep class com.neubofy.reality.workers.* { *; }
-
-# Keep Widget Provider
--keep class com.neubofy.reality.widget.FocusWidgetProvider { *; }
-
-# ========== GSON (for JSON serialization) ==========
--keepattributes Signature
--keepattributes *Annotation*
--dontwarn sun.misc.**
+# Gson
 -keep class com.google.gson.** { *; }
--keep class * implements com.google.gson.TypeAdapter
--keep class * implements com.google.gson.TypeAdapterFactory
--keep class * implements com.google.gson.JsonSerializer
--keep class * implements com.google.gson.JsonDeserializer
-
-# ========== MATERIAL DESIGN ==========
--keep class com.google.android.material.** { *; }
--dontwarn com.google.android.material.**
-
-# ========== MPANDROIDCHART ==========
--keep class com.github.mikephil.charting.** { *; }
--dontwarn com.github.mikephil.charting.**
-
-# ========== LOTTIE ==========
--dontwarn com.airbnb.lottie.**
--keep class com.airbnb.lottie.** { *; }
-
-# ========== VIEW BINDING ==========
--keep class **.databinding.* { *; }
--keepclassmembers class **.databinding.* {
-    public static *** inflate(...);
-    public static *** bind(...);
-}
-
-# ========== PRESERVE LINE NUMBERS FOR CRASH REPORTS ==========
--keepattributes SourceFile,LineNumberTable
--renamesourcefileattribute SourceFile
-
-# ========== REMOVE LOGGING IN RELEASE ==========
--assumenosideeffects class android.util.Log {
-    public static int v(...);
-    public static int d(...);
-    public static int i(...);
-}
-
-# ========== OPTIMIZATIONS ==========
--optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
--optimizationpasses 5
--allowaccessmodification
--dontpreverify
-
-# Remove unused resources (handled by R8)
-# Shrink enums to ints where possible
--optimizations class/unboxing/enum
-
-# ========== WARNINGS ==========
--dontwarn javax.annotation.**
--dontwarn org.checkerframework.**
--dontwarn afu.org.checkerframework.**
--dontwarn org.jetbrains.annotations.**
--dontwarn javax.naming.**
--dontwarn javax.net.ssl.**
--dontwarn org.apache.commons.logging.**
--dontwarn javax.security.**
--dontwarn java.awt.**
--dontwarn org.apache.**
-# ========== GOOGLE API CLIENT ==========
--keep class com.google.api.client.** { *; }
--keep class com.google.api.services.** { *; }
--keep class com.google.api.services.tasks.** { *; }
--keep class com.google.api.services.drive.** { *; }
--keep class com.google.api.services.calendar.** { *; }
--keep class com.google.api.services.docs.** { *; }
-
-# CRITICAL: Keep GenericData subclasses (used for ALL Google API JSON parsing)
--keep class * extends com.google.api.client.json.GenericJson { *; }
--keepclassmembers class * extends com.google.api.client.json.GenericJson { *; }
--keep class * extends com.google.api.client.util.GenericData { *; }
--keepclassmembers class * extends com.google.api.client.util.GenericData { *; }
-
-# CRITICAL: Keep HTTP Client - used for authentication
--keep class com.google.http.client.** { *; }
--keepclassmembers class com.google.http.client.** { *; }
-
-# Prevent stripping of Generic Types needed for JSON parsing
+-keep interface com.google.gson.** { *; }
+-dontwarn com.google.gson.**
+# Keep generic types
 -keepattributes Signature
--keepattributes *Annotation*
--keepattributes EnclosingMethod
--keepattributes InnerClasses
+# Keep models used by Gson (Google APIs and internal)
+-keep class com.google.api.services.** { *; }
+-keep class com.neubofy.reality.data.** { *; }
 
+# Health Connect
+-keep class androidx.health.connect.** { *; }
+
+# Azhon AppUpdate
+-keep class com.azhon.** { *; }
+-keep class io.github.azhon.** { *; }
+
+# Reality App Specifics
+# Keep Nightly Protocol classes specifically mentioned by user as risky
+-keep class com.neubofy.reality.data.NightlyProtocolExecutor { *; }
+-keep class com.neubofy.reality.data.nightly.** { *; }
+-keep class com.neubofy.reality.data.repository.** { *; }
+-keep class com.neubofy.reality.utils.ThemeManager { *; } 
+-keep class com.neubofy.reality.utils.UpdateManager { *; }
+-keep class com.neubofy.reality.utils.SavedPreferencesLoader { *; }
+-keep class com.neubofy.reality.blockers.** { *; }
+
+# Google APIs (Drive, Docs, Tasks, Auth)
+-keep class com.google.api.services.** { *; }
+-keep class com.google.api.client.** { *; }
+-keep class com.google.auth.** { *; }
+-keep class com.google.android.gms.** { *; }
 -dontwarn com.google.api.client.**
--dontwarn io.grpc.**
--dontwarn sun.misc.**
--dontwarn java.lang.management.**
--dontwarn org.w3c.dom.**
--dontwarn org.xml.sax.**
--dontwarn javax.xml.**
--dontwarn javax.activation.**
--dontwarn javax.annotation.**
--dontwarn com.google.common.**
--dontwarn com.google.j2objc.annotations.**
--dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
--dontwarn org.slf4j.**
--dontwarn java.beans.**
--dontwarn javax.security.**
+-dontwarn com.google.auth.**
 
-# ========== iText PDF ==========
+# Third Party Libraries
+-keep class io.noties.markwon.** { *; }
+-keep class coil.** { *; }
+-keep class org.jsoup.** { *; }
+-keep class com.google.zxing.** { *; }
+
+# iText PDF (Aggressive Rules)
 -keep class com.itextpdf.** { *; }
--dontwarn com.itextpdf.**
--keep class com.neubofy.reality.utils.PdfGenerator { *; }
+-keep class com.itextpdf.io.** { *; }
+-keep class com.itextpdf.kernel.** { *; }
+-keep class com.itextpdf.layout.** { *; }
+-keep class com.itextpdf.forms.** { *; }
+-keep class com.itextpdf.svg.** { *; }
+-keep class com.itextpdf.barcodes.** { *; }
+-keep class com.itextpdf.styledxmlparser.** { *; }
+# Keep BouncyCastle if pulled transitively
+-keep class org.bouncycastle.** { *; }
+-dontwarn org.bouncycastle.**
+# Keep Common Logging if used
+-keep class org.apache.commons.logging.** { *; }
+
+# Suppress benign warnings
+-dontwarn org.ietf.jgss.**
+-dontwarn org.jspecify.annotations.**
+-dontwarn org.slf4j.**
+-dontwarn pl.droidsonroids.gif.**
+-dontwarn javax.annotation.**
+-dontwarn javax.naming.**
+-dontwarn org.apache.commons.logging.**
+-dontwarn java.awt.**
+-dontwarn javax.imageio.**
+-dontwarn com.fasterxml.jackson.**

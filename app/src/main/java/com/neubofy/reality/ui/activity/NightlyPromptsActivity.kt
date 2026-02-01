@@ -105,6 +105,18 @@ class NightlyPromptsActivity : AppCompatActivity() {
             )
         }
 
+        binding.cardTaskNormalizePrompt.setOnClickListener {
+            launchEditor(
+                "AI Task Cleanup (Step 14)",
+                "custom_task_cleanup_prompt",
+                com.neubofy.reality.data.nightly.NightlySteps.DEFAULT_TASK_NORMALIZER_TEMPLATE,
+                listOf(
+                    "{tasks_json}" to "Task List JSON", 
+                    "{target_date}" to "Target Date"
+                )
+            )
+        }
+
         binding.cardDiaryTemplate.setOnClickListener {
             launchEditor(
                 "Diary Template",

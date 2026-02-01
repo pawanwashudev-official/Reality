@@ -16,31 +16,31 @@
         android:layout_marginBottom="2dp"
         android:layout_marginStart="16dp"/>
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/card_message"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="0dp"
-        app:strokeWidth="0dp">
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/card_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-        <HorizontalScrollView
-            android:layout_width="wrap_content"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_message"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:fillViewport="true"
-            android:scrollbars="none">
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            app:layout_constraintWidth_default="wrap"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
 
-            <TextView
-                android:id="@+id/tv_message"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:id="@+id/container_message"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Message"
-                android:textSize="16sp"
-                android:padding="12dp"
-                android:textColor="?attr/colorOnSurface"/>
-        
-        </HorizontalScrollView>
+                android:orientation="vertical"
+                android:padding="2dp" />
 
-    </com.google.android.material.card.MaterialCardView>
+        </com.google.android.material.card.MaterialCardView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </LinearLayout>

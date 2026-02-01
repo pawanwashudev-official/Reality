@@ -210,10 +210,6 @@ object BlockCache {
                                 }
                             }
                         }
-                    } else {
-                        // Block ALL except selected - handled differently
-                        // For this mode, we'd need to get all installed apps
-                        // For now, we'll handle this in the check logic
                     }
                 }
                 

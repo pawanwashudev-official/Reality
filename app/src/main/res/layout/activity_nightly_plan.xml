@@ -37,16 +37,59 @@
             android:background="@drawable/back_button_bg"
             android:contentDescription="Back"/>
 
-        <TextView
-            android:id="@+id/tv_header_title"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Plan for Tomorrow"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="?attr/colorOnSurface"
-            android:layout_marginStart="16dp"/>
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginHorizontal="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Daily Plan"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface" />
+
+            <TextView
+                android:id="@+id/tv_header_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="for Tomorrow"
+                android:textSize="12sp"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_panel_rounded"
+            android:backgroundTint="?attr/colorSurfaceVariant"
+            android:padding="4dp">
+
+            <ImageView
+                android:id="@+id/btn_prev_date"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:padding="6dp"
+                android:src="@drawable/ic_arrow_back"
+                app:tint="?attr/colorOnSurfaceVariant"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Previous Date" />
+
+            <ImageView
+                android:id="@+id/btn_next_date"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:padding="6dp"
+                android:src="@drawable/ic_arrow_forward"
+                app:tint="?attr/colorOnSurfaceVariant"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Next Date" />
+        </LinearLayout>
     </LinearLayout>
 
     <!-- Content -->
@@ -63,7 +106,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Mentorship & Alarm Section -->
+            <!-- Insight & Schedule Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -78,32 +121,14 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <LinearLayout
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="8dp">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Coach's Advice"
-                            android:textStyle="bold"
-                            android:textColor="?attr/colorOnPrimaryContainer"
-                            android:textSize="14sp"/>
-
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chip_alarm_status"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Alarm: 06:00"
-                            style="@style/Widget.Material3.Chip.Assist"
-                            app:chipIcon="@drawable/baseline_access_time_24"
-                            android:visibility="gone"
-                            tools:visibility="visible"/>
-                    </LinearLayout>
+                        android:text="Coach's Insight"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnPrimaryContainer"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="8dp"/>
 
                     <TextView
                         android:id="@+id/tv_mentorship"
@@ -112,7 +137,105 @@
                         android:text="Loading advice..."
                         android:textColor="?attr/colorOnPrimaryContainer"
                         android:textSize="16sp"
-                        android:lineSpacingExtra="4dp"/>
+                        android:lineSpacingExtra="4dp"
+                        android:layout_marginBottom="16dp"/>
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="?attr/colorOnPrimaryContainer"
+                        android:alpha="0.2"
+                        android:layout_marginBottom="12dp"/>
+
+                    <!-- Schedule Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:baselineAligned="false">
+
+                        <!-- Bedtime Block -->
+                        <LinearLayout
+                            android:id="@+id/layout_sleep_time"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:src="@drawable/baseline_bedtime_24"
+                                app:tint="?attr/colorOnPrimaryContainer"
+                                android:layout_marginEnd="8dp"/>
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Bedtime"
+                                    android:textSize="11sp"
+                                    android:textColor="?attr/colorOnPrimaryContainer"
+                                    android:alpha="0.7"/>
+
+                                <TextView
+                                    android:id="@+id/tv_sleep_time"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="--:--"
+                                    android:textStyle="bold"
+                                    android:textSize="14sp"
+                                    android:textColor="?attr/colorOnPrimaryContainer"/>
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <!-- Wake Up Block -->
+                        <LinearLayout
+                            android:id="@+id/layout_wakeup_time"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:src="@drawable/baseline_access_time_24"
+                                app:tint="?attr/colorOnPrimaryContainer"
+                                android:layout_marginEnd="8dp"/>
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Wake Up"
+                                    android:textSize="11sp"
+                                    android:textColor="?attr/colorOnPrimaryContainer"
+                                    android:alpha="0.7"/>
+
+                                <TextView
+                                    android:id="@+id/tv_wakeup_time"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="--:--"
+                                    android:textStyle="bold"
+                                    android:textSize="14sp"
+                                    android:textColor="?attr/colorOnPrimaryContainer"/>
+                            </LinearLayout>
+                        </LinearLayout>
+
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

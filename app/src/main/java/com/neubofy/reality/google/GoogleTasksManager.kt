@@ -157,8 +157,9 @@ object GoogleTasksManager {
             val service = getTasksService(context)
                 ?: return@withContext TaskStats(emptyList(), emptyList(), 0, 0)
             
-            val dueTasks = mutableListOf<String>()
-            val completedTasks = mutableListOf<String>()
+            val dueTasks = mutableListOf<String>()  // All tasks DUE on this date (pending)
+            val completedTasks = mutableListOf<String>()  // Tasks DUE on this date AND completed
+            var totalPlanned = 0
             
             try {
                 TerminalLogger.log("TASKS API: Fetching tasks for $date")
@@ -177,26 +178,31 @@ object GoogleTasksManager {
                         val completedDate = task.completed // RFC 3339 Timestamp string
                         val title = task.title ?: "Untitled"
 
-                        // logic:
-                        // 1. If completed ON this date -> Completed Task
-                        // 2. If due ON this date (and NOT completed on this date) -> Due/Pending Task
+                        // NEW LOGIC:
+                        // 1. Check if task is DUE on this date (this is "planned")
+                        // 2. If DUE on date AND completed (any time) -> completedTasks
+                        // 3. If DUE on date AND NOT completed -> dueTasks (pending)
                         
-                        val isCompletedOnDate = completedDate != null && completedDate.toString().startsWith(date)
                         val isDueOnDate = dueDate != null && dueDate.startsWith(date)
                         
-                        if (isCompletedOnDate) {
-                            if (!completedTasks.contains(title)) {
-                                completedTasks.add(title)
+                        if (isDueOnDate) {
+                            totalPlanned++
+                            val isCompleted = completedDate != null
+                            
+                            if (isCompleted) {
+                                if (!completedTasks.contains(title)) {
+                                    completedTasks.add(title)
+                                }
+                            } else {
+                                if (!dueTasks.contains(title)) {
+                                    dueTasks.add(title)
+                                }
                             }
-                        } else if (isDueOnDate) {
-                            // It was due today, but NOT completed today.
-                            // (It might be completed later, or never, but for TODAY's record, it's pending)
-                            dueTasks.add(title)
                         }
                     }
                 }
                 
-                TerminalLogger.log("TASKS API: Found ${dueTasks.size} pending, ${completedTasks.size} completed for $date")
+                TerminalLogger.log("TASKS API: Planned=$totalPlanned, Completed=${completedTasks.size}, Pending=${dueTasks.size} for $date")
                 
             } catch (e: Exception) {
                 TerminalLogger.log("TASKS API: Error fetching tasks - ${e.message}")

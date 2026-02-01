@@ -42,15 +42,20 @@ object ToolRegistry {
 
     val ALL_TOOLS = listOf(
         // Data Tools
-        ToolMeta("gamification", "Gamification", "XP, level, streak, daily breakdown"),
-        ToolMeta("tapasya", "Tapasya", "Focus sessions history & stats"),
-        ToolMeta("tasks", "Tasks", "Google Tasks (today's pending/completed)"),
-        ToolMeta("study_sessions", "Study Sessions", "Calendar events for today (IST)"),
-        ToolMeta("usage_stats", "Usage Stats", "App screen time data"),
-        ToolMeta("reminders", "Reminders", "Custom reminder list"),
-        ToolMeta("app_blocker", "App Blocker", "Block status, Focus/Strict mode state"),
-        ToolMeta("nightly", "Nightly Protocol", "Historical AI plans & reports"),
-        ToolMeta("health", "Health", "Steps, calories, sleep from Health Connect", defaultEnabled = false),
+        ToolMeta("gamification", "XP & Stats", "XP, levels, streaks, and daily progress breakdown"),
+        ToolMeta("tapasya", "Deep Focus", "Focus session history, session search, and deep work stats"),
+        ToolMeta("tasks", "Google Tasks", "Active and recently completed tasks from Google"),
+        ToolMeta("study_sessions", "Academic Calendar", "Study sessions and calendar events with search"),
+        ToolMeta("usage_stats", "Usage Stats", "App usage with categories, comparisons"),
+        ToolMeta("reminders", "Reminders", "Custom reminders with time filters"),
+        ToolMeta("app_blocker", "App Blocker", "Block status, schedules, app lists"),
+        ToolMeta("nightly", "Nightly Protocol", "AI plans, reports, history access"),
+        ToolMeta("health", "Health", "Steps, calories, sleep with trends", defaultEnabled = false),
+        // Utility Tools
+        ToolMeta("utility_time", "Current Time", "Get current date/time in IST"),
+        ToolMeta("web_search", "Tavily Web Search", "Real-time internet search for facts and news"),
+        // Power Tool
+        ToolMeta("universal_query", "Smart Data Query", "Advanced cross-source querying with filters"),
         // Action Tools
         ToolMeta("action_add_task", "Add Task", "Create new Google Task"),
         ToolMeta("action_complete_task", "Complete Task", "Mark a task as done"),
@@ -58,7 +63,9 @@ object ToolRegistry {
         ToolMeta("action_start_focus", "Start Focus", "Begin Focus Mode session"),
         ToolMeta("action_start_tapasya", "Start Tapasya", "Begin Tapasya focus session"),
         ToolMeta("action_add_missed_tapasya", "Add Missed Tapasya", "Record a missed Tapasya session (Reason required)"),
-        ToolMeta("action_schedule_notification", "Schedule Notification", "Schedule a lightweight push notification")
+        ToolMeta("action_schedule_notification", "Schedule Notification", "Schedule a lightweight push notification"),
+        // Creative Tools
+        ToolMeta("action_generate_image", "Generate Image", "Create AI-generated images from text prompts (FREE)")
     )
 
     // --- Settings Helpers ---
@@ -87,81 +94,186 @@ object ToolRegistry {
         val enabled = getEnabledTools(context)
         if (enabled.isEmpty()) return "No data tools available."
         
-        val sb = StringBuilder("Available tools (call get_tool_schema first):\n")
+        val sb = StringBuilder("AVAILABLE TOOLS (IDs):\n")
         enabled.forEach { t ->
             sb.append("- ${t.id}: ${t.shortDesc}\n")
         }
+        sb.append("\nPROCEDURE:")
+        sb.append("\n1. Initially, you ONLY have the `get_tool_schema(tool_id)` tool.")
+        sb.append("\n2. To use ANY tool above, MUST call `get_tool_schema` first.")
+        sb.append("\n3. Once you get the schema, it becomes available in the NEXT turn.")
+        sb.append("\n4. CRITICAL: `web_search` is EXPENSIVE. Consolidate ALL information needs into ONE query per request.")
+        
         return sb.toString()
     }
 
-    // --- Full Schemas (On-Demand) ---
     /**
      * Returns the full OpenAI-format schema for a specific tool.
      * Only sent when AI explicitly requests it.
+     * ENHANCED: Smart querying with filters, date ranges, and targeted data access.
      */
     fun getToolSchema(toolId: String): JSONObject? {
         return when (toolId) {
+            // ==================== ENHANCED DATA TOOLS ====================
+            
             "gamification" -> createSchema(
-                "get_xp_stats",
-                "Get XP stats for a date. Returns level, streak, total XP, and breakdown (screen_time, reflection, tasks, tapasya, sessions, bonus, penalty).",
+                "gamification",
+                "Get XP and progress stats. Can query single date or date range for trends. Use 'comparison' for progress insights.",
                 mapOf(
                     "date" to "YYYY-MM-DD (default: today)",
-                    "type" to "Optional: 'total' or 'breakdown'"
+                    "date_range" to "Optional: 'today', 'week', 'month', or 'custom'",
+                    "start_date" to "Required if date_range='custom': YYYY-MM-DD",
+                    "end_date" to "Required if date_range='custom': YYYY-MM-DD",
+                    "type" to "Optional: 'total', 'breakdown', 'trends'",
+                    "comparison" to "Optional: 'previous_period' to compare with prior period"
                 )
             )
+            
             "tapasya" -> createSchema(
-                "get_tapasya_sessions",
-                "Get Tapasya (focus) session history. Returns session list with duration, effective time, and XP earned.",
+                "tapasya",
+                "Get Tapasya focus sessions with smart filtering. Can search, filter by status, and get stats.",
                 mapOf(
                     "date" to "YYYY-MM-DD (default: today)",
-                    "limit" to "Optional: max sessions to return (default: 5)"
+                    "date_range" to "Optional: 'today', 'week', 'month', 'custom'",
+                    "start_date" to "For custom range: YYYY-MM-DD",
+                    "end_date" to "For custom range: YYYY-MM-DD",
+                    "filter" to "Optional: 'completed', 'missed', 'auto_stopped', 'all'",
+                    "search" to "Optional: Search session names",
+                    "min_duration_mins" to "Optional: Filter sessions >= this duration",
+                    "include_stats" to "Optional: 'true' to include summary stats",
+                    "limit" to "Max sessions to return (default: 10)"
                 )
             )
+            
             "tasks" -> createSchema(
-                "get_tasks",
-                "Get Google Tasks for a date. Returns pending/completed counts and task titles.",
-                mapOf("date" to "YYYY-MM-DD (default: today)")
-            )
-            "study_sessions" -> createSchema(
-                "get_calendar_events",
-                "Get calendar events for a date. Returns event title, start/end time (IST), location.",
-                mapOf("date" to "YYYY-MM-DD (default: today)")
-            )
-            "usage_stats" -> createSchema(
-                "get_app_usage_stats",
-                "Get app usage stats. Returns top 5 apps or specific app usage in minutes.",
+                "tasks",
+                "Get Google Tasks with smart filtering. Search, filter by status, get specific lists.",
                 mapOf(
-                    "date" to "YYYY-MM-DD (default: today)",
-                    "package_name" to "Optional: specific app package"
+                    "date" to "YYYY-MM-DD for due date filter (default: all)",
+                    "date_range" to "Optional: 'today', 'week', 'overdue', 'upcoming', 'all'",
+                    "filter" to "Optional: 'pending', 'completed', 'all' (default: all)",
+                    "search" to "Optional: Search task titles (case-insensitive)",
+                    "list_name" to "Optional: Filter by task list name",
+                    "include_notes" to "Optional: 'true' to include task notes",
+                    "limit" to "Max tasks to return (default: 20)"
                 )
             )
-            "reminders" -> createSchema(
-                "get_reminders",
-                "Get active custom reminders. Returns title and time (IST).",
-                emptyMap()
-            )
-            "app_blocker" -> createSchema(
-                "get_blocked_status",
-                "Get blocking status. Returns Strict Mode state, Focus Mode state, and optionally checks if a specific app is blocked.",
-                mapOf("package_name" to "Optional: check specific app")
-            )
-            "nightly" -> createSchema(
-                "get_nightly_data",
-                "Get historical Nightly Protocol data. Returns AI-generated plan or daily report.",
+            
+            "study_sessions" -> createSchema(
+                "study_sessions",
+                "Get calendar events with filtering. Search by title, filter by time of day.",
                 mapOf(
                     "date" to "YYYY-MM-DD (default: today)",
-                    "data_type" to "Required: 'plan' or 'report'"
+                    "date_range" to "Optional: 'today', 'week', 'month'",
+                    "start_date" to "For custom range",
+                    "end_date" to "For custom range",
+                    "search" to "Optional: Search event titles",
+                    "time_filter" to "Optional: 'morning', 'afternoon', 'evening'",
+                    "include_past" to "Optional: 'true' to include past events today"
+                )
+            )
+            
+            "usage_stats" -> createSchema(
+                "usage_stats",
+                "Get app usage with smart filtering. Categorize, compare days, get specific app deep-dive.",
+                mapOf(
+                    "date" to "YYYY-MM-DD (default: today)",
+                    "date_range" to "Optional: 'today', 'week', 'month'",
+                    "package_name" to "Optional: Specific app package for deep-dive",
+                    "app_name" to "Optional: Search by app name (partial match)",
+                    "category" to "Optional: 'social', 'games', 'productivity', 'entertainment'",
+                    "sort_by" to "Optional: 'time', 'launches', 'name' (default: time)",
+                    "min_minutes" to "Optional: Only apps with >= this usage",
+                    "limit" to "Max apps to return (default: 10)",
+                    "comparison" to "Optional: 'yesterday', 'last_week' for comparison"
+                )
+            )
+            
+            "reminders" -> createSchema(
+                "reminders",
+                "Get custom reminders with filtering.",
+                mapOf(
+                    "filter" to "Optional: 'active', 'all', 'today' (default: active)",
+                    "search" to "Optional: Search reminder titles",
+                    "time_range" to "Optional: 'morning', 'afternoon', 'evening'"
+                )
+            )
+            
+            "app_blocker" -> createSchema(
+                "app_blocker",
+                "Get blocking status with detailed info.",
+                mapOf(
+                    "package_name" to "Optional: Check specific app",
+                    "app_name" to "Optional: Search app by name",
+                    "include_schedule" to "Optional: 'true' to include block schedules",
+                    "list_blocked" to "Optional: 'true' to list all blocked apps"
+                )
+            )
+            
+            "nightly" -> createSchema(
+                "nightly",
+                "Get Nightly Protocol AI plans and reports with history access.",
+                mapOf(
+                    "date" to "YYYY-MM-DD (default: today)",
+                    "data_type" to "Required: 'plan', 'report', or 'both'",
+                    "include_history" to "Optional: number of past days to include",
+                    "summary_only" to "Optional: 'true' for brief summary"
                 ),
                 required = listOf("data_type")
             )
+            
             "health" -> createSchema(
-                "get_health_stats",
-                "Get health data from Health Connect. Returns steps, calories, sleep duration.",
-                mapOf("date" to "YYYY-MM-DD (default: today)")
+                "health",
+                "Get health data with date range and metric selection.",
+                mapOf(
+                    "date" to "YYYY-MM-DD (default: today)",
+                    "date_range" to "Optional: 'today', 'week', 'month'",
+                    "metrics" to "Optional: 'steps', 'calories', 'sleep', 'all' (default: all)",
+                    "include_goals" to "Optional: 'true' to include goal progress",
+                    "comparison" to "Optional: 'yesterday', 'last_week'"
+                )
             )
+            
+            // NEW: Universal Query Tool
+            "universal_query" -> createSchema(
+                "universal_query",
+                "Powerful universal data query tool. Fetch targeted data from any source with natural language or structured queries. Use this when you need specific, filtered data from multiple sources.",
+                mapOf(
+                    "sources" to "Required: Comma-separated list: 'tasks,tapasya,calendar,usage,xp,reminders,health'",
+                    "query" to "Optional: Natural language query (AI will parse)",
+                    "date_range" to "Optional: 'today', 'yesterday', 'week', 'month', 'custom'",
+                    "start_date" to "For custom range: YYYY-MM-DD",
+                    "end_date" to "For custom range: YYYY-MM-DD",
+                    "filters" to "Optional: JSON object with source-specific filters",
+                    "format" to "Optional: 'summary', 'detailed', 'stats' (default: summary)",
+                    "limit" to "Max items per source (default: 5)"
+                ),
+                required = listOf("sources")
+            )
+            
+            // --- Utility Tools ---
+            "utility_time" -> createSchema(
+                "utility_time",
+                "Get current date and time in IST (India Standard Time). Use this when you need to know the current time for scheduling, reminders, or time-based responses.",
+                mapOf(
+                    "include_date" to "Optional: 'true' to include full date (default: true)",
+                    "format" to "Optional: 'full', 'time_only', 'date_only' (default: full)"
+                )
+            )
+
+            "web_search" -> createSchema(
+                "web_search",
+                "Search the internet for real-time information using Tavily. EXPENSIVE: Use only as a last resort. Consolidate research into ONE single turn. Never repeat searches.",
+                mapOf(
+                    "query" to "Required: One comprehensive search query",
+                    "max_results" to "Optional: Number of results (1-5, default: 3)"
+                ),
+                required = listOf("query")
+            )
+            
             // --- Action Tools ---
             "action_add_task" -> createSchema(
-                "add_task",
+                "action_add_task",
                 "Add a new task to Google Tasks. Ask user for title if not provided.",
                 mapOf(
                     "title" to "Required: task title",
@@ -171,13 +283,13 @@ object ToolRegistry {
                 required = listOf("title")
             )
             "action_complete_task" -> createSchema(
-                "complete_task",
+                "action_complete_task",
                 "Mark a task as completed. Ask user which task if not specified.",
                 mapOf("task_title" to "Required: title of task to complete"),
                 required = listOf("task_title")
             )
             "action_add_reminder" -> createSchema(
-                "add_reminder",
+                "action_add_reminder",
                 "Create a custom reminder. Ask for time if not specified.",
                 mapOf(
                     "title" to "Required: reminder message",
@@ -187,12 +299,12 @@ object ToolRegistry {
                 required = listOf("title", "hour")
             )
             "action_start_focus" -> createSchema(
-                "start_focus",
+                "action_start_focus",
                 "Start Focus Mode to block distracting apps.",
                 mapOf("duration_mins" to "Optional: duration in minutes (default: 25)")
             )
             "action_start_tapasya" -> createSchema(
-                "start_tapasya",
+                "action_start_tapasya",
                 "Start a Tapasya deep focus session.",
                 mapOf(
                     "name" to "Optional: session name",
@@ -200,7 +312,7 @@ object ToolRegistry {
                 )
             )
             "action_add_missed_tapasya" -> createSchema(
-                "add_missed_tapasya",
+                "action_add_missed_tapasya",
                 "Record a Tapasya session that you completed but forgot to track. MUST ask for a valid reason first.",
                 mapOf(
                     "name" to "Required: session name (e.g. 'Coding')",
@@ -213,7 +325,7 @@ object ToolRegistry {
                 required = listOf("name", "start_time", "end_time", "reason")
             )
             "action_schedule_notification" -> createSchema(
-                "schedule_notification",
+                "action_schedule_notification",
                 "Schedule a lightweight push notification (informational only, no alarm sound). Use for gentle nudges or insights.",
                 mapOf(
                     "title" to "Required: Notification title",
@@ -221,6 +333,16 @@ object ToolRegistry {
                     "minutes_from_now" to "Required: Delay in minutes (min 1, max 1440)"
                 ),
                 required = listOf("title", "message", "minutes_from_now")
+            )
+            "action_generate_image" -> createSchema(
+                "action_generate_image",
+                "Generate an AI image from a text prompt. Uses free Pollinations.ai. Image is displayed in chat and saved to Pictures/Reality folder. Be creative and detailed with prompts for best results.",
+                mapOf(
+                    "prompt" to "Required: Detailed description of the image to generate (be specific about style, colors, mood)",
+                    "style" to "Optional: Art style (e.g., 'realistic', 'anime', 'watercolor', 'minimalist', 'cyberpunk')",
+                    "save_to_gallery" to "Optional: 'true' to save to phone gallery (default: true)"
+                ),
+                required = listOf("prompt")
             )
             else -> null
         }
@@ -299,23 +421,27 @@ object ToolRegistry {
     // --- Helper: Map Function Name to Tool ID ---
     fun getToolIdForFunction(functionName: String): String? {
         return when (functionName) {
-            "get_xp_stats" -> "gamification"
-            "get_tapasya_sessions" -> "tapasya"
-            "get_tasks" -> "tasks"
-            "get_calendar_events" -> "study_sessions"
-            "get_app_usage_stats" -> "usage_stats"
-            "get_reminders" -> "reminders"
-            "get_blocked_status" -> "app_blocker"
-            "get_nightly_data" -> "nightly"
-            "get_health_stats" -> "health"
-            "add_task" -> "action_add_task"
-            "complete_task" -> "action_complete_task"
-            "add_reminder" -> "action_add_reminder"
-            "start_focus" -> "action_start_focus"
-            "start_tapasya" -> "action_start_tapasya"
-            "add_missed_tapasya" -> "action_add_missed_tapasya"
-            "schedule_notification" -> "action_schedule_notification"
-            else -> null
+            "gamification", "get_xp_stats" -> "gamification"
+            "tapasya", "get_tapasya_sessions" -> "tapasya"
+            "tasks", "get_tasks" -> "tasks"
+            "study_sessions", "get_calendar_events" -> "study_sessions"
+            "usage_stats", "get_app_usage_stats" -> "usage_stats"
+            "reminders", "get_reminders" -> "reminders"
+            "app_blocker", "get_blocked_status" -> "app_blocker"
+            "nightly", "get_nightly_data" -> "nightly"
+            "health", "get_health_stats" -> "health"
+            "universal_query", "query_data" -> "universal_query"
+            "utility_time", "get_current_time" -> "utility_time"
+            "web_search", "perform_web_search" -> "web_search"
+            "action_add_task", "add_task" -> "action_add_task"
+            "action_complete_task", "complete_task" -> "action_complete_task"
+            "action_add_reminder", "add_reminder" -> "action_add_reminder"
+            "action_start_focus", "start_focus" -> "action_start_focus"
+            "action_start_tapasya", "start_tapasya" -> "action_start_tapasya"
+            "action_add_missed_tapasya", "add_missed_tapasya" -> "action_add_missed_tapasya"
+            "action_schedule_notification", "schedule_notification" -> "action_schedule_notification"
+            "action_generate_image", "generate_image" -> "action_generate_image"
+            else -> if (ALL_TOOLS.any { it.id == functionName }) functionName else null
         }
     }
 }

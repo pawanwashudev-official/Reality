@@ -26,8 +26,8 @@ android {
         applicationId = "com.neubofy.reality"
         minSdk = 26
         targetSdk = 35  // Android 15
-        versionCode = 22
-        versionName = "1.0.2"
+        versionCode = 23
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -78,8 +78,7 @@ android {
 
     buildTypes {
         release {
-            // Enable R8/ProGuard for smaller APK and better performance
-            // ENABLED per user request
+            // R8/ProGuard ENABLED for final release
             isMinifyEnabled = true
             isShrinkResources = true
             
@@ -193,4 +192,10 @@ dependencies {
     // PDF Generation (iText7 for styled markdown rendering)
     // implementation("com.itextpdf:itext7-core:7.2.5") // Removed to avoid version conflict with html2pdf
     implementation("com.itextpdf:html2pdf:4.0.5")
+
+    // HTML Parsing for Web Search
+    implementation("org.jsoup:jsoup:1.17.2")
+    
+    // Professional App Updater (Open Source)
+    implementation("io.github.azhon:appupdate:4.3.6")
 }

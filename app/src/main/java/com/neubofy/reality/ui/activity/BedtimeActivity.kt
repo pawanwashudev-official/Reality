@@ -1,5 +1,8 @@
 package com.neubofy.reality.ui.activity
 
+import com.neubofy.reality.ui.base.BaseActivity
+
+
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -12,7 +15,8 @@ import com.neubofy.reality.databinding.ActivityBedtimeBinding
 import com.neubofy.reality.utils.SavedPreferencesLoader
 import com.neubofy.reality.utils.StrictLockUtils
 
-class BedtimeActivity : AppCompatActivity() {
+class BedtimeActivity : BaseActivity() {
+
     
     private lateinit var binding: ActivityBedtimeBinding
     private lateinit var prefsLoader: SavedPreferencesLoader

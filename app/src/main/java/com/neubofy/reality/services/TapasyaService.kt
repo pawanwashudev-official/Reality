@@ -257,6 +257,10 @@ class TapasyaService : Service() {
                     wasAutoStopped = wasAutoStopped
                 )
                 db.tapasyaSessionDao().insert(session)
+                
+                // Ring Buffer: Fixed 7-day retention for Tapasya sessions
+                val cutoff = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000)
+                db.tapasyaSessionDao().deleteOldSessions(cutoff)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

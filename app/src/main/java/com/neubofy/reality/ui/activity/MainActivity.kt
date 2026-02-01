@@ -19,7 +19,7 @@ import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityOptionsCompat
@@ -55,7 +55,7 @@ import java.time.format.DateTimeFormatter
 import android.view.LayoutInflater
 import android.widget.TextView
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     private val PERMISSIONS = setOf(
         androidx.health.connect.client.permission.HealthPermission.getReadPermission(androidx.health.connect.client.records.StepsRecord::class),
@@ -139,6 +139,17 @@ class MainActivity : AppCompatActivity() {
                 binding.tvTerminalLog.text = logText
             }
         }
+        
+        // Handle deep link actions (from Alarm dismiss, etc.)
+        handleIntentAction(intent)
+    }
+    
+    private fun handleIntentAction(intent: Intent?) {
+        val action = intent?.getStringExtra("action") ?: intent?.data?.host
+        if (action == "sleep_verify" || action == "smart_sleep") {
+            // User dismissed wake-up alarm or tapped notification - trigger smart sleep page
+            startActivity(Intent(this, SmartSleepActivity::class.java))
+        }
     }
 
     override fun onResume() {
@@ -153,6 +164,42 @@ class MainActivity : AppCompatActivity() {
         updateThemeVisuals()
         updateTerminalLogVisibility()
         ThemeManager.applyToAllCards(binding.root)
+        
+        // Staggered Entry Animation
+        startStaggeredAnimation()
+
+        // Professional Auto-Update (7-day throttle)
+        com.neubofy.reality.utils.UpdateManager.checkForUpdates(this, silent = true)
+    }
+    
+    // New Staggered Animation Logic
+    private fun startStaggeredAnimation() {
+        val viewsToAnimate = listOf(
+            binding.cardReflection,
+            binding.cardFocusMode,
+            binding.cardUsageLimit,
+            binding.blocklistCard,
+            binding.cardAppLimits,
+            binding.cardGroupLimits,
+            binding.schedules,
+            binding.cardBedtime
+        )
+        
+        var delay = 0L
+        for (view in viewsToAnimate) {
+            view.alpha = 0f
+            view.translationY = 50f
+            
+            view.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setStartDelay(delay)
+                .setDuration(400)
+                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .start()
+                
+            delay += 50 // 50ms stagger
+        }
 
         
 
@@ -254,6 +301,21 @@ class MainActivity : AppCompatActivity() {
              if (status.isActive) {
                  val remaining = status.endTime - System.currentTimeMillis()
                  binding.tvFocusCardTitle.text = status.title
+
+                 // Breathing Glow Animation
+                 val colorFrom = getColor(R.color.accent_focus)
+                 val colorTo = getColor(R.color.white)
+                 val anim = android.animation.ObjectAnimator.ofArgb(
+                     binding.cardFocusMode, 
+                     "strokeColor", 
+                     colorFrom, 
+                     colorTo
+                 )
+                 anim.duration = 1500
+                 anim.repeatMode = android.animation.ValueAnimator.REVERSE
+                 anim.repeatCount = android.animation.ValueAnimator.INFINITE
+                 anim.start()
+                 // Note: Ideally store reference to cancel, but simple start is okay for this loop interval
                  
                  // Check if Tapasya is running
                  val data = savedPreferencesLoader.getFocusModeData()
@@ -291,7 +353,7 @@ class MainActivity : AppCompatActivity() {
              }
              
              // Sync widget with current status
-             com.neubofy.reality.widget.FocusWidgetProvider.updateAllWidgets(this@MainActivity)
+             // com.neubofy.reality.widget.FocusWidgetProvider.updateAllWidgets(this@MainActivity) // REMOVED
         }
     }
 
@@ -339,15 +401,16 @@ class MainActivity : AppCompatActivity() {
         // Menu Button - Show menu with options
         binding.btnInfo.setOnClickListener { view ->
             val popup = android.widget.PopupMenu(this, view)
-            popup.menu.add(0, 1, 0, "📖 User Manual")
-            popup.menu.add(0, 5, 1, "❤️ Health Dashboard") // Added Health Dashboard
-            popup.menu.add(0, 2, 2, "ℹ️ App Status & Rules")
+            popup.menu.add(0, 5, 0, "❤️ Health Dashboard")
+            popup.menu.add(0, 6, 1, "🎨 Appearance")
+            popup.menu.add(0, 2, 2, "📖 User Manual")
             popup.menu.add(0, 3, 3, "📱 About Reality")
+            popup.menu.add(0, 1, 4, "🌐 Reality Website")
             
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     1 -> {
-                        // Open User Manual website
+                        // Reality Website
                         val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://neubofyreality.vercel.app"))
                         startActivity(intent)
                         true
@@ -356,8 +419,14 @@ class MainActivity : AppCompatActivity() {
                         startActivity(Intent(this, HealthDashboardActivity::class.java))
                         true
                     }
+                    6 -> {
+                        // Appearance Page
+                        startActivity(Intent(this, AppearanceActivity::class.java))
+                        true
+                    }
                     2 -> {
-                        showRulesDialog()
+                        // User Manual (Replaces Rules Dialog)
+                        startActivity(Intent(this, UserManualActivity::class.java))
                         true
                     }
                     3 -> {
@@ -423,6 +492,8 @@ class MainActivity : AppCompatActivity() {
                     savedPreferencesLoader.saveFocusModeData(data)
                     sendRefreshRequest(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE)
                     Toast.makeText(this, "Focus Session Stopped", Toast.LENGTH_SHORT).show()
+                    // Force UI Update
+                    scope.launch { updateFocusStatus() }
                 } else {
                     Toast.makeText(this, "Cannot stop scheduled session", Toast.LENGTH_SHORT).show()
                 }
@@ -430,6 +501,7 @@ class MainActivity : AppCompatActivity() {
                 // Start Session
                 StartFocusMode(savedPreferencesLoader) {
                     // Refresh triggered by dialog
+                    scope.launch { updateFocusStatus() }
                 }.show(supportFragmentManager, "StartFocusMode")
             }
         }
@@ -490,51 +562,75 @@ class MainActivity : AppCompatActivity() {
         var startX = 0f
         var startY = 0f
         val clickThreshold = 10
+        var isDragging = false
+        
+        // GestureDetector for double-tap detection
+        val gestureDetector = android.view.GestureDetector(this, object : android.view.GestureDetector.SimpleOnGestureListener() {
+            override fun onSingleTapConfirmed(e: android.view.MotionEvent): Boolean {
+                // Single tap: Open AI Chat (with voice auto if enabled)
+                val prefs = getSharedPreferences("ai_settings", Context.MODE_PRIVATE)
+                val voiceAuto = prefs.getBoolean("widget_voice_auto", false)
+                
+                val intent = Intent(this@MainActivity, AIChatActivity::class.java).apply {
+                    if (voiceAuto) putExtra("voice_auto", true)
+                }
+                startActivity(intent)
+                return true
+            }
+            
+            override fun onDoubleTap(e: android.view.MotionEvent): Boolean {
+                // Double tap: Open in PRO MODE
+                val intent = Intent(this@MainActivity, AIChatActivity::class.java).apply {
+                    putExtra("extra_mode", "pro")
+                }
+                startActivity(intent)
+                return true
+            }
+        })
         
         binding.fabAiChat.setOnTouchListener { view, event ->
+            // Always pass to gesture detector first
+            val gestureHandled = gestureDetector.onTouchEvent(event)
+            
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
                     dX = view.x - event.rawX
                     dY = view.y - event.rawY
                     startX = event.rawX
                     startY = event.rawY
+                    isDragging = false
                     true
                 }
                 android.view.MotionEvent.ACTION_MOVE -> {
-                    val newX = event.rawX + dX
-                    val newY = event.rawY + dY
+                    val diffX = kotlin.math.abs(event.rawX - startX)
+                    val diffY = kotlin.math.abs(event.rawY - startY)
                     
-                    // Bounds checking
-                    val parent = view.parent as? android.view.View
-                    if (parent != null) {
-                        val maxX = parent.width - view.width.toFloat()
-                        val maxY = parent.height - view.height.toFloat()
-                        view.x = newX.coerceIn(0f, maxX)
-                        view.y = newY.coerceIn(0f, maxY)
-                    } else {
-                        view.x = newX
-                        view.y = newY
+                    // Only start dragging if moved beyond threshold
+                    if (diffX > clickThreshold || diffY > clickThreshold) {
+                        isDragging = true
+                        val newX = event.rawX + dX
+                        val newY = event.rawY + dY
+                        
+                        // Bounds checking
+                        val parent = view.parent as? android.view.View
+                        if (parent != null) {
+                            val maxX = parent.width - view.width.toFloat()
+                            val maxY = parent.height - view.height.toFloat()
+                            view.x = newX.coerceIn(0f, maxX)
+                            view.y = newY.coerceIn(0f, maxY)
+                        } else {
+                            view.x = newX
+                            view.y = newY
+                        }
                     }
                     true
                 }
                 android.view.MotionEvent.ACTION_UP -> {
-                    val endX = event.rawX
-                    val endY = event.rawY
-                    val diffX = kotlin.math.abs(endX - startX)
-                    val diffY = kotlin.math.abs(endY - startY)
-                    
-                    if (diffX < clickThreshold && diffY < clickThreshold) {
-                        // It's a click
-                        view.performClick()
-                    }
+                    // Gesture detector handles taps, we just clean up here
                     true
                 }
                 else -> false
             }
-        }
-        
-        binding.fabAiChat.setOnClickListener {
-            startActivity(Intent(this, AIChatActivity::class.java))
         }
     }
     
@@ -726,18 +822,16 @@ class MainActivity : AppCompatActivity() {
                     0
                 }
                 
-                // Load XP/streak/level using XPManager (Use Projected for consistency)
-                // XPManager.resetDailyXP(applicationContext) -- Removed, logic in getXPBreakdown
-                val xpBreakdown = com.neubofy.reality.utils.XPManager.getProjectedDailyXP(applicationContext)
-                val levelName = com.neubofy.reality.utils.XPManager.getLevelName(applicationContext, xpBreakdown.level)
+                // UNIFIED STATS: Use getLiveGamificationStats for single source of truth
+                val liveStats = com.neubofy.reality.utils.XPManager.getLiveGamificationStats(applicationContext)
+                val levelName = liveStats.levelName
                 
                 withContext(Dispatchers.Main) {
                     // Update XP/streak/level
-                    val totalXP = com.neubofy.reality.utils.XPManager.getTotalXP(applicationContext)
-                    binding.tvTotalXp.text = totalXP.toString()
-                    binding.tvTodayXp.text = if (xpBreakdown.totalDailyXP > 0) "+${xpBreakdown.totalDailyXP}" else "+${xpBreakdown.tapasyaXP}"
-                    binding.tvStreak.text = xpBreakdown.streak.toString()
-                    binding.tvLevel.text = xpBreakdown.level.toString()
+                    binding.tvTotalXp.text = liveStats.totalXP.toString()
+                    binding.tvTodayXp.text = if (liveStats.todayXP >= 0) "+${liveStats.todayXP}" else "${liveStats.todayXP}"
+                    binding.tvStreak.text = liveStats.streak.toString()
+                    binding.tvLevel.text = liveStats.level.toString()
                     
                     // Update study time progress
                     binding.tvStudyProgress.text = "${totalEffectiveMinutes} / ${totalPlannedMinutes} min"
@@ -822,6 +916,23 @@ class MainActivity : AppCompatActivity() {
              if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                  notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS, options)
              }
+        }
+        
+        // 6. All permissions granted! Check if we should suggest the manual
+        val prefs = getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("manual_suggested", false)) {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("🎉 Setup Complete!")
+                .setMessage("You've granted all necessary permissions. To get the most out of Reality, we highly recommend reading the User Manual.")
+                .setPositiveButton("Read Manual") { _, _ ->
+                     prefs.edit().putBoolean("manual_suggested", true).apply()
+                     startActivity(Intent(this, UserManualActivity::class.java))
+                }
+                .setNegativeButton("Later") { _, _ ->
+                     prefs.edit().putBoolean("manual_suggested", true).apply()
+                }
+                .setCancelable(false)
+                .show()
         }
     }
 
@@ -1032,6 +1143,9 @@ class MainActivity : AppCompatActivity() {
         val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this)
         if (!loader.isSmartSleepEnabled()) return
 
+        // Timing guard is now centralized in SleepInferenceHelper.inferSleepSession()
+        // It will return null if called before bedtime ends.
+
         lifecycleScope.launch {
             val healthManager = com.neubofy.reality.health.HealthManager(this@MainActivity)
             val today = LocalDate.now()
@@ -1040,102 +1154,8 @@ class MainActivity : AppCompatActivity() {
 
             val session = com.neubofy.reality.utils.SleepInferenceHelper.inferSleepSession(this@MainActivity, today)
             if (session != null) {
-                showSleepVerificationDialog(session.first, session.second)
+                startActivity(Intent(this@MainActivity, SmartSleepActivity::class.java))
             }
         }
-    }
-
-    private fun showSleepVerificationDialog(startTime: Instant, endTime: Instant) {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_smart_sleep_confirm, null)
-        val tvStart = dialogView.findViewById<TextView>(R.id.tv_sleep_start)
-        val tvEnd = dialogView.findViewById<TextView>(R.id.tv_sleep_end)
-        
-        val timeFormatter = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault())
-        tvStart.text = timeFormatter.format(startTime)
-        tvEnd.text = timeFormatter.format(endTime)
-
-        val dialog = MaterialAlertDialogBuilder(this, R.style.GlassDialog)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-
-        dialogView.findViewById<android.view.View>(R.id.btn_correct).setOnClickListener {
-            lifecycleScope.launch {
-                val healthManager = com.neubofy.reality.health.HealthManager(this@MainActivity)
-                // 1. Delete existing
-                healthManager.deleteSleepSessions(startTime.minus(java.time.Duration.ofHours(2)), endTime.plus(java.time.Duration.ofHours(2)))
-                // 2. Write new
-                healthManager.writeSleepSession(startTime, endTime)
-                
-                Toast.makeText(this@MainActivity, "Sleep data synced", Toast.LENGTH_SHORT).show()
-                dialog.dismiss()
-            }
-        }
-
-        dialogView.findViewById<android.view.View>(R.id.btn_wrong).setOnClickListener {
-            dialog.dismiss()
-            showSleepEditDialog(startTime, endTime)
-        }
-
-        dialogView.findViewById<android.view.View>(R.id.btn_still_sleeping).setOnClickListener {
-            dialog.dismiss()
-        }
-
-        dialog.show()
-    }
-
-    private fun showSleepEditDialog(oldStart: Instant, oldEnd: Instant) {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_smart_sleep_edit, null)
-        val pickerStart = dialogView.findViewById<android.widget.TimePicker>(R.id.time_picker_start)
-        val pickerEnd = dialogView.findViewById<android.widget.TimePicker>(R.id.time_picker_end)
-
-        pickerStart.setIs24HourView(true)
-        pickerEnd.setIs24HourView(true)
-
-        val startCal = java.util.Calendar.getInstance().apply { timeInMillis = oldStart.toEpochMilli() }
-        val endCal = java.util.Calendar.getInstance().apply { timeInMillis = oldEnd.toEpochMilli() }
-
-        pickerStart.hour = startCal.get(java.util.Calendar.HOUR_OF_DAY)
-        pickerStart.minute = startCal.get(java.util.Calendar.MINUTE)
-        pickerEnd.hour = endCal.get(java.util.Calendar.HOUR_OF_DAY)
-        pickerEnd.minute = endCal.get(java.util.Calendar.MINUTE)
-
-        MaterialAlertDialogBuilder(this, R.style.GlassDialog)
-            .setView(dialogView)
-            .setTitle("✏️ Adjust Sleep Time")
-            .setPositiveButton("Save & Sync") { _, _ ->
-                // Smart Inference logic (mirrors HealthDashboardActivity)
-                val today = LocalDate.now()
-                val startHour = pickerStart.hour
-                val endHour = pickerEnd.hour
-                
-                val startDate = if (startHour > 14) today.minusDays(1) else today
-                
-                var newStart = startDate.atTime(startHour, pickerStart.minute).atZone(ZoneId.systemDefault()).toInstant()
-                var newEnd = startDate.atTime(endHour, pickerEnd.minute).atZone(ZoneId.systemDefault()).toInstant()
-                
-                if (newEnd.isBefore(newStart)) {
-                    newEnd = newEnd.plus(java.time.Duration.ofDays(1))
-                }
-                
-                if (newStart.isAfter(Instant.now())) {
-                     newStart = newStart.minus(java.time.Duration.ofDays(1))
-                     newEnd = newEnd.minus(java.time.Duration.ofDays(1))
-                }
-
-                lifecycleScope.launch {
-                    val healthManager = com.neubofy.reality.health.HealthManager(this@MainActivity)
-                    // 1. Delete existing
-                    healthManager.deleteSleepSessions(newStart.minus(java.time.Duration.ofHours(12)), newEnd.plus(java.time.Duration.ofHours(12)))
-                    // 2. Write new
-                    healthManager.writeSleepSession(newStart, newEnd)
-                    
-                    Toast.makeText(this@MainActivity, "Adjusted sleep data synced", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("Cancel") { _, _ ->
-                showSleepVerificationDialog(oldStart, oldEnd)
-            }
-            .show()
     }
 }

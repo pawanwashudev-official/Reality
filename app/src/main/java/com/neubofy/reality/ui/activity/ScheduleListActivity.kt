@@ -7,6 +7,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +24,7 @@ import com.neubofy.reality.Constants
 import android.util.TypedValue
 import com.google.android.material.card.MaterialCardView
 
-class ScheduleListActivity : AppCompatActivity() {
+class ScheduleListActivity : BaseActivity() {
 
     private lateinit var binding: ActivityScheduleListBinding
     private val displayItems = mutableListOf<ScheduleDisplayItem>()

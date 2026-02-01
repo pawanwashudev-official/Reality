@@ -6,13 +6,13 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.neubofy.reality.R
 import com.neubofy.reality.databinding.ItemStepCardBinding
-import com.neubofy.reality.data.NightlyProtocolExecutor
+import com.neubofy.reality.data.nightly.StepProgress
 
 data class StepItem(
     val stepId: Int,
     val title: String,
     val icon: Int,
-    var status: Int = NightlyProtocolExecutor.StepProgress.STATUS_PENDING,
+    var status: Int = StepProgress.STATUS_PENDING,
     var detail: String = "Pending...",
     var linkUrl: String? = null,
     var isEnabled: Boolean = true,
@@ -37,13 +37,13 @@ class NightlyStepAdapter(
             
             // Status Icon
             val (iconRes, tintColor) = when (item.status) {
-                NightlyProtocolExecutor.StepProgress.STATUS_RUNNING -> 
+                StepProgress.STATUS_RUNNING -> 
                     R.drawable.baseline_sync_24 to R.color.blue_500
-                NightlyProtocolExecutor.StepProgress.STATUS_COMPLETED -> 
+                StepProgress.STATUS_COMPLETED -> 
                     R.drawable.baseline_check_circle_24 to R.color.green_500
-                NightlyProtocolExecutor.StepProgress.STATUS_ERROR -> 
+                StepProgress.STATUS_ERROR -> 
                     R.drawable.baseline_error_24 to R.color.status_error
-                NightlyProtocolExecutor.StepProgress.STATUS_SKIPPED ->
+                StepProgress.STATUS_SKIPPED ->
                     R.drawable.baseline_done_24 to android.R.color.darker_gray
                 else -> 
                     R.drawable.baseline_radio_button_unchecked_24 to android.R.color.darker_gray
@@ -55,17 +55,17 @@ class NightlyStepAdapter(
             // Completed = button disabled (grayed out), user can use long-press Reset if needed
             // Pending/Error = button enabled to run/retry
             when (item.status) {
-                NightlyProtocolExecutor.StepProgress.STATUS_COMPLETED -> {
+                StepProgress.STATUS_COMPLETED -> {
                     binding.btnAction.text = "Done"
                     binding.btnAction.isEnabled = false
                     binding.btnAction.alpha = 0.5f
                 }
-                NightlyProtocolExecutor.StepProgress.STATUS_RUNNING -> {
+                StepProgress.STATUS_RUNNING -> {
                     binding.btnAction.text = "..."
                     binding.btnAction.isEnabled = false
                     binding.btnAction.alpha = 0.7f
                 }
-                NightlyProtocolExecutor.StepProgress.STATUS_ERROR -> {
+                StepProgress.STATUS_ERROR -> {
                     binding.btnAction.text = "Retry"
                     binding.btnAction.isEnabled = item.isEnabled
                     binding.btnAction.alpha = 1.0f

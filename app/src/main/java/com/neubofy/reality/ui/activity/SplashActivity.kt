@@ -16,8 +16,23 @@ class SplashActivity : AppCompatActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(R.layout.activity_splash)
 
-        // No fixed duration - load immediately
-        startActivity(Intent(this, MainActivity::class.java))
-        finish()
+        // Lottie Animation Logic
+        val lottieView = findViewById<com.airbnb.lottie.LottieAnimationView>(R.id.lottie_splash)
+        
+        lottieView.addAnimatorListener(object : android.animation.Animator.AnimatorListener {
+            override fun onAnimationStart(animation: android.animation.Animator) {}
+            override fun onAnimationEnd(animation: android.animation.Animator) {
+                // Navigate after animation
+                startActivity(Intent(this@SplashActivity, MainActivity::class.java))
+                // Custom Zoom Transition
+                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                finish()
+            }
+            override fun onAnimationCancel(animation: android.animation.Animator) {}
+            override fun onAnimationRepeat(animation: android.animation.Animator) {}
+        })
+        
+        // Ensure speed is set (xml attribute handles init, but code enforces it)
+        lottieView.speed = 1.8f
     }
 }

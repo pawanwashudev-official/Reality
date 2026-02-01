@@ -7,93 +7,280 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
+/**
+ * Premium Sleep Inference Algorithm
+ * 
+ * Approach: Merged Gap Analysis
+ * 1. Collect all screen-off periods within the bedtime window
+ * 2. Merge gaps where screen-on duration between them is < 5 minutes (brief phone checks)
+ * 3. Find the longest merged gap
+ * 4. Validate minimum sleep duration (3+ hours)
+ * 5. Score by overlap with planned bedtime for tie-breaking
+ */
 object SleepInferenceHelper {
 
+    private const val MERGE_THRESHOLD_MS = 5 * 60 * 1000L  // 5 minutes - brief check threshold
+    private const val MIN_SLEEP_DURATION_MS = 3 * 60 * 60 * 1000L  // 3 hours minimum sleep
+
+    data class ScreenGap(
+        var startMs: Long,
+        var endMs: Long
+    ) {
+        val durationMs: Long get() = endMs - startMs
+    }
+
     /**
-     * Infers a sleep session for a specific date (the night leading into this date).
-     * USES: Bedtime Plan as Baseline + Usage Gaps + Step Counts.
-     * Calculated on-the-go to ensure 95% accuracy using latest phone state.
+     * @param date The "wake up" date (e.g., Jan 26 means sleep from Jan 25 night to Jan 26 morning)
+     * @param force If true, bypasses the timing guard (useful when triggered by alarm)
+     * @return Pair of (sleepStart, sleepEnd)
      */
-    suspend fun inferSleepSession(context: Context, date: LocalDate): Pair<Instant, Instant>? {
-        val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager ?: return null
+    suspend fun inferSleepSession(context: Context, date: LocalDate, force: Boolean = false): Pair<Instant, Instant>? {
+        val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager 
+            ?: return null
         val loader = SavedPreferencesLoader(context)
         val bedtimeData = loader.getBedtimeData()
-        
-        // 1. Get Plan Baseline
-        // Start: 8 PM yesterday by default, or Bedtime Start - 1h
-        // End: 12 PM today by default, or Bedtime End + 1h
         
         val planStartMins = bedtimeData.startTimeInMins
         val planEndMins = bedtimeData.endTimeInMins
         
-        // Calculate timestamps for the plan window crossing midnight
-        val yesterday = date.minusDays(1)
-        val planStartTime = yesterday.atTime(planStartMins / 60, planStartMins % 60)
-            .atZone(ZoneId.systemDefault()).toInstant()
+        // ========== TIMING GUARD: Only run after bedtime ends ==========
+        if (bedtimeData.isEnabled && !force) {
+            val nowTime = java.time.LocalTime.now()
+            val nowMins = (nowTime.hour * 60) + nowTime.minute
             
+            // If current time is before planned wake-up, don't infer yet
+            if (nowMins < planEndMins) {
+                TerminalLogger.log("SleepInference: Too early (${nowMins} < ${planEndMins}), skipping")
+                return null
+            }
+        }
+        
+        // Calculate planned window
         val planEndTime = date.atTime(planEndMins / 60, planEndMins % 60)
             .atZone(ZoneId.systemDefault()).toInstant()
 
-        // Expand window slightly to catch "Falling asleep" and "Waking up" transitions
-        val startWindow = planStartTime.minusSeconds(3600).toEpochMilli() // -1h
-        val endWindow = planEndTime.plusSeconds(3600).toEpochMilli() // +1h
+        val planStartTime = if (planStartMins > planEndMins) {
+            // Crosses midnight (e.g. 22:00 -> 07:00)
+            date.minusDays(1).atTime(planStartMins / 60, planStartMins % 60)
+                .atZone(ZoneId.systemDefault()).toInstant()
+        } else {
+            // Same day (e.g. 01:00 -> 09:00)
+            date.atTime(planStartMins / 60, planStartMins % 60)
+                .atZone(ZoneId.systemDefault()).toInstant()
+        }
 
-        val events = usm.queryEvents(startWindow, endWindow)
+        // Expand window for edge detection (+/- 2 hours)
+        val windowStart = planStartTime.minusSeconds(7200).toEpochMilli()
+        val windowEnd = planEndTime.plusSeconds(7200).toEpochMilli()
+
+        // ========== PHASE 1: Collect Raw Screen-Off Gaps ==========
+        val rawGaps = mutableListOf<ScreenGap>()
+        val events = usm.queryEvents(windowStart, windowEnd)
         val event = UsageEvents.Event()
 
-        var lastOffTime = startWindow
-        var longestGapMs = 0L
-        var sleepStart = planStartTime.toEpochMilli()
-        var sleepEnd = planEndTime.toEpochMilli()
+        var lastOffTime: Long? = null
+        var isScreenOn = true  // Assume screen was on at start (conservative)
 
-        var isScreenOn = false
-
-        // 2. Usage Gap Analysis within Expanded Window
         while (events.hasNextEvent()) {
             events.getNextEvent(event)
             
             when (event.eventType) {
-                UsageEvents.Event.SCREEN_INTERACTIVE -> {
-                    if (!isScreenOn) {
-                        val gap = event.timeStamp - lastOffTime
-                        if (gap > longestGapMs) {
-                            longestGapMs = gap
-                            sleepStart = lastOffTime
-                            sleepEnd = event.timeStamp
-                        }
-                        isScreenOn = true
-                    }
-                }
                 UsageEvents.Event.SCREEN_NON_INTERACTIVE -> {
                     if (isScreenOn) {
                         lastOffTime = event.timeStamp
                         isScreenOn = false
                     }
                 }
+                UsageEvents.Event.SCREEN_INTERACTIVE -> {
+                    if (!isScreenOn && lastOffTime != null) {
+                        // Record the gap
+                        rawGaps.add(ScreenGap(lastOffTime, event.timeStamp))
+                        lastOffTime = null
+                    }
+                    isScreenOn = true
+                }
             }
         }
 
-        if (!isScreenOn) {
-            val gap = endWindow - lastOffTime
-            if (gap > longestGapMs) {
-                longestGapMs = gap
-                sleepStart = lastOffTime
-                sleepEnd = event.timeStamp.coerceAtLeast(lastOffTime) // Use last event or end
-            }
+        // Handle case where screen is still off at end of window
+        if (!isScreenOn && lastOffTime != null) {
+            rawGaps.add(ScreenGap(lastOffTime, windowEnd))
         }
 
-        // 3. Step Count Refinement (If gap found)
-        // If we found a gap, check if there were steps during the END of that gap
-        // (Waking up and walking around while phone is still off)
+        // FALLBACK: If no gaps found, user was on phone entire night - Return Planned Bedtime
+        if (rawGaps.isEmpty()) {
+            TerminalLogger.log("SleepInference: No screen-off gaps found, falling back to plan")
+            return Pair(planStartTime, planEndTime)
+        }
+
+        // ========== PHASE 2: Merge Adjacent Gaps (Brief Checks) ==========
+        val mergedGaps = mutableListOf<ScreenGap>()
+        var currentMerged = rawGaps[0].copy()
+
+        for (i in 1 until rawGaps.size) {
+            val nextGap = rawGaps[i]
+            val screenOnDuration = nextGap.startMs - currentMerged.endMs
+            
+            if (screenOnDuration <= MERGE_THRESHOLD_MS) {
+                // Brief phone check - merge the gaps
+                currentMerged.endMs = nextGap.endMs
+            } else {
+                // Significant phone use - finalize current and start new
+                mergedGaps.add(currentMerged)
+                currentMerged = nextGap.copy()
+            }
+        }
+        mergedGaps.add(currentMerged)
+
+        TerminalLogger.log("SleepInference: ${rawGaps.size} raw gaps -> ${mergedGaps.size} merged gaps")
+
+        // ========== PHASE 3: Find Best Gap (Longest + Overlaps Bedtime) ==========
+        val planStartMs = planStartTime.toEpochMilli()
+        val planEndMs = planEndTime.toEpochMilli()
+
+        // Score each gap by duration + overlap with plan
+        val scoredGaps = mergedGaps
+            .filter { it.durationMs >= MIN_SLEEP_DURATION_MS }  // Must be at least 3 hours
+            .map { gap ->
+                val overlapStart = maxOf(gap.startMs, planStartMs)
+                val overlapEnd = minOf(gap.endMs, planEndMs)
+                val overlapMs = (overlapEnd - overlapStart).coerceAtLeast(0)
+                
+                // Score = 70% duration + 30% overlap (prioritize actual sleep length)
+                val score = (gap.durationMs * 0.7) + (overlapMs * 0.3)
+                Pair(gap, score)
+            }
+            .sortedByDescending { it.second }
+
+        // FALLBACK: No gap >= 3h found, return plan
+        if (scoredGaps.isEmpty()) {
+            TerminalLogger.log("SleepInference: No gaps >= 3h found, falling back to plan")
+            return Pair(planStartTime, planEndTime)
+        }
+
+        val bestGap = scoredGaps.first().first
+        val durationHours = bestGap.durationMs / (1000 * 60 * 60.0)
+        TerminalLogger.log("SleepInference: Best gap = ${String.format("%.1f", durationHours)}h")
+
+        return Pair(
+            Instant.ofEpochMilli(bestGap.startMs),
+            Instant.ofEpochMilli(bestGap.endMs)
+        )
+    }
+
+    /**
+     * Refines a user-provided manual window by looking for exact screen events.
+     * Use case: User says "I slept around 2 PM to 4 PM". 
+     * Analysis: Finds exact gap e.g. "2:15 PM - 3:50 PM" within that window (+/- 30 mins padding).
+     */
+    suspend fun refineSleepWindow(context: Context, userStart: Instant, userEnd: Instant): Pair<Instant, Instant>? {
+        val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager 
+            ?: return null
+
+        // Expand search window by 30 mins to catch edge mis-estimations
+        val searchStart = userStart.minusSeconds(1800).toEpochMilli()
+        val searchEnd = userEnd.plusSeconds(1800).toEpochMilli()
+        
+        // Query events
+        val events = usm.queryEvents(searchStart, searchEnd)
+        val event = UsageEvents.Event()
+        
+        val gaps = mutableListOf<ScreenGap>()
+        var lastOffTime: Long? = null
+        var isScreenOn = true 
+
+        // Analyze stream
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            when (event.eventType) {
+                UsageEvents.Event.SCREEN_NON_INTERACTIVE -> {
+                    if (isScreenOn) {
+                        lastOffTime = event.timeStamp
+                        isScreenOn = false
+                    }
+                }
+                UsageEvents.Event.SCREEN_INTERACTIVE -> {
+                    if (!isScreenOn && lastOffTime != null) {
+                        gaps.add(ScreenGap(lastOffTime, event.timeStamp))
+                        lastOffTime = null
+                    }
+                    isScreenOn = true
+                }
+            }
+        }
+        if (!isScreenOn && lastOffTime != null) {
+            gaps.add(ScreenGap(lastOffTime, searchEnd))
+        }
+
+        if (gaps.isEmpty()) return null
+
+        // Find the gap that best overlaps with the user's manual input
+        // Score = Overlap Duration
+        val userDuration = java.time.Duration.between(userStart, userEnd).toMillis()
+        val userStartMs = userStart.toEpochMilli()
+        val userEndMs = userEnd.toEpochMilli()
+
+        val bestMatch = gaps.maxByOrNull { gap ->
+            val overlapStart = maxOf(gap.startMs, userStartMs)
+            val overlapEnd = minOf(gap.endMs, userEndMs)
+            (overlapEnd - overlapStart).coerceAtLeast(0)
+        }
+
+        return bestMatch?.let { 
+             // Only suggest if it covers significant portion (e.g. > 30 mins)
+             if (it.durationMs > 30 * 60 * 1000) {
+                 Pair(Instant.ofEpochMilli(it.startMs), Instant.ofEpochMilli(it.endMs))
+             } else null
+        }
+    }
+
+    /**
+     * Auto-confirm sleep when alarm is auto-dismissed (not manually interacted with).
+     * Infers sleep and writes directly to Health Connect without user confirmation.
+     */
+    suspend fun autoConfirmSleep(context: Context) {
+        val loader = SavedPreferencesLoader(context)
+        if (!loader.isSmartSleepEnabled()) {
+            TerminalLogger.log("AutoConfirmSleep: Smart Sleep disabled")
+            return
+        }
+        
+        val today = java.time.LocalDate.now()
         val healthManager = com.neubofy.reality.health.HealthManager(context)
-        // Note: Health Connect step query is usually per-day, but we want to confirm 
-        // if user was active during the 'inferred' window. 
-        // For simplicity in V1 (No background), we rely on the Longest Usage Gap as 95% accurate
-        // when checked against the Bedtime Plan.
-
-        // Heuristic: If longest gap is entirely outside the bedtime plan, it's suspicious.
-        // We prioritize the gap that overlaps most with the planned sleep.
-
-        return Pair(Instant.ofEpochMilli(sleepStart), Instant.ofEpochMilli(sleepEnd))
+        
+        // Don't double-sync
+        if (healthManager.isSleepSyncedToday(today)) {
+            TerminalLogger.log("AutoConfirmSleep: Already synced today")
+            return
+        }
+        
+        // Force inference (skip timing guard for auto-confirm since alarm already fired)
+        val bedtimeData = loader.getBedtimeData()
+        val planStartMins = bedtimeData.startTimeInMins
+        val planEndMins = bedtimeData.endTimeInMins
+        
+        val planEndTime = today.atTime(planEndMins / 60, planEndMins % 60)
+            .atZone(java.time.ZoneId.systemDefault()).toInstant()
+        val planStartTime = if (planStartMins > planEndMins) {
+            today.minusDays(1).atTime(planStartMins / 60, planStartMins % 60)
+                .atZone(java.time.ZoneId.systemDefault()).toInstant()
+        } else {
+            today.atTime(planStartMins / 60, planStartMins % 60)
+                .atZone(java.time.ZoneId.systemDefault()).toInstant()
+        }
+        
+        // Use planned bedtime as auto-confirm (user didn't interact, assume plan was followed)
+        TerminalLogger.log("AutoConfirmSleep: Auto-confirming planned sleep ${planStartTime} to ${planEndTime}")
+        
+        try {
+            healthManager.deleteSleepSessions(
+                planStartTime.minus(java.time.Duration.ofHours(2)),
+                planEndTime.plus(java.time.Duration.ofHours(2))
+            )
+            healthManager.writeSleepSession(planStartTime, planEndTime)
+            TerminalLogger.log("AutoConfirmSleep: Successfully synced to Health Connect")
+        } catch (e: Exception) {
+            TerminalLogger.log("AutoConfirmSleep: Error - ${e.message}")
+        }
     }
 }

@@ -41,6 +41,19 @@ class SavedPreferencesLoader(private val context: Context) {
     }
     
     fun loadBlockedApps(): Set<String> {
+        // UNIFIED: Use FocusModeData.selectedApps as source of truth
+        val focusData = getFocusModeData()
+        // Defensive: R8/Gson might leave this null despite Kotlin non-null type
+        val apps = focusData.selectedApps
+        if (apps != null && apps.isNotEmpty()) {
+            return apps.toSet()
+        }
+        // Fallback to legacy selected_apps list
+        val legacyApps = getFocusModeSelectedApps()
+        if (legacyApps.isNotEmpty()) {
+            return legacyApps.toSet()
+        }
+        // Last resort: old blocked_apps key (for very old data)
         val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
         return sharedPreferences.getStringSet("blocked_apps", emptySet()) ?: emptySet()
     }

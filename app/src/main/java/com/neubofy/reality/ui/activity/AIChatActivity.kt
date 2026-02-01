@@ -6,10 +6,13 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.Toast
+import android.content.res.ColorStateList
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.color.MaterialColors
 import com.neubofy.reality.R
 import com.neubofy.reality.data.db.AppDatabase
 import com.neubofy.reality.data.db.ChatDao
@@ -31,7 +34,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import com.neubofy.reality.utils.ConversationMemoryManager
 
-open class AIChatActivity : AppCompatActivity() {
+open class AIChatActivity : BaseActivity() {
 
     protected lateinit var binding: ActivityAiChatBinding
     private val messages = mutableListOf<ChatMessage>()
@@ -78,7 +81,8 @@ open class AIChatActivity : AppCompatActivity() {
         // Check for Pro Mode intent (e.g. from Widget)
         if (intent.getStringExtra("extra_mode") == "pro") {
             isProMode = true
-            binding.modeToggleGroup.check(R.id.btn_mode_pro)
+            val colorPrimary = MaterialColors.getColor(this, com.google.android.material.R.attr.colorPrimary, android.graphics.Color.BLUE)
+            binding.btnMode.imageTintList = ColorStateList.valueOf(colorPrimary)
         }
     }
     
@@ -94,11 +98,27 @@ open class AIChatActivity : AppCompatActivity() {
                 binding.btnVoice.performClick()
             }, 300)
         }
+
+        // Check for Keyboard Focus (Search Widget)
+        if (intent.getBooleanExtra("extra_focus_keyboard", false)) {
+            // Clear the extra so it doesn't trigger on rotation
+            intent.removeExtra("extra_focus_keyboard")
+            
+            binding.root.postDelayed({
+                binding.etMessage.requestFocus()
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                imm.showSoftInput(binding.etMessage, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+            }, 200)
+        }
     }
 
     private fun setupUI() {
+        // Fetch User Name
+        val mainPrefs = getSharedPreferences("MainPrefs", Context.MODE_PRIVATE)
+        val userName = mainPrefs.getString("user_name", "User") ?: "User"
+
         // Chat Adapter
-        adapter = ChatAdapter(messages)
+        adapter = ChatAdapter(messages, userName)
         binding.recyclerChat.adapter = adapter
         binding.recyclerChat.layoutManager = LinearLayoutManager(this).apply { stackFromEnd = true }
 
@@ -109,6 +129,11 @@ open class AIChatActivity : AppCompatActivity() {
         
         binding.btnNewChat.setOnClickListener {
              createNewSession()
+        }
+        
+        // Settings Button -> Open AI Settings
+        binding.btnSettings.setOnClickListener {
+            startActivity(Intent(this, AISettingsActivity::class.java))
         }
         
         // Voice Input
@@ -141,15 +166,6 @@ open class AIChatActivity : AppCompatActivity() {
             }
         }
         
-        // Mode Toggle
-        binding.modeToggleGroup.addOnButtonCheckedListener { group, checkedId, isChecked ->
-            if (isChecked) {
-                isProMode = (checkedId == R.id.btn_mode_pro)
-                val modeName = if (isProMode) "Pro Mode (Actions Active)" else "Normal Mode"
-                Toast.makeText(this, modeName, Toast.LENGTH_SHORT).show()
-            }
-        }
-
         // Send / Stop Button
         binding.btnSend.setOnClickListener {
             if (isGenerating) {
@@ -170,13 +186,503 @@ open class AIChatActivity : AppCompatActivity() {
                 // SEND LOGIC
                 val text = binding.etMessage.text.toString().trim()
                 if (text.isNotEmpty()) {
+                    isGenerating = true // Set flag immediately
+                    binding.btnSend.setImageResource(R.drawable.baseline_close_24) 
+                    
                     sendMessage(text)
                     binding.etMessage.text?.clear()
                 }
             }
         }
+
+        // Mode Toggle (Single Button)
+        binding.btnMode.setOnClickListener {
+            isProMode = !isProMode
+            val context = this
+            val colorOnSurfaceVariant = MaterialColors.getColor(context, com.google.android.material.R.attr.colorOnSurfaceVariant, android.graphics.Color.GRAY)
+            val colorPrimary = MaterialColors.getColor(context, com.google.android.material.R.attr.colorPrimary, android.graphics.Color.BLUE)
+
+            if (isProMode) {
+                binding.btnMode.imageTintList = ColorStateList.valueOf(colorPrimary)
+                Toast.makeText(this, "Pro Mode Activated (Agentic Tools)", Toast.LENGTH_SHORT).show()
+            } else {
+                binding.btnMode.imageTintList = ColorStateList.valueOf(colorOnSurfaceVariant)
+                Toast.makeText(this, "Normal Mode Activated", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
     
+    private fun updateSendButtonState(generating: Boolean) {
+        isGenerating = generating
+        val iconRes = if (generating) R.drawable.baseline_close_24 else R.drawable.baseline_send_24
+        binding.btnSend.setImageResource(iconRes)
+    }
+    
+    // Model selection logic removed (using default preference)
+    private fun refreshModels() {
+        // No-op or remove entirely if unused
+    }
+
+    private fun sendMessage(text: String) {
+        adapter.addMessage(ChatMessage(text, true))
+        binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
+        
+        handleSessionInit(text)
+
+        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+        val savedModelString = prefs.getString("model", "OpenAI: gpt-3.5-turbo") ?: "OpenAI: gpt-3.5-turbo"
+        
+        val (provider, model) = if (savedModelString.contains(": ")) {
+            val split = savedModelString.split(": ", limit = 2)
+            split[0] to split[1]
+        } else {
+            (prefs.getString("provider", "OpenAI") ?: "OpenAI") to savedModelString
+        }
+        
+        val apiKey = prefs.getString("api_key_$provider", "") ?: ""
+
+        if (apiKey.isEmpty()) {
+            val err = "Missing API Key for $provider. Please configure in Settings."
+            adapter.addMessage(ChatMessage(err, false))
+            saveBotMessage(err)
+            return
+        }
+        
+        binding.tvThinking.visibility = View.VISIBLE
+        binding.tvThinking.text = "Reality is thinking..." // Reset text
+
+        // Prepare context
+        val history = ArrayList(messages.filter { !it.isAnimating }) // Exclude animating ones if any?
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val response = try {
+                if (provider == "Gemini") {
+                     // Gemini logic embedded safely or simplified
+                     // callGemini(history, apiKey, model) // Re-implement if needed, for now focusing on Groq/OpenAI Agent
+                     withContext(Dispatchers.Main) {
+                         adapter.addMessage(ChatMessage("Gemini streaming not yet supported.", false))
+                     }
+                     "Gemini streaming not yet supported."
+                } else {
+                     if (isProMode) {
+                         // Pro Mode: Still uses the agent loop (not streaming yet)
+                         withContext(Dispatchers.Main) { binding.tvThinking.text = "Reality is working..." }
+                         runAgentLoop(history, apiKey, model, provider)
+                     } else {
+                         // Standard Mode: NEW STREAMING PATH
+                         processStreamingChat(history, apiKey, model, provider)
+                     }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    adapter.addMessage(ChatMessage("Error: ${e.message}", false))
+                }
+                "Error: ${e.message}"
+            }
+            
+            withContext(Dispatchers.Main) {
+                binding.tvThinking.visibility = View.GONE
+                
+                // For PRO MODE or GEMINI: Add message after complete (not streaming)
+                if (isProMode || provider == "Gemini") {
+                    adapter.addMessage(ChatMessage(response, false, true))
+                    binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
+                }
+                // For STREAMING: Message already added/updated in processStreamingChat
+                
+                saveBotMessage(response)
+                
+                // FORCE REFRESH to fix table rendering glitches (for tables in response)
+                binding.recyclerChat.post {
+                    adapter.notifyDataSetChanged()
+                    binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
+                }
+                
+                // Reset State
+                updateSendButtonState(false)
+            }
+        }
+    }
+    
+    // --- Agentic AI Core ---
+
+    // --- Standard Chat (Streaming Mode) ---
+    /**
+     * Streaming SSE-based chat completion.
+     * Reads tokens as they arrive and updates UI in real-time.
+     * Returns the complete response for saving to history.
+     */
+    private suspend fun processStreamingChat(history: List<ChatMessage>, apiKey: String, model: String, provider: String): String {
+        val TAG = "AIChat"
+        
+        val url = when(provider) {
+            "OpenAI" -> "https://api.openai.com/v1/chat/completions"
+            "Groq" -> "https://api.groq.com/openai/v1/chat/completions"
+            "OpenRouter" -> "https://openrouter.ai/api/v1/chat/completions"
+            else -> "https://api.openai.com/v1/chat/completions"
+        }
+        
+        android.util.Log.d(TAG, "=== STREAMING REQUEST START ===")
+        android.util.Log.d(TAG, "Provider: $provider")
+        android.util.Log.d(TAG, "Model: $model")
+        android.util.Log.d(TAG, "URL: $url")
+        android.util.Log.d(TAG, "API Key (first 10 chars): ${apiKey.take(10)}...")
+
+        // System prompt with user introduction
+        val userIntro = com.neubofy.reality.ui.activity.AISettingsActivity.getUserIntroduction(this) ?: ""
+        val systemPrompt = buildString {
+            append("You are a helpful, intelligent assistant.")
+            if (userIntro.isNotEmpty()) append(" User context: $userIntro")
+        }
+        
+        // OPTIMIZED: Use sliding window + token management
+        val optimizedContext = ConversationMemoryManager.buildOptimizedHistory(
+            this, history, currentSessionId, systemPrompt
+        )
+        val jsonMessages = ConversationMemoryManager.toJsonMessages(systemPrompt, optimizedContext)
+        
+        // Construct Request WITH STREAMING ENABLED
+        val jsonBody = JSONObject().apply {
+            put("model", model)
+            put("messages", jsonMessages)
+            put("stream", true) // CRITICAL: Enable SSE streaming
+        }
+        
+        android.util.Log.d(TAG, "Request body model: $model, messages count: ${jsonMessages.length()}")
+
+        // Define outside try for access in catch
+        val fullResponse = StringBuilder()
+        var conn: java.net.HttpURLConnection? = null
+        
+        // Helper to update status on UI thread
+        suspend fun updateStatus(status: String) {
+            withContext(Dispatchers.Main) {
+                binding.tvThinking.text = status
+                binding.tvThinking.visibility = View.VISIBLE
+            }
+        }
+        
+        try {
+            // STATUS: Connecting
+            updateStatus("🔗 Connecting to $provider...")
+            
+            // API Call
+            conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.connectTimeout = 30000
+            conn.readTimeout = 120000 // Longer read timeout for streaming
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Authorization", "Bearer $apiKey")
+            conn.setRequestProperty("Accept", "text/event-stream") // SSE header
+            if (provider == "OpenRouter") {
+                 conn.setRequestProperty("HTTP-Referer", "https://neubofy.com")
+                 conn.setRequestProperty("X-Title", "Reality App")
+            }
+            conn.doOutput = true
+            
+            // STATUS: Sending
+            updateStatus("📤 Sending request...")
+            android.util.Log.d(TAG, "Sending request...")
+            conn.outputStream.write(jsonBody.toString().toByteArray())
+            conn.outputStream.flush()
+            conn.outputStream.close()
+            
+            // STATUS: Waiting for response
+            updateStatus("⏳ Waiting for $provider...")
+            
+            val responseCode = conn.responseCode
+            android.util.Log.d(TAG, "Response code: $responseCode")
+            
+            if (responseCode != 200) {
+                val errorBody = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "No error body"
+                android.util.Log.e(TAG, "API Error: $responseCode - $errorBody")
+                
+                // STATUS: Error
+                updateStatus("❌ Error: $responseCode")
+                kotlinx.coroutines.delay(1500) // Show error briefly
+                
+                return "Error: $responseCode - $errorBody"
+            }
+            
+            // STATUS: Streaming
+            updateStatus("✨ Receiving response...")
+            android.util.Log.d(TAG, "Response OK, starting stream read...")
+
+            // --- SSE Stream Processing ---
+            
+            // Add placeholder message to UI immediately (will be updated)
+            withContext(Dispatchers.Main) {
+                adapter.addMessage(ChatMessage("", false, isAnimating = true))
+                binding.recyclerChat.scrollToPosition(adapter.itemCount - 1)
+                
+                // Start streaming mode - captures TextView for direct updates (no flicker!)
+                binding.recyclerChat.post {
+                    adapter.startStreaming(binding.recyclerChat)
+                }
+                
+                binding.tvThinking.visibility = View.GONE // Hide status, we're streaming now!
+            }
+            
+            val reader = conn.inputStream.bufferedReader()
+            var line: String?
+            var updateCounter = 0
+            
+            while (true) {
+                line = reader.readLine()
+                
+                // End of stream
+                if (line == null) break
+                
+                // Skip empty lines (SSE keepalive)
+                if (line.isBlank()) continue
+                
+                // SSE format: "data: {...json...}" or "data: [DONE]"
+                if (line.startsWith("data:")) {
+                    val jsonStr = line.removePrefix("data:").trim()
+                    
+                    if (jsonStr == "[DONE]") {
+                        // Stream finished
+                        break
+                    }
+                    
+                    // Skip empty data
+                    if (jsonStr.isEmpty()) continue
+                    
+                    try {
+                        val chunk = JSONObject(jsonStr)
+                        val choices = chunk.optJSONArray("choices")
+                        if (choices != null && choices.length() > 0) {
+                            val delta = choices.getJSONObject(0).optJSONObject("delta")
+                            val content = delta?.optString("content", "") ?: ""
+                            
+                            if (content.isNotEmpty()) {
+                                fullResponse.append(content)
+                                updateCounter++
+                                
+                                // Log each chunk for debugging
+                                android.util.Log.d("Streaming", "Chunk $updateCounter: '$content'")
+                                
+                                // Update UI on EVERY chunk for visible typewriter effect
+                                val currentText = fullResponse.toString()
+                                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                                    adapter.updateLastMessageText(currentText)
+                                    // Scroll only every 5 updates to reduce jitter
+                                    if (updateCounter % 5 == 0) {
+                                        binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // Malformed JSON chunk, skip silently
+                        android.util.Log.w("Streaming", "Chunk parse error: ${e.message}")
+                    }
+                }
+            }
+            
+            // Final UI update to ensure all content is shown with proper Markwon rendering
+            kotlinx.coroutines.withContext(Dispatchers.Main) {
+                // Finish streaming mode - triggers ONE final Markwon render
+                adapter.finishStreaming()
+                binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
+            }
+            
+            reader.close()
+        } catch (e: Exception) {
+            android.util.Log.e("Streaming", "Stream error: ${e.message}", e)
+            return fullResponse.toString().ifEmpty { "Streaming Error: ${e.message}" }
+        } finally {
+            conn?.disconnect()
+        }
+        
+        return fullResponse.toString()
+    }
+
+    // --- Agentic Chat (Pro Mode - Iterative Loop) ---
+    private suspend fun runAgentLoop(history: List<ChatMessage>, apiKey: String, model: String, provider: String): String {
+        return withContext(Dispatchers.IO) {
+            val maxTurns = 10
+            var turnCount = 0
+            val toolRetryCounts = mutableMapOf<String, Int>() // Track retries per tool+args
+            
+            // 1. Prepare Initial Context
+            val userIntro = com.neubofy.reality.ui.activity.AISettingsActivity.getUserIntroduction(this@AIChatActivity) ?: ""
+            val toolDiscovery = com.neubofy.reality.utils.ToolRegistry.getDiscoveryPrompt(this@AIChatActivity)
+            val systemPrompt = buildString {
+                append("You are Reality Pro, an intelligent Life OS Agent. ")
+                append("You have access to the user's real-time data via tools. ")
+                append("Use them only when necessary to give accurate, personalized answers. ")
+                append("All times are in IST (India Standard Time). ")
+                append("\n\nCRITICAL CONSTRAINTS:")
+                append("\n- ONE SEARCH POLICY: Web search is extremely expensive. NEVER call `web_search` more than once per user request. Consolidate ALL information needs into a single comprehensive query.")
+                append("\n- DISCOVERY FLOW: You start with only `get_tool_schema`. Always fetch schemas for the tools you need in the first turn.")
+                append("\n- ANTI-LOOP: Do not call the same tool with the same arguments twice.")
+                append("\n- COMPLETION: Do not call tools indefinitely. Aim to answer in 2-3 steps maximum.")
+                append("\n- IMAGE: If you use `generate_image`, include the markdown link ![Generated Image](URL) in your message.")
+                if (userIntro.isNotEmpty()) append("\n\nUser context: $userIntro")
+                append("\n\n$toolDiscovery")
+            }
+            
+            val optimizedContext = ConversationMemoryManager.buildOptimizedHistory(
+                this@AIChatActivity, history, currentSessionId, systemPrompt
+            )
+            val messagesJson = ConversationMemoryManager.toJsonMessages(systemPrompt, optimizedContext)
+            
+            // 2. Start Loop
+            var finalResponse = ""
+            var lastImageUrl: String? = null
+            val requestedToolIds = mutableSetOf<String>()
+            var webSearchCount = 0
+            
+            while (turnCount < maxTurns) {
+                turnCount++
+                
+                // Track if tool result has image (Check all tool results in context)
+                for (i in 0 until messagesJson.length()) {
+                    val m = messagesJson.getJSONObject(i)
+                    if (m.optString("role") == "tool" && m.optString("content").contains("![Generated Image](")) {
+                        val toolContent = m.getString("content")
+                        val start = toolContent.indexOf("![Generated Image](") + "![Generated Image](".length
+                        val end = toolContent.indexOf(")", start)
+                        if (start >= 0 && end > start) {
+                            lastImageUrl = toolContent.substring(start, end).trim()
+                        }
+                    }
+                }
+
+                // Construct API Request with Dynamic Tools
+                val jsonBody = JSONObject().apply {
+                    put("model", model)
+                    put("messages", messagesJson)
+                    // Dynamic schema loading: only send meta-tool + tools AI has asked for
+                    put("tools", com.neubofy.reality.utils.ToolRegistry.buildToolsArray(this@AIChatActivity, requestedToolIds.toList()))
+                    put("tool_choice", "auto")
+                }
+                
+                val apiUrl = when(provider) {
+                    "OpenAI" -> "https://api.openai.com/v1/chat/completions"
+                    "Groq" -> "https://api.groq.com/openai/v1/chat/completions"
+                    "OpenRouter" -> "https://openrouter.ai/api/v1/chat/completions"
+                    else -> "https://api.openai.com/v1/chat/completions"
+                }
+                
+                // Execute Request
+                val conn = java.net.URL(apiUrl).openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.connectTimeout = 45000 
+                conn.readTimeout = 45000
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.setRequestProperty("Authorization", "Bearer $apiKey")
+                if (provider == "OpenRouter") {
+                     conn.setRequestProperty("HTTP-Referer", "https://neubofy.com")
+                     conn.setRequestProperty("X-Title", "Reality App")
+                }
+                conn.doOutput = true
+                
+                try {
+                    conn.outputStream.write(jsonBody.toString().toByteArray())
+                    
+                    if (conn.responseCode != 200) {
+                        val err = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown error"
+                        return@withContext "API Error ($turnCount): $err"
+                    }
+                    
+                    val resp = conn.inputStream.bufferedReader().use { it.readText() }
+                    val responseJson = JSONObject(resp)
+                    val choice = responseJson.getJSONArray("choices").getJSONObject(0)
+                    val message = choice.getJSONObject("message")
+                    val content = message.optString("content", "")
+                    val toolCalls = message.optJSONArray("tool_calls")
+                    
+                    // Add AI response to context for next turn
+                    messagesJson.put(message)
+                    
+                    // Check if done (no tool calls)
+                    if (toolCalls == null || toolCalls.length() == 0) {
+                        finalResponse = content
+                        break // Loop finishes
+                    }
+                    
+                    // Handle Tool Calls
+                    for (i in 0 until toolCalls.length()) {
+                        val toolCall = toolCalls.getJSONObject(i)
+                        val id = toolCall.getString("id")
+                        val function = toolCall.getJSONObject("function")
+                        val toolName = function.getString("name")
+                        val args = function.getString("arguments")
+                        
+                        val callSignature = "$toolName:$args"
+                        val currentRetries = toolRetryCounts.getOrDefault(callSignature, 0)
+                        
+                        // 1. Handle Schema Requests (Internal state update)
+                        if (toolName == "get_tool_schema") {
+                            try {
+                                val toolId = JSONObject(args).optString("tool_id")
+                                if (toolId.isNotEmpty()) requestedToolIds.add(toolId)
+                            } catch (e: Exception) {}
+                        }
+                        
+                        // 2. ANTI-LOOP & BUDGET Check
+                        val result = if (toolName == "web_search" && webSearchCount >= 1) {
+                            "Error: Search Budget Exhausted. You are ONLY allowed one web search per request to save user credits. Use the information already provided or answer based on your knowledge."
+                        } else if (currentRetries >= 1 && toolName == "web_search") {
+                            "Error: You already performed this exact search. Do not repeat it."
+                        } else if (currentRetries >= 3) {
+                             "Error: Max retries (3) reached for this specific tool call."
+                        } else {
+                            if (toolName == "web_search") webSearchCount++
+                            toolRetryCounts[callSignature] = currentRetries + 1
+                            withContext(Dispatchers.Main) { 
+                                adapter.addMessage(ChatMessage("⚙️ Executing: $toolName...", false, false))
+                            }
+                            com.neubofy.reality.utils.AgentTools.execute(this@AIChatActivity, toolName, args)
+                        }
+                        
+                        messagesJson.put(JSONObject().apply {
+                            put("role", "tool")
+                            put("tool_call_id", id)
+                            put("name", toolName)
+                            put("content", result)
+                        })
+                    }
+                } catch (e: Exception) {
+                    return@withContext "Agent Loop Error: ${e.localizedMessage}"
+                }
+            }
+            
+            if (turnCount >= maxTurns && finalResponse.isEmpty()) {
+                finalResponse = "I reached the limit of 10 steps. Here is what I found so far."
+            }
+            
+            // --- SAFETY AUTO-APPEND ---
+            if (lastImageUrl != null && !finalResponse.contains(lastImageUrl)) {
+                finalResponse += "\n\n![Generated Image]($lastImageUrl)"
+            }
+            
+            finalResponse
+        }
+    }
+
+    // Replace the dispatching logic in sendMessage
+    /*
+            lifecycleScope.launch(Dispatchers.IO) {
+            val response = try {
+                if (provider == "Gemini") {
+                     callGemini(history, apiKey, model)
+                } else {
+                     processChatLoop(history, apiKey, model, provider) // NEW ENTRY POINT
+                }
+            } catch (e: Exception) {
+                "Error: ${e.message}"
+            }
+            // ...
+    */
+
+    private fun callGemini(history: List<ChatMessage>, apiKey: String, model: String): String {
+        // ... (Keep existing Gemini logic roughly the same, or upgrade later)
+        return "Gemini does not support Pro Agent mode yet."
+    }
+
     private fun setupDrawer() {
         // History Adapter
         sessionAdapter = ChatSessionAdapter(emptyList()) { session ->
@@ -191,9 +697,6 @@ open class AIChatActivity : AppCompatActivity() {
              lifecycleScope.launch {
                  val sessions = chatDao.getAllSessions()
                  sessions.forEach { chatDao.deleteMessagesForSession(it.id) }
-                 // Delete sessions logic if needed, or just clear all
-                 // For now, let's delete session entities if possible or assume cascading?
-                 // Room doesn't cascade unless configured. Manual delete:
                  sessions.forEach { chatDao.deleteSession(it.id) }
                  
                  messages.clear()
@@ -217,7 +720,7 @@ open class AIChatActivity : AppCompatActivity() {
             } else if (sessions.isEmpty()) {
                 // Show welcome if no history
                  if (messages.isEmpty()) {
-                     adapter.addMessage(ChatMessage("Hello! I am Reality. Select a mode and start chatting.", false))
+                     adapter.addMessage(ChatMessage("Hello! I am Reality. Tap the sparkle icon to toggle Pro Mode.", false))
                  }
             }
         }
@@ -277,304 +780,6 @@ open class AIChatActivity : AppCompatActivity() {
                 ))
             }
         }
-    }
-
-    private fun refreshModels() {
-        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
-        var currentModel = prefs.getString("model", "gpt-3.5-turbo") ?: "gpt-3.5-turbo"
-        val cachedModels = prefs.getStringSet("cached_models", emptySet())?.sorted() ?: emptyList()
-        
-        val modelsList = if (cachedModels.isNotEmpty()) cachedModels.toMutableList() else mutableListOf(currentModel)
-        if (!modelsList.contains(currentModel)) {
-            modelsList.add(0, currentModel)
-        }
-        
-        val adapter = android.widget.ArrayAdapter(this, R.layout.spinner_item, modelsList)
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
-        binding.spinnerChatModel.adapter = adapter
-        
-        val currentIdx = modelsList.indexOf(currentModel)
-        if (currentIdx >= 0) binding.spinnerChatModel.setSelection(currentIdx)
-        
-        binding.spinnerChatModel.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
-             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
-                 val selected = modelsList[position]
-                 if (selected != currentModel) {
-                     prefs.edit().putString("model", selected).apply()
-                     currentModel = selected
-                     Toast.makeText(this@AIChatActivity, "Switched to $selected", Toast.LENGTH_SHORT).show()
-                 }
-             }
-             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
-        }
-    }
-
-    private fun sendMessage(text: String) {
-        adapter.addMessage(ChatMessage(text, true))
-        binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
-        
-        handleSessionInit(text)
-
-        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
-        val savedModelString = prefs.getString("model", "OpenAI: gpt-3.5-turbo") ?: "OpenAI: gpt-3.5-turbo"
-        
-        val (provider, model) = if (savedModelString.contains(": ")) {
-            val split = savedModelString.split(": ", limit = 2)
-            split[0] to split[1]
-        } else {
-            (prefs.getString("provider", "OpenAI") ?: "OpenAI") to savedModelString
-        }
-        
-        val apiKey = prefs.getString("api_key_$provider", "") ?: ""
-
-        if (apiKey.isEmpty()) {
-            val err = "Missing API Key for $provider. Please configure in Settings."
-            adapter.addMessage(ChatMessage(err, false))
-            saveBotMessage(err)
-            return
-        }
-        
-        binding.tvThinking.visibility = View.VISIBLE
-        binding.tvThinking.text = "Reality is thinking..." // Reset text
-
-        // Prepare context
-        val history = ArrayList(messages.filter { !it.isAnimating }) // Exclude animating ones if any?
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            val response = try {
-                if (provider == "Gemini") {
-                     // Gemini logic embedded safely or simplified
-                     // callGemini(history, apiKey, model) // Re-implement if needed, for now focusing on Groq/OpenAI Agent
-                     "Gemini Agent mode coming soon."
-                } else {
-                     if (isProMode) {
-                         // Update UI with "Acting..." if using tools (could be callback based in future)
-                         withContext(Dispatchers.Main) { binding.tvThinking.text = "Reality is working..." }
-                         runAgentLoop(history, apiKey, model, provider)
-                     } else {
-                         processStandardChat(history, apiKey, model, provider)
-                     }
-                }
-            } catch (e: Exception) {
-                "Error: ${e.message}"
-            }
-            
-            withContext(Dispatchers.Main) {
-                binding.tvThinking.visibility = View.GONE
-                adapter.addMessage(ChatMessage(response, false, true))
-                binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
-                saveBotMessage(response)
-            }
-        }
-    }
-    
-    // --- Agentic AI Core ---
-
-    // --- Standard Chat (Normal Mode) ---
-    private suspend fun processStandardChat(history: List<ChatMessage>, apiKey: String, model: String, provider: String): String {
-        val url = when(provider) {
-            "OpenAI" -> "https://api.openai.com/v1/chat/completions"
-            "Groq" -> "https://api.groq.com/openai/v1/chat/completions"
-            "OpenRouter" -> "https://openrouter.ai/api/v1/chat/completions"
-            else -> "https://api.openai.com/v1/chat/completions"
-        }
-
-        // System prompt with user introduction
-        val userIntro = com.neubofy.reality.ui.activity.AISettingsActivity.getUserIntroduction(this) ?: ""
-        val systemPrompt = buildString {
-            append("You are a helpful, intelligent assistant.")
-            if (userIntro.isNotEmpty()) append(" User context: $userIntro")
-        }
-        
-        // OPTIMIZED: Use sliding window + token management
-        val optimizedContext = ConversationMemoryManager.buildOptimizedHistory(
-            this, history, currentSessionId, systemPrompt
-        )
-        val jsonMessages = ConversationMemoryManager.toJsonMessages(systemPrompt, optimizedContext)
-        
-        // 3. Construct Request (NO TOOLS)
-        val jsonBody = JSONObject().apply {
-            put("model", model)
-            put("messages", jsonMessages)
-        }
-
-        // 4. API Call
-        val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
-        conn.requestMethod = "POST"
-        conn.connectTimeout = 30000
-        conn.readTimeout = 30000
-        conn.setRequestProperty("Content-Type", "application/json")
-        conn.setRequestProperty("Authorization", "Bearer $apiKey")
-        if (provider == "OpenRouter") {
-             conn.setRequestProperty("HTTP-Referer", "https://neubofy.com")
-             conn.setRequestProperty("X-Title", "Reality App")
-        }
-        conn.doOutput = true
-        
-        conn.outputStream.write(jsonBody.toString().toByteArray())
-        
-        if (conn.responseCode != 200) {
-            return "Error: ${conn.responseCode} - ${conn.errorStream?.bufferedReader()?.use { it.readText() }}"
-        }
-
-        val resp = conn.inputStream.bufferedReader().use { it.readText() }
-        val responseJson = JSONObject(resp)
-        val choice = responseJson.getJSONArray("choices").getJSONObject(0)
-        val message = choice.getJSONObject("message")
-        return message.optString("content", "")
-    }
-
-    // --- Agentic Chat (Pro Mode - Iterative Loop) ---
-    private suspend fun runAgentLoop(history: List<ChatMessage>, apiKey: String, model: String, provider: String): String {
-        return withContext(Dispatchers.IO) {
-            val maxTurns = 10
-            var turnCount = 0
-            val toolRetryCounts = mutableMapOf<String, Int>() // Track retries per tool+args
-            
-            // 1. Prepare Initial Context
-            val userIntro = com.neubofy.reality.ui.activity.AISettingsActivity.getUserIntroduction(this@AIChatActivity) ?: ""
-            val toolDiscovery = com.neubofy.reality.utils.ToolRegistry.getDiscoveryPrompt(this@AIChatActivity)
-            val systemPrompt = buildString {
-                append("You are Reality Pro, an intelligent Life OS Agent. ")
-                append("You have access to the user's real-time data via tools. ")
-                append("Use them whenever needed to give accurate, personalized answers. ")
-                append("All times are in IST (India Standard Time). ")
-                if (userIntro.isNotEmpty()) append("\n\nUser context: $userIntro")
-                append("\n\n$toolDiscovery")
-            }
-            
-            val optimizedContext = ConversationMemoryManager.buildOptimizedHistory(
-                this@AIChatActivity, history, currentSessionId, systemPrompt
-            )
-            val messagesJson = ConversationMemoryManager.toJsonMessages(systemPrompt, optimizedContext)
-            
-            // 2. Start Loop
-            var finalResponse = ""
-            
-            while (turnCount < maxTurns) {
-                turnCount++
-                
-                // Construct API Request
-                val jsonBody = JSONObject().apply {
-                    put("model", model)
-                    put("messages", messagesJson)
-                    // Only send tools if we haven't hit the limit? No, always send, AI decides.
-                    put("tools", com.neubofy.reality.utils.AgentTools.definitions)
-                    put("tool_choice", "auto")
-                }
-                
-                val url = when(provider) {
-                    "OpenAI" -> "https://api.openai.com/v1/chat/completions"
-                    "Groq" -> "https://api.groq.com/openai/v1/chat/completions"
-                    "OpenRouter" -> "https://openrouter.ai/api/v1/chat/completions"
-                    else -> "https://api.openai.com/v1/chat/completions"
-                }
-                
-                // Execute Request
-                val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
-                conn.requestMethod = "POST"
-                conn.connectTimeout = 45000 // Extended timeout for agent
-                conn.readTimeout = 45000
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.setRequestProperty("Authorization", "Bearer $apiKey")
-                if (provider == "OpenRouter") {
-                     conn.setRequestProperty("HTTP-Referer", "https://neubofy.com")
-                     conn.setRequestProperty("X-Title", "Reality App")
-                }
-                conn.doOutput = true
-                
-                try {
-                    conn.outputStream.write(jsonBody.toString().toByteArray())
-                    
-                    if (conn.responseCode != 200) {
-                        val err = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown error"
-                        return@withContext "API Error ($turnCount): $err"
-                    }
-                    
-                    val resp = conn.inputStream.bufferedReader().use { it.readText() }
-                    val responseJson = JSONObject(resp)
-                    val choice = responseJson.getJSONArray("choices").getJSONObject(0)
-                    val message = choice.getJSONObject("message")
-                    val content = message.optString("content", "")
-                    val toolCalls = message.optJSONArray("tool_calls")
-                    
-                    // Add AI response to context for next turn
-                    messagesJson.put(message)
-                    
-                    // Check if done (no tool calls)
-                    if (toolCalls == null || toolCalls.length() == 0) {
-                        finalResponse = content
-                        break // Loop finishes
-                    }
-                    
-                    // Handle Tool Calls
-                    for (i in 0 until toolCalls.length()) {
-                        val toolCall = toolCalls.getJSONObject(i)
-                        val id = toolCall.getString("id")
-                        val function = toolCall.getJSONObject("function")
-                        val name = function.getString("name")
-                        val args = function.getString("arguments")
-                        
-                        // Retry Logic Check
-                        val callSignature = "$name:$args"
-                        val currentRetries = toolRetryCounts.getOrDefault(callSignature, 0)
-                        
-                        val result = if (currentRetries >= 3) {
-                             "Error: Max retries (3) reached for this specific tool call. Do not try it again with same arguments."
-                        } else {
-                            toolRetryCounts[callSignature] = currentRetries + 1
-                            
-                            // UI Feedback
-                            withContext(Dispatchers.Main) {
-                                binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
-                                adapter.addMessage(ChatMessage("⚙️ Executing: $name...", false, false))
-                            }
-                            
-                            com.neubofy.reality.utils.AgentTools.execute(this@AIChatActivity, name, args)
-                        }
-                        
-                        // Add Result to Context
-                        messagesJson.put(JSONObject().apply {
-                            put("role", "tool")
-                            put("tool_call_id", id)
-                            put("name", name)
-                            put("content", result)
-                        })
-                    }
-                    
-                    // Loop continues to next turn with new context (AI message + Tool results)
-                    
-                } catch (e: Exception) {
-                    return@withContext "Agent Loop Error: ${e.localizedMessage}"
-                }
-            }
-            
-            if (turnCount >= maxTurns && finalResponse.isEmpty()) {
-                finalResponse = "I reached the limit of 10 steps. Here is what I found so far."
-            }
-            
-            finalResponse
-        }
-    }
-
-    // Replace the dispatching logic in sendMessage
-    /*
-            lifecycleScope.launch(Dispatchers.IO) {
-            val response = try {
-                if (provider == "Gemini") {
-                     callGemini(history, apiKey, model)
-                } else {
-                     processChatLoop(history, apiKey, model, provider) // NEW ENTRY POINT
-                }
-            } catch (e: Exception) {
-                "Error: ${e.message}"
-            }
-            // ...
-    */
-
-    private fun callGemini(history: List<ChatMessage>, apiKey: String, model: String): String {
-        // ... (Keep existing Gemini logic roughly the same, or upgrade later)
-        return "Gemini does not support Pro Agent mode yet."
     }
 
     private fun callOpenAIStyle(history: List<ChatMessage>, apiKey: String, model: String, provider: String): String {

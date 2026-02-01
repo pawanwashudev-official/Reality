@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -16,6 +17,7 @@ import com.neubofy.reality.R
 import com.neubofy.reality.utils.BlockCache
 import com.neubofy.reality.utils.SettingsBox
 import com.neubofy.reality.utils.SavedPreferencesLoader
+import com.neubofy.reality.utils.ThemeManager
 
 /**
  * ActiveBlocksActivity - Shows all currently blocked entities.
@@ -26,7 +28,7 @@ import com.neubofy.reality.utils.SavedPreferencesLoader
  * 
  * Reads directly from MEMORY/DISK cache (Truth), ignoring Database.
  */
-class ActiveBlocksActivity : AppCompatActivity() {
+class ActiveBlocksActivity : BaseActivity() {
     
     private lateinit var recyclerView: RecyclerView
     private lateinit var emptyView: TextView
@@ -183,10 +185,10 @@ class ActiveBlocksActivity : AppCompatActivity() {
                     BlockType.SETTING -> "PROTECTED"
                     BlockType.WEBSITE -> "BLOCKED"
                 }
-                holder.status.setTextColor(checkColor("#FF4444")) // Red
+                holder.status.setTextColor(ThemeManager.getErrorColor(holder.itemView.context) ?: android.graphics.Color.parseColor("#FF4444"))
             } else {
                 holder.status.text = "PAUSED"
-                holder.status.setTextColor(checkColor("#FFA500")) // Orange
+                holder.status.setTextColor(ThemeManager.getWarningColor(holder.itemView.context) ?: android.graphics.Color.parseColor("#FFA500"))
             }
         }
         

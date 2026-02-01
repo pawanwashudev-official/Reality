@@ -18,20 +18,15 @@ import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
 import io.noties.markwon.ext.tasklist.TaskListPlugin
 
+import com.neubofy.reality.data.model.ChatMessage
+import com.neubofy.reality.ui.adapter.ChatAdapter
+
 class NightlyReportActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityNightlyReportBinding
     private var selectedDate: LocalDate = LocalDate.now()
-    private val adapter = ChatAdapter()
+    private lateinit var adapter: ChatAdapter
     
-    private val markwon: Markwon by lazy {
-        Markwon.builder(this)
-            .usePlugin(TablePlugin.create(this))
-            .usePlugin(StrikethroughPlugin.create())
-            .usePlugin(TaskListPlugin.create(this))
-            .build()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityNightlyReportBinding.inflate(layoutInflater)
@@ -45,25 +40,31 @@ class NightlyReportActivity : AppCompatActivity() {
         loadReport()
     }
 
+    private var availableDates: List<LocalDate> = emptyList()
+
     private fun setupUI() {
         binding.btnBack.setOnClickListener { finish() }
         
+        val mainPrefs = getSharedPreferences("MainPrefs", android.content.Context.MODE_PRIVATE)
+        val userName = mainPrefs.getString("user_name", "User") ?: "User"
+
+        adapter = ChatAdapter(mutableListOf(), userName)
         binding.recyclerChat.layoutManager = LinearLayoutManager(this)
         binding.recyclerChat.adapter = adapter
         
         binding.btnPrevDate.setOnClickListener {
-            val minDate = LocalDate.now().minusDays(3)
-            if (selectedDate.isAfter(minDate)) {
-                selectedDate = selectedDate.minusDays(1)
+            val prev = availableDates.lastOrNull { it.isBefore(selectedDate) }
+            if (prev != null) {
+                selectedDate = prev
                 loadReport()
                 updateNavigationButtons()
             }
         }
         
         binding.btnNextDate.setOnClickListener {
-            val maxDate = LocalDate.now()
-            if (selectedDate.isBefore(maxDate)) {
-                selectedDate = selectedDate.plusDays(1)
+            val next = availableDates.firstOrNull { it.isAfter(selectedDate) }
+            if (next != null) {
+                selectedDate = next
                 loadReport()
                 updateNavigationButtons()
             }
@@ -74,17 +75,18 @@ class NightlyReportActivity : AppCompatActivity() {
     }
     
     private fun updateNavigationButtons() {
-        val today = LocalDate.now()
-        val minDate = today.minusDays(3)
-        
-        val canGoBack = selectedDate.isAfter(minDate)
-        val canGoForward = selectedDate.isBefore(today)
-        
-        binding.btnPrevDate.isEnabled = canGoBack
-        binding.btnPrevDate.alpha = if (canGoBack) 1.0f else 0.3f
-        
-        binding.btnNextDate.isEnabled = canGoForward
-        binding.btnNextDate.alpha = if (canGoForward) 1.0f else 0.3f
+        lifecycleScope.launch {
+            availableDates = NightlyRepository.getAvailableDates(this@NightlyReportActivity)
+            
+            val hasPrev = availableDates.any { it.isBefore(selectedDate) }
+            val hasNext = availableDates.any { it.isAfter(selectedDate) }
+            
+            binding.btnPrevDate.isEnabled = hasPrev
+            binding.btnPrevDate.alpha = if (hasPrev) 1.0f else 0.3f
+            
+            binding.btnNextDate.isEnabled = hasNext
+            binding.btnNextDate.alpha = if (hasNext) 1.0f else 0.3f
+        }
     }
     
     private fun updateDateDisplay() {
@@ -108,44 +110,16 @@ class NightlyReportActivity : AppCompatActivity() {
                 val sections = content.split(Regex("(?m)^(?=#{1,3}\\s|\\*\\*|^\\[[A-Z\\s]+\\])")).filter { it.isNotBlank() }
                 if (sections.isNotEmpty()) {
                     sections.forEach { section ->
-                        messages.add(ChatMessage("Reality AI", section.trim()))
+                        messages.add(ChatMessage(section.trim(), false, sender = "Reality AI"))
                     }
                 } else {
-                     messages.add(ChatMessage("Reality AI", content))
+                     messages.add(ChatMessage(content, false, sender = "Reality AI"))
                 }
             } else {
-                messages.add(ChatMessage("System", "No report generated for this date."))
+                messages.add(ChatMessage("No report generated for this date.", false, sender = "System"))
             }
             
             adapter.submitList(messages)
         }
-    }
-
-    data class ChatMessage(val sender: String, val content: String)
-
-    inner class ChatAdapter : RecyclerView.Adapter<ChatAdapter.ViewHolder>() {
-        private var items: List<ChatMessage> = emptyList()
-
-        fun submitList(newItems: List<ChatMessage>) {
-            items = newItems
-            notifyDataSetChanged()
-        }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val binding = ItemChatMessageBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-            return ViewHolder(binding)
-        }
-
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val item = items[position]
-            holder.binding.tvSender.visibility = android.view.View.VISIBLE
-            holder.binding.tvSender.text = item.sender
-            // Render Markdown
-            markwon.setMarkdown(holder.binding.tvMessage, item.content)
-        }
-
-        override fun getItemCount() = items.size
-
-        inner class ViewHolder(val binding: ItemChatMessageBinding) : RecyclerView.ViewHolder(binding.root)
     }
 }

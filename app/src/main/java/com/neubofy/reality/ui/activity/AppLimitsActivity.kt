@@ -2,10 +2,11 @@ package com.neubofy.reality.ui.activity
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.databinding.ActivitySingleFragmentBinding
 import com.neubofy.reality.ui.fragments.AppLimitsFragment
 
-class AppLimitsActivity : AppCompatActivity() {
+class AppLimitsActivity : BaseActivity() {
 
     private lateinit var binding: ActivitySingleFragmentBinding
 

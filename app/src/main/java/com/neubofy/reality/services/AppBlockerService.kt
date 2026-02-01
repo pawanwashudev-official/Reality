@@ -75,6 +75,9 @@ class AppBlockerService : BaseBlockingService() {
     private var browserCheckRunnable: Runnable? = null
     private var currentBrowserPackage: String? = null
     
+    // Threading
+    private val serviceScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default + kotlinx.coroutines.SupervisorJob())
+    
     // Anti-bypass tracking
     private var lastBlockedPackage: String = ""
     private var lastBlockTime: Long = 0L
@@ -149,11 +152,11 @@ class AppBlockerService : BaseBlockingService() {
                     isScreenOn = false
                     stopBrowserCheckTimer() // Save battery when screen off
                 }
-                Intent.ACTION_SCREEN_ON -> {
+                Intent.ACTION_USER_PRESENT -> {
                     isScreenOn = true
                     lastBackgroundUpdate = 0 
                     
-                    // Refresh cache on screen unlock (event-driven update)
+                    // Refresh cache on unlock - ensuring schedules are up to date
                     kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                         com.neubofy.reality.utils.BlockCache.rebuildBox(applicationContext)
                     }
@@ -195,9 +198,21 @@ class AppBlockerService : BaseBlockingService() {
             if (isSettingsPackage && isNewPage && !isLearningMode && 
                 com.neubofy.reality.utils.SettingsBox.isAnyProtectionActive()) {
                 // Small delay to let content load for ambiguous pages
+                // 50ms delay
                 handler.postDelayed({
-                    handleStrictSettingsProtection()
-                }, 50) // 50ms - fast enough to feel instant, slow enough for content to load
+                    val rootNode = try { rootInActiveWindow } catch (e: Exception) { null }
+                    if (rootNode != null) {
+                        serviceScope.launch {
+                            try {
+                                handleStrictSettingsProtection(rootNode)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            } finally {
+                                try { rootNode.recycle() } catch (e: Exception) {}
+                            }
+                        }
+                    }
+                }, 50)
             }
             
             // Log only Settings-related packages (only if protection active)
@@ -253,7 +268,18 @@ class AppBlockerService : BaseBlockingService() {
                      eventType == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED ||
                      eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED ||
                      eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                     checkUrl(packageName)
+                     val rootNode = try { rootInActiveWindow } catch (e: Exception) { null }
+                     if (rootNode != null) {
+                         serviceScope.launch {
+                             try {
+                                 checkUrl(packageName, rootNode)
+                             } catch (e: Exception) {
+                                e.printStackTrace()
+                             } finally {
+                                try { rootNode.recycle() } catch (e: Exception) {}
+                             }
+                         }
+                     }
                  }
              }
         } else {
@@ -284,7 +310,7 @@ class AppBlockerService : BaseBlockingService() {
         }
         
         // NOTE: Removed 30-second polling for battery optimization.
-        // Box rebuilds via: BlockCacheWorker (3 min), Screen ON, Settings changed.
+        // Box rebuilds via: BlockCacheWorker (15 min), Screen ON, Settings changed.
         // The O(1) Box check below runs on EVERY app switch.
 
         
@@ -508,7 +534,7 @@ class AppBlockerService : BaseBlockingService() {
      * 3. If ambiguous class (SubSettings) → quick keyword scan (top 15 nodes only)
      * 4. Block or allow
      */
-    private fun handleStrictSettingsProtection() {
+    private suspend fun handleStrictSettingsProtection(rootNode: AccessibilityNodeInfo?) {
         try {
             val strictData = blocker.strictModeData
             
@@ -527,8 +553,8 @@ class AppBlockerService : BaseBlockingService() {
             // Skip if no data
             if (currentClass.isEmpty()) return
             
-            // Get root node for content verification (lazy - only if needed)
-            val rootNode = rootInActiveWindow
+            // Get root node passed from Main Thread
+            // val rootNode = rootInActiveWindow // REMOVED: Use passed node
             
             // === THE BOX CHECK ===
             val blockResult = com.neubofy.reality.utils.SettingsBox.shouldBlockPage(
@@ -541,7 +567,11 @@ class AppBlockerService : BaseBlockingService() {
                 com.neubofy.reality.utils.TerminalLogger.log("SETTINGS_BOX: BLOCKING ${currentClass.substringAfterLast(".")} - ${blockResult.reason}")
                 
                 val penaltyDuration = calculatePenaltyDuration()
-                showPenaltyOverlay(blockResult.reason, penaltyDuration)
+                
+                // CRITICAL FIX: UI Operations MUST be on Main Thread
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                     showPenaltyOverlay(blockResult.reason, penaltyDuration)
+                }
             }
             
         } catch (e: Exception) {
@@ -971,7 +1001,8 @@ class AppBlockerService : BaseBlockingService() {
             addAction(INTENT_ACTION_STOP_LEARNING)
             addAction(INTENT_ACTION_START_CUSTOM_PAGE_LEARNING)
             addAction(Intent.ACTION_SCREEN_OFF)
-            addAction(Intent.ACTION_SCREEN_ON)
+
+            addAction(Intent.ACTION_USER_PRESENT)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(refreshReceiver, filter, Context.RECEIVER_EXPORTED)
@@ -1198,10 +1229,10 @@ class AppBlockerService : BaseBlockingService() {
         }
         return text.toString()
     }
-    private fun checkUrl(packageName: String) {
+    private suspend fun checkUrl(packageName: String, root: AccessibilityNodeInfo?) {
         lastUrlCheckTime = System.currentTimeMillis()
         try {
-            val root = rootInActiveWindow
+            // val root = rootInActiveWindow // REMOVED: Use passed node
             if (root != null) {
                 val url = com.neubofy.reality.utils.UrlDetector.getUrl(root, packageName)
                 
@@ -1223,15 +1254,21 @@ class AppBlockerService : BaseBlockingService() {
                         } catch (e: Exception) {}
                         
                         // 2. Launch Block Activity Over Everything (Inescapable)
-                        val blockIntent = Intent(this, com.neubofy.reality.ui.activity.BlockActivity::class.java).apply {
+                        val blockIntent = Intent(this@AppBlockerService, com.neubofy.reality.ui.activity.BlockActivity::class.java).apply {
                              addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK) 
                              putExtra("pkg", packageName)
                              putExtra("reason", "Website Blocked: $blockedItem")
                         }
-                        startActivity(blockIntent)
                         
-                        // 3. Accessibility Back (Just in case)
-                        performGlobalAction(GLOBAL_ACTION_BACK)
+                        // FIX: UI Interactions on Main Thread
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            try {
+                                startActivity(blockIntent)
+                            } catch (e: Exception) {}
+                            
+                            // 3. Accessibility Back (Just in case)
+                            performGlobalAction(GLOBAL_ACTION_BACK)
+                        }
                         
                         return
                     }
@@ -1270,7 +1307,17 @@ class AppBlockerService : BaseBlockingService() {
                 if (isBrowserActive) {
                     // ACTIVE MODE: Browser is in foreground - do full URL check
                     currentBrowserPackage = activePackage
-                    checkUrl(currentBrowserPackage!!)
+                    // Capture node on Main Thread
+                    val rootNode = try { rootInActiveWindow } catch(e: Exception) { null }
+                    if (rootNode != null) {
+                        serviceScope.launch {
+                            try {
+                                checkUrl(currentBrowserPackage!!, rootNode)
+                            } finally {
+                                try { rootNode.recycle() } catch(e: Exception) {}
+                            }
+                        }
+                    }
                     
                     // Use adaptive polling when browser is active (15s -> 30s -> 60s -> 90s)
                     if (pollStepIndex < POLL_STEPS.size - 1) {

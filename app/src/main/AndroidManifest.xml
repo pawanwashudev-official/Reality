@@ -31,6 +31,7 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
@@ -244,6 +245,26 @@
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
+            
+        <activity
+            android:name=".ui.activity.UserManualActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait"
+            android:label="User Manual" />
+
+        <activity
+            android:name=".ui.activity.SmartSleepActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="reality" android:host="smart_sleep" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".ui.activity.NightlyActivity"
@@ -424,18 +445,64 @@
         <meta-data android:name="android.app.shortcuts"
             android:resource="@xml/shortcuts" />
 
-        <!-- Focus Mode Widget -->
+
+
+        <!-- Report Widget -->
         <receiver
-            android:name=".widget.FocusWidgetProvider"
+            android:name=".widget.ReportWidgetProvider"
             android:exported="true"
-            android:label="Focus Mode">
+            android:icon="@mipmap/ic_launcher"
+            android:label="Nightly Report">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.neubofy.reality.widget.TOGGLE_FOCUS" />
+                <action android:name="com.neubofy.reality.widget.ACTION_REFRESH" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/focus_widget_info" />
+                android:resource="@xml/report_widget_info" />
+        </receiver>
+
+        <!-- Plan Widget -->
+        <receiver
+            android:name=".widget.PlanWidgetProvider"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="Nightly Plan">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.neubofy.reality.widget.PLAN_REFRESH" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/plan_widget_info" />
+        </receiver>
+
+        <!-- Tapasya Widget (Refined) -->
+        <receiver
+            android:name=".widget.TapasyaWidgetProvider"
+            android:exported="true"
+            android:icon="@drawable/baseline_bolt_24"
+            android:label="Tapasya">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/tapasya_widget_info" />
+        </receiver>
+
+        <!-- Nightly Widget (New) -->
+        <receiver
+            android:name=".widget.NightlyWidgetProvider"
+            android:exported="true"
+            android:icon="@drawable/baseline_bedtime_24"
+            android:label="Nightly">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/nightly_widget_info" />
         </receiver>
 
         <activity

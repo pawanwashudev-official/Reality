@@ -20,6 +20,8 @@ class NightlyPlanActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityNightlyPlanBinding
 
+    private var selectedDate: LocalDate = LocalDate.now()
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)
         ThemeManager.applyAccentTheme(this)
@@ -29,8 +31,17 @@ class NightlyPlanActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setupInsets()
+        parseIntent()
         setupListeners()
         loadPlanData()
+        updateNavigationButtons()
+    }
+    
+    private fun parseIntent() {
+        val dateSerializable = intent.getSerializableExtra("date")
+        if (dateSerializable is LocalDate) {
+            selectedDate = dateSerializable
+        }
     }
 
     private fun setupInsets() {
@@ -46,33 +57,71 @@ class NightlyPlanActivity : AppCompatActivity() {
         }
     }
 
+    private var availableDates: List<LocalDate> = emptyList()
+
     private fun setupListeners() {
         binding.btnBack.setOnClickListener { finish() }
+        
+        binding.btnPrevDate.setOnClickListener {
+            val prev = availableDates.lastOrNull { it.isBefore(selectedDate) }
+            if (prev != null) {
+                selectedDate = prev
+                loadPlanData()
+                updateNavigationButtons()
+            }
+        }
+        
+        binding.btnNextDate.setOnClickListener {
+            val next = availableDates.firstOrNull { it.isAfter(selectedDate) }
+            if (next != null) {
+                selectedDate = next
+                loadPlanData()
+                updateNavigationButtons()
+            }
+        }
+    }
+    
+    private fun updateNavigationButtons() {
+        lifecycleScope.launch {
+            availableDates = com.neubofy.reality.data.repository.NightlyRepository.getAvailableDates(this@NightlyPlanActivity)
+            
+            // Allow Today if not in list (so we can start a new one? No, this is viewer)
+            // If selectedDate is not in DB, add it momentarily so we can navigate away?
+            // User wants to browse HISTORY using existing data.
+            
+            val hasPrev = availableDates.any { it.isBefore(selectedDate) }
+            val hasNext = availableDates.any { it.isAfter(selectedDate) }
+            
+            binding.btnPrevDate.isEnabled = hasPrev
+            binding.btnPrevDate.alpha = if (hasPrev) 1.0f else 0.3f
+            
+            binding.btnNextDate.isEnabled = hasNext
+            binding.btnNextDate.alpha = if (hasNext) 1.0f else 0.3f
+        }
     }
 
     private fun loadPlanData() {
-        val dateSerializable = intent.getSerializableExtra("date")
-        val date = if (dateSerializable is LocalDate) {
-            dateSerializable
-        } else {
-            LocalDate.now() // Fallback
-        }
-
         val formatter = java.time.format.DateTimeFormatter.ofPattern("EEEE, MMM d")
-        binding.tvHeaderTitle.text = "Plan for ${date.plusDays(1).format(formatter)}"
+        binding.tvHeaderDate.text = "Plan for ${selectedDate.plusDays(1).format(formatter)}"
 
         lifecycleScope.launch {
             // Load Step 9 Data (Generate Plan)
             val stepData = com.neubofy.reality.data.repository.NightlyRepository.loadStepData(
                 this@NightlyPlanActivity, 
-                date, 
+                selectedDate, 
                 com.neubofy.reality.data.NightlyProtocolExecutor.STEP_GENERATE_PLAN
             )
 
             if (stepData?.resultJson != null) {
                 parseAndDisplayPlan(stepData.resultJson)
             } else {
-                binding.tvMentorship.text = "No plan data found for this date. Run the Nightly Protocol first."
+                binding.tvMentorship.text = "No plan data found for this date."
+                binding.layoutSleepTime.visibility = View.GONE
+                binding.layoutWakeupTime.visibility = View.GONE
+                binding.layoutTasksContainer.removeAllViews()
+                binding.tvNoTasks.visibility = View.VISIBLE
+                binding.layoutEventsContainer.removeAllViews()
+                binding.tvNoEvents.visibility = View.VISIBLE
             }
         }
     }
@@ -85,13 +134,22 @@ class NightlyPlanActivity : AppCompatActivity() {
             val mentorship = json.optString("mentorship", "No specific advice generated.")
             binding.tvMentorship.text = mentorship
 
-            // 2. Alarm Status
+            // 2. Schedule (Sleep & Wake)
             val wakeupTime = json.optString("wakeupTime", "")
-            if (wakeupTime.isNotEmpty()) {
-                binding.chipAlarmStatus.visibility = View.VISIBLE
-                binding.chipAlarmStatus.text = "Wake Up: $wakeupTime"
+            val sleepTime = json.optString("sleepStartTime", "")
+            
+            if (sleepTime.isNotEmpty()) {
+                binding.layoutSleepTime.visibility = View.VISIBLE
+                binding.tvSleepTime.text = sleepTime
             } else {
-                binding.chipAlarmStatus.visibility = View.GONE
+                binding.layoutSleepTime.visibility = View.GONE
+            }
+
+            if (wakeupTime.isNotEmpty()) {
+                binding.layoutWakeupTime.visibility = View.VISIBLE
+                binding.tvWakeupTime.text = wakeupTime
+            } else {
+                binding.layoutWakeupTime.visibility = View.GONE
             }
 
             // 3. Tasks

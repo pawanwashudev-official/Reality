@@ -1,5 +1,6 @@
 package com.neubofy.reality.ui.activity
 
+import android.content.Context
 import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
@@ -236,21 +237,39 @@ class ReflectionSettingsActivity : AppCompatActivity() {
         // Load affected apps & usage stats
         lifecycleScope.launch(Dispatchers.IO) {
             val prefsLoader = SavedPreferencesLoader(this@ReflectionSettingsActivity)
-            val focusData = prefsLoader.getFocusModeData()
-            val allSelected = if (focusData.selectedApps.isNotEmpty()) focusData.selectedApps else HashSet(prefsLoader.getFocusModeSelectedApps())
+            
+            // UNIFIED: Use loadBlockedApps() - same as XPManager.calculateScreenTimeXP
+            val blockedApps = prefsLoader.loadBlockedApps()
 
-            // 1. Filter for Focus Mode apps
-            val affectedPkgs = allSelected.filter { pkg ->
-                prefsLoader.getBlockedAppConfig(pkg).blockInFocus
+            // Get Usage Stats (if permitted) for blocked apps
+            val hasUsagePerm = UsageUtils.hasUsageStatsPermission(this@ReflectionSettingsActivity)
+            var totalUsedMillis = 0L
+            
+            if (hasUsagePerm && blockedApps.isNotEmpty()) {
+                val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as? android.app.usage.UsageStatsManager
+                if (usageStatsManager != null) {
+                    val now = System.currentTimeMillis()
+                    val startOfDay = java.time.LocalDate.now()
+                        .atStartOfDay(java.time.ZoneId.systemDefault())
+                        .toInstant().toEpochMilli()
+                    
+                    val stats = usageStatsManager.queryUsageStats(
+                        android.app.usage.UsageStatsManager.INTERVAL_DAILY,
+                        startOfDay,
+                        now
+                    )
+                    
+                    for (stat in stats) {
+                        if (stat.totalTimeInForeground <= 0) continue
+                        if (blockedApps.contains(stat.packageName)) {
+                            totalUsedMillis += stat.totalTimeInForeground
+                        }
+                    }
+                }
             }
 
-            // 2. Get Usage Stats (if permitted)
-            val hasUsagePerm = UsageUtils.hasUsageStatsPermission(this@ReflectionSettingsActivity)
-            val totalUsedMillis = UsageUtils.getFocusedAppsUsage(this@ReflectionSettingsActivity)
-
-
-            // 3. Get Labels
-            val affectedLabels = affectedPkgs.mapNotNull { pkg ->
+            // Get Labels for display
+            val affectedLabels = blockedApps.mapNotNull { pkg ->
                 try {
                     packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString()
                 } catch (e: Exception) {
@@ -263,7 +282,7 @@ class ReflectionSettingsActivity : AppCompatActivity() {
                 binding.tvAffectedApps.text = if (affectedLabels.isNotEmpty()) {
                     "Applied to: ${affectedLabels.joinToString(", ")}"
                 } else {
-                    "Applied to: No apps marked for Focus Mode"
+                    "Applied to: No apps in Blocklist"
                 }
 
                 // Update Progress & Status
@@ -280,13 +299,15 @@ class ReflectionSettingsActivity : AppCompatActivity() {
 
                     if (usedMins > limitMins) {
                         val over = usedMins - limitMins
-                        val penalty = (over * 10).coerceAtMost(500)
-                        binding.tvLimitStatus.text = "Used: ${usedMins}m (Over by ${over}m ⚠️) • Penalty: -${penalty} XP"
+                        // New Formula: (Limit - Used) * 3 = Negative * 3
+                        val penalty = (over * 3) // Actual XP deducted (represented as positive value for label)
+                        // Or just show signed value: -60 XP
+                        binding.tvLimitStatus.text = "Used: ${usedMins}m (Over by ${over}m ⚠️) • Result: -${penalty} XP"
                         binding.progressLimit.setIndicatorColor(android.graphics.Color.parseColor("#B00020")) // Error Red
                     } else {
                         val left = limitMins - usedMins
-                        val bonus = (left * 10).coerceAtMost(500)
-                        binding.tvLimitStatus.text = "Used: ${usedMins}m (${left}m left) • Bonus: +${bonus} XP"
+                        val bonus = (left * 3)
+                        binding.tvLimitStatus.text = "Used: ${usedMins}m (${left}m left) • Result: +${bonus} XP"
                         binding.progressLimit.setIndicatorColor(getColor(R.color.md_theme_primary))
                     }
                 } else {

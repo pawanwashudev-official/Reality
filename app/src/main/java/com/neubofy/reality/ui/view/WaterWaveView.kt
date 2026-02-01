@@ -21,9 +21,10 @@ class WaterWaveView @JvmOverloads constructor(
 
     // Properties
     private var progress: Float = 0f // 0.0 to 1.0
-    private var waterColor: Int = Color.parseColor("#442196F3")
-    private var borderColor: Int = Color.parseColor("#2196F3")
+    private var waterColor: Int = com.neubofy.reality.utils.ThemeManager.getAccentColor(context).primaryColor
+    private var borderColor: Int = waterColor
     private var borderWidth: Float = 15f // Thicker for 3D bezel effect
+
     
     // Wave physics
     private var waveAmplitude: Float = 20f

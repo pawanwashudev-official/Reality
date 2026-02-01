@@ -29,30 +29,21 @@ class SupportUsActivity : AppCompatActivity() {
         const val MAX_AMOUNT = 49000
         val SUGGESTED_AMOUNTS = listOf(50, 100, 500, 1000)
         
-        const val DEVELOPER_STORY = """Hello! 👋
+        const val DEVELOPER_STORY = """Reality was founded on a singular mission: to restore the baseline of human focus in a world designed for distraction.
 
-I'm Pawan Washudev, a passionate developer from Bihar, India. Currently a secondary school student, I spend my free time building software that makes a real difference in people's lives.
+As an independent developer, I realized that modern technology often consumes our time rather than serving it. Reality is my response—a commitment to technical excellence, absolute privacy, and uncompromised efficacy. Every 'Elite' feature we build is designed to help you reclaim your most valuable asset: your attention.
 
-Reality was born from my own struggle with digital distraction. I realized that existing solutions were either too easy to bypass or compromised user privacy. So I decided to build something better — an app that truly works.
+The journey from a student's vision to a world-class focus tool has been fueled by the incredible support of this community. Reality remains 100% open-source and ad-free, ensuring that digital mindfulness is accessible to everyone without compromise.
 
-My Vision:
-• Create tools that respect user privacy absolutely
-• Build software that's accessible to everyone, for free
-• Prove that students can create world-class applications
-• Contribute meaningfully to the open-source community
+Your support fuels:
+• High-performance development of advanced focus tools.
+• Sustaining a privacy-first infrastructure with zero telemetry.
+• Empowering the next generation of open-source engineering.
 
-What Your Support Enables:
-• Continued development of new features
-• Infrastructure to keep the app running smoothly
-• Resources to improve and maintain quality
-• My growth as a developer and student
-
-Reality is more than an app — it's my commitment to helping people reclaim their focus and their time. Every contribution helps me continue this mission while pursuing my education.
-
-Thank you for being part of this journey. 🙏
+Thank you for choosing to live in Reality. Together, we are redefining our relationship with technology.
 
 — Pawan Washudev
-   Indie Developer | Bihar, India 🇮🇳"""
+Founder & Lead Developer"""
     }
     
     private var selectedAmount: Int = 100

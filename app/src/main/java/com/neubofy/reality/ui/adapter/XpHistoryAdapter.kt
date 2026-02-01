@@ -42,8 +42,19 @@ class XpHistoryAdapter(private var items: List<XPManager.XPBreakdown>) : Recycle
         holder.binding.tvTaskVal.text = "✅ Task: ${formatVal(item.taskXP)}"
         holder.binding.tvSessionVal.text = "📅 Session: +${item.sessionXP}"
         holder.binding.tvDiaryVal.text = "📖 Diary: +${item.reflectionXP}"
-        holder.binding.tvBonusVal.text = "🎁 Bonus: +${item.bonusXP + item.screenTimeXP}" // Combined Bonus + ScreenTime
-        holder.binding.tvPenaltyVal.text = "⚠️ Penalty: -${item.penaltyXP}"
+        // Unified Distraction XP
+        // Using distractionXP field (renamed from screenTimeXP)
+        val distXP = item.distractionXP 
+        val distStr = if (distXP > 0) "+$distXP" else "$distXP"
+        holder.binding.tvBonusVal.text = "📱 Distraction: $distStr"
+        
+        // Dynamic Color for History
+        val colorRes = if (distXP >= 0) com.neubofy.reality.R.color.accent_focus else com.neubofy.reality.R.color.error_color
+        holder.binding.tvBonusVal.setTextColor(context.getColor(colorRes))
+        
+        // Hide Penalty Row completely
+        holder.binding.tvPenaltyVal.text = "" 
+        holder.binding.tvPenaltyVal.alpha = 0f
         
         // Hide penalty if 0
         holder.binding.tvPenaltyVal.alpha = if (item.penaltyXP > 0) 1f else 0.3f

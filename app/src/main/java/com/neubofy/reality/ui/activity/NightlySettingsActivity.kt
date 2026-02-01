@@ -35,10 +35,7 @@ class NightlySettingsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setupListeners()
-        loadSavedData()
-        loadSavedData()
         setupToolbar()
-        setupAutoAlarm()
     }
 
     private fun setupToolbar() {
@@ -67,36 +64,6 @@ class NightlySettingsActivity : AppCompatActivity() {
         }
     }
     
-    private fun setupAutoAlarm() {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        binding.switchAutoAlarm.isChecked = prefs.getBoolean("auto_set_alarm", false)
-        
-        binding.switchAutoAlarm.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                // Check permissions before enabling
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                    val alarmManager = getSystemService(android.app.AlarmManager::class.java)
-                    if (!alarmManager.canScheduleExactAlarms()) {
-                        // Permission missing, revert toggle and explain
-                        binding.switchAutoAlarm.isChecked = false
-                        
-                        MaterialAlertDialogBuilder(this)
-                            .setTitle("Permission Required")
-                            .setMessage("To automatically set alarms, Reality needs the 'Alarms & Reminders' permission.")
-                            .setPositiveButton("Grant") { _, _ ->
-                                val intent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                                startActivity(intent)
-                            }
-                            .setNegativeButton("Cancel", null)
-                            .show()
-                        return@setOnCheckedChangeListener
-                    }
-                }
-            }
-            // Permission OK or unchecked - save preference
-            prefs.edit().putBoolean("auto_set_alarm", isChecked).apply()
-        }
-    }
     
 
 
