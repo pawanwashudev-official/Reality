@@ -69,6 +69,7 @@
             android:contentDescription="AMOLED Mode"
             android:layout_marginEnd="4dp"/>
 
+
         <ImageView
             android:id="@+id/btn_settings"
             android:layout_width="44dp"

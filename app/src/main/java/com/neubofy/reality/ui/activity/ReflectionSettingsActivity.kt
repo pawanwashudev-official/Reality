@@ -57,10 +57,18 @@ class ReflectionSettingsActivity : AppCompatActivity() {
             28 -> 2
             else -> 0
         }
-        binding.spinnerRetention.setSelection(savedIndex)
-
+        
+        // Flag to skip initial programmatic selection trigger
+        var isInitialSetup = true
+        
         binding.spinnerRetention.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                // Skip the initial programmatic setSelection call
+                if (isInitialSetup) {
+                    isInitialSetup = false
+                    return
+                }
+                
                 val weeks = when (position) {
                     0 -> 1
                     1 -> 2
@@ -68,10 +76,22 @@ class ReflectionSettingsActivity : AppCompatActivity() {
                     else -> 1
                 }
                 XPManager.setRetentionPolicy(this@ReflectionSettingsActivity, weeks)
+                
+                // Immediately apply retention policy (archives and deletes old data)
+                lifecycleScope.launch(Dispatchers.IO) {
+                    XPManager.enforceRetentionPolicy(this@ReflectionSettingsActivity)
+                    withContext(Dispatchers.Main) {
+                        refreshGamificationTable()
+                        Toast.makeText(this@ReflectionSettingsActivity, "Retention set to $weeks week(s)", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+        
+        // Set selection AFTER listener is attached (so isInitialSetup flag works)
+        binding.spinnerRetention.setSelection(savedIndex)
     }
 
     private fun setupGamificationStats() {

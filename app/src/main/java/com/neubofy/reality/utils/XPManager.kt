@@ -396,6 +396,18 @@ object XPManager {
         updateDailyStats(context, date) { current ->
             current.copy(tapasyaXP = totalTapasyaXP)
         }
+        
+        // Update Projected XP for today only
+        if (date == LocalDate.now().toString()) {
+            try {
+                val projected = getProjectedDailyXP(context)
+                context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                    .putInt("projected_xp", projected.total)
+                    .apply()
+            } catch (e: Exception) {
+                TerminalLogger.log("Projected XP calculation failed: ${e.message}")
+            }
+        }
     }
 
     // Removed private isTaskDue as logic is now embedded in calculateTaskXP per spec
@@ -542,7 +554,17 @@ if (sortedStats.isNotEmpty()) {
     
     suspend fun deleteDailyStats(context: Context, date: String) {
         val db = AppDatabase.getDatabase(context)
-        db.dailyStatsDao().deleteStatsForDate(date) // Need to ensure DAO has this
+        val stats = db.dailyStatsDao().getStatsForDate(date)
+        
+        // Archive this day's XP to vault before deleting (preserves total XP)
+        if (stats != null) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val currentVault = prefs.getInt(PREF_ACCUMULATED_XP, 0)
+            prefs.edit().putInt(PREF_ACCUMULATED_XP, currentVault + stats.totalXP).apply()
+            TerminalLogger.log("Archived ${stats.totalXP} XP to vault before deleting $date")
+        }
+        
+        db.dailyStatsDao().deleteStatsForDate(date)
         recalculateGlobalStats(context)
         
         if (date == LocalDate.now().toString()) {
@@ -554,8 +576,12 @@ if (sortedStats.isNotEmpty()) {
     }
     
     suspend fun enforceRetentionPolicy(context: Context) = withContext(Dispatchers.IO) {
-        // Enforce rigid 7-day retention as requested
-        val retentionDays = 7
+        // 1. Archive expired days BEFORE deleting (preserves total XP in vault)
+        archiveExpiredDays(context)
+        
+        // 2. Now delete is safe - read retention from user preference
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val retentionDays = prefs.getInt(PREF_RETENTION_DAYS, 7) // Use saved setting!
         val cutoffDate = LocalDate.now().minusDays(retentionDays.toLong()).toString()
         val db = AppDatabase.getDatabase(context)
         db.dailyStatsDao().deleteOldStats(cutoffDate)
@@ -729,6 +755,7 @@ if (sortedStats.isNotEmpty()) {
     data class GamificationStats(
         val totalXP: Int,
         val todayXP: Int,
+        val projectedXP: Int,  // Maximum potential XP for today
         val level: Int,
         val streak: Int,
         val levelName: String,
@@ -739,6 +766,7 @@ if (sortedStats.isNotEmpty()) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val totalXP = prefs.getInt(PREF_TOTAL_XP, 0)
         val todayXP = prefs.getInt("today_xp", 0)
+        val projectedXP = prefs.getInt("projected_xp", 0)
         val level = prefs.getInt(PREF_LEVEL, 1)
         val streak = prefs.getInt(PREF_STREAK, 0)
         
@@ -749,10 +777,76 @@ if (sortedStats.isNotEmpty()) {
         return GamificationStats(
             totalXP = totalXP,
             todayXP = todayXP,
+            projectedXP = projectedXP,
             level = level,
             streak = streak,
             levelName = currentLvl?.name ?: "Unknown",
             nextLevelXP = nextLvl?.requiredXP ?: currentLvl?.requiredXP ?: 0
+        )
+    }
+    
+    /**
+     * PROJECTED XP
+     * Shows maximum potential XP if user completes all planned activities today.
+     */
+    data class ProjectedXP(
+        val tapasyaXP: Int,      // Based on planned session time
+        val sessionXP: Int,      // +100 per calendar event
+        val taskXP: Int,         // +100 per task due today
+        val diaryXP: Int,        // Fixed 500 (best case)
+        val distractionXP: Int,  // Fixed 0 (best case)
+        val total: Int
+    )
+    
+    /**
+     * Calculate projected daily XP based on planned activities.
+     * Assumes best-case scenario: all tasks completed, no distractions.
+     */
+    suspend fun getProjectedDailyXP(context: Context): ProjectedXP = withContext(Dispatchers.IO) {
+        val today = LocalDate.now()
+        val startOfDay = today.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val endOfDay = today.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
+        
+        // 1. TAPASYA XP: Calculate from planned session minutes
+        var plannedMins = 0L
+        val calendarRepo = com.neubofy.reality.data.repository.CalendarRepository(context)
+        val plannedEvents = calendarRepo.getEventsInRange(startOfDay, endOfDay)
+        plannedEvents.forEach { event ->
+            val durationMins = (event.endTime - event.startTime) / 60000
+            plannedMins += durationMins
+        }
+        val tapasyaXP = calculateTapasyaXP(plannedMins.toInt())
+        
+        // 2. SESSION XP: +100 per planned calendar event (if all attended)
+        val sessionXP = plannedEvents.size * 100
+        
+        // 3. TASK XP: +100 per task due today (from Google Tasks)
+        var taskCount = 0
+        try {
+            val todayStr = today.toString() // yyyy-MM-dd format
+            val taskStats = GoogleTasksManager.getTasksForDate(context, todayStr)
+            taskCount = taskStats.pendingCount + taskStats.completedCount // Total due today
+        } catch (e: Exception) {
+            // Google Tasks not available or not signed in
+            TerminalLogger.log("Projected XP: Could not fetch tasks - ${e.message}")
+        }
+        val taskXP = taskCount * 100
+        
+        // 4. DIARY XP: Fixed 500 (assuming nightly reflection is completed)
+        val diaryXP = 500
+        
+        // 5. DISTRACTION XP: 0 (best case - stay under screen time limit)
+        val distractionXP = 0
+        
+        val total = tapasyaXP + sessionXP + taskXP + diaryXP + distractionXP
+        
+        return@withContext ProjectedXP(
+            tapasyaXP = tapasyaXP,
+            sessionXP = sessionXP,
+            taskXP = taskXP,
+            diaryXP = diaryXP,
+            distractionXP = distractionXP,
+            total = total
         )
     }
 

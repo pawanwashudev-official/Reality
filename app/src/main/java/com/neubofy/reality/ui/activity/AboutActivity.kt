@@ -19,7 +19,8 @@ class AboutActivity : BaseActivity() {
         const val GITHUB_PROFILE = "https://github.com/pawanwashudev-official"
         const val GITHUB_REPO = "https://github.com/pawanwashudev-official/Reality"
         const val TELEGRAM = "https://t.me/pawanwashudev"
-        const val INSTAGRAM = "https://instagram.com/pawanwashudev"
+        const val ARRATAI = "https://arratai.com/@pawanwashudev"
+        const val INSTAGRAM = "https://instagram.com/pawan_washudev"
         const val EMAIL = "pawanwashudev@gmail.com"
         const val PRIVACY_POLICY = "https://realityprivicypolicy.vercel.app"
     }
@@ -49,7 +50,13 @@ class AboutActivity : BaseActivity() {
         binding.btnGithub.setOnClickListener { openUrl(GITHUB_PROFILE) }
         
         // Website
-        binding.btnWebsite.setOnClickListener { openUrl("https://neubofyreality.vercel.app") } 
+        binding.btnWebsite.setOnClickListener { openUrl("https://neubofyreality.vercel.app") }
+
+        // Telegram
+        binding.btnTelegram.setOnClickListener { openUrl(TELEGRAM) }
+
+        // Arratai
+        binding.btnArratai.setOnClickListener { openUrl(ARRATAI) }
 
         // Email / Contact
         binding.btnContact.setOnClickListener {

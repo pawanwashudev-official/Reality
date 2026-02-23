@@ -29,7 +29,7 @@ object SettingsBox {
     // Key: "packageName|className" (e.g., "com.android.settings|DateTimeSettings")
     // Value: BlockedPageConfig with blocking reason and optional keywords
     @Volatile
-    private var settingsBox: Map<String, BlockedPageConfig> = emptyMap()
+    private var settingsBox: Map<String, List<BlockedPageConfig>> = emptyMap()
     
     // Wildcard entries for content-based matching (when className varies)
     @Volatile
@@ -90,7 +90,7 @@ object SettingsBox {
      * Get snapshot of all currently protected pages (for UI display).
      */
     fun getAllProtectedPages(): List<BlockedPageConfig> {
-        return settingsBox.values.toList() + wildcardPages
+        return settingsBox.values.flatten() + wildcardPages
     }
     
     /**
@@ -110,7 +110,7 @@ object SettingsBox {
             isTimeCheatProtectionEnabled = strictData.isEnabled && strictData.isTimeCheatProtectionEnabled
             isAntiUninstallEnabled = strictData.isEnabled && strictData.isAntiUninstallEnabled
             
-            val newBox = mutableMapOf<String, BlockedPageConfig>()
+            val newBox = mutableMapOf<String, MutableList<BlockedPageConfig>>()
             val newWildcards = mutableListOf<BlockedPageConfig>()
             
             // ONLY ADD LEARNED PAGES - No hardcoded fallbacks!
@@ -132,7 +132,7 @@ object SettingsBox {
     
     private fun addLearnedPagesToBox(
         learnedPages: Constants.LearnedSettingsPages,
-        box: MutableMap<String, BlockedPageConfig>,
+        box: MutableMap<String, MutableList<BlockedPageConfig>>,
         wildcards: MutableList<BlockedPageConfig>
     ) {
         // Use detected OEM settings package as default if available
@@ -153,7 +153,7 @@ object SettingsBox {
                 contentKeywords = learnedPages.accessibilityKeywords,
                 blockReason = "Accessibility Protection"
             )
-            box[config.getKey()] = config
+            box.getOrPut(config.getKey()) { mutableListOf() }.add(config)
         }
         
         // === TIME SETTINGS PAGE ===
@@ -170,7 +170,7 @@ object SettingsBox {
                 contentKeywords = learnedPages.timeSettingsKeywords,
                 blockReason = "Time Settings Protection"
             )
-            box[config.getKey()] = config
+            box.getOrPut(config.getKey()) { mutableListOf() }.add(config)
         }
         
         // === DEVICE ADMIN PAGE ===
@@ -187,7 +187,7 @@ object SettingsBox {
                 contentKeywords = learnedPages.deviceAdminKeywords,
                 blockReason = "Device Admin Protection"
             )
-            box[config.getKey()] = config
+            box.getOrPut(config.getKey()) { mutableListOf() }.add(config)
         }
         
         // === CUSTOM BLOCKED PAGES ===
@@ -223,7 +223,7 @@ object SettingsBox {
                     contentKeywords = keywords,
                     blockReason = "Custom Protected Page"
                 )
-                box[config.getKey()] = config
+                box.getOrPut(config.getKey()) { mutableListOf() }.add(config)
             }
         }
     }
@@ -281,21 +281,23 @@ object SettingsBox {
             return cachedScreenText!!
         }
         
-        // === STEP 1: O(1) Exact Match ===
+        // === STEP 1: O(1) Exact Match (supports multiple configs per key) ===
         val key = "$packageName|$simpleClassName"
-        val exactMatch = settingsBox[key]
+        val matchedConfigs = settingsBox[key]
         
-        if (exactMatch != null) {
-            if (!exactMatch.requiresContentCheck) {
-                // INSTANT BLOCK - no content check needed (Fastest Path)
-                TerminalLogger.log("SETTINGS_BOX: EXACT MATCH BLOCK - $simpleClassName")
-                return BlockResult(true, exactMatch.blockReason, exactMatch.pageType)
-            } else {
-                // Needs content verification (Smart Match)
-                val content = getPageContent()
-                if (content.isNotEmpty() && checkKeywords(content, exactMatch.contentKeywords)) {
-                    TerminalLogger.log("SETTINGS_BOX: CONTENT MATCH BLOCK - $simpleClassName")
-                    return BlockResult(true, exactMatch.blockReason, exactMatch.pageType)
+        if (matchedConfigs != null) {
+            for (config in matchedConfigs) {
+                if (!config.requiresContentCheck) {
+                    // INSTANT BLOCK - no content check needed (Fastest Path)
+                    TerminalLogger.log("SETTINGS_BOX: EXACT MATCH BLOCK - $simpleClassName (${config.pageType})")
+                    return BlockResult(true, config.blockReason, config.pageType)
+                } else {
+                    // Needs content verification (Smart Match)
+                    val content = getPageContent()
+                    if (content.isNotEmpty() && checkKeywords(content, config.contentKeywords)) {
+                        TerminalLogger.log("SETTINGS_BOX: CONTENT MATCH BLOCK - $simpleClassName (${config.pageType})")
+                        return BlockResult(true, config.blockReason, config.pageType)
+                    }
                 }
             }
         }
@@ -336,9 +338,9 @@ object SettingsBox {
             }
         }
         
-        // Check 70% threshold
+        // Check 85% threshold (raised from 70% for fewer false positives)
         val accuracy = matchesFound / totalKeywords
-        return accuracy >= 0.7f
+        return accuracy >= 0.85f
     }
     
     /**
@@ -359,7 +361,7 @@ object SettingsBox {
         
         nodeCount[0]++
         
-        for (i in 0 until node.childCount.coerceAtMost(5)) {
+        for (i in 0 until node.childCount.coerceAtMost(20)) {
             try {
                 val child = node.getChild(i) ?: continue
                 collectTextFast(child, builder, depth + 1, maxDepth, nodeCount, maxNodes)

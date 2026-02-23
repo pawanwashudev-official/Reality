@@ -95,6 +95,10 @@ class HealthDashboardActivity : AppCompatActivity() {
                 startActivity(android.content.Intent(this, SmartSleepActivity::class.java))
                 true
             }
+            R.id.action_qr_key -> {
+                showQRKeyDialog()
+                true
+            }
             R.id.action_delete_data -> {
                 showResetSleepSyncDialog()
                 true
@@ -396,5 +400,38 @@ class HealthDashboardActivity : AppCompatActivity() {
                 showSleepVerificationDialog(oldStart, oldEnd) // Go back
             }
             .show()
+    }
+
+    private fun showQRKeyDialog() {
+        val qrBitmap = com.neubofy.reality.utils.QRUtils.generateQRCode("reality://smart_sleep")
+        if (qrBitmap == null) {
+            Toast.makeText(this, "Failed to generate QR Code", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_qr_key, null)
+        val ivQRCode = dialogView.findViewById<android.widget.ImageView>(R.id.ivQRCode)
+        val btnSave = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSaveQR)
+        val btnShare = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnShareQR)
+
+        ivQRCode.setImageBitmap(qrBitmap)
+
+        val dialog = MaterialAlertDialogBuilder(this, R.style.GlassDialog)
+            .setView(dialogView)
+            .setPositiveButton("Close", null)
+            .show()
+
+        btnSave.setOnClickListener {
+            val uri = com.neubofy.reality.utils.QRUtils.saveQRToGallery(this, qrBitmap)
+            if (uri != null) {
+                Toast.makeText(this, "Saved to Gallery!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Failed to save", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        btnShare.setOnClickListener {
+            com.neubofy.reality.utils.QRUtils.shareQR(this, qrBitmap)
+        }
     }
 }

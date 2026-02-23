@@ -86,6 +86,15 @@
 -keep class org.jsoup.** { *; }
 -keep class com.google.zxing.** { *; }
 
+# ML Kit (QR Scanning)
+-keep class com.google.mlkit.** { *; }
+-keep interface com.google.mlkit.** { *; }
+-dontwarn com.google.mlkit.**
+
+# CameraX
+-keep class androidx.camera.** { *; }
+-dontwarn androidx.camera.**
+
 # iText PDF (Aggressive Rules)
 -keep class com.itextpdf.** { *; }
 -keep class com.itextpdf.io.** { *; }

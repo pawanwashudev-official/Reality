@@ -81,6 +81,7 @@ class NightlyProtocolExecutor(
         const val STEP_GENERATE_PDF = NightlySteps.STEP_GENERATE_PDF
         const val STEP_SET_ALARM = NightlySteps.STEP_SET_ALARM
         const val STEP_NORMALIZE_TASKS = NightlySteps.STEP_NORMALIZE_TASKS
+        const val STEP_UPDATE_DISTRACTION = NightlySteps.STEP_UPDATE_DISTRACTION
         
         // Legacy aliases (for backward compatibility)
         @Deprecated("Use STEP_FETCH_TASKS") const val STEP_CHECK_DIARY = 1
@@ -369,6 +370,7 @@ class NightlyProtocolExecutor(
             STEP_GENERATE_PDF -> phasePlanning.step12_generatePdf()
             STEP_SET_ALARM -> phasePlanning.step13_setAlarm()
             STEP_NORMALIZE_TASKS -> phasePlanning.step14_normalizeTasks()
+            STEP_UPDATE_DISTRACTION -> phasePlanning.step15_updateDistraction()
             else -> throw IllegalArgumentException("Unknown step: $step")
         }
     }

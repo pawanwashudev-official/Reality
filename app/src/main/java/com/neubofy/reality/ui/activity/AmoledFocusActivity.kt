@@ -1,17 +1,17 @@
 package com.neubofy.reality.ui.activity
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.neubofy.reality.R
 import com.neubofy.reality.databinding.ActivityAmoledFocusBinding
-import com.neubofy.reality.services.TapasyaService
-import kotlinx.coroutines.flow.collectLatest
+import com.neubofy.reality.services.TapasyaManager
 import kotlinx.coroutines.launch
 
 class AmoledFocusActivity : AppCompatActivity() {
@@ -39,35 +39,35 @@ class AmoledFocusActivity : AppCompatActivity() {
         }
 
         binding.btnAction.setOnClickListener {
-            val state = TapasyaService.clockState.value
+            val state = TapasyaManager.getCurrentState(this)
             if (state.isRunning) {
-                sendServiceAction(TapasyaService.ACTION_PAUSE)
+                TapasyaManager.pauseSession(this)
             } else if (state.isPaused) {
-                sendServiceAction(TapasyaService.ACTION_RESUME)
+                TapasyaManager.resumeSession(this)
             } else {
-                // Determine logic for 'Start' if needed, but usually we enter this mode while running
-                // If not running, typically we redirect or show start dialog. 
-                // For simplified "Super Mode", we assume user starts in Tapasya and switches here, 
-                // but let's handle start to be safe (default params)
-                sendServiceAction(TapasyaService.ACTION_START) 
+                // Default start — user typically enters AMOLED mode from running Tapasya
+                TapasyaManager.startSession(this, "Tapasya", 60 * 60 * 1000L, 15 * 60 * 1000L)
             }
         }
 
         binding.btnStop.setOnClickListener {
-            sendServiceAction(TapasyaService.ACTION_STOP)
-            finish() // Exit AMOLED mode on stop
+            TapasyaManager.stopSession(this, wasAutoStopped = false)
+            finish()
         }
     }
 
     private fun observeClockState() {
         lifecycleScope.launch {
-            TapasyaService.clockState.collectLatest { state ->
-                updateUI(state)
+            lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+                while (true) {
+                    updateUI(TapasyaManager.getCurrentState(this@AmoledFocusActivity))
+                    kotlinx.coroutines.delay(500)
+                }
             }
         }
     }
 
-    private fun updateUI(state: TapasyaService.ClockState) {
+    private fun updateUI(state: TapasyaManager.ClockState) {
         binding.tvTimer.text = formatTime(state.elapsedTimeMs)
         binding.waveView.setProgress(state.progress)
         
@@ -100,12 +100,7 @@ class AmoledFocusActivity : AppCompatActivity() {
         }
     }
 
-    private fun sendServiceAction(action: String) {
-        val intent = Intent(this, TapasyaService::class.java).apply {
-            this.action = action
-        }
-        startService(intent)
-    }
+
 
     private fun formatTime(ms: Long): String {
         val totalSecs = ms / 1000

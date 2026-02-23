@@ -24,6 +24,8 @@ object NightlyAIHelper {
      * @param modelString Full model string in format "Provider: model-name"
      * @param userIntroduction User's self-introduction for personalization
      * @param daySummary Summary of the day's activities
+     * @param healthData Health and screen time data
+     * @param previousReport Previous day's AI-generated report for context
      * @return List of 5 reflection questions
      */
     suspend fun generateQuestions(
@@ -31,7 +33,8 @@ object NightlyAIHelper {
         modelString: String,
         userIntroduction: String,
         daySummary: DaySummary,
-        healthData: String
+        healthData: String,
+        previousReport: String = "No previous day report available."
     ): List<String> = withContext(Dispatchers.IO) {
         
         TerminalLogger.log("Nightly AI: Generating questions with model: $modelString")
@@ -42,7 +45,7 @@ object NightlyAIHelper {
         val (provider, apiKey) = providerAndKey
         val modelName = modelString.substringAfter(": ")
         
-        val prompt = buildPrompt(context, userIntroduction, daySummary, healthData)
+        val prompt = buildPrompt(context, userIntroduction, daySummary, healthData, previousReport)
         TerminalLogger.log("Nightly AI: Prompt built, calling $provider API...")
         
         val response = when (provider) {
@@ -58,7 +61,7 @@ object NightlyAIHelper {
         parseQuestions(response)
     }
     
-    private fun buildPrompt(context: Context, userIntro: String, summary: DaySummary, healthData: String): String {
+    private fun buildPrompt(context: Context, userIntro: String, summary: DaySummary, healthData: String, previousReport: String): String {
         val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
         
         // Calendar events from device
@@ -127,8 +130,9 @@ object NightlyAIHelper {
                 .replace("{sessions}", sessionsList)
                 .replace("{health}", healthData)
                 .replace("{stats}", statsStr)
+                .replace("{report}", previousReport)
         } else {
-            // Use default prompt
+            // Use default prompt with previous day report
             """You are a master productivity analyst and life coach. Your goal is to help the user identify patterns of failure and opportunities for growth.
 
 $userIntroStr
@@ -153,18 +157,22 @@ $healthData
 📊 PERFORMANCE STATISTICS:
 $statsStr
 
+📝 PREVIOUS DAY AI REPORT:
+$previousReport
+
 ---
 [INSTRUCTIONS]
 Analyze the data above deeply. Look for:
 1. Gaps between what was planned (Calendar/Tasks) and what was actually achieved (Completed Tasks/Tapasya Sessions).
 2. Signs of procrastination or distraction (High phone usage, low Reality Ratio, missed tasks).
 3. Inconsistencies between health habits (Sleep/Steps) and work performance.
+4. Patterns or recurring issues identified in the previous day's report.
 
 Generate EXACTLY 5 high-impact, analytical reflection questions.
 These questions must:
 - Challenge the user to confront their specific mistakes today (e.g., "Why were these 3 tasks ignored despite being planned?").
 - Ask the "WHY" behind failures to find root causes (burnout, lack of priority, phone addiction).
-- Reference the comparison with yesterday if data is available to highlight trends.
+- Reference the previous day's report if available to highlight recurring patterns or improvements.
 - Force the user to propose a CONCRETE strategy to avoid repeating today's mistakes tomorrow.
 
 Be direct, analytical, and uncompromising but constructive. Avoid generic fluff.
@@ -305,13 +313,16 @@ Today is {date}.
 📊 STATISTICS:
 {stats}
 
+📝 PREVIOUS DAY AI REPORT:
+{report}
+
 Based on this comprehensive data, generate EXACTLY 5 personalized reflection questions.
 
 Guidelines:
 1. If there's a gap between planned and actual, ask about what happened (gently but directly)
 2. If they completed many tasks, acknowledge and ask what helped them succeed
 3. If tasks are pending, ask about priorities and blockers
-4. Ask about their emotional/mental state during work
+4. Reference patterns from the previous day's report if available
 5. Help them plan improvements for tomorrow
 
 Be warm and supportive, but also honest. Don't sugarcoat if they underperformed.
@@ -420,11 +431,20 @@ OUTPUT FORMAT:
              6. MENTORSHIP (Short Advice):
                - Provide a 2-3 sentence punchy piece of advice for the user to succeed tomorrow.
                - Focus on mindset, energy, or specific focus from the plan.
+             
+             7. DISTRACTION TIME: (AI Decision based on day intensity)
+               - Determine a reasonable "distractionTimeMinutes" (integer, 0-120) for allowed non-productive app usage.
+               - LOGIC: Heavy work days with many tasks = lower distraction time (30-45 min).
+               - Light days or rest days = higher allowed distraction (60-90 min).
+               - If explicitly mentioned in plan (e.g. "1 hour break for social media"), use that value.
+               - Default to 60 if unclear.
             
             [JSON OUTPUT FORMAT]
             (CRITICAL: Output EXACTLY this JSON structure. NO MARKDOWN. NO PREAMBLE. NO OTHER TEXT)
             {
               "wakeupTime": "HH:mm or empty",
+              "sleepStartTime": "HH:mm or empty",
+              "distractionTimeMinutes": 60,
               "mentorship": "Your advice string here",
               "tasks": [
                 {
@@ -441,8 +461,7 @@ OUTPUT FORMAT:
                   "endTime": "HH:mm",
                   "description": "Details"
                 }
-              ],
-              "sleepStartTime": "HH:mm or empty"
+              ]
             }
         """.trimIndent()
     }

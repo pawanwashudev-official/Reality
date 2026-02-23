@@ -185,6 +185,17 @@ class SavedPreferencesLoader(private val context: Context) {
         return sharedPreferences.getBoolean("auto_dnd_enabled", false)
     }
 
+    // Reality Sleep Mode (Android 15+ ZenDeviceEffects)
+    fun saveRealitySleepEnabled(enabled: Boolean) {
+        val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putBoolean("reality_sleep_enabled", enabled).apply()
+    }
+
+    fun isRealitySleepEnabled(): Boolean {
+        val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        return sharedPreferences.getBoolean("reality_sleep_enabled", false)
+    }
+
     // Smart Sleep Monitoring
     fun saveSmartSleepEnabled(enabled: Boolean) {
         val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)

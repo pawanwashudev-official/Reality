@@ -26,8 +26,8 @@ android {
         applicationId = "com.neubofy.reality"
         minSdk = 26
         targetSdk = 35  // Android 15
-        versionCode = 23
-        versionName = "1.0.3"
+        versionCode = 24
+        versionName = "1.0.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -78,7 +78,7 @@ android {
 
     buildTypes {
         release {
-            // R8/ProGuard ENABLED for final release
+            // R8/ProGuard enabled
             isMinifyEnabled = true
             isShrinkResources = true
             
@@ -195,6 +195,13 @@ dependencies {
 
     // HTML Parsing for Web Search
     implementation("org.jsoup:jsoup:1.17.2")
+    
+    // QR Scanning & Generation
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+    implementation("androidx.camera:camera-camera2:1.3.1")
+    implementation("androidx.camera:camera-lifecycle:1.3.1")
+    implementation("androidx.camera:camera-view:1.3.1")
+    implementation("com.google.zxing:core:3.5.3")
     
     // Professional App Updater (Open Source)
     implementation("io.github.azhon:appupdate:4.3.6")

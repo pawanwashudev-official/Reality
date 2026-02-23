@@ -374,6 +374,9 @@ class NightlyPhaseData(
 
         // Build health data from Step 3 results (from DB)
         val healthDataStr = buildHealthDataFromStep3()
+        
+        // Fetch previous day's report with fallback to 2nd-last day
+        val previousDayReport = getPreviousDayReport()
 
         try {
             generatedQuestions = NightlyAIHelper.generateQuestions(
@@ -381,7 +384,8 @@ class NightlyPhaseData(
                 modelString = nightlyModel,
                 userIntroduction = userIntro,
                 daySummary = summary,
-                healthData = healthDataStr
+                healthData = healthDataStr,
+                previousReport = previousDayReport
             )
             listener.onQuestionsReady(generatedQuestions)
 
@@ -390,6 +394,7 @@ class NightlyPhaseData(
                     put("model", nightlyModel)
                     put("userIntro", userIntro.take(500))
                     put("healthDataSnippet", healthDataStr.take(500))
+                    put("previousReportSnippet", previousDayReport.take(500))
                 })
                 put("output", JSONObject().apply {
                     put("questions", JSONArray(generatedQuestions))
@@ -406,6 +411,34 @@ class NightlyPhaseData(
             listener.onError(NightlySteps.STEP_GENERATE_QUESTIONS, error)
             saveStepState(NightlySteps.STEP_GENERATE_QUESTIONS, StepProgress.STATUS_ERROR, error)
         }
+    }
+    
+    /**
+     * Get previous day's report (Step 11) with fallback to 2nd-last day.
+     * Uses diaryDate context (selected date), not system date.
+     */
+    private suspend fun getPreviousDayReport(): String {
+        val day1 = diaryDate.minusDays(1)
+        val day2 = diaryDate.minusDays(2)
+        
+        // Try yesterday first (relative to selected date)
+        val report1 = NightlyRepository.getReportContent(context, day1)
+        if (!report1.isNullOrEmpty()) {
+            TerminalLogger.log("Nightly: Using report from $day1")
+            return report1
+        }
+        TerminalLogger.log("Nightly: No report found for $day1")
+        
+        // Fallback to 2nd-last day
+        val report2 = NightlyRepository.getReportContent(context, day2)
+        if (!report2.isNullOrEmpty()) {
+            TerminalLogger.log("Nightly: Using report from $day2 (fallback)")
+            return report2
+        }
+        TerminalLogger.log("Nightly: No report found for $day2")
+        
+        // No report available
+        return "No previous day report available."
     }
 
     // ========== STEP 5: Create Diary Document ==========

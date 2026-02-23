@@ -53,6 +53,26 @@ class HeartbeatWorker(context: Context, params: WorkerParameters) : CoroutineWor
                 WorkManager.getInstance(applicationContext).enqueue(syncRequest)
             }
             
+            // 6. Tapasya Sync - DISABLED (Local Only Mode)
+            
+            // 7. Reality Sleep Mode Heartbeat Fix (Android 15+)
+            // Ensures sleep mode state is always consistent with bedtime
+            if (com.neubofy.reality.utils.ZenModeManager.isSupported()) {
+                val sleepPrefs = com.neubofy.reality.utils.SavedPreferencesLoader(applicationContext)
+                if (sleepPrefs.isRealitySleepEnabled()) {
+                    val isBedtime = com.neubofy.reality.utils.BlockCache.isBedtimeCurrentlyActive
+                    if (isBedtime) {
+                        // Bedtime is running → ensure sleep mode is ON
+                        com.neubofy.reality.utils.ZenModeManager.setZenState(applicationContext, true)
+                        TerminalLogger.log("HEARTBEAT: Sleep mode fix → ON (bedtime active)")
+                    } else {
+                        // Bedtime is NOT running → ensure sleep mode is OFF
+                        com.neubofy.reality.utils.ZenModeManager.setZenState(applicationContext, false)
+                        TerminalLogger.log("HEARTBEAT: Sleep mode fix → OFF (bedtime inactive)")
+                    }
+                }
+            }
+            
             TerminalLogger.log("HEARTBEAT: All boxes updated successfully!")
             
         } catch (e: Exception) {

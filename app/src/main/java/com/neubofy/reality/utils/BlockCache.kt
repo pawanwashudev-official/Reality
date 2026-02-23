@@ -51,6 +51,10 @@ object BlockCache {
     @Volatile var isAnyBlockingModeActive = false
         private set
     
+    /** Is Bedtime Mode specifically active right now */
+    @Volatile var isBedtimeCurrentlyActive = false
+        private set
+    
     // === INSTANT CHECK (O(1)) ===
     
     /**
@@ -82,7 +86,7 @@ object BlockCache {
 
     /**
      * Check if a website URL should be blocked.
-     * Uses the cached blocklist.
+     * Uses proper domain matching to avoid false positives from search queries.
      */
     fun shouldBlockWebsite(url: String): String? {
         if (emergencySessionEndTime > System.currentTimeMillis()) return null
@@ -92,8 +96,50 @@ object BlockCache {
         val currentList = blockedWebsites
         if (currentList.isEmpty()) return null
         
-        val cleanUrl = url.lowercase()
-        return currentList.find { it.isNotEmpty() && cleanUrl.contains(it.lowercase()) }
+        // Extract domain from URL to avoid matching search queries
+        val domain = extractDomain(url.lowercase())
+        if (domain.isNullOrEmpty()) return null
+        
+        // Match against domain only (not full URL with query params)
+        return currentList.find { blockedDomain ->
+            val blocked = blockedDomain.lowercase().trim()
+            if (blocked.isEmpty()) return@find false
+            
+            // Exact match or subdomain match
+            // e.g., "youtube" blocks "youtube.com", "m.youtube.com", "www.youtube.com"
+            // But NOT "youtubeisgreat.com" or search queries containing "youtube"
+            domain == blocked ||                         // exact: youtube.com == youtube.com
+            domain.endsWith(".$blocked") ||              // subdomain: m.youtube.com ends with .youtube.com
+            domain.contains(".$blocked.") ||             // middle: www.youtube.com.br
+            domain.startsWith("$blocked.") ||            // starts: youtube.com
+            domain.contains("$blocked.")                  // contains with dot: m.youtube.com
+        }
+    }
+    
+    /**
+     * Extract domain from URL, stripping protocol, path, query params.
+     * Returns null if URL doesn't look like a valid website.
+     */
+    private fun extractDomain(url: String): String? {
+        var clean = url.trim()
+        
+        // Skip if it looks like a search query (no dots or spaces present)
+        if (!clean.contains(".") || clean.contains(" ")) return null
+        
+        // Remove protocol
+        clean = clean.removePrefix("https://")
+            .removePrefix("http://")
+            .removePrefix("www.")
+        
+        // Get domain only (before path or query)
+        val slashIndex = clean.indexOf('/')
+        if (slashIndex > 0) clean = clean.substring(0, slashIndex)
+        
+        val queryIndex = clean.indexOf('?')
+        if (queryIndex > 0) clean = clean.substring(0, queryIndex)
+        
+        // Validate it looks like a domain (has at least one dot)
+        return if (clean.contains(".") && !clean.contains(" ")) clean else null
     }
     
     /**
@@ -158,6 +204,7 @@ object BlockCache {
                 
                 isAnyBlockingModeActive = isFocusActive || isBedtimeActive || 
                                           isScheduleActive || isCalendarEventActive
+                isBedtimeCurrentlyActive = isBedtimeActive
                 
                 // === STEP 2: Add apps from blocklist if ANY mode is active ===
                 // Now with per-app mode filtering

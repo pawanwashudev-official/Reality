@@ -103,6 +103,9 @@ class Constants {
         // Lock Auto DND
         var isAutoDndLocked: Boolean = true,
         
+        // Lock Reality Sleep Mode (Android 15+ Grayscale/Dim/Dark)
+        var isRealitySleepLocked: Boolean = true,
+        
         // Accessibility Protection - Prevents disabling accessibility service
         var isAccessibilityProtectionEnabled: Boolean = false,
         

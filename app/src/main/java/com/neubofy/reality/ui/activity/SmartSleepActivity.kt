@@ -23,6 +23,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.neubofy.reality.health.HealthPermissionManager
 
 class SmartSleepActivity : AppCompatActivity() {
 
@@ -42,18 +43,84 @@ class SmartSleepActivity : AppCompatActivity() {
         val isChanged: Boolean get() = start != originalStart || end != originalEnd
     }
 
+    companion object {
+        var isUnlockedThisSession = false
+    }
+
+    private val qrScannerLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            isUnlockedThisSession = true
+            checkHealthPermissionsFlow()
+        } else {
+            Toast.makeText(this, "Scan QR to unlock", Toast.LENGTH_SHORT).show()
+            finish()
+        }
+    }
+
+    private val healthPermissionLauncher = HealthPermissionManager.requestPermissionsLauncher(this) { granted ->
+        if (granted.containsAll(HealthPermissionManager.REQUIRED_PERMISSIONS)) {
+            binding.root.visibility = View.VISIBLE
+            loadSessions()
+        } else {
+            showHealthPermissionRequiredDialog()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)
         ThemeManager.applyAccentTheme(this)
         super.onCreate(savedInstanceState)
+        
         enableEdgeToEdge()
         binding = ActivitySmartSleepBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Setup UI basics (ready for data)
         setupToolbar()
         setupRecyclerView()
         setupUI()
-        loadSessions()
+        
+        // QR Gatekeeper: Any entry to this page requires scan
+        if (!isUnlockedThisSession) {
+            binding.root.visibility = View.GONE // Hide until verified
+            qrScannerLauncher.launch(android.content.Intent(this, QRScannerActivity::class.java))
+        } else {
+            checkHealthPermissionsFlow()
+        }
+    }
+
+    private fun checkHealthPermissionsFlow() {
+        lifecycleScope.launch {
+            if (HealthPermissionManager.hasAllPermissions(this@SmartSleepActivity)) {
+                binding.root.visibility = View.VISIBLE
+                loadSessions()
+            } else {
+                binding.root.visibility = View.GONE
+                showHealthPermissionRequiredDialog()
+            }
+        }
+    }
+
+    private fun showHealthPermissionRequiredDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Permissions Required")
+            .setMessage("Reality needs Health Connect access to analyze your sleep patterns for the Morning Reflection.\n\nIf you've already granted permissions but still see this, please check 'System Settings' to ensure all categories are allowed.")
+            .setCancelable(false)
+            .setPositiveButton("Grant Access") { _, _ ->
+                healthPermissionLauncher.launch(HealthPermissionManager.REQUIRED_PERMISSIONS)
+            }
+            .setNeutralButton("System Settings") { _, _ ->
+                HealthPermissionManager.launchHealthConnectSettings(this)
+            }
+            .setNegativeButton("Cancel") { _, _ ->
+                finish()
+            }
+            .show()
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        isUnlockedThisSession = false // Lock again on next launch
     }
 
     private fun setupToolbar() {

@@ -261,6 +261,7 @@ class NightlyPhasePlanning(
                 val mentorship = json.optString("mentorship", "No advice generated.")
                 val wakeupTime = json.optString("wakeupTime", "")
                 val sleepStartTime = json.optString("sleepStartTime", "")
+                val distractionTimeMinutes = json.optInt("distractionTimeMinutes", 60)
 
                 val resultJson = JSONObject().apply {
                     put("input", JSONObject().apply {
@@ -274,6 +275,7 @@ class NightlyPhasePlanning(
                         put("mentorship", mentorship)
                         put("wakeupTime", wakeupTime)
                         put("sleepStartTime", sleepStartTime)
+                        put("distractionTimeMinutes", distractionTimeMinutes)
                     })
                     // Legacy compatibility
                     put("tasks", tasks)
@@ -281,6 +283,7 @@ class NightlyPhasePlanning(
                     put("mentorship", mentorship)
                     put("wakeupTime", wakeupTime)
                     put("sleepStartTime", sleepStartTime)
+                    put("distractionTimeMinutes", distractionTimeMinutes)
                     put("rawResponse", aiResponse)
                     put("sanitizedJson", jsonStr)
                 }.toString()
@@ -916,6 +919,61 @@ class NightlyPhasePlanning(
             TerminalLogger.log("Nightly Step 14 Failed: ${e.message}")
             saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_ERROR, e.message)
             listener.onError(NightlySteps.STEP_NORMALIZE_TASKS, "Cleanup Failed: ${e.message}")
+        }
+    }
+
+    // ========== STEP 15: Update Distraction Limit ==========
+    suspend fun step15_updateDistraction() {
+        val stepData = loadStepData(NightlySteps.STEP_UPDATE_DISTRACTION)
+        if (stepData.status == StepProgress.STATUS_COMPLETED) {
+            listener.onStepCompleted(NightlySteps.STEP_UPDATE_DISTRACTION, "Limit Updated", stepData.details)
+            return
+        }
+
+        listener.onStepStarted(NightlySteps.STEP_UPDATE_DISTRACTION, "Updating Distraction Limit")
+        saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_RUNNING, "Reading Step 9...")
+
+        try {
+            // Read Step 9 output
+            val step9Data = loadStepData(NightlySteps.STEP_GENERATE_PLAN)
+            if (step9Data.resultJson == null) {
+                val skipDetails = "Step 9 not completed - using default"
+                listener.onStepCompleted(NightlySteps.STEP_UPDATE_DISTRACTION, "Skipped", skipDetails)
+                saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_COMPLETED, skipDetails)
+                return
+            }
+
+            val step9Json = JSONObject(step9Data.resultJson)
+            val newLimit = step9Json.optInt("distractionTimeMinutes", 60)
+
+            // Get current limit from the CORRECT prefs (nightly_prefs - same as ReflectionSettingsActivity)
+            val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
+            val oldLimit = prefs.getInt("screen_time_limit_minutes", 60)
+
+            // Update preference (bypasses Strict Mode as this is authorized Nightly Protocol update)
+            prefs.edit().putInt("screen_time_limit_minutes", newLimit).apply()
+
+            val resultJson = JSONObject().apply {
+                put("input", JSONObject().apply {
+                    put("step9DistractionTime", step9Json.optInt("distractionTimeMinutes", -1))
+                    put("diaryDate", diaryDate.toString())
+                })
+                put("output", JSONObject().apply {
+                    put("oldLimit", oldLimit)
+                    put("newLimit", newLimit)
+                    put("updatedAt", System.currentTimeMillis())
+                })
+            }.toString()
+
+            val details = "${oldLimit}min → ${newLimit}min"
+            listener.onStepCompleted(NightlySteps.STEP_UPDATE_DISTRACTION, "Limit Updated", details)
+            saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_COMPLETED, details, resultJson)
+            
+            TerminalLogger.log("Nightly Step 15: Distraction limit updated from $oldLimit to $newLimit min")
+        } catch (e: Exception) {
+            TerminalLogger.log("Nightly Step 15 Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_UPDATE_DISTRACTION, "Update Failed: ${e.message}")
         }
     }
 

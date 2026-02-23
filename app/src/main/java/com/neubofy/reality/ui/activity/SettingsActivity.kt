@@ -130,6 +130,28 @@ class SettingsActivity : BaseActivity() {
             }
         }
         
+        // Reality Sleep Mode (Android 15+)
+        binding.cardRealitySleep.setOnClickListener {
+            if (!com.neubofy.reality.utils.ZenModeManager.isSupported()) return@setOnClickListener
+            
+            val notificationManager = getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            if (!notificationManager.isNotificationPolicyAccessGranted) {
+                val intent = Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                dndPermissionLauncher.launch(intent)
+            } else {
+                val currentState = prefs.isRealitySleepEnabled()
+                val isTryingToTurnOff = currentState
+                
+                val strictData = prefs.getStrictModeData()
+                if (isTryingToTurnOff && strictData.isEnabled && strictData.isRealitySleepLocked) {
+                    android.widget.Toast.makeText(this, "Locked by Strict Mode", android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    prefs.saveRealitySleepEnabled(!currentState)
+                    updateUI()
+                }
+            }
+        }
+        
         // Study URL moved to ReminderActivity
         
         // Sync switch with card click (Since switch is disabled/not clickable, card handles it)
@@ -250,6 +272,30 @@ class SettingsActivity : BaseActivity() {
                 binding.tvDndStatus.text = "Disabled"
                 binding.tvDndStatus.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
             }
+        }
+        
+        // Reality Sleep Mode (Android 15+ only)
+        if (com.neubofy.reality.utils.ZenModeManager.isSupported()) {
+            binding.cardRealitySleep.visibility = android.view.View.VISIBLE
+            val isRealitySleepEnabled = prefs.isRealitySleepEnabled()
+            val notifManager = getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            val hasDndPermission = notifManager.isNotificationPolicyAccessGranted
+            
+            binding.switchRealitySleep.isChecked = isRealitySleepEnabled && hasDndPermission
+            
+            if (!hasDndPermission) {
+                binding.tvRealitySleepStatus.text = "DND permission required. Tap to grant."
+                binding.tvRealitySleepStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_light))
+                if (isRealitySleepEnabled) prefs.saveRealitySleepEnabled(false)
+            } else if (isRealitySleepEnabled) {
+                binding.tvRealitySleepStatus.text = "Enabled (Grayscale, Dim & Dark)"
+                binding.tvRealitySleepStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_light))
+            } else {
+                binding.tvRealitySleepStatus.text = "Grayscale, Dim & Dark Mode"
+                binding.tvRealitySleepStatus.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+            }
+        } else {
+            binding.cardRealitySleep.visibility = android.view.View.GONE
         }
         
         // Terminal Log Toggle

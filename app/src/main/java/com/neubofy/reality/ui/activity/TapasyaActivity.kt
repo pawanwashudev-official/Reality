@@ -8,6 +8,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -15,11 +17,10 @@ import com.neubofy.reality.R
 import com.neubofy.reality.data.db.AppDatabase
 import com.neubofy.reality.data.db.TapasyaSession
 import com.neubofy.reality.databinding.ActivityTapasyaBinding
-import com.neubofy.reality.services.TapasyaService
+import com.neubofy.reality.services.TapasyaManager
 import com.neubofy.reality.ui.adapter.TapasyaSessionAdapter
 import com.neubofy.reality.utils.ThemeManager
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -87,9 +88,26 @@ class TapasyaActivity : BaseActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        if (intent?.getBooleanExtra("OPEN_SETTINGS", false) == true) {
-            // Post to queue to ensure UI is ready
+        if (intent == null) return
+        
+        // Handle Settings Dialog request
+        if (intent.getBooleanExtra("OPEN_SETTINGS", false)) {
             binding.root.post { showSettingsDialog() }
+            return
+        }
+        
+        // Handle Auto-Start from AI Agent
+        if (intent.getBooleanExtra("auto_start", false)) {
+            val sessionName = intent.getStringExtra("session_name") ?: "Deep Focus"
+            val targetMins = intent.getIntExtra("target_duration_mins", targetTimeMins)
+            
+            // Only start if no session is currently active
+            val state = TapasyaManager.getCurrentState(this)
+            if (!state.isSessionActive) {
+                binding.root.post { 
+                    startSession(sessionName, targetMins, pauseLimitMins)
+                }
+            }
         }
     }
 
@@ -109,63 +127,44 @@ class TapasyaActivity : BaseActivity() {
     private fun setupListeners() {
         binding.btnBack.setOnClickListener { finish() }
 
-        // Start Button with Double Tap support
-        val gestureDetector = android.view.GestureDetector(this, object : android.view.GestureDetector.SimpleOnGestureListener() {
-            override fun onDoubleTap(e: android.view.MotionEvent): Boolean {
-                val state = TapasyaService.clockState.value
-                if (!state.isSessionActive) {
-                    // Smart Start Logic
-                    val smartEvent = upcomingSmartEvent
-                    if (smartEvent != null && smartEvent.status != com.neubofy.reality.data.repository.CalendarRepository.EventStatus.COMPLETED) {
-                         // Start the highlighted/upcoming event!
-                         startSessionFromEvent(smartEvent)
-                    } else {
-                         // Default start
-                         startSessionWithDefaults()
-                    }
-                }
-                return true
+        // Start Button - Simple click handler as primary action
+        binding.btnStart.setOnClickListener {
+            val state = TapasyaManager.getCurrentState(this)
+            when {
+                state.isPaused -> { TapasyaManager.resumeSession(this) }
+                !state.isSessionActive -> showStartSessionDialog()
             }
-
-            override fun onSingleTapConfirmed(e: android.view.MotionEvent): Boolean {
-                val state = TapasyaService.clockState.value
-                if (state.isPaused) {
-                    sendServiceAction(TapasyaService.ACTION_RESUME)
-                } else if (!state.isSessionActive) {
-                    showStartSessionDialog()
-                }
-                return true
-            }
-        })
-
-        binding.btnStart.setOnTouchListener { _, event ->
-            gestureDetector.onTouchEvent(event)
-            true
         }
         
-        // Remove Long Click as Double Tap covers quick start, but keep for accessibility/alternate
+        // Long press for quick start with defaults
         binding.btnStart.setOnLongClickListener {
-            val state = TapasyaService.clockState.value
+            val state = TapasyaManager.getCurrentState(this)
             if (!state.isSessionActive) {
-                startSessionWithDefaults()
+                // Smart Start Logic
+                val smartEvent = upcomingSmartEvent
+                if (smartEvent != null && smartEvent.status != com.neubofy.reality.data.repository.CalendarRepository.EventStatus.COMPLETED) {
+                    startSessionFromEvent(smartEvent)
+                } else {
+                    startSessionWithDefaults()
+                }
             }
             true
         }
 
         // Pause Button
         binding.btnPause.setOnClickListener {
-            sendServiceAction(TapasyaService.ACTION_PAUSE)
+            TapasyaManager.pauseSession(this)
         }
 
         // Stop Button
         binding.btnStop.setOnClickListener {
-            sendServiceAction(TapasyaService.ACTION_STOP)
+            TapasyaManager.stopSession(this, wasAutoStopped = false)
             binding.root.postDelayed({ loadSessionsForSelectedDay() }, 500)
         }
         
         // Reset Button
         binding.btnReset.setOnClickListener {
-            sendServiceAction(TapasyaService.ACTION_RESET)
+            TapasyaManager.resetSession(this)
         }
 
         // Settings Button
@@ -177,7 +176,7 @@ class TapasyaActivity : BaseActivity() {
         binding.header.findViewById<View>(R.id.btn_amoled_mode)?.setOnClickListener {
              startActivity(Intent(this, AmoledFocusActivity::class.java))
         }
-        
+
         // Day Navigation
         
         // Day Navigation
@@ -206,7 +205,7 @@ class TapasyaActivity : BaseActivity() {
 
         // Edit Start Time Listener
         binding.btnEditTime.setOnClickListener {
-            val state = TapasyaService.clockState.value
+            val state = TapasyaManager.getCurrentState(this)
             if (state.isRunning) {
                 showEditStartTimeDialog(state.elapsedTimeMs)
             }
@@ -245,12 +244,8 @@ class TapasyaActivity : BaseActivity() {
             
             val newStartTime = newCal.timeInMillis
             
-            // Send to Service
-            val intent = Intent(this, TapasyaService::class.java).apply {
-                action = TapasyaService.ACTION_UPDATE_START_TIME
-                putExtra(TapasyaService.EXTRA_NEW_START_TIME, newStartTime)
-            }
-            startService(intent)
+            // Update start time directly
+            TapasyaManager.updateStartTime(this, newStartTime)
         }
         
         picker.show(supportFragmentManager, "time_picker")
@@ -373,26 +368,13 @@ class TapasyaActivity : BaseActivity() {
     }
 
     private fun startSession(name: String, targetMins: Int, pauseMins: Int) {
-        val intent = Intent(this, TapasyaService::class.java).apply {
-            action = TapasyaService.ACTION_START
-            putExtra(TapasyaService.EXTRA_SESSION_NAME, name)
-            putExtra(TapasyaService.EXTRA_TARGET_TIME_MS, targetMins * 60 * 1000L)
-            putExtra(TapasyaService.EXTRA_PAUSE_LIMIT_MS, pauseMins * 60 * 1000L)
-        }
-        startService(intent)
+        TapasyaManager.startSession(this, name, targetMins * 60 * 1000L, pauseMins * 60 * 1000L)
     }
 
     private fun startSessionFromEvent(event: com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent) {
         val durationMins = ((event.endTime - event.startTime) / (1000 * 60)).toInt()
         val targetMs = durationMins * 60 * 1000L
-        
-        val intent = Intent(this, TapasyaService::class.java).apply {
-            action = TapasyaService.ACTION_START
-            putExtra(TapasyaService.EXTRA_SESSION_NAME, event.title)
-            putExtra(TapasyaService.EXTRA_TARGET_TIME_MS, targetMs)
-            putExtra(TapasyaService.EXTRA_PAUSE_LIMIT_MS, pauseLimitMins * 60 * 1000L) // Use default pause limit
-        }
-        startService(intent)
+        TapasyaManager.startSession(this, event.title, targetMs, pauseLimitMins * 60 * 1000L)
     }
     
     private fun setupCalendar() {
@@ -659,7 +641,7 @@ class TapasyaActivity : BaseActivity() {
             useInternalSync = isChecked
             sheetBinding.tvSyncSourceDesc.text = if (useInternalSync) "Device Calendar (Local Sync)" else "Google Calendar API (Online)"
         }
-        
+
         // Lock Start Time Switch
         val lockPrefs = getSharedPreferences("tapasya_prefs", MODE_PRIVATE) // Move to tapasya prefs
         var isStartLocked = lockPrefs.getBoolean("lock_start_time_edit", false)
@@ -685,7 +667,7 @@ class TapasyaActivity : BaseActivity() {
                  isStartLocked = sheetBinding.switchLockStartTime.isChecked
                  lockPrefs.edit().putBoolean("lock_start_time_edit", isStartLocked).apply()
                  // Force UI refresh if needed
-                 val state = TapasyaService.clockState.value
+                 val state = TapasyaManager.getCurrentState(this)
                  if (state.isRunning) {
                       binding.btnEditTime.visibility = if (isStartLocked) View.GONE else View.VISIBLE
                  }
@@ -696,7 +678,9 @@ class TapasyaActivity : BaseActivity() {
             saveSettings()
             
             // Save Sync Pref
-            prefs.edit().putBoolean("sync_source_internal", useInternalSync).apply()
+            prefs.edit()
+                .putBoolean("sync_source_internal", useInternalSync)
+                .apply()
             
             // Refresh list if visible
             checkCalendarPermission()
@@ -709,13 +693,18 @@ class TapasyaActivity : BaseActivity() {
 
     private fun observeClockState() {
         lifecycleScope.launch {
-            TapasyaService.clockState.collectLatest { state ->
-                updateUI(state)
+            // Wait until activity is RESUMED, then start polling
+            // repeatOnLifecycle will restart this block every time the lifecycle reaches RESUMED
+            lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+                while (true) {
+                    updateUI(TapasyaManager.getCurrentState(this@TapasyaActivity))
+                    kotlinx.coroutines.delay(500)
+                }
             }
         }
     }
 
-    private fun updateUI(state: TapasyaService.ClockState) {
+    private fun updateUI(state: TapasyaManager.ClockState) {
         binding.tvTimer.text = formatTime(state.elapsedTimeMs)
         
         // Update Wave View
@@ -801,12 +790,7 @@ class TapasyaActivity : BaseActivity() {
         return typedValue.data
     }
 
-    private fun sendServiceAction(action: String) {
-        val intent = Intent(this, TapasyaService::class.java).apply {
-            this.action = action
-        }
-        startService(intent)
-    }
+    // sendServiceAction removed — TapasyaManager methods called directly
 
     private fun formatTime(ms: Long): String {
         val totalSecs = ms / 1000

@@ -403,9 +403,10 @@ class MainActivity : BaseActivity() {
             val popup = android.widget.PopupMenu(this, view)
             popup.menu.add(0, 5, 0, "❤️ Health Dashboard")
             popup.menu.add(0, 6, 1, "🎨 Appearance")
-            popup.menu.add(0, 2, 2, "📖 User Manual")
-            popup.menu.add(0, 3, 3, "📱 About Reality")
-            popup.menu.add(0, 1, 4, "🌐 Reality Website")
+            popup.menu.add(0, 7, 2, "☁️ Backup & Restore")
+            popup.menu.add(0, 2, 3, "📖 User Manual")
+            popup.menu.add(0, 3, 4, "📱 About Reality")
+            popup.menu.add(0, 1, 5, "🌐 Reality Website")
             
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
@@ -422,6 +423,11 @@ class MainActivity : BaseActivity() {
                     6 -> {
                         // Appearance Page
                         startActivity(Intent(this, AppearanceActivity::class.java))
+                        true
+                    }
+                    7 -> {
+                        // Backup & Restore
+                        startActivity(Intent(this, BackupRestoreActivity::class.java))
                         true
                     }
                     2 -> {
@@ -830,6 +836,7 @@ class MainActivity : BaseActivity() {
                     // Update XP/streak/level
                     binding.tvTotalXp.text = liveStats.totalXP.toString()
                     binding.tvTodayXp.text = if (liveStats.todayXP >= 0) "+${liveStats.todayXP}" else "${liveStats.todayXP}"
+                    binding.tvProjectedXp.text = liveStats.projectedXP.toString()
                     binding.tvStreak.text = liveStats.streak.toString()
                     binding.tvLevel.text = liveStats.level.toString()
                     

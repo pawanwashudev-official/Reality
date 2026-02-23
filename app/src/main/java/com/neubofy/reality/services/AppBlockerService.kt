@@ -97,9 +97,12 @@ class AppBlockerService : BaseBlockingService() {
     private val selectedLearningKeywords = mutableListOf<String>()
     private var lastWindowClassName: String = ""
     private var lastWindowPackage: String = ""
+    private var lastSettingsContentHash: String = ""  // Detects actual page change vs scroll
+    private var lastContentChangedCheck: Long = 0L     // Debounce for TYPE_WINDOW_CONTENT_CHANGED
     var learnedSettingsPages = Constants.LearnedSettingsPages()
     private var currentCustomPageName: String = ""
     private var wasDndEnabledByApp = false
+    private var wasSleepEnabledByApp = false
 
 
     private val refreshReceiver = object : BroadcastReceiver() {
@@ -197,22 +200,8 @@ class AppBlockerService : BaseBlockingService() {
             // This is the key optimization - don't do ANY work unless protection is ON
             if (isSettingsPackage && isNewPage && !isLearningMode && 
                 com.neubofy.reality.utils.SettingsBox.isAnyProtectionActive()) {
-                // Small delay to let content load for ambiguous pages
-                // 50ms delay
-                handler.postDelayed({
-                    val rootNode = try { rootInActiveWindow } catch (e: Exception) { null }
-                    if (rootNode != null) {
-                        serviceScope.launch {
-                            try {
-                                handleStrictSettingsProtection(rootNode)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            } finally {
-                                try { rootNode.recycle() } catch (e: Exception) {}
-                            }
-                        }
-                    }
-                }, 50)
+                lastSettingsContentHash = "" // Reset content hash for new page
+                scheduleSettingsProtectionCheck(className, pkg)
             }
             
             // Log only Settings-related packages (only if protection active)
@@ -223,6 +212,31 @@ class AppBlockerService : BaseBlockingService() {
             // Update learning overlay when user navigates
             if (isLearningMode && learnOverlay != null) {
                 handler.post { updateLearnOverlayText() }
+            }
+        }
+        
+        // === CONTENT CHANGED: Catches SubSettings→SubSettings navigation ===
+        // When navigating between pages that share the same class (SubSettings),
+        // TYPE_WINDOW_STATE_CHANGED doesn't fire with a new className.
+        // But TYPE_WINDOW_CONTENT_CHANGED fires when the content updates.
+        if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+            val pkg = event.packageName?.toString() ?: ""
+            val isSettingsPackage = pkg.contains("settings") || pkg.contains("securitycenter")
+            
+            if (isSettingsPackage && !isLearningMode && 
+                com.neubofy.reality.utils.SettingsBox.isAnyProtectionActive()) {
+                // Debounce: max once per 500ms
+                val now = System.currentTimeMillis()
+                if (now - lastContentChangedCheck > 500) {
+                    lastContentChangedCheck = now
+                    // Content hash: only re-check if page content actually changed (not scroll/click)
+                    val currentHash = getQuickContentHash()
+                    if (currentHash.isNotEmpty() && currentHash != lastSettingsContentHash) {
+                        lastSettingsContentHash = currentHash
+                        com.neubofy.reality.utils.TerminalLogger.log("SETTINGS: Content changed (SubSettings navigation detected)")
+                        scheduleSettingsProtectionCheck(lastWindowClassName, lastWindowPackage, delay = 100)
+                    }
+                }
             }
         }
         
@@ -475,6 +489,22 @@ class AppBlockerService : BaseBlockingService() {
                         }
                     }
                     
+                    // === REALITY SLEEP MODE SYNC (Android 15+, BEDTIME ONLY) ===
+                    if (savedPreferencesLoader.isRealitySleepEnabled() && com.neubofy.reality.utils.ZenModeManager.isSupported()) {
+                        val isBedtime = com.neubofy.reality.utils.BlockCache.isBedtimeCurrentlyActive
+                        if (isBedtime) {
+                            if (!wasSleepEnabledByApp) {
+                                com.neubofy.reality.utils.ZenModeManager.setZenState(applicationContext, true)
+                                wasSleepEnabledByApp = true
+                            }
+                        } else {
+                            if (wasSleepEnabledByApp) {
+                                com.neubofy.reality.utils.ZenModeManager.setZenState(applicationContext, false)
+                                wasSleepEnabledByApp = false
+                            }
+                        }
+                    }
+                    
                     // === GRAYSCALE REMOVED - feature requires ADB ===
                 }
             } catch (e: Exception) {
@@ -524,6 +554,79 @@ class AppBlockerService : BaseBlockingService() {
     // === STRICT MODE INSTANT BLOCKING ===
     private var strictOverlay: android.widget.TextView? = null
     private var lastStrictBlockTime = 0L
+    
+    /**
+     * Extracts a quick hash of the page's top-level text content.
+     * Used to detect actual page changes (different content) vs scroll/click (same content).
+     * Only reads the first 8 text nodes for speed.
+     */
+    private fun getQuickContentHash(): String {
+        val rootNode = try { rootInActiveWindow } catch (e: Exception) { null } ?: return ""
+        try {
+            val sb = StringBuilder()
+            val queue = ArrayDeque<android.view.accessibility.AccessibilityNodeInfo>()
+            queue.add(rootNode)
+            var count = 0
+            while (queue.isNotEmpty() && count < 8) {
+                val node = queue.removeFirst()
+                node.text?.let { 
+                    sb.append(it.toString().take(20))
+                    count++
+                }
+                for (i in 0 until node.childCount.coerceAtMost(5)) {
+                    try { node.getChild(i)?.let { queue.add(it) } } catch (_: Exception) {}
+                }
+            }
+            return sb.toString().hashCode().toString()
+        } catch (e: Exception) {
+            return ""
+        } finally {
+            try { rootNode.recycle() } catch (_: Exception) {}
+        }
+    }
+    
+    /**
+     * Schedule protection check with given delay. Supports two passes:
+     * - Fast pass at 50ms for instant unique-class blocks
+     * - Retry at 300ms for keyword-required pages where content wasn't loaded  
+     */
+    private fun scheduleSettingsProtectionCheck(className: String, pkg: String, delay: Long = 50L) {
+        // PASS 1
+        handler.postDelayed({
+            val rootNode = try { rootInActiveWindow } catch (e: Exception) { null }
+            if (rootNode != null) {
+                serviceScope.launch {
+                    try {
+                        handleStrictSettingsProtection(rootNode)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    } finally {
+                        try { rootNode.recycle() } catch (e: Exception) {}
+                    }
+                }
+            }
+        }, delay)
+        
+        // PASS 2: Retry for keyword-required pages (only on initial trigger, not content-change retrigger)
+        if (delay == 50L) {
+            handler.postDelayed({
+                if (className == lastWindowClassName && pkg == lastWindowPackage) {
+                    val rootNode2 = try { rootInActiveWindow } catch (e: Exception) { null }
+                    if (rootNode2 != null) {
+                        serviceScope.launch {
+                            try {
+                                handleStrictSettingsProtection(rootNode2)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            } finally {
+                                try { rootNode2.recycle() } catch (e: Exception) {}
+                            }
+                        }
+                    }
+                }
+            }, 300)
+        }
+    }
     
     /**
      * SETTINGS BOX POWERED PROTECTION
