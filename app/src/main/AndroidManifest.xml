@@ -106,6 +106,13 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.Reality" />
         <activity
+            android:name=".ui.activity.WakeupAlarmActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality.NoActionBar"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            android:launchMode="singleTop" />
+        <activity
             android:name=".ui.activity.AppearanceActivity"
             android:exported="false"
             android:label="Appearance"

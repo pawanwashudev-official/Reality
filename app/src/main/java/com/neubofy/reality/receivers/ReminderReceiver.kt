@@ -32,6 +32,7 @@ class ReminderReceiver : BroadcastReceiver() {
         val url = intent.getStringExtra("url")
         val mins = intent.getIntExtra("mins", 0)
         val type = intent.getStringExtra("type") ?: "ALARM" // Default to ALARM
+        val source = intent.getStringExtra("source") ?: "MANUAL"
 
         TerminalLogger.log("ALARM: Waking up for $type: $title")
         
@@ -70,6 +71,15 @@ class ReminderReceiver : BroadcastReceiver() {
             return
         }
 
+        val isWakeupAlarm = (id == "nightly_wakeup" || source == "NIGHTLY" || id.startsWith("snooze_nightly_wakeup"))
+
+        // Extract snooze settings from intent (snapshotted from reminder)
+        // If it's a nightly wakeup, enforce that snooze is disabled
+        val snoozeEnabled = if (isWakeupAlarm) false else intent.getBooleanExtra("snoozeEnabled", true)
+        val snoozeIntervalMins = intent.getIntExtra("snoozeIntervalMins", 5)
+        val autoSnoozeEnabled = if (isWakeupAlarm) false else intent.getBooleanExtra("autoSnoozeEnabled", true)
+        val autoSnoozeTimeoutSecs = intent.getIntExtra("autoSnoozeTimeoutSecs", 30)
+
         // HEAVY ALARM LOGIC (WakeLock + Service)
         // Acquire WakeLock (Force Screen Wake)
         val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -78,13 +88,6 @@ class ReminderReceiver : BroadcastReceiver() {
             "Reality:ReminderWakeLock"
         )
         wakeLock.acquire(10_000L) // 10s to ensure service starts
-
-        // Extract snooze settings from intent (snapshotted from reminder)
-        val snoozeEnabled = intent.getBooleanExtra("snoozeEnabled", true)
-        val snoozeIntervalMins = intent.getIntExtra("snoozeIntervalMins", 5)
-        val autoSnoozeEnabled = intent.getBooleanExtra("autoSnoozeEnabled", true)
-        val autoSnoozeTimeoutSecs = intent.getIntExtra("autoSnoozeTimeoutSecs", 30)
-        val source = intent.getStringExtra("source") ?: "MANUAL"
 
         // Start Alarm Service (Foreground - Guaranteed Sound)
         val serviceIntent = Intent(context, AlarmService::class.java).apply {
@@ -154,7 +157,8 @@ class ReminderReceiver : BroadcastReceiver() {
              // Swipe or Auto-timeout -> Auto Snooze (Safety Net)
              TerminalLogger.log("ALARM: Notification Dismissed (Swipe) -> Auto-Snoozing...")
              
-             val autoSnoozeEnabled = intent.getBooleanExtra("autoSnoozeEnabled", true)
+             val isWakeupAlarm = (id == "nightly_wakeup" || sourceName == "NIGHTLY" || id.startsWith("snooze_nightly_wakeup"))
+             val autoSnoozeEnabled = if (isWakeupAlarm) false else intent.getBooleanExtra("autoSnoozeEnabled", true)
              if (autoSnoozeEnabled) {
                  val title = intent.getStringExtra("title") ?: "Reminder"
                  val url = intent.getStringExtra("url")
@@ -162,6 +166,29 @@ class ReminderReceiver : BroadcastReceiver() {
                  
                  // Pass source for proper dismissal handling later
                  AlarmScheduler.scheduleSnooze(context, originalId, title, url, snoozeIntervalMins, sourceName)
+             } else if (isWakeupAlarm) {
+                 // Restart the alarm immediately if the wake up alarm notification is somehow dismissed!
+                 TerminalLogger.log("ALARM: Wakeup alarm dismissed. Ringing again since QR was not scanned!")
+
+                 // We don't snooze. We fire the alarm right away again
+                 val serviceIntent = Intent(context, AlarmService::class.java).apply {
+                     putExtra("id", originalId)
+                     putExtra("title", intent.getStringExtra("title") ?: "Wake Up!")
+                     putExtra("url", intent.getStringExtra("url"))
+                     putExtra("mins", 0)
+                     putExtra("source", sourceName)
+                     putExtra("snoozeEnabled", false)
+                     putExtra("autoSnoozeEnabled", false)
+                 }
+                 try {
+                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                         context.startForegroundService(serviceIntent)
+                     } else {
+                         context.startService(serviceIntent)
+                     }
+                 } catch (e: Exception) {
+                     e.printStackTrace()
+                 }
              }
          }
     }

@@ -103,8 +103,39 @@ class HealthDashboardActivity : AppCompatActivity() {
                 showResetSleepSyncDialog()
                 true
             }
+            R.id.action_smart_sleep_settings -> {
+                showSmartSleepSettingsDialog()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun showSmartSleepSettingsDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_smart_sleep_settings, null)
+        val etTimeout = dialogView.findViewById<android.widget.EditText>(R.id.etSnoozeTimeout)
+        val etInterval = dialogView.findViewById<android.widget.EditText>(R.id.etSnoozeInterval)
+
+        val prefs = getSharedPreferences("nightly_prefs", android.content.Context.MODE_PRIVATE)
+        etTimeout.setText(prefs.getInt("smart_sleep_timeout_secs", 30).toString())
+        etInterval.setText(prefs.getInt("smart_sleep_snooze_mins", 3).toString())
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Smart Sleep Settings")
+            .setView(dialogView)
+            .setPositiveButton("Save") { _, _ ->
+                val timeout = etTimeout.text.toString().toIntOrNull() ?: 30
+                val interval = etInterval.text.toString().toIntOrNull() ?: 3
+
+                prefs.edit()
+                    .putInt("smart_sleep_timeout_secs", timeout.coerceAtLeast(10))
+                    .putInt("smart_sleep_snooze_mins", interval.coerceAtLeast(1))
+                    .apply()
+
+                Toast.makeText(this, "Settings Saved", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun showResetSleepSyncDialog() {

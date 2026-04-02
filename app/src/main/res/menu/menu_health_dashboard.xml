@@ -16,4 +16,9 @@
         android:icon="@drawable/baseline_delete_24"
         android:title="Delete Data"
         app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_smart_sleep_settings"
+        android:icon="@drawable/baseline_settings_24"
+        android:title="Smart Sleep Settings"
+        app:showAsAction="never" />
 </menu>
