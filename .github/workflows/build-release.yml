@@ -49,6 +49,7 @@ jobs:
           echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> local.properties
           echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> local.properties
           echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> local.properties
+          echo "WEB_CLIENT_ID=${{ secrets.WEB_CLIENT_ID }}" >> local.properties
 
       - name: Build and Sign Release APK
         run: ./gradlew assembleRelease
