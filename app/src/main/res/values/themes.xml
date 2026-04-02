@@ -95,6 +95,10 @@
         <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
     
+    <style name="Theme.Reality.NoActionBar" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Add properties if necessary, just inheriting from DayNight to have no action bar -->
+    </style>
+
     <!-- Back Button Style -->
     <style name="RealityBackButton">
         <item name="android:layout_width">44dp</item>

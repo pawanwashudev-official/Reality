@@ -79,7 +79,11 @@ class AlarmService : Service() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        val fullScreenIntent = Intent(this, AlarmActivity::class.java).apply {
+        val isWakeupAlarm = (id == "nightly_wakeup" || source == "NIGHTLY" || id.startsWith("snooze_nightly_wakeup"))
+
+        val targetActivity = if (isWakeupAlarm) com.neubofy.reality.ui.activity.WakeupAlarmActivity::class.java else AlarmActivity::class.java
+
+        val fullScreenIntent = Intent(this, targetActivity).apply {
             this.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("id", id)
             putExtra("title", title)
@@ -101,15 +105,15 @@ class AlarmService : Service() {
         )
 
         return NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.baseline_access_time_24)
-            .setContentTitle("Time to Focus")
+            .setSmallIcon(if (isWakeupAlarm) R.drawable.baseline_wb_sunny_24 else R.drawable.baseline_access_time_24)
+            .setContentTitle(if (isWakeupAlarm) "Time to Wake Up" else "Time to Focus")
             .setContentText(title)
             .setPriority(NotificationCompat.PRIORITY_MAX) // Max priority for Alarm
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setFullScreenIntent(fullScreenPendingIntent, true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setOngoing(false) // Changed to false so it can be dismissed to trigger deleteIntent
-            .setDeleteIntent(getDeleteIntent(id, title, mins, url, snoozeEnabled, snoozeIntervalMins, autoSnoozeEnabled, autoSnoozeTimeoutSecs, source))
+            .setOngoing(isWakeupAlarm) // Wake up alarm should be ongoing to prevent dismissal without QR
+            .setDeleteIntent(if (isWakeupAlarm) null else getDeleteIntent(id, title, mins, url, snoozeEnabled, snoozeIntervalMins, autoSnoozeEnabled, autoSnoozeTimeoutSecs, source))
             .build()
     }
 
