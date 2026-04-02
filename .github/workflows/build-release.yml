@@ -31,6 +31,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Decode client_secret.json
+        id: decode_client_secret
         uses: timheuer/base64-to-file@v1.2
         with:
           fileName: 'client_secret.json'
@@ -39,7 +40,7 @@ jobs:
       - name: Copy client_secret.json to assets
         run: |
           mkdir -p app/src/main/assets
-          cp ${{ env.BASE64_TO_FILE }} app/src/main/assets/client_secret.json
+          cp ${{ steps.decode_client_secret.outputs.filePath }} app/src/main/assets/client_secret.json
 
       - name: Decode Keystore
         id: decode_keystore
