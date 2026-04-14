@@ -134,11 +134,6 @@ class MainActivity : BaseActivity() {
         // Permissions are now requested on-demand.
         
         // Observe Terminal Logs
-        scope.launch {
-            com.neubofy.reality.utils.TerminalLogger.logs.collect { logText ->
-                binding.tvTerminalLog.text = logText
-            }
-        }
         
         // Handle deep link actions (from Alarm dismiss, etc.)
         handleIntentAction(intent)
@@ -473,11 +468,6 @@ class MainActivity : BaseActivity() {
         binding.cardGroupLimits.setOnClickListener {
              val intent = Intent(this, GroupLimitsActivity::class.java)
              startActivity(intent, options.toBundle())
-        }
-        
-        // Terminal Clear
-        binding.btnTerminalClear.setOnClickListener {
-            com.neubofy.reality.utils.TerminalLogger.clear()
         }
 
         // Focus Mode Button - FIXED
@@ -1135,15 +1125,7 @@ class MainActivity : BaseActivity() {
     
     private fun updateTerminalLogVisibility() {
         val appPrefs = getSharedPreferences("reality_prefs", MODE_PRIVATE)
-        val showTerminalLog = appPrefs.getBoolean("show_terminal_log", true) // Default ON
         
-        // Find the terminal log card parent (it's inside ScrollView > LinearLayout)
-        // The terminal card is at the bottom of the layout
-        binding.tvTerminalLog.parent?.parent?.parent?.let { terminalCard ->
-            if (terminalCard is android.view.View) {
-                terminalCard.visibility = if (showTerminalLog) android.view.View.VISIBLE else android.view.View.GONE
-            }
-        }
     }
 
     private fun checkAndShowSleepVerification() {

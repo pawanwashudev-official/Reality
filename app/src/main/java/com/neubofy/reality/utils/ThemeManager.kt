@@ -77,6 +77,87 @@ object ThemeManager {
     private const val KEY_SHIMMER_ENABLED = "shimmer_enabled"   // Boolean
     
     // Predefined accent color options with their theme resource IDs
+
+    enum class ThemePreset(val displayName: String) {
+        MINIMALIST("Minimalist"),
+        GLASSMORPHISM("Glassmorphism"),
+        ELITE("Elite"),
+        COMPACT("Compact"),
+        VIBRANT("Vibrant");
+
+        companion object {
+            fun fromName(name: String): ThemePreset {
+                return entries.find { it.name == name } ?: GLASSMORPHISM
+            }
+        }
+    }
+
+    private const val KEY_THEME_PRESET = "theme_preset"
+
+    fun getThemePreset(context: Context): ThemePreset {
+        val name = getPrefs(context).getString(KEY_THEME_PRESET, ThemePreset.GLASSMORPHISM.name) ?: ThemePreset.GLASSMORPHISM.name
+        return ThemePreset.fromName(name)
+    }
+
+    fun setThemePreset(context: Context, preset: ThemePreset) {
+        getPrefs(context).edit().putString(KEY_THEME_PRESET, preset.name).apply()
+        applyPresetConfiguration(context, preset)
+    }
+
+    private fun applyPresetConfiguration(context: Context, preset: ThemePreset) {
+        when (preset) {
+            ThemePreset.MINIMALIST -> {
+                setBackgroundPattern(context, BackgroundPattern.NONE)
+                setGlassIntensity(context, GlassIntensity.SUBTLE)
+                setCornerRadius(context, 8)
+                setNoiseIntensity(context, 0.0f)
+                setHapticLevel(context, HapticLevel.SOFT)
+                setMotionPreset(context, MotionPreset.STIFF)
+                setCardStyle(context, CardStyle.FILLED)
+            }
+            ThemePreset.GLASSMORPHISM -> {
+                setBackgroundPattern(context, BackgroundPattern.ZEN)
+                setGlassIntensity(context, GlassIntensity.LIGHT)
+                setCornerRadius(context, 16)
+                setNoiseIntensity(context, 0.05f)
+                setHapticLevel(context, HapticLevel.MEDIUM)
+                setMotionPreset(context, MotionPreset.FLUID)
+                setCardStyle(context, CardStyle.GLASS)
+            }
+            ThemePreset.ELITE -> {
+                setBackgroundPattern(context, BackgroundPattern.ZEN)
+                setGlassIntensity(context, GlassIntensity.STRONG)
+                setCornerRadius(context, 24)
+                setNoiseIntensity(context, 0.3f)
+                setHapticLevel(context, HapticLevel.HEAVY)
+                setMotionPreset(context, MotionPreset.BOUNCY)
+                setCardStyle(context, CardStyle.OUTLINED)
+            }
+            ThemePreset.COMPACT -> {
+                setBackgroundPattern(context, BackgroundPattern.NONE)
+                setGlassIntensity(context, GlassIntensity.SUBTLE)
+                setCornerRadius(context, 4)
+                setSpacingScale(context, 0.8f)
+                setNoiseIntensity(context, 0.0f)
+                setHapticLevel(context, HapticLevel.OFF)
+                setMotionPreset(context, MotionPreset.FAST)
+                setCardStyle(context, CardStyle.FILLED)
+                setCompactMode(context, true)
+            }
+            ThemePreset.VIBRANT -> {
+                setBackgroundPattern(context, BackgroundPattern.ZEN)
+                setGlassIntensity(context, GlassIntensity.MEDIUM)
+                setCornerRadius(context, 16)
+                setNoiseIntensity(context, 0.1f)
+                setHapticLevel(context, HapticLevel.SHARP)
+                setMotionPreset(context, MotionPreset.FLUID)
+                setCardStyle(context, CardStyle.GLASS)
+                // Assuming setting a vibrant accent color here would be intrusive,
+                // we leave accent color to be independent of the structural preset.
+            }
+        }
+    }
+
     enum class AccentColor(
         val displayName: String, 
         val primaryColor: Int, 

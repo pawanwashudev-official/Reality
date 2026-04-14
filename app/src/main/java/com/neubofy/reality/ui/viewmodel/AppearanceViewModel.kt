@@ -19,6 +19,7 @@ class AppearanceViewModel(private val context: Context) : ViewModel() {
 
     fun loadCurrentState() {
         _themeState.value = ThemeState(
+            themePreset = ThemeManager.getThemePreset(context),
             accentColor = ThemeManager.getAccentColor(context),
             darkModeOption = ThemeManager.getDarkMode(context),
             backgroundPattern = ThemeManager.getBackgroundPattern(context),
@@ -56,6 +57,13 @@ class AppearanceViewModel(private val context: Context) : ViewModel() {
     fun setShimmerEnabled(enabled: Boolean) {
         _themeState.value = _themeState.value.copy(shimmerEnabled = enabled)
         ThemeManager.setShimmerEnabled(context, enabled)
+    }
+
+
+    fun setThemePreset(preset: ThemeManager.ThemePreset) {
+        _themeState.value = _themeState.value.copy(themePreset = preset)
+        ThemeManager.setThemePreset(context, preset)
+        loadCurrentState() // Reload other values that the preset changed
     }
 
     fun setAccentColor(accent: ThemeManager.AccentColor) {
@@ -124,6 +132,7 @@ class AppearanceViewModel(private val context: Context) : ViewModel() {
     }
 
     data class ThemeState(
+        val themePreset: ThemeManager.ThemePreset = ThemeManager.ThemePreset.GLASSMORPHISM,
         val accentColor: ThemeManager.AccentColor = ThemeManager.AccentColor.TEAL,
         val darkModeOption: ThemeManager.DarkModeOption = ThemeManager.DarkModeOption.SYSTEM,
         val backgroundPattern: ThemeManager.BackgroundPattern = ThemeManager.BackgroundPattern.ZEN,
