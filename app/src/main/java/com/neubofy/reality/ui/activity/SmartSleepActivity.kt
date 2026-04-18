@@ -58,6 +58,17 @@ class SmartSleepActivity : AppCompatActivity() {
         }
     }
 
+
+    private var selectedRingtoneUri: String? = null
+
+    private val ringtonePickerLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val uri: android.net.Uri? = result.data?.getParcelableExtra(android.media.RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+            selectedRingtoneUri = uri?.toString()
+            Toast.makeText(this, "Ringtone Selected", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private val healthPermissionLauncher = HealthPermissionManager.requestPermissionsLauncher(this) { granted ->
         if (granted.containsAll(HealthPermissionManager.REQUIRED_PERMISSIONS)) {
             binding.root.visibility = View.VISIBLE
@@ -233,6 +244,7 @@ class SmartSleepActivity : AppCompatActivity() {
 
         var selectedHour = existingAlarm?.hour ?: 7
         var selectedMinute = existingAlarm?.minute ?: 0
+        selectedRingtoneUri = existingAlarm?.ringtoneUri
 
         tvWakeTime.text = String.format("%02d:%02d", selectedHour, selectedMinute)
         etAlarmName.setText(existingAlarm?.title ?: "Wake Up")
@@ -254,6 +266,22 @@ class SmartSleepActivity : AppCompatActivity() {
             picker.show(supportFragmentManager, "alarm_time_picker")
         }
 
+        val btnSelectRingtone = dialogView.findViewById<com.google.android.material.button.MaterialButton>(com.neubofy.reality.R.id.btnSelectRingtone)
+        btnSelectRingtone.setOnClickListener {
+            val intent = android.content.Intent(android.media.RingtoneManager.ACTION_RINGTONE_PICKER)
+            intent.putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_TYPE, android.media.RingtoneManager.TYPE_ALARM)
+            intent.putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+            intent.putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+
+            if (selectedRingtoneUri != null) {
+                intent.putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, android.net.Uri.parse(selectedRingtoneUri))
+            } else {
+                intent.putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM))
+            }
+
+            ringtonePickerLauncher.launch(intent)
+        }
+
         btnCancel.setOnClickListener { dialog.dismiss() }
         btnSave.setOnClickListener {
             val title = etAlarmName.text.toString().ifEmpty { "Wake Up" }
@@ -266,6 +294,7 @@ class SmartSleepActivity : AppCompatActivity() {
                 minute = selectedMinute,
                 isEnabled = true,
                 repeatDays = emptyList(),
+                ringtoneUri = selectedRingtoneUri,
                 vibrationEnabled = swVibration.isChecked,
                 snoozeIntervalMins = 3,
                 maxAttempts = 5,
@@ -320,7 +349,7 @@ class SmartSleepActivity : AppCompatActivity() {
             val interval = alarm?.snoozeIntervalMins ?: 3
             val maxAttempts = alarm?.maxAttempts ?: 5
 
-            com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleSnooze(this, alarmId ?: "nightly_wakeup", alarm?.title ?: "Wake Up", maxAttempts, interval)
+            com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleSnooze(this, alarmId ?: "nightly_wakeup", alarm?.title ?: "Wake Up", maxAttempts, interval, alarm?.ringtoneUri, alarm?.vibrationEnabled ?: true)
 
             // Stop Service
             val stopIntent = android.content.Intent(this, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {

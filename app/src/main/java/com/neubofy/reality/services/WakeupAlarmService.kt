@@ -34,6 +34,8 @@ class WakeupAlarmService : Service() {
     private var alarmTitle: String? = null
     private var maxAttempts = 5
     private var snoozeInterval = 3
+    private var ringtoneUri: String? = null
+    private var vibrationEnabled = true
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -49,6 +51,8 @@ class WakeupAlarmService : Service() {
         alarmTitle = intent?.getStringExtra("title") ?: "Wake Up"
         maxAttempts = intent?.getIntExtra("maxAttempts", 5) ?: 5
         snoozeInterval = intent?.getIntExtra("snoozeInterval", 3) ?: 3
+        ringtoneUri = intent?.getStringExtra("ringtoneUri")
+        vibrationEnabled = intent?.getBooleanExtra("vibrationEnabled", true) ?: true
 
         startForeground(NOTIFICATION_ID, buildNotification())
         startAlarm()
@@ -93,7 +97,11 @@ class WakeupAlarmService : Service() {
 
     private fun startAlarm() {
         try {
-            val alarmUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            val alarmUri: Uri = if (ringtoneUri != null && ringtoneUri!!.isNotEmpty()) {
+                Uri.parse(ringtoneUri)
+            } else {
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            }
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(applicationContext, alarmUri)
                 setAudioAttributes(
@@ -108,12 +116,14 @@ class WakeupAlarmService : Service() {
                 start()
             }
 
-            vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val effect = VibrationEffect.createWaveform(longArrayOf(0, 500, 500), 0)
-                vibrator?.vibrate(effect)
-            } else {
-                vibrator?.vibrate(longArrayOf(0, 500, 500), 0)
+            if (vibrationEnabled) {
+                vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val effect = VibrationEffect.createWaveform(longArrayOf(0, 500, 500), 0)
+                    vibrator?.vibrate(effect)
+                } else {
+                    vibrator?.vibrate(longArrayOf(0, 500, 500), 0)
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -133,7 +143,7 @@ class WakeupAlarmService : Service() {
 
     private fun autoSnooze() {
         alarmId?.let { id ->
-            WakeupAlarmScheduler.scheduleSnooze(this, id, alarmTitle ?: "Wake Up", maxAttempts, snoozeInterval)
+            WakeupAlarmScheduler.scheduleSnooze(this, id, alarmTitle ?: "Wake Up", maxAttempts, snoozeInterval, ringtoneUri, vibrationEnabled)
         }
         stopAlarm()
         stopForeground(true)

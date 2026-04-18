@@ -15,6 +15,8 @@ class WakeupAlarmReceiver : BroadcastReceiver() {
         val maxAttempts = intent.getIntExtra("maxAttempts", 5)
         val snoozeInterval = intent.getIntExtra("snoozeInterval", 3)
         val isSnooze = intent.getBooleanExtra("isSnooze", false)
+        val ringtoneUri = intent.getStringExtra("ringtoneUri")
+        val vibrationEnabled = intent.getBooleanExtra("vibrationEnabled", true)
 
         val fireCount = if (isSnooze) FiredEventsCache.incrementFireCount(context, "wakeup_$id") else {
             FiredEventsCache.markAsFired(context, "wakeup_$id")
@@ -39,6 +41,8 @@ class WakeupAlarmReceiver : BroadcastReceiver() {
             putExtra("title", title)
             putExtra("maxAttempts", maxAttempts)
             putExtra("snoozeInterval", snoozeInterval)
+            putExtra("ringtoneUri", ringtoneUri)
+            putExtra("vibrationEnabled", vibrationEnabled)
         }
 
         try {

@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Build
 import com.neubofy.reality.receivers.WakeupAlarmReceiver
 import java.util.Calendar
+import com.neubofy.reality.utils.TerminalLogger
 
 object WakeupAlarmScheduler {
 
@@ -30,6 +31,8 @@ object WakeupAlarmScheduler {
         var nextAlarmTitle = ""
         var maxAttempts = 5
         var snoozeInterval = 3
+        var ringtoneUri: String? = null
+        var vibrationEnabled = true
 
         val now = Calendar.getInstance()
         val currentMins = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
@@ -65,6 +68,8 @@ object WakeupAlarmScheduler {
                 nextAlarmTitle = alarm.title
                 maxAttempts = alarm.maxAttempts
                 snoozeInterval = alarm.snoozeIntervalMins
+                ringtoneUri = alarm.ringtoneUri
+                vibrationEnabled = alarm.vibrationEnabled
             }
         }
 
@@ -74,6 +79,8 @@ object WakeupAlarmScheduler {
                 putExtra("title", nextAlarmTitle)
                 putExtra("maxAttempts", maxAttempts)
                 putExtra("snoozeInterval", snoozeInterval)
+                putExtra("ringtoneUri", ringtoneUri)
+                putExtra("vibrationEnabled", vibrationEnabled)
             }
             val pendingIntent = PendingIntent.getBroadcast(
                 context, 1001, intent,
@@ -83,13 +90,15 @@ object WakeupAlarmScheduler {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 val acInfo = AlarmManager.AlarmClockInfo(nextAlarmTime, pendingIntent)
                 alarmManager.setAlarmClock(acInfo, pendingIntent)
+                TerminalLogger.log("WAKEUP ALARM: Scheduled next exact alarm")
             } else {
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, nextAlarmTime, pendingIntent)
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextAlarmTime, pendingIntent)
+                TerminalLogger.log("WAKEUP ALARM: Scheduled next exact alarm")
             }
         }
     }
 
-    fun scheduleSnooze(context: Context, id: String, title: String, maxAttempts: Int, snoozeIntervalMins: Int) {
+    fun scheduleSnooze(context: Context, id: String, title: String, maxAttempts: Int, snoozeIntervalMins: Int, ringtoneUri: String?, vibrationEnabled: Boolean) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, WakeupAlarmReceiver::class.java).apply {
             putExtra("id", id)
@@ -97,6 +106,8 @@ object WakeupAlarmScheduler {
             putExtra("maxAttempts", maxAttempts)
             putExtra("snoozeInterval", snoozeIntervalMins)
             putExtra("isSnooze", true)
+            putExtra("ringtoneUri", ringtoneUri)
+            putExtra("vibrationEnabled", vibrationEnabled)
         }
         val triggerTime = System.currentTimeMillis() + (snoozeIntervalMins * 60 * 1000L)
         val pendingIntent = PendingIntent.getBroadcast(
@@ -107,8 +118,9 @@ object WakeupAlarmScheduler {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val acInfo = AlarmManager.AlarmClockInfo(triggerTime, pendingIntent)
             alarmManager.setAlarmClock(acInfo, pendingIntent)
+                TerminalLogger.log("WAKEUP ALARM: Scheduled next exact alarm")
         } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
         }
     }
 
