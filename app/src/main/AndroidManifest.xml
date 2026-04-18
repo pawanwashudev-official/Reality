@@ -544,7 +544,7 @@
             <receiver
             android:name=".receivers.WakeupAlarmReceiver"
             android:exported="false" />
-        <service android:name=".services.WakeupAlarmService" />
+        <service android:name=".services.WakeupAlarmService" android:foregroundServiceType="mediaPlayback" />
 
     </application>
 

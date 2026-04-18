@@ -75,7 +75,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
+                        <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardAlarmSettings"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -109,55 +109,37 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:layout_marginStart="8dp"
-                            android:text="Wake Up Alarm"
+                            android:text="Wake Up Alarms"
                             android:textSize="16sp"
                             android:textStyle="bold"
                             android:textColor="?attr/colorOnSurface"/>
 
                         <ImageButton
-                            android:id="@+id/btnSetupAlarm"
+                            android:id="@+id/btnRecycleBin"
                             android:layout_width="48dp"
                             android:layout_height="48dp"
-                            android:src="@drawable/baseline_settings_24"
+                            android:src="@drawable/baseline_delete_outline_24"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            app:tint="?attr/colorOnSurfaceVariant"
+                            android:contentDescription="Recycle Bin" />
+
+                        <ImageButton
+                            android:id="@+id/btnAddAlarm"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/baseline_add_24"
                             android:background="?attr/selectableItemBackgroundBorderless"
                             app:tint="?attr/colorPrimary"
-                            android:contentDescription="Setup Alarm" />
+                            android:contentDescription="Add Alarm" />
                     </LinearLayout>
 
-                    <LinearLayout
-                        android:id="@+id/llAlarmInfo"
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvWakeupAlarms"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:visibility="gone"
-                        android:layout_marginTop="8dp">
-
-                        <TextView
-                            android:id="@+id/tvAlarmTime"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="07:00"
-                            android:textSize="24sp"
-                            android:textStyle="bold"
-                            android:textColor="?attr/colorOnSurface"/>
-
-                        <TextView
-                            android:id="@+id/tvAlarmName"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:layout_gravity="center_vertical"
-                            android:text="Wake Up"
-                            android:textSize="14sp"
-                            android:textColor="?attr/colorOnSurfaceVariant"/>
-
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/swAlarmEnabled"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:checked="true"/>
-                    </LinearLayout>
+                        android:layout_marginTop="8dp"
+                        android:nestedScrollingEnabled="false"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
