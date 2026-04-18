@@ -90,11 +90,10 @@ object WakeupAlarmScheduler {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 val acInfo = AlarmManager.AlarmClockInfo(nextAlarmTime, pendingIntent)
                 alarmManager.setAlarmClock(acInfo, pendingIntent)
-                TerminalLogger.log("WAKEUP ALARM: Scheduled next exact alarm")
             } else {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextAlarmTime, pendingIntent)
-                TerminalLogger.log("WAKEUP ALARM: Scheduled next exact alarm")
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, nextAlarmTime, pendingIntent)
             }
+            TerminalLogger.log("WAKEUP ALARM: Scheduled next alarm")
         }
     }
 
@@ -118,10 +117,10 @@ object WakeupAlarmScheduler {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val acInfo = AlarmManager.AlarmClockInfo(triggerTime, pendingIntent)
             alarmManager.setAlarmClock(acInfo, pendingIntent)
-                TerminalLogger.log("WAKEUP ALARM: Scheduled next exact alarm")
         } else {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
         }
+        TerminalLogger.log("WAKEUP ALARM: Scheduled snooze alarm")
     }
 
     fun cancelSnooze(context: Context) {
