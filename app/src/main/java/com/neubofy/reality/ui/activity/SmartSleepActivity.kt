@@ -235,7 +235,9 @@ class SmartSleepActivity : AppCompatActivity() {
 
         val tvWakeTime = dialogView.findViewById<android.widget.TextView>(com.neubofy.reality.R.id.tvWakeTime)
         val etAlarmName = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(com.neubofy.reality.R.id.etAlarmName)
-        val swVibration = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(com.neubofy.reality.R.id.swVibration)
+                val swVibration = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(com.neubofy.reality.R.id.swVibration)
+        val etSnoozeInterval = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(com.neubofy.reality.R.id.etSnoozeInterval)
+        val etMaxAttempts = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(com.neubofy.reality.R.id.etMaxAttempts)
         val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(com.neubofy.reality.R.id.btnCancel)
         val btnSave = dialogView.findViewById<com.google.android.material.button.MaterialButton>(com.neubofy.reality.R.id.btnSave)
 
@@ -249,6 +251,8 @@ class SmartSleepActivity : AppCompatActivity() {
         tvWakeTime.text = String.format("%02d:%02d", selectedHour, selectedMinute)
         etAlarmName.setText(existingAlarm?.title ?: "Wake Up")
         swVibration.isChecked = existingAlarm?.vibrationEnabled ?: true
+        etSnoozeInterval.setText((existingAlarm?.snoozeIntervalMins ?: 3).toString())
+        etMaxAttempts.setText((existingAlarm?.maxAttempts ?: 5).toString())
 
         tvWakeTime.setOnClickListener {
             val picker = com.google.android.material.timepicker.MaterialTimePicker.Builder()
@@ -285,6 +289,12 @@ class SmartSleepActivity : AppCompatActivity() {
         btnCancel.setOnClickListener { dialog.dismiss() }
         btnSave.setOnClickListener {
             val title = etAlarmName.text.toString().ifEmpty { "Wake Up" }
+            val snoozeStr = etSnoozeInterval.text.toString()
+            val maxStr = etMaxAttempts.text.toString()
+
+            val snoozeInterval = if (snoozeStr.isNotEmpty()) snoozeStr.toInt() else 3
+            val maxAttempts = if (maxStr.isNotEmpty()) maxStr.toInt() else 5
+
             val alarms = loader.loadWakeupAlarms()
             alarms.removeAll { it.id == "nightly_wakeup" }
             alarms.add(com.neubofy.reality.data.model.WakeupAlarm(
@@ -296,8 +306,8 @@ class SmartSleepActivity : AppCompatActivity() {
                 repeatDays = emptyList(),
                 ringtoneUri = selectedRingtoneUri,
                 vibrationEnabled = swVibration.isChecked,
-                snoozeIntervalMins = 3,
-                maxAttempts = 5,
+                snoozeIntervalMins = snoozeInterval,
+                maxAttempts = maxAttempts,
                 isDeleted = false
             ))
             loader.saveWakeupAlarms(alarms)
