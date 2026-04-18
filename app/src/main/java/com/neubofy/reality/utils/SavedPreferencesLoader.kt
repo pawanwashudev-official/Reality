@@ -259,6 +259,23 @@ class SavedPreferencesLoader(private val context: Context) {
         }
     }
 
+    fun saveWakeupAlarms(list: List<com.neubofy.reality.data.model.WakeupAlarm>) {
+        val sharedPreferences = context.getSharedPreferences("wakeup_alarms", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putString("alarms_list", gson.toJson(list)).apply()
+    }
+
+    fun loadWakeupAlarms(): MutableList<com.neubofy.reality.data.model.WakeupAlarm> {
+        val sharedPreferences = context.getSharedPreferences("wakeup_alarms", Context.MODE_PRIVATE)
+        val json = sharedPreferences.getString("alarms_list", null)
+        if (json.isNullOrEmpty()) return mutableListOf()
+        return try {
+            val type = object : TypeToken<MutableList<com.neubofy.reality.data.model.WakeupAlarm>>() {}.type
+            gson.fromJson(json, type) ?: mutableListOf()
+        } catch (e: Exception) {
+            mutableListOf()
+        }
+    }
+
     fun saveBoolean(key: String, value: Boolean) {
         val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
         sharedPreferences.edit().putBoolean(key, value).apply()

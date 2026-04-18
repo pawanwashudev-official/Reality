@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    
+
     <!-- Health Connect -->
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
@@ -55,40 +55,40 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Reality"
         tools:targetApi="34">
-        
+
         <activity
             android:name=".ui.activity.NightlyPlanActivity"
             android:exported="false" />
-            
+
         <activity
             android:name=".ui.activity.QRScannerActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.Reality" />
-            
+
         <activity
             android:name=".ui.activity.ShortcutActivity"
             android:excludeFromRecents="true"
             android:launchMode="singleTop"
             android:theme="@style/Theme.Reality.TransparentDialog"
             android:exported="false" />
-        
+
         <activity
             android:name=".ui.activity.WarningActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTop"
             android:theme="@style/Theme.Reality.TransparentDialog" />
-        
+
         <activity
             android:name=".ui.activity.FragmentActivity"
             android:exported="false" />
-        
 
-        
+
+
         <activity
             android:name=".ui.activity.SelectAppsActivity"
             android:exported="false" />
-            
+
         <activity
             android:name=".ui.activity.OnboardingActivity"
             android:exported="false"
@@ -119,45 +119,45 @@
         <activity
             android:name=".ui.activity.BedtimeActivity"
             android:exported="false" />
-        
+
         <activity
             android:name=".ui.activity.StatisticsActivity"
             android:exported="false"
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
-        
+
         <activity
             android:name=".ui.activity.UsageLimitActivity"
             android:exported="false"
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
-            
+
         <activity
             android:name=".ui.activity.AppGroupsActivity"
             android:exported="false"
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
-            
+
         <activity
             android:name=".ui.activity.AppLimitsActivity"
             android:exported="false"
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
-            
+
         <activity
             android:name=".ui.activity.GroupLimitsActivity"
             android:exported="false"
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
-            
 
-            
+
+
         <activity
             android:name=".ui.activity.StrictModeActivity"
             android:exported="false"
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
-            
+
         <activity
             android:name=".ui.activity.BlockMessagesActivity"
             android:exported="false"
@@ -211,7 +211,7 @@
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
-            
+
         <activity
             android:name=".ui.activity.PopupAIChatActivity"
             android:exported="false"
@@ -257,7 +257,7 @@
             android:exported="false"
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
-            
+
         <activity
             android:name=".ui.activity.UserManualActivity"
             android:exported="false"
@@ -318,7 +318,7 @@
             android:exported="false"
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
-            
+
         <activity
             android:name=".ui.activity.PlanningPadActivity"
             android:exported="false"
@@ -355,11 +355,11 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_info" />
         </receiver>
-        
+
         <activity
             android:name=".ui.activity.MainActivity"
             android:exported="true" />
-            
+
         <activity
             android:name=".ui.activity.SplashActivity"
             android:exported="true"
@@ -540,11 +540,6 @@
                 android:name="android.service.quicksettings.ACTIVE_TILE"
                 android:value="true" />
         </service>
-
-            <receiver
-            android:name=".receivers.WakeupAlarmReceiver"
-            android:exported="false" />
-        <service android:name=".services.WakeupAlarmService" />
 
     </application>
 

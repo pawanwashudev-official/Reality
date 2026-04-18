@@ -1,0 +1,31 @@
+--- app/src/main/java/com/neubofy/reality/data/nightly/NightlyPhasePlanning.kt
++++ app/src/main/java/com/neubofy/reality/data/nightly/NightlyPhasePlanning.kt
+@@ -726,27 +726,6 @@
+                 throw IllegalStateException("Alarm permission missing")
+             }
+
+-            val alarmIntent = android.content.Intent(context, com.neubofy.reality.receivers.ReminderReceiver::class.java).apply {
+-                putExtra("id", "nightly_wakeup")
+-                putExtra("title", "Wake Up (Reality Plan)")
+-                putExtra("mins", 0)
+-                putExtra("source", "NIGHTLY")
+-                putExtra("url", "reality://smart_sleep")
+-                putExtra("snoozeEnabled", true)
+-                putExtra("autoSnoozeEnabled", true)
+-            }
+-
+-            val pendingIntent = android.app.PendingIntent.getBroadcast(
+-                context,
+-                777,
+-                alarmIntent,
+-                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+-            )
+-
+-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+-                alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, alarmTime, pendingIntent)
+-            } else {
+-                alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, alarmTime, pendingIntent)
+-            }
+-
+             // Sync to CustomReminders for UI
+             val prefsLoader = com.neubofy.reality.utils.SavedPreferencesLoader(context)

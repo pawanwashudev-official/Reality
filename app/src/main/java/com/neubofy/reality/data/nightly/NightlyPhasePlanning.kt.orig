@@ -726,25 +726,48 @@ class NightlyPhasePlanning(
                 throw IllegalStateException("Alarm permission missing")
             }
 
+            val alarmIntent = android.content.Intent(context, com.neubofy.reality.receivers.ReminderReceiver::class.java).apply {
+                putExtra("id", "nightly_wakeup")
+                putExtra("title", "Wake Up (Reality Plan)")
+                putExtra("mins", 0)
+                putExtra("source", "NIGHTLY")
+                putExtra("url", "reality://smart_sleep")
+                putExtra("snoozeEnabled", true)
+                putExtra("autoSnoozeEnabled", true)
+            }
 
+            val pendingIntent = android.app.PendingIntent.getBroadcast(
+                context,
+                777,
+                alarmIntent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, alarmTime, pendingIntent)
+            } else {
+                alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, alarmTime, pendingIntent)
+            }
 
             // Sync to CustomReminders for UI
             val prefsLoader = com.neubofy.reality.utils.SavedPreferencesLoader(context)
-            val wakeupAlarms = prefsLoader.loadWakeupAlarms()
-            wakeupAlarms.removeAll { it.id == "nightly_wakeup" }
-            wakeupAlarms.add(com.neubofy.reality.data.model.WakeupAlarm(
+            val reminders = prefsLoader.loadCustomReminders()
+            reminders.removeAll { it.id == "nightly_wakeup" }
+            reminders.add(com.neubofy.reality.data.CustomReminder(
                 id = "nightly_wakeup",
-                title = "Wake Up",
+                title = "Wake Up (AI Plan)",
                 hour = hour,
                 minute = min,
                 isEnabled = true,
                 repeatDays = emptyList(),
-                snoozeIntervalMins = 3,
-                maxAttempts = 5,
-                isDeleted = false
+                offsetMins = 0,
+                retryIntervalMins = 5,
+                snoozeEnabled = true,
+                autoSnoozeEnabled = true,
+                redirectUrl = "reality://smart_sleep",
+                urlSource = 2
             ))
-            prefsLoader.saveWakeupAlarms(wakeupAlarms)
-            com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(context)
+            prefsLoader.saveCustomReminders(reminders)
 
             val resultJson = JSONObject().apply {
                 put("input", JSONObject().apply {
@@ -775,17 +798,17 @@ class NightlyPhasePlanning(
         // Diary is for 'diaryDate', so plan is for 'diaryDate + 1'
         val planDate = diaryDate.plusDays(1)
         val targetDateStr = planDate.format(DateTimeFormatter.ISO_LOCAL_DATE) // YYYY-MM-DD
-        
+
         val stepData = loadStepData(NightlySteps.STEP_NORMALIZE_TASKS)
         if (stepData.status == StepProgress.STATUS_COMPLETED) {
              TerminalLogger.log("Nightly Phase Planning: Step 14 already completed.")
              listener.onStepCompleted(NightlySteps.STEP_NORMALIZE_TASKS, "Tasks Normalized", "Already done")
              return
         }
-        
+
         listener.onStepStarted(NightlySteps.STEP_NORMALIZE_TASKS, "AI Task Cleanup")
         saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_RUNNING, "Fetching tasks...")
-        
+
         try {
             // 1. Fetch Task List Configs for context
             val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(context)
@@ -795,7 +818,7 @@ class NightlyPhasePlanning(
             val tasksManager = com.neubofy.reality.google.GoogleTasksManager
             val taskLists = tasksManager.getTaskLists(context)
             val allPendingTasks = mutableListOf<JSONObject>()
-            
+
             for (list in taskLists) {
                 val tasks = tasksManager.getTasks(context, list.id)
                 tasks.forEach { task ->
@@ -810,45 +833,45 @@ class NightlyPhasePlanning(
                     }
                 }
             }
-            
+
             if (allPendingTasks.isEmpty()) {
                 saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_COMPLETED, "No tasks to clean")
                 listener.onStepCompleted(NightlySteps.STEP_NORMALIZE_TASKS, "Task Cleanup", "No pending tasks found")
                 return
             }
-            
+
             // 3. Prepare JSON for AI
             val tasksJsonStr = JSONArray(allPendingTasks).toString()
-            
+
             saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_RUNNING, "AI analyzing ${allPendingTasks.size} tasks...")
-            
+
             // 4. Call AI (Using Standardized Model)
             val model = com.neubofy.reality.ui.activity.AISettingsActivity.getNightlyModel(context)
             if (model.isNullOrEmpty()) {
                 throw IllegalStateException("No AI Model configured for Nightly Protocol.")
             }
-             
+
             val aiResponse = com.neubofy.reality.utils.NightlyAIHelper.normalizeTasks(
-                context = context, 
-                modelString = model, 
-                tasksJson = tasksJsonStr, 
+                context = context,
+                modelString = model,
+                tasksJson = tasksJsonStr,
                 targetDate = targetDateStr + "T00:00:00.000Z",
                 taskListConfigs = taskListConfigs
             )
-            
+
             // 5. Parse AI Response
             val responseJson = try {
                  JSONObject(aiResponse.substringAfter("```json").substringBeforeLast("```").trim())
             } catch (e: Exception) {
                  JSONObject(aiResponse) // Try direct parse
             }
-            
+
             val deleteIds = responseJson.optJSONArray("delete_ids")
             val readdTasks = responseJson.optJSONArray("readd_tasks")
-            
+
             var deletedCount = 0
             var addedCount = 0
-            
+
             // 6. Execute Deletions
             if (deleteIds != null) {
                 for (i in 0 until deleteIds.length()) {
@@ -861,7 +884,7 @@ class NightlyPhasePlanning(
                      }
                 }
             }
-            
+
             // 7. Execute Re-adds (New Tasks)
             if (readdTasks != null) {
                 for (i in 0 until readdTasks.length()) {
@@ -870,7 +893,7 @@ class NightlyPhasePlanning(
                     val startTime = taskData.optString("startTime")
                     val listId = taskData.optString("taskListId")
                     val notes = taskData.optString("notes")
-                    
+
                     if (title.isNotEmpty() && listId.isNotEmpty()) {
                         // Build title with time always expected as HH:mm|Title
                         val finalTitle = if (startTime.isNotEmpty() && !startTime.equals("null", true)) {
@@ -885,13 +908,13 @@ class NightlyPhasePlanning(
                     }
                 }
             }
-            
+
             // 8. Complete
             val resultDetails = "Deleted $deletedCount duplicates/moved tasks, Re-added $addedCount corrected tasks"
             TerminalLogger.log("Nightly Step 14: $resultDetails")
             saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_COMPLETED, resultDetails, aiResponse)
             listener.onStepCompleted(NightlySteps.STEP_NORMALIZE_TASKS, "Task Cleanup Complete", resultDetails)
-            
+
         } catch (e: Exception) {
             TerminalLogger.log("Nightly Step 14 Failed: ${e.message}")
             saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_ERROR, e.message)
@@ -945,7 +968,7 @@ class NightlyPhasePlanning(
             val details = "${oldLimit}min → ${newLimit}min"
             listener.onStepCompleted(NightlySteps.STEP_UPDATE_DISTRACTION, "Limit Updated", details)
             saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_COMPLETED, details, resultJson)
-            
+
             TerminalLogger.log("Nightly Step 15: Distraction limit updated from $oldLimit to $newLimit min")
         } catch (e: Exception) {
             TerminalLogger.log("Nightly Step 15 Failed: ${e.message}")
