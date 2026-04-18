@@ -158,6 +158,13 @@ class MainActivity : BaseActivity() {
         }
     }
 
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntentAction(intent)
+    }
+
     override fun onResume() {
         super.onResume()
         

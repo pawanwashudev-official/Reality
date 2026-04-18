@@ -25,6 +25,7 @@ class WakeupAlarmService : Service() {
 
     companion object {
         private const val NOTIFICATION_ID = 9002
+        var activeAlarmId: String? = null
     }
 
     private var mediaPlayer: MediaPlayer? = null
@@ -49,6 +50,7 @@ class WakeupAlarmService : Service() {
 
         com.neubofy.reality.utils.TerminalLogger.log("WAKEUP ALARM: Service Started!")
         alarmId = intent?.getStringExtra("id")
+        activeAlarmId = alarmId
         alarmTitle = intent?.getStringExtra("title") ?: "Wake Up"
         maxAttempts = intent?.getIntExtra("maxAttempts", 5) ?: 5
         snoozeInterval = intent?.getIntExtra("snoozeInterval", 3) ?: 3
@@ -153,6 +155,7 @@ class WakeupAlarmService : Service() {
     }
 
     private fun stopAlarm() {
+        activeAlarmId = null
         autoSnoozeTimer?.cancel()
         try {
             mediaPlayer?.stop()
@@ -167,5 +170,6 @@ class WakeupAlarmService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         stopAlarm()
+        activeAlarmId = null
     }
 }

@@ -43,6 +43,8 @@ class SmartSleepActivity : AppCompatActivity() {
         val isChanged: Boolean get() = start != originalStart || end != originalEnd
     }
 
+    private var isMathDialogShowing = false
+
     companion object {
         var isUnlockedThisSession = false
     }
@@ -131,6 +133,13 @@ class SmartSleepActivity : AppCompatActivity() {
             .show()
     }
     
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        checkAndShowMathDismissDialog()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         isUnlockedThisSession = false // Lock again on next launch
@@ -311,6 +320,7 @@ class SmartSleepActivity : AppCompatActivity() {
             }
         }
 
+        dialog.setOnDismissListener { isMathDialogShowing = false }
         dialog.show()
     }
 
@@ -413,19 +423,23 @@ class SmartSleepActivity : AppCompatActivity() {
             dialog.dismiss()
         }
 
+        dialog.setOnDismissListener { isMathDialogShowing = false }
         dialog.show()
     }
 
-
     private fun checkAndShowMathDismissDialog() {
+        if (isMathDialogShowing) return
         val action = intent.getStringExtra("action")
-        if (action == "wakeup_alarm") {
-            val alarmId = intent.getStringExtra("id")
+        val activeAlarmId = com.neubofy.reality.services.WakeupAlarmService.activeAlarmId
+
+        if ((action == "wakeup_alarm" || activeAlarmId != null) && activeAlarmId != null) {
+            val alarmId = intent.getStringExtra("id") ?: activeAlarmId
             showMathDismissDialog(alarmId)
         }
     }
 
     private fun showMathDismissDialog(alarmId: String?) {
+        isMathDialogShowing = true
         val dialogView = layoutInflater.inflate(com.neubofy.reality.R.layout.dialog_math_alarm_dismiss, null)
         val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
         dialog.setCancelable(false)
@@ -517,6 +531,7 @@ class SmartSleepActivity : AppCompatActivity() {
             }
         }
 
+        dialog.setOnDismissListener { isMathDialogShowing = false }
         dialog.show()
     }
 
@@ -676,4 +691,7 @@ class SmartSleepActivity : AppCompatActivity() {
         override fun areItemsTheSame(oldItem: SleepSessionUiModel, newItem: SleepSessionUiModel) = oldItem.originalStart == newItem.originalStart
         override fun areContentsTheSame(oldItem: SleepSessionUiModel, newItem: SleepSessionUiModel) = oldItem == newItem
     }
+
+
+
 }
