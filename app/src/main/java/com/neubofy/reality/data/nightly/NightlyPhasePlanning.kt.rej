@@ -1,0 +1,35 @@
+--- NightlyPhasePlanning.kt
++++ NightlyPhasePlanning.kt
+@@ -750,25 +750,21 @@
+                 alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, alarmTime, pendingIntent)
+             }
+
+-            // Sync to CustomReminders for UI
+             val prefsLoader = com.neubofy.reality.utils.SavedPreferencesLoader(context)
+-            val reminders = prefsLoader.loadCustomReminders()
+-            reminders.removeAll { it.id == "nightly_wakeup" }
+-            reminders.add(com.neubofy.reality.data.CustomReminder(
++            val wakeupAlarms = prefsLoader.loadWakeupAlarms()
++            wakeupAlarms.removeAll { it.id == "nightly_wakeup" }
++            wakeupAlarms.add(com.neubofy.reality.data.model.WakeupAlarm(
+                 id = "nightly_wakeup",
+                 title = "Wake Up",
+                 hour = hour,
+                 minute = min,
+                 isEnabled = true,
+                 repeatDays = emptyList(),
+-                offsetMins = 0,
+-                retryIntervalMins = 3,
+-                snoozeEnabled = true,
+                 snoozeIntervalMins = 3,
+-                autoSnoozeEnabled = true,
+-                redirectUrl = "reality://wakeup_alarm",
+-                urlSource = 2
++                maxAttempts = 5,
++                isDeleted = false
+             ))
+-            prefsLoader.saveCustomReminders(reminders)
++            prefsLoader.saveWakeupAlarms(wakeupAlarms)
++            com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(context)
+
+             val resultJson = JSONObject().apply {

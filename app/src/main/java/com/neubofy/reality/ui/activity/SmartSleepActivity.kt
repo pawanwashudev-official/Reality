@@ -51,9 +51,21 @@ class SmartSleepActivity : AppCompatActivity() {
         if (result.resultCode == RESULT_OK) {
             isUnlockedThisSession = true
             checkHealthPermissionsFlow()
+            checkAndShowMathDismissDialog()
         } else {
             Toast.makeText(this, "Scan QR to unlock", Toast.LENGTH_SHORT).show()
             finish()
+        }
+    }
+
+
+    private var selectedRingtoneUri: String? = null
+
+    private val ringtonePickerLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val uri: android.net.Uri? = result.data?.getParcelableExtra(android.media.RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+            selectedRingtoneUri = uri?.toString()
+            Toast.makeText(this, "Ringtone Selected", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -86,6 +98,7 @@ class SmartSleepActivity : AppCompatActivity() {
             qrScannerLauncher.launch(android.content.Intent(this, QRScannerActivity::class.java))
         } else {
             checkHealthPermissionsFlow()
+            checkAndShowMathDismissDialog()
         }
     }
 
@@ -145,6 +158,7 @@ class SmartSleepActivity : AppCompatActivity() {
     private fun setupUI() {
         binding.btnFinish.setOnClickListener { finish() }
         binding.btnManualAdd.setOnClickListener { showAddSleepPicker() }
+        binding.btnSetupAlarm.setOnClickListener { showAlarmSetupDialog() }
     }
 
     private fun loadSessions() {
@@ -166,6 +180,237 @@ class SmartSleepActivity : AppCompatActivity() {
             }
             updateUiState()
         }
+        updateAlarmUI()
+    }
+
+
+    private fun updateAlarmUI() {
+        val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this)
+        val alarms = loader.loadWakeupAlarms()
+        val wakeupAlarm = alarms.find { it.id == "nightly_wakeup" }
+
+        if (wakeupAlarm != null && !wakeupAlarm.isDeleted) {
+            binding.llAlarmInfo.visibility = android.view.View.VISIBLE
+            binding.tvAlarmTime.text = String.format("%02d:%02d", wakeupAlarm.hour, wakeupAlarm.minute)
+            binding.tvAlarmName.text = wakeupAlarm.title
+            binding.swAlarmEnabled.isChecked = wakeupAlarm.isEnabled
+
+            binding.swAlarmEnabled.setOnCheckedChangeListener { _, isChecked ->
+                val updatedList = loader.loadWakeupAlarms().map {
+                    if (it.id == "nightly_wakeup") it.copy(isEnabled = isChecked) else it
+                }.toMutableList()
+                loader.saveWakeupAlarms(updatedList)
+                com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(this)
+            }
+
+            // Allow editing
+            binding.llAlarmInfo.setOnClickListener { showAlarmSetupDialog() }
+
+            // Allow deletion via long click
+            binding.llAlarmInfo.setOnLongClickListener {
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle("Delete Alarm")
+                    .setMessage("Are you sure you want to delete this wake up alarm?")
+                    .setPositiveButton("Delete") { _, _ ->
+                        val updatedList = loader.loadWakeupAlarms().map {
+                            if (it.id == "nightly_wakeup") it.copy(isDeleted = true) else it
+                        }.toMutableList()
+                        loader.saveWakeupAlarms(updatedList)
+                        com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(this)
+                        updateAlarmUI()
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+                true
+            }
+        } else {
+            binding.llAlarmInfo.visibility = android.view.View.GONE
+        }
+    }
+
+    private fun showAlarmSetupDialog() {
+        val dialogView = layoutInflater.inflate(com.neubofy.reality.R.layout.dialog_wakeup_alarm_setup, null)
+        val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        dialog.setContentView(dialogView)
+
+        val tvWakeTime = dialogView.findViewById<android.widget.TextView>(com.neubofy.reality.R.id.tvWakeTime)
+        val etAlarmName = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(com.neubofy.reality.R.id.etAlarmName)
+                val swVibration = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(com.neubofy.reality.R.id.swVibration)
+        val etSnoozeInterval = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(com.neubofy.reality.R.id.etSnoozeInterval)
+        val etMaxAttempts = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(com.neubofy.reality.R.id.etMaxAttempts)
+        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(com.neubofy.reality.R.id.btnCancel)
+        val btnSave = dialogView.findViewById<com.google.android.material.button.MaterialButton>(com.neubofy.reality.R.id.btnSave)
+
+        val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this)
+        val existingAlarm = loader.loadWakeupAlarms().find { it.id == "nightly_wakeup" }
+
+        var selectedHour = existingAlarm?.hour ?: 7
+        var selectedMinute = existingAlarm?.minute ?: 0
+        selectedRingtoneUri = existingAlarm?.ringtoneUri
+
+        tvWakeTime.text = String.format("%02d:%02d", selectedHour, selectedMinute)
+        etAlarmName.setText(existingAlarm?.title ?: "Wake Up")
+        swVibration.isChecked = existingAlarm?.vibrationEnabled ?: true
+        etSnoozeInterval.setText((existingAlarm?.snoozeIntervalMins ?: 3).toString())
+        etMaxAttempts.setText((existingAlarm?.maxAttempts ?: 5).toString())
+
+        tvWakeTime.setOnClickListener {
+            val picker = com.google.android.material.timepicker.MaterialTimePicker.Builder()
+                .setTimeFormat(com.google.android.material.timepicker.TimeFormat.CLOCK_24H)
+                .setHour(selectedHour)
+                .setMinute(selectedMinute)
+                .setTitleText("Select Wake Up Time")
+                .build()
+
+            picker.addOnPositiveButtonClickListener {
+                selectedHour = picker.hour
+                selectedMinute = picker.minute
+                tvWakeTime.text = String.format("%02d:%02d", selectedHour, selectedMinute)
+            }
+            picker.show(supportFragmentManager, "alarm_time_picker")
+        }
+
+        val btnSelectRingtone = dialogView.findViewById<com.google.android.material.button.MaterialButton>(com.neubofy.reality.R.id.btnSelectRingtone)
+        btnSelectRingtone.setOnClickListener {
+            val intent = android.content.Intent(android.media.RingtoneManager.ACTION_RINGTONE_PICKER)
+            intent.putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_TYPE, android.media.RingtoneManager.TYPE_ALARM)
+            intent.putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+            intent.putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+
+            if (selectedRingtoneUri != null) {
+                intent.putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, android.net.Uri.parse(selectedRingtoneUri))
+            } else {
+                intent.putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM))
+            }
+
+            ringtonePickerLauncher.launch(intent)
+        }
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnSave.setOnClickListener {
+            val title = etAlarmName.text.toString().ifEmpty { "Wake Up" }
+            val snoozeStr = etSnoozeInterval.text.toString()
+            val maxStr = etMaxAttempts.text.toString()
+
+            val snoozeInterval = if (snoozeStr.isNotEmpty()) snoozeStr.toInt() else 3
+            val maxAttempts = if (maxStr.isNotEmpty()) maxStr.toInt() else 5
+
+            val alarms = loader.loadWakeupAlarms()
+            alarms.removeAll { it.id == "nightly_wakeup" }
+            alarms.add(com.neubofy.reality.data.model.WakeupAlarm(
+                id = "nightly_wakeup",
+                title = title,
+                hour = selectedHour,
+                minute = selectedMinute,
+                isEnabled = true,
+                repeatDays = emptyList(),
+                ringtoneUri = selectedRingtoneUri,
+                vibrationEnabled = swVibration.isChecked,
+                snoozeIntervalMins = snoozeInterval,
+                maxAttempts = maxAttempts,
+                isDeleted = false
+            ))
+            loader.saveWakeupAlarms(alarms)
+            com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(this)
+            updateAlarmUI()
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+
+    private fun checkAndShowMathDismissDialog() {
+        val action = intent.getStringExtra("action")
+        if (action == "wakeup_alarm") {
+            val alarmId = intent.getStringExtra("id")
+            showMathDismissDialog(alarmId)
+        }
+    }
+
+    private fun showMathDismissDialog(alarmId: String?) {
+        val dialogView = layoutInflater.inflate(com.neubofy.reality.R.layout.dialog_math_alarm_dismiss, null)
+        val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        dialog.setCancelable(false)
+        dialog.setContentView(dialogView)
+
+        val tvMathProblem = dialogView.findViewById<android.widget.TextView>(com.neubofy.reality.R.id.tvMathProblem)
+        val etMathAnswer = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(com.neubofy.reality.R.id.etMathAnswer)
+        val tvError = dialogView.findViewById<android.widget.TextView>(com.neubofy.reality.R.id.tvError)
+        val btnSnooze = dialogView.findViewById<com.google.android.material.button.MaterialButton>(com.neubofy.reality.R.id.btnSnooze)
+        val btnDismiss = dialogView.findViewById<com.google.android.material.button.MaterialButton>(com.neubofy.reality.R.id.btnDismiss)
+
+        // Generate math problem
+        var a = (11..99).random() / 10.0
+        var b = (11..99).random() / 10.0
+
+        // Ensure max 2 or 3 decimals total in product to not be too complex
+        if ((0..1).random() == 1) {
+            a = (11..99).random() / 100.0
+        }
+
+        val expectedAnswer = Math.round(a * b * 1000.0) / 1000.0
+        tvMathProblem.text = "${a} × ${b} = ?"
+
+        btnSnooze.setOnClickListener {
+            // Auto snooze based on loader configuration
+            val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this)
+            val alarm = loader.loadWakeupAlarms().find { it.id == alarmId }
+            val interval = alarm?.snoozeIntervalMins ?: 3
+            val maxAttempts = alarm?.maxAttempts ?: 5
+
+            com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleSnooze(this, alarmId ?: "nightly_wakeup", alarm?.title ?: "Wake Up", maxAttempts, interval, alarm?.ringtoneUri, alarm?.vibrationEnabled ?: true)
+
+            // Stop Service
+            val stopIntent = android.content.Intent(this, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
+                this.action = "STOP"
+            }
+            startService(stopIntent)
+
+            dialog.dismiss()
+            finish()
+        }
+
+        btnDismiss.setOnClickListener {
+            val userAnswerStr = etMathAnswer.text.toString()
+            if (userAnswerStr.isEmpty()) {
+                tvError.visibility = android.view.View.VISIBLE
+                tvError.text = "Please enter an answer"
+                return@setOnClickListener
+            }
+
+            try {
+                val userAnswer = userAnswerStr.toDouble()
+                if (Math.abs(userAnswer - expectedAnswer) < 0.001) {
+                    // Correct!
+                    tvError.visibility = android.view.View.GONE
+
+                    // Stop Service
+                    val stopIntent = android.content.Intent(this, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
+                        this.action = "STOP"
+                    }
+                    startService(stopIntent)
+
+                    // Calculate start time based on current end time and user confirmation
+                    // (Assuming inference algorithm is robust or standard sleep tracking happens via sleep verification)
+                    // Launch SleepInferenceHelper to auto log
+                    lifecycleScope.launch {
+                        com.neubofy.reality.utils.SleepInferenceHelper.autoConfirmSleep(this@SmartSleepActivity)
+                        loadSessions() // Refresh UI
+                    }
+
+                    dialog.dismiss()
+                } else {
+                    tvError.visibility = android.view.View.VISIBLE
+                    tvError.text = "Incorrect answer, try again."
+                }
+            } catch (e: Exception) {
+                tvError.visibility = android.view.View.VISIBLE
+                tvError.text = "Invalid number format."
+            }
+        }
+
+        dialog.show()
     }
 
     private fun updateUiState() {
@@ -235,6 +480,7 @@ class SmartSleepActivity : AppCompatActivity() {
             sessions.add(newModel)
             updateUiState()
         }
+        updateAlarmUI()
     }
 
     private fun confirmSession(model: SleepSessionUiModel) {

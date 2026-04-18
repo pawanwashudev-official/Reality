@@ -1,0 +1,66 @@
+name: Build Release APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: gradle
+
+      - name: Decode Client Secret
+        env:
+          CLIENT_SECRET_BASE64: ${{ secrets.CLIENT_SECRET_BASE64 }}
+        run: |
+          if [ ! -z "$CLIENT_SECRET_BASE64" ]; then
+            mkdir -p app/src/main/res/raw
+            echo "$CLIENT_SECRET_BASE64" | base64 -d > app/src/main/res/raw/client_secret.json
+          fi
+
+      - name: Decode Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ ! -z "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > keystore.jks
+          fi
+
+      - name: Configure local.properties
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          WEB_CLIENT_ID: ${{ secrets.WEB_CLIENT_ID }}
+        run: |
+          touch local.properties
+          echo "KEYSTORE_FILE=keystore.jks" >> local.properties
+          echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> local.properties
+          echo "KEY_ALIAS=$KEY_ALIAS" >> local.properties
+          echo "KEY_PASSWORD=$KEY_PASSWORD" >> local.properties
+          echo "WEB_CLIENT_ID=$WEB_CLIENT_ID" >> local.properties
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: app/build_v4/outputs/apk/release/*.apk
