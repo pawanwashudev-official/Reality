@@ -93,6 +93,7 @@ class WakeupAlarmService : Service() {
             .setFullScreenIntent(fullScreenPendingIntent, true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
+            .setAutoCancel(false)
             .build()
     }
 
@@ -134,7 +135,7 @@ class WakeupAlarmService : Service() {
     private fun startAutoSnoozeTimer() {
         autoSnoozeTimer?.cancel()
         // 1 minute
-        autoSnoozeTimer = object : CountDownTimer(60_000L, 1000) {
+        autoSnoozeTimer = object : CountDownTimer(45_000L, 1000) {
             override fun onTick(millisUntilFinished: Long) {}
             override fun onFinish() {
                 autoSnooze()

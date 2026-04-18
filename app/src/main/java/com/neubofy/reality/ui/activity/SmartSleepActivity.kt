@@ -392,7 +392,7 @@ class SmartSleepActivity : AppCompatActivity() {
             val maxAttempts = if (maxStr.isNotEmpty()) maxStr.toInt() else 5
 
             val alarms = loader.loadWakeupAlarms()
-            val alarmIdToSave = editAlarmId ?: java.util.UUID.randomUUID().toString()
+            val alarmIdToSave = editAlarmId ?: System.currentTimeMillis().toString()
             alarms.removeAll { it.id == alarmIdToSave }
             alarms.add(com.neubofy.reality.data.model.WakeupAlarm(
                 id = alarmIdToSave,
@@ -483,10 +483,20 @@ class SmartSleepActivity : AppCompatActivity() {
                     tvError.visibility = android.view.View.GONE
 
                     // Stop Service
-                    val stopIntent = android.content.Intent(this, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
+                    val stopIntent = android.content.Intent(this@SmartSleepActivity, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
                         this.action = "STOP"
                     }
                     startService(stopIntent)
+                    // Delete alarm if it is a non-repeating alarm
+                    val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this@SmartSleepActivity)
+                    val alarms = loader.loadWakeupAlarms()
+                    val idx = alarms.indexOfFirst { it.id == alarmId }
+                    if (idx != -1 && alarms[idx].repeatDays.isEmpty()) {
+                        alarms[idx] = alarms[idx].copy(isDeleted = true)
+                        loader.saveWakeupAlarms(alarms)
+                    }
+                    com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(this@SmartSleepActivity)
+
 
                     // Calculate start time based on current end time and user confirmation
                     // (Assuming inference algorithm is robust or standard sleep tracking happens via sleep verification)

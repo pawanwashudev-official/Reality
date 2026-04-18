@@ -149,6 +149,12 @@ class MainActivity : BaseActivity() {
         if (action == "sleep_verify" || action == "smart_sleep") {
             // User dismissed wake-up alarm or tapped notification - trigger smart sleep page
             startActivity(Intent(this, SmartSleepActivity::class.java))
+        } else if (action == "wakeup_alarm") {
+            val alarmIntent = Intent(this, SmartSleepActivity::class.java).apply {
+                putExtra("action", "wakeup_alarm")
+                putExtra("id", intent?.getStringExtra("id"))
+            }
+            startActivity(alarmIntent)
         }
     }
 

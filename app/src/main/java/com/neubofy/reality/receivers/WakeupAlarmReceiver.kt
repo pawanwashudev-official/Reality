@@ -27,6 +27,15 @@ class WakeupAlarmReceiver : BroadcastReceiver() {
         if (fireCount > maxAttempts) {
             TerminalLogger.log("WAKEUP ALARM: Max attempts reached ($maxAttempts). Auto-dismissing.")
             // Ideally we also dismiss logic here
+
+            val prefsLoader = com.neubofy.reality.utils.SavedPreferencesLoader(context)
+            val alarms = prefsLoader.loadWakeupAlarms()
+            val idx = alarms.indexOfFirst { it.id == id }
+            if (idx != -1 && alarms[idx].repeatDays.isEmpty()) {
+                alarms[idx] = alarms[idx].copy(isDeleted = true)
+                prefsLoader.saveWakeupAlarms(alarms)
+                com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(context)
+            }
             return
         }
 
