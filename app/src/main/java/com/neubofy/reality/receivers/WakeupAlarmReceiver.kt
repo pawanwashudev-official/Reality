@@ -10,6 +10,7 @@ import com.neubofy.reality.utils.TerminalLogger
 
 class WakeupAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
+        TerminalLogger.log("WAKEUP ALARM: Receiver Triggered!")
         val id = intent?.getStringExtra("id") ?: return
         val title = intent.getStringExtra("title") ?: "Wake Up"
         val maxAttempts = intent.getIntExtra("maxAttempts", 5)

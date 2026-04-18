@@ -47,6 +47,7 @@ class WakeupAlarmService : Service() {
             return START_NOT_STICKY
         }
 
+        com.neubofy.reality.utils.TerminalLogger.log("WAKEUP ALARM: Service Started!")
         alarmId = intent?.getStringExtra("id")
         alarmTitle = intent?.getStringExtra("title") ?: "Wake Up"
         maxAttempts = intent?.getIntExtra("maxAttempts", 5) ?: 5
