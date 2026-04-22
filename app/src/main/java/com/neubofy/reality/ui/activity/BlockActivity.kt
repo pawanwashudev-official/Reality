@@ -133,7 +133,7 @@ class BlockActivity : BaseActivity() {
             if (lastReset.get(java.util.Calendar.DAY_OF_YEAR) != now.get(java.util.Calendar.DAY_OF_YEAR) ||
                 lastReset.get(java.util.Calendar.YEAR) != now.get(java.util.Calendar.YEAR)) {
                  // It's a new day, reset allowed (Self-healing)
-                 emergencyData.usesRemaining = com.neubofy.reality.Constants.EMERGENCY_MAX_USES
+                 emergencyData.usesRemaining = emergencyData.maxUses
                  emergencyData.lastResetDate = System.currentTimeMillis()
             } else {
                  Toast.makeText(this, "No emergency uses left for today!", Toast.LENGTH_LONG).show()

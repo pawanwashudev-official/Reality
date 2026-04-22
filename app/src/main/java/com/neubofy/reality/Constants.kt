@@ -48,7 +48,8 @@ class Constants {
     )
     
     data class EmergencyModeData(
-        var usesRemaining: Int = EMERGENCY_MAX_USES,
+        var maxUses: Int = 3,
+        var usesRemaining: Int = 3,
         var currentSessionEndTime: Long = -1,
         var lastResetDate: Long = System.currentTimeMillis()
     )

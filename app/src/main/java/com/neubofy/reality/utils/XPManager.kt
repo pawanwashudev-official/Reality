@@ -509,10 +509,11 @@ if (sortedStats.isNotEmpty()) {
             if (lastDate.isEqual(today) || lastDate.isEqual(yesterday)) {
                 // Check if lastDate itself was successful
                 val firstDay = sortedStats[0]
+                val firstDayBreakdown = parseBreakdown(firstDay.breakdownJson, firstDay.date)
                 val isFirstDaySuccessful = if (firstDay.totalPlannedMinutes > 0) {
-                    firstDay.totalEffectiveMinutes >= (firstDay.totalPlannedMinutes * 0.75)
+                    firstDay.totalEffectiveMinutes >= (firstDay.totalPlannedMinutes * 0.75) || firstDayBreakdown.reflectionXP > 0
                 } else {
-                    firstDay.totalEffectiveMinutes > 0 
+                    firstDay.totalEffectiveMinutes > 0 || firstDayBreakdown.reflectionXP > 0
                 }
 
                 if (isFirstDaySuccessful) {

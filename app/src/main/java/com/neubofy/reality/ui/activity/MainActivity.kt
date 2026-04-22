@@ -395,6 +395,37 @@ class MainActivity : BaseActivity() {
         binding.btnEmergencyClick.setOnClickListener {
             scope.launch { showEmergencyDialog() }
         }
+
+        binding.btnEmergencySettings.setOnClickListener {
+            val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this)
+            val strictMode = loader.getStrictModeData()
+            if (strictMode.isEnabled && strictMode.isEmergencyLocked) {
+                Toast.makeText(this, "Emergency settings are locked by Strict Mode.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val emergencyData = loader.getEmergencyData()
+            val numberPicker = android.widget.NumberPicker(this).apply {
+                minValue = 1
+                maxValue = 15
+                value = emergencyData.maxUses
+            }
+
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("Emergency Quota")
+                .setMessage("Set maximum emergency breaks allowed per day:")
+                .setView(numberPicker)
+                .setPositiveButton("Save") { _, _ ->
+                    val diff = numberPicker.value - emergencyData.maxUses
+                    emergencyData.maxUses = numberPicker.value
+                    emergencyData.usesRemaining = (emergencyData.usesRemaining + diff).coerceIn(0, emergencyData.maxUses)
+                    loader.saveEmergencyData(emergencyData)
+                    updateEmergencyUI()
+                    Toast.makeText(this, "Emergency quota updated.", Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
         // Blocklist
         binding.blocklistCard.setOnClickListener {
              startActivity(Intent(this, UnifiedBlocklistActivity::class.java), options.toBundle())
@@ -677,7 +708,7 @@ class MainActivity : BaseActivity() {
         val currentDay = calendar.get(java.util.Calendar.DAY_OF_YEAR)
         
         if (currentDay != lastResetDay) {
-            emergencyData.usesRemaining = Constants.EMERGENCY_MAX_USES
+            emergencyData.usesRemaining = emergencyData.maxUses
             emergencyData.lastResetDate = System.currentTimeMillis()
             savedPreferencesLoader.saveEmergencyData(emergencyData)
         }
@@ -744,7 +775,7 @@ class MainActivity : BaseActivity() {
         
         // Emergency Access
         sb.append("• Emergency Access: ")
-        sb.append("${emergencyData.usesRemaining} / ${Constants.EMERGENCY_MAX_USES} uses remaining today\n\n")
+        sb.append("${emergencyData.usesRemaining} / ${emergencyData.maxUses} uses remaining today\n\n")
         
         sb.append("Quick Tips:\n")
         sb.append("• Maintenance Window: 00:00 - 00:10 daily (Settings unlocked)\n")
@@ -769,7 +800,7 @@ class MainActivity : BaseActivity() {
         val currentDay = calendar.get(java.util.Calendar.DAY_OF_YEAR)
         
         if (currentDay != lastResetDay) {
-            emergencyData.usesRemaining = Constants.EMERGENCY_MAX_USES
+            emergencyData.usesRemaining = emergencyData.maxUses
             emergencyData.lastResetDate = System.currentTimeMillis()
             savedPreferencesLoader.saveEmergencyData(emergencyData)
         }

@@ -57,7 +57,7 @@ class UserManualActivity : AppCompatActivity() {
         
         // Emergency Access
         sb.append("• Emergency Access: ")
-        sb.append("${emergencyData.usesRemaining} / ${Constants.EMERGENCY_MAX_USES} uses remaining today\n")
+        sb.append("${emergencyData.usesRemaining} / ${emergencyData.maxUses} uses remaining today\n")
         
         binding.tvSystemStatusDetails.text = sb.toString()
     }
