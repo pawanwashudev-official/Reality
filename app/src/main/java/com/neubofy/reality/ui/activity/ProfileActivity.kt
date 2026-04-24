@@ -430,6 +430,17 @@ class ProfileActivity : AppCompatActivity() {
         val planId = prefs.getString("plan_folder_id", null)
         val reportId = prefs.getString("report_folder_id", null)
         
+
+        val sheetId = prefs.getString("reality_sheet_id", null)
+        val tvSheetInfo = findViewById<android.widget.TextView>(R.id.tv_saved_sheet_info)
+        val btnForgetSheet = findViewById<android.view.View>(R.id.btn_forget_sheet)
+        if (!sheetId.isNullOrEmpty()) {
+            tvSheetInfo?.text = "Sheet Linked: " + sheetId
+            btnForgetSheet?.visibility = View.VISIBLE
+        } else {
+            tvSheetInfo?.text = "No sheet configured."
+            btnForgetSheet?.visibility = View.GONE
+        }
         val hasDriveFolders = !realityId.isNullOrEmpty() || !diaryId.isNullOrEmpty() || !planId.isNullOrEmpty() || !reportId.isNullOrEmpty()
 
         if (hasDriveFolders) {
@@ -874,12 +885,31 @@ class ProfileActivity : AppCompatActivity() {
     
 
     private fun startSheetSetup() {
+
         if (!GoogleAuthManager.isSignedIn(this)) {
             lifecycleScope.launch { GoogleAuthManager.signIn(this@ProfileActivity) }
             return
         }
+
+        // We must ensure the user has authorized the specific scopes required for Google Sheets.
+        val account = com.google.android.gms.auth.api.signin.GoogleSignIn.getLastSignedInAccount(this)
+        if (account != null) {
+            val scope = com.google.android.gms.common.api.Scope(com.google.api.services.sheets.v4.SheetsScopes.SPREADSHEETS)
+            if (!com.google.android.gms.auth.api.signin.GoogleSignIn.hasPermissions(account, scope)) {
+                com.google.android.gms.auth.api.signin.GoogleSignIn.requestPermissions(
+                    this,
+                    9999,
+                    account,
+                    scope,
+                    com.google.android.gms.common.api.Scope(com.google.api.services.drive.DriveScopes.DRIVE_FILE)
+                )
+                Toast.makeText(this, "Please grant Sheets permission first.", Toast.LENGTH_LONG).show()
+                return
+            }
+        }
+
         val nightlyPrefs = getSharedPreferences(NIGHTLY_PREFS, Context.MODE_PRIVATE)
-        val folderId = nightlyPrefs.getString("diary_folder_id", null)
+        val folderId = nightlyPrefs.getString("reality_folder_id", null)
 
         if (folderId == null) {
             Toast.makeText(this, "Please setup Reality Drive Folder first", Toast.LENGTH_SHORT).show()
@@ -913,6 +943,7 @@ class ProfileActivity : AppCompatActivity() {
                     com.neubofy.reality.google.GoogleSheetsManager.verifyAndCreateColumns(this@ProfileActivity, sheetId)
                     nightlyPrefs.edit().putString("reality_sheet_id", sheetId).apply()
                     Toast.makeText(this@ProfileActivity, "Reality Sheet created & mapped!", Toast.LENGTH_SHORT).show()
+                    loadSetupData()
                 } else {
                     Toast.makeText(this@ProfileActivity, "Failed to create Reality Sheet", Toast.LENGTH_SHORT).show()
                 }
@@ -946,6 +977,7 @@ class ProfileActivity : AppCompatActivity() {
                             if (success) {
                                 nightlyPrefs.edit().putString("reality_sheet_id", sheetId).apply()
                                 Toast.makeText(this@ProfileActivity, "Sheet connected & mapped!", Toast.LENGTH_SHORT).show()
+                                loadSetupData()
                             } else {
                                 Toast.makeText(this@ProfileActivity, "Failed to verify sheet.", Toast.LENGTH_LONG).show()
                             }

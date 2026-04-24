@@ -239,7 +239,8 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
             com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_GENERATE_PDF, "12. Generate PDF", R.drawable.baseline_picture_as_pdf_24),
             com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_SET_ALARM, "13. Set Alarm", R.drawable.baseline_alarm_add_24),
             com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_NORMALIZE_TASKS, "14. AI Task Cleanup", R.drawable.baseline_auto_fix_high_24),
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_UPDATE_DISTRACTION, "15. Update Distraction", R.drawable.baseline_do_not_disturb_on_24)
+            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_UPDATE_DISTRACTION, "15. Update Distraction", R.drawable.baseline_do_not_disturb_on_24),
+            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_BACKUP_SHEET, "16. Reality Sheet", R.drawable.baseline_auto_awesome_24)
         ))
         
         stepAdapter = com.neubofy.reality.ui.adapter.NightlyStepAdapter(
@@ -744,7 +745,8 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
                 NightlyProtocolExecutor.STEP_GENERATE_PDF,
                 NightlyProtocolExecutor.STEP_SET_ALARM,
                 NightlyProtocolExecutor.STEP_NORMALIZE_TASKS,
-                NightlyProtocolExecutor.STEP_UPDATE_DISTRACTION
+                NightlyProtocolExecutor.STEP_UPDATE_DISTRACTION,
+                NightlyProtocolExecutor.STEP_BACKUP_SHEET
             )
             
             allSteps.forEach { step ->
