@@ -138,6 +138,13 @@ class Constants {
      * Each app can specify which blocking modes it should be blocked in.
      * By default, all modes are enabled for all apps.
      */
+    data class WakeupAlarmDefaults(
+        var ringtoneUri: String? = null,
+        var vibrationEnabled: Boolean = true,
+        var snoozeIntervalMins: Int = 3,
+        var maxAttempts: Int = 5
+    )
+
     data class BlockedAppConfig(
         val packageName: String,
         var blockInFocus: Boolean = true,       // Custom Focus Mode

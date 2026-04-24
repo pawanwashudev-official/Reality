@@ -730,17 +730,22 @@ class NightlyPhasePlanning(
 
             // Sync to CustomReminders for UI
             val prefsLoader = com.neubofy.reality.utils.SavedPreferencesLoader(context)
+            val defaults = prefsLoader.getWakeupAlarmDefaults()
+            val alarmId = "nightly_wakeup"
             val wakeupAlarms = prefsLoader.loadWakeupAlarms()
-            wakeupAlarms.removeAll { it.id == "nightly_wakeup" }
+            wakeupAlarms.removeAll { it.id == alarmId }
             wakeupAlarms.add(com.neubofy.reality.data.model.WakeupAlarm(
-                id = "nightly_wakeup",
-                title = "Wake Up",
+                id = alarmId,
+                title = "Wake Up (AI Plan)",
+                description = "AI generated wakeup alarm based on your daily plan.",
                 hour = hour,
                 minute = min,
                 isEnabled = true,
                 repeatDays = emptyList(),
-                snoozeIntervalMins = 3,
-                maxAttempts = 5,
+                ringtoneUri = defaults.ringtoneUri,
+                vibrationEnabled = defaults.vibrationEnabled,
+                snoozeIntervalMins = defaults.snoozeIntervalMins,
+                maxAttempts = defaults.maxAttempts,
                 isDeleted = false
             ))
             prefsLoader.saveWakeupAlarms(wakeupAlarms)

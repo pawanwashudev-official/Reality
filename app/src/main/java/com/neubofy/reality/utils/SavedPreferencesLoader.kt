@@ -276,6 +276,22 @@ class SavedPreferencesLoader(private val context: Context) {
         }
     }
 
+
+    fun saveWakeupAlarmDefaults(data: Constants.WakeupAlarmDefaults) {
+        val sharedPreferences = context.getSharedPreferences("wakeup_alarms", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putString("alarm_defaults", gson.toJson(data)).apply()
+    }
+
+    fun getWakeupAlarmDefaults(): Constants.WakeupAlarmDefaults {
+        val sharedPreferences = context.getSharedPreferences("wakeup_alarms", Context.MODE_PRIVATE)
+        val json = sharedPreferences.getString("alarm_defaults", null)
+        if (json.isNullOrEmpty()) return Constants.WakeupAlarmDefaults()
+        return try {
+            val type = object : TypeToken<Constants.WakeupAlarmDefaults>() {}.type
+            gson.fromJson(json, type) ?: Constants.WakeupAlarmDefaults()
+        } catch (e: Exception) { Constants.WakeupAlarmDefaults() }
+    }
+
     fun saveBoolean(key: String, value: Boolean) {
         val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
         sharedPreferences.edit().putBoolean(key, value).apply()

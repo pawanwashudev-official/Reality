@@ -17,7 +17,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <LinearLayout
+        <LinearLayout
         android:id="@+id/timeSelectorContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -26,17 +26,24 @@
         android:layout_marginTop="24dp"
         app:layout_constraintTop_toBottomOf="@id/tvTitle">
 
+        <NumberPicker
+            android:id="@+id/npHour"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
         <TextView
-            android:id="@+id/tvWakeTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="07:00"
-            android:textSize="48sp"
+            android:text=":"
+            android:textSize="24sp"
             android:textStyle="bold"
-            android:textColor="?attr/colorPrimary"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"/>
+            android:textColor="?attr/colorOnSurface"
+            android:layout_marginHorizontal="16dp"/>
+
+        <NumberPicker
+            android:id="@+id/npMinute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -57,6 +64,47 @@
 
     <!-- We will use a Recycler view for selecting ringtone in a real app,
          for now just a simple button to pick one or default -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilAlarmDescription"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        app:layout_constraintTop_toBottomOf="@id/tilAlarmName">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etAlarmDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Description (optional)" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:id="@+id/tvRepeatLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Repeat Days"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        app:layout_constraintTop_toBottomOf="@id/tilAlarmDescription" />
+
+    <LinearLayout
+        android:id="@+id/llDays"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/tvRepeatLabel">
+
+        <ToggleButton android:id="@+id/tbMon" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textOn="M" android:textOff="M" />
+        <ToggleButton android:id="@+id/tbTue" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textOn="T" android:textOff="T" />
+        <ToggleButton android:id="@+id/tbWed" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textOn="W" android:textOff="W" />
+        <ToggleButton android:id="@+id/tbThu" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textOn="T" android:textOff="T" />
+        <ToggleButton android:id="@+id/tbFri" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textOn="F" android:textOff="F" />
+        <ToggleButton android:id="@+id/tbSat" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textOn="S" android:textOff="S" />
+        <ToggleButton android:id="@+id/tbSun" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textOn="S" android:textOff="S" />
+    </LinearLayout>
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSelectRingtone"
         style="@style/Widget.Material3.Button.OutlinedButton"
@@ -64,7 +112,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="Select Ringtone"
-        app:layout_constraintTop_toBottomOf="@id/tilAlarmName"/>
+        app:layout_constraintTop_toBottomOf="@id/llDays"/>
 
     <com.google.android.material.switchmaterial.SwitchMaterial
         android:id="@+id/swVibration"
