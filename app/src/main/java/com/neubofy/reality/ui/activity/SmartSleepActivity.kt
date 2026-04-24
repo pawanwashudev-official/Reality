@@ -43,6 +43,8 @@ class SmartSleepActivity : AppCompatActivity() {
         val isChanged: Boolean get() = start != originalStart || end != originalEnd
     }
 
+    private var isMathDialogShowing = false
+
     companion object {
         var isUnlockedThisSession = false
     }
@@ -131,6 +133,13 @@ class SmartSleepActivity : AppCompatActivity() {
             .show()
     }
     
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        checkAndShowMathDismissDialog()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         isUnlockedThisSession = false // Lock again on next launch
@@ -158,7 +167,6 @@ class SmartSleepActivity : AppCompatActivity() {
     private fun setupUI() {
         binding.btnFinish.setOnClickListener { finish() }
         binding.btnManualAdd.setOnClickListener { showAddSleepPicker() }
-        binding.btnSetupAlarm.setOnClickListener { showAlarmSetupDialog() }
     }
 
     private fun loadSessions() {
@@ -184,51 +192,149 @@ class SmartSleepActivity : AppCompatActivity() {
     }
 
 
-    private fun updateAlarmUI() {
+
+    private fun setupAlarmRecycler() {
         val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this)
-        val alarms = loader.loadWakeupAlarms()
-        val wakeupAlarm = alarms.find { it.id == "nightly_wakeup" }
+        val alarms = loader.loadWakeupAlarms().filter { !it.isDeleted }
+        val rvWakeupAlarms = findViewById<androidx.recyclerview.widget.RecyclerView>(com.neubofy.reality.R.id.rvWakeupAlarms)
 
-        if (wakeupAlarm != null && !wakeupAlarm.isDeleted) {
-            binding.llAlarmInfo.visibility = android.view.View.VISIBLE
-            binding.tvAlarmTime.text = String.format("%02d:%02d", wakeupAlarm.hour, wakeupAlarm.minute)
-            binding.tvAlarmName.text = wakeupAlarm.title
-            binding.swAlarmEnabled.isChecked = wakeupAlarm.isEnabled
-
-            binding.swAlarmEnabled.setOnCheckedChangeListener { _, isChecked ->
-                val updatedList = loader.loadWakeupAlarms().map {
-                    if (it.id == "nightly_wakeup") it.copy(isEnabled = isChecked) else it
-                }.toMutableList()
-                loader.saveWakeupAlarms(updatedList)
-                com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(this)
+        rvWakeupAlarms.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+        rvWakeupAlarms.adapter = object : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>() {
+            override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): androidx.recyclerview.widget.RecyclerView.ViewHolder {
+                val view = layoutInflater.inflate(com.neubofy.reality.R.layout.item_wakeup_alarm, parent, false)
+                return object : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {}
             }
 
-            // Allow editing
-            binding.llAlarmInfo.setOnClickListener { showAlarmSetupDialog() }
+            override fun getItemCount(): Int = alarms.size
 
-            // Allow deletion via long click
-            binding.llAlarmInfo.setOnLongClickListener {
-                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                    .setTitle("Delete Alarm")
-                    .setMessage("Are you sure you want to delete this wake up alarm?")
-                    .setPositiveButton("Delete") { _, _ ->
-                        val updatedList = loader.loadWakeupAlarms().map {
-                            if (it.id == "nightly_wakeup") it.copy(isDeleted = true) else it
-                        }.toMutableList()
-                        loader.saveWakeupAlarms(updatedList)
-                        com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(this)
-                        updateAlarmUI()
+            override fun onBindViewHolder(holder: androidx.recyclerview.widget.RecyclerView.ViewHolder, position: Int) {
+                val alarm = alarms[position]
+                val view = holder.itemView
+                val tvAlarmTime = view.findViewById<android.widget.TextView>(com.neubofy.reality.R.id.tvAlarmTime)
+                val tvAlarmName = view.findViewById<android.widget.TextView>(com.neubofy.reality.R.id.tvAlarmName)
+                val swAlarmEnabled = view.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(com.neubofy.reality.R.id.swAlarmEnabled)
+                val btnSettings = view.findViewById<android.widget.ImageButton>(com.neubofy.reality.R.id.btnSettings)
+
+                tvAlarmTime.text = String.format("%02d:%02d", alarm.hour, alarm.minute)
+                tvAlarmName.text = alarm.title
+                swAlarmEnabled.isChecked = alarm.isEnabled
+
+                swAlarmEnabled.setOnCheckedChangeListener { _, isChecked ->
+                    val allAlarms = loader.loadWakeupAlarms()
+                    val idx = allAlarms.indexOfFirst { it.id == alarm.id }
+                    if (idx != -1) {
+                        allAlarms[idx] = allAlarms[idx].copy(isEnabled = isChecked)
+                        loader.saveWakeupAlarms(allAlarms)
+                        com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(this@SmartSleepActivity)
                     }
-                    .setNegativeButton("Cancel", null)
-                    .show()
-                true
+                }
+
+                btnSettings.setOnClickListener { showAlarmSetupDialog(alarm.id) }
+
+                view.setOnLongClickListener {
+                    com.google.android.material.dialog.MaterialAlertDialogBuilder(this@SmartSleepActivity)
+                        .setTitle("Delete Alarm")
+                        .setMessage("Move this alarm to the Recycle Bin?")
+                        .setPositiveButton("Delete") { _, _ ->
+                            val allAlarms = loader.loadWakeupAlarms()
+                            val idx = allAlarms.indexOfFirst { it.id == alarm.id }
+                            if (idx != -1) {
+                                allAlarms[idx] = allAlarms[idx].copy(isDeleted = true)
+                                loader.saveWakeupAlarms(allAlarms)
+                                com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(this@SmartSleepActivity)
+                                updateAlarmUI()
+                            }
+                        }
+                        .setNegativeButton("Cancel", null)
+                        .show()
+                    true
+                }
             }
-        } else {
-            binding.llAlarmInfo.visibility = android.view.View.GONE
         }
     }
 
-    private fun showAlarmSetupDialog() {
+    private fun showRecycleBinDialog() {
+        val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this)
+        val deletedAlarms = loader.loadWakeupAlarms().filter { it.isDeleted }
+
+        if (deletedAlarms.isEmpty()) {
+            Toast.makeText(this, "Recycle Bin is empty", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val rv = androidx.recyclerview.widget.RecyclerView(this)
+        rv.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Recycle Bin")
+            .setView(rv)
+            .setPositiveButton("Close", null)
+            .create()
+
+        rv.adapter = object : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>() {
+            override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): androidx.recyclerview.widget.RecyclerView.ViewHolder {
+                val view = layoutInflater.inflate(com.neubofy.reality.R.layout.item_recycled_alarm, parent, false)
+                return object : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {}
+            }
+
+            override fun getItemCount(): Int = deletedAlarms.size
+
+            override fun onBindViewHolder(holder: androidx.recyclerview.widget.RecyclerView.ViewHolder, position: Int) {
+                val alarm = deletedAlarms[position]
+                val view = holder.itemView
+                val tvAlarmTime = view.findViewById<android.widget.TextView>(com.neubofy.reality.R.id.tvAlarmTime)
+                val tvAlarmName = view.findViewById<android.widget.TextView>(com.neubofy.reality.R.id.tvAlarmName)
+                val btnRestore = view.findViewById<android.widget.ImageButton>(com.neubofy.reality.R.id.btnRestore)
+                val btnDeletePermanent = view.findViewById<android.widget.ImageButton>(com.neubofy.reality.R.id.btnDeletePermanent)
+
+                tvAlarmTime.text = String.format("%02d:%02d", alarm.hour, alarm.minute)
+                tvAlarmName.text = alarm.title
+
+                btnRestore.setOnClickListener {
+                    val allAlarms = loader.loadWakeupAlarms()
+                    val idx = allAlarms.indexOfFirst { it.id == alarm.id }
+                    if (idx != -1) {
+                        allAlarms[idx] = allAlarms[idx].copy(isDeleted = false)
+                        loader.saveWakeupAlarms(allAlarms)
+                        com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(this@SmartSleepActivity)
+                        updateAlarmUI()
+                        dialog.dismiss()
+                        showRecycleBinDialog() // refresh
+                    }
+                }
+
+                btnDeletePermanent.setOnClickListener {
+                    com.google.android.material.dialog.MaterialAlertDialogBuilder(this@SmartSleepActivity)
+                        .setTitle("Delete Permanently")
+                        .setMessage("This action cannot be undone.")
+                        .setPositiveButton("Delete") { _, _ ->
+                            val allAlarms = loader.loadWakeupAlarms()
+                            allAlarms.removeAll { it.id == alarm.id }
+                            loader.saveWakeupAlarms(allAlarms)
+                            dialog.dismiss()
+                            showRecycleBinDialog() // refresh
+                        }
+                        .setNegativeButton("Cancel", null)
+                        .show()
+                }
+            }
+        }
+
+        dialog.setOnDismissListener { isMathDialogShowing = false }
+        dialog.show()
+    }
+
+    private fun updateAlarmUI() {
+        val btnAddAlarm = findViewById<android.widget.ImageButton>(com.neubofy.reality.R.id.btnAddAlarm)
+        val btnRecycleBin = findViewById<android.widget.ImageButton>(com.neubofy.reality.R.id.btnRecycleBin)
+
+        btnAddAlarm?.setOnClickListener { showAlarmSetupDialog(null) }
+        btnRecycleBin?.setOnClickListener { showRecycleBinDialog() }
+
+        setupAlarmRecycler()
+    }
+
+    private fun showAlarmSetupDialog(editAlarmId: String?) {
         val dialogView = layoutInflater.inflate(com.neubofy.reality.R.layout.dialog_wakeup_alarm_setup, null)
         val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
         dialog.setContentView(dialogView)
@@ -242,7 +348,7 @@ class SmartSleepActivity : AppCompatActivity() {
         val btnSave = dialogView.findViewById<com.google.android.material.button.MaterialButton>(com.neubofy.reality.R.id.btnSave)
 
         val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this)
-        val existingAlarm = loader.loadWakeupAlarms().find { it.id == "nightly_wakeup" }
+        val existingAlarm = if (editAlarmId != null) loader.loadWakeupAlarms().find { it.id == editAlarmId } else null
 
         var selectedHour = existingAlarm?.hour ?: 7
         var selectedMinute = existingAlarm?.minute ?: 0
@@ -296,9 +402,10 @@ class SmartSleepActivity : AppCompatActivity() {
             val maxAttempts = if (maxStr.isNotEmpty()) maxStr.toInt() else 5
 
             val alarms = loader.loadWakeupAlarms()
-            alarms.removeAll { it.id == "nightly_wakeup" }
+            val alarmIdToSave = editAlarmId ?: System.currentTimeMillis().toString()
+            alarms.removeAll { it.id == alarmIdToSave }
             alarms.add(com.neubofy.reality.data.model.WakeupAlarm(
-                id = "nightly_wakeup",
+                id = alarmIdToSave,
                 title = title,
                 hour = selectedHour,
                 minute = selectedMinute,
@@ -316,19 +423,23 @@ class SmartSleepActivity : AppCompatActivity() {
             dialog.dismiss()
         }
 
+        dialog.setOnDismissListener { isMathDialogShowing = false }
         dialog.show()
     }
 
-
     private fun checkAndShowMathDismissDialog() {
+        if (isMathDialogShowing) return
         val action = intent.getStringExtra("action")
-        if (action == "wakeup_alarm") {
-            val alarmId = intent.getStringExtra("id")
+        val activeAlarmId = com.neubofy.reality.services.WakeupAlarmService.activeAlarmId
+
+        if ((action == "wakeup_alarm" || activeAlarmId != null) && activeAlarmId != null) {
+            val alarmId = intent.getStringExtra("id") ?: activeAlarmId
             showMathDismissDialog(alarmId)
         }
     }
 
     private fun showMathDismissDialog(alarmId: String?) {
+        isMathDialogShowing = true
         val dialogView = layoutInflater.inflate(com.neubofy.reality.R.layout.dialog_math_alarm_dismiss, null)
         val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
         dialog.setCancelable(false)
@@ -386,10 +497,20 @@ class SmartSleepActivity : AppCompatActivity() {
                     tvError.visibility = android.view.View.GONE
 
                     // Stop Service
-                    val stopIntent = android.content.Intent(this, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
+                    val stopIntent = android.content.Intent(this@SmartSleepActivity, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
                         this.action = "STOP"
                     }
                     startService(stopIntent)
+                    // Delete alarm if it is a non-repeating alarm
+                    val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this@SmartSleepActivity)
+                    val alarms = loader.loadWakeupAlarms()
+                    val idx = alarms.indexOfFirst { it.id == alarmId }
+                    if (idx != -1 && alarms[idx].repeatDays.isEmpty()) {
+                        alarms[idx] = alarms[idx].copy(isDeleted = true)
+                        loader.saveWakeupAlarms(alarms)
+                    }
+                    com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(this@SmartSleepActivity)
+
 
                     // Calculate start time based on current end time and user confirmation
                     // (Assuming inference algorithm is robust or standard sleep tracking happens via sleep verification)
@@ -410,6 +531,7 @@ class SmartSleepActivity : AppCompatActivity() {
             }
         }
 
+        dialog.setOnDismissListener { isMathDialogShowing = false }
         dialog.show()
     }
 
@@ -569,4 +691,7 @@ class SmartSleepActivity : AppCompatActivity() {
         override fun areItemsTheSame(oldItem: SleepSessionUiModel, newItem: SleepSessionUiModel) = oldItem.originalStart == newItem.originalStart
         override fun areContentsTheSame(oldItem: SleepSessionUiModel, newItem: SleepSessionUiModel) = oldItem == newItem
     }
+
+
+
 }

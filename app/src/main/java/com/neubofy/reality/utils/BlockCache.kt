@@ -166,7 +166,7 @@ object BlockCache {
                 
                 // CRITICAL FIX: Reload emergency status immediately
                 val emergencyData = prefs.getEmergencyData()
-                emergencySessionEndTime = if (emergencyData.currentSessionEndTime > now && emergencyData.usesRemaining > 0) {
+                emergencySessionEndTime = if (emergencyData.currentSessionEndTime > now) {
                     emergencyData.currentSessionEndTime
                 } else {
                     0L

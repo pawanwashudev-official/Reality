@@ -93,7 +93,8 @@ object WakeupAlarmScheduler {
             } else {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, nextAlarmTime, pendingIntent)
             }
-            TerminalLogger.log("WAKEUP ALARM: Scheduled next alarm")
+            val timeStr = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(nextAlarmTime))
+            TerminalLogger.log("WAKEUP ALARM: Scheduled next alarm at $timeStr")
         }
     }
 
