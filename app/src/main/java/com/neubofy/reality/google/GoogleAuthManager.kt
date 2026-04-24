@@ -14,6 +14,7 @@ import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.calendar.CalendarScopes
 import com.google.api.services.docs.v1.DocsScopes
+import com.google.api.services.sheets.v4.SheetsScopes
 import com.google.api.services.drive.DriveScopes
 import com.google.api.services.tasks.TasksScopes
 import com.neubofy.reality.utils.TerminalLogger
@@ -45,7 +46,8 @@ object GoogleAuthManager {
         CalendarScopes.CALENDAR,           // Full calendar access
         TasksScopes.TASKS,                 // Google Tasks
         DriveScopes.DRIVE_FILE,            // Drive files created by app
-        DocsScopes.DOCUMENTS               // Google Docs
+        DocsScopes.DOCUMENTS,              // Google Docs
+        SheetsScopes.SPREADSHEETS          // Google Sheets
     )
     
     private fun getPrefs(context: Context) = 
