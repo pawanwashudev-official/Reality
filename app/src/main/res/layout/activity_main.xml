@@ -354,7 +354,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <!-- Emergency Card (Conditional) -->
-            <com.google.android.material.card.MaterialCardView
+                        <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_emergency"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -363,6 +363,15 @@
                 app:strokeColor="?attr/colorError"
                 app:strokeWidth="1dp"
                 android:layout_marginTop="8dp">
+
+                <!-- Clickable overlay (Moved before the content so buttons sit on top) -->
+                <View
+                    android:id="@+id/btn_emergency_click"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?selectableItemBackground"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -375,7 +384,8 @@
                         android:layout_width="32dp"
                         android:layout_height="32dp"
                         android:src="@drawable/ic_emergency"
-                        app:tint="?attr/colorError"/>
+                        app:tint="?attr/colorError"
+                        android:importantForAccessibility="no" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -411,14 +421,6 @@
                         app:tint="?attr/colorError"
                         android:elevation="4dp"/>
                 </LinearLayout>
-                <!-- Clickable overlay -->
-                <View
-                    android:id="@+id/btn_emergency_click"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:background="?selectableItemBackground"/>
             </com.google.android.material.card.MaterialCardView>
 
             <!-- Focus Status / Start Focus -->

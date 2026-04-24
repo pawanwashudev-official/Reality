@@ -399,10 +399,7 @@ class MainActivity : BaseActivity() {
         binding.btnEmergencySettings.setOnClickListener {
             val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this)
             val strictMode = loader.getStrictModeData()
-            if (strictMode.isEnabled && strictMode.isEmergencyLocked) {
-                Toast.makeText(this, "Emergency settings are locked by Strict Mode.", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+            val isLocked = strictMode.isEnabled && strictMode.isEmergencyLocked
 
             val emergencyData = loader.getEmergencyData()
             val numberPicker = android.widget.NumberPicker(this).apply {
@@ -413,15 +410,19 @@ class MainActivity : BaseActivity() {
 
             com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                 .setTitle("Emergency Quota")
-                .setMessage("Set maximum emergency breaks allowed per day:")
+                .setMessage(if (isLocked) "Settings are locked by Strict Mode. Current maximum is ${emergencyData.maxUses}." else "Set maximum emergency breaks allowed per day:")
                 .setView(numberPicker)
                 .setPositiveButton("Save") { _, _ ->
-                    val diff = numberPicker.value - emergencyData.maxUses
-                    emergencyData.maxUses = numberPicker.value
-                    emergencyData.usesRemaining = (emergencyData.usesRemaining + diff).coerceIn(0, emergencyData.maxUses)
-                    loader.saveEmergencyData(emergencyData)
-                    updateEmergencyUI()
-                    Toast.makeText(this, "Emergency quota updated.", Toast.LENGTH_SHORT).show()
+                    if (isLocked) {
+                        Toast.makeText(this, "Cannot save: Emergency settings are locked by Strict Mode.", Toast.LENGTH_SHORT).show()
+                    } else {
+                        val diff = numberPicker.value - emergencyData.maxUses
+                        emergencyData.maxUses = numberPicker.value
+                        emergencyData.usesRemaining = (emergencyData.usesRemaining + diff).coerceIn(0, emergencyData.maxUses)
+                        loader.saveEmergencyData(emergencyData)
+                        updateEmergencyUI()
+                        Toast.makeText(this, "Emergency quota updated.", Toast.LENGTH_SHORT).show()
+                    }
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
