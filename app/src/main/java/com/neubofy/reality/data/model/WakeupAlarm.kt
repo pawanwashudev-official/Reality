@@ -3,6 +3,7 @@ package com.neubofy.reality.data.model
 data class WakeupAlarm(
     val id: String,
     val title: String,
+    val description: String = "",
     val hour: Int,
     val minute: Int,
     var isEnabled: Boolean = true,

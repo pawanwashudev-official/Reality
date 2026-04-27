@@ -417,6 +417,8 @@ class ProfileActivity : AppCompatActivity() {
         binding.btnForgetDrive.setOnClickListener { forgetDrive() }
         binding.btnForgetTasks.setOnClickListener { forgetTasks() }
         binding.btnEraseAllSetup.setOnClickListener { eraseAllSetupData() }
+        findViewById<android.view.View>(R.id.card_sheet_setup)?.setOnClickListener { startSheetSetup() }
+
     }
 
     private fun loadSetupData() {
@@ -428,6 +430,17 @@ class ProfileActivity : AppCompatActivity() {
         val planId = prefs.getString("plan_folder_id", null)
         val reportId = prefs.getString("report_folder_id", null)
         
+
+        val sheetId = prefs.getString("reality_sheet_id", null)
+        val tvSheetInfo = findViewById<android.widget.TextView>(R.id.tv_saved_sheet_info)
+        val btnForgetSheet = findViewById<android.view.View>(R.id.btn_forget_sheet)
+        if (!sheetId.isNullOrEmpty()) {
+            tvSheetInfo?.text = "Sheet Linked: " + sheetId
+            btnForgetSheet?.visibility = View.VISIBLE
+        } else {
+            tvSheetInfo?.text = "No sheet configured."
+            btnForgetSheet?.visibility = View.GONE
+        }
         val hasDriveFolders = !realityId.isNullOrEmpty() || !diaryId.isNullOrEmpty() || !planId.isNullOrEmpty() || !reportId.isNullOrEmpty()
 
         if (hasDriveFolders) {
@@ -870,6 +883,116 @@ class ProfileActivity : AppCompatActivity() {
         }
     }
     
+
+    private fun startSheetSetup() {
+
+        if (!GoogleAuthManager.isSignedIn(this)) {
+            lifecycleScope.launch { GoogleAuthManager.signIn(this@ProfileActivity) }
+            return
+        }
+
+        // We must ensure the user has authorized the specific scopes required for Google Sheets.
+        val account = com.google.android.gms.auth.api.signin.GoogleSignIn.getLastSignedInAccount(this)
+        if (account != null) {
+            val scope = com.google.android.gms.common.api.Scope(com.google.api.services.sheets.v4.SheetsScopes.SPREADSHEETS)
+            if (!com.google.android.gms.auth.api.signin.GoogleSignIn.hasPermissions(account, scope)) {
+                com.google.android.gms.auth.api.signin.GoogleSignIn.requestPermissions(
+                    this,
+                    9999,
+                    account,
+                    scope,
+                    com.google.android.gms.common.api.Scope(com.google.api.services.drive.DriveScopes.DRIVE_FILE)
+                )
+                Toast.makeText(this, "Please grant Sheets permission first.", Toast.LENGTH_LONG).show()
+                return
+            }
+        }
+
+        val nightlyPrefs = getSharedPreferences(NIGHTLY_PREFS, Context.MODE_PRIVATE)
+        val folderId = nightlyPrefs.getString("reality_folder_id", null)
+
+        if (folderId == null) {
+            Toast.makeText(this, "Please setup Reality Drive Folder first", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val options = arrayOf("Create New", "Use Existing URL")
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Reality Sheet Setup")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> createNewSheet(folderId)
+                    1 -> useExistingSheet()
+                }
+            }
+            .show()
+    }
+
+    private fun createNewSheet(folderId: String) {
+        val nightlyPrefs = getSharedPreferences(NIGHTLY_PREFS, Context.MODE_PRIVATE)
+        val tvSheetInfo = findViewById<android.widget.TextView>(R.id.tv_saved_sheet_info)
+        tvSheetInfo?.text = "Creating sheet..."
+
+        lifecycleScope.launch {
+            try {
+                var sheetId = withContext(Dispatchers.IO) {
+                    com.neubofy.reality.google.GoogleDriveManager.createSpreadsheet(this@ProfileActivity, "Reality sheet", folderId)
+                }
+
+                if (sheetId != null) {
+                    com.neubofy.reality.google.GoogleSheetsManager.verifyAndCreateColumns(this@ProfileActivity, sheetId)
+                    nightlyPrefs.edit().putString("reality_sheet_id", sheetId).apply()
+                    Toast.makeText(this@ProfileActivity, "Reality Sheet created & mapped!", Toast.LENGTH_SHORT).show()
+                    loadSetupData()
+                } else {
+                    Toast.makeText(this@ProfileActivity, "Failed to create Reality Sheet", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@ProfileActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+            loadSetupData()
+        }
+    }
+
+    private fun useExistingSheet() {
+        val input = android.widget.EditText(this)
+        input.hint = "Paste Google Sheet URL"
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Use Existing Sheet")
+            .setView(input)
+            .setPositiveButton("Connect") { _, _ ->
+                val url = input.text.toString()
+                val idMatch = Regex("/d/([a-zA-Z0-9-_]+)").find(url)
+                val sheetId = idMatch?.groupValues?.get(1)
+
+                if (sheetId != null) {
+                    val nightlyPrefs = getSharedPreferences(NIGHTLY_PREFS, Context.MODE_PRIVATE)
+                    val tvSheetInfo = findViewById<android.widget.TextView>(R.id.tv_saved_sheet_info)
+                    tvSheetInfo?.text = "Verifying sheet..."
+
+                    lifecycleScope.launch {
+                        try {
+                            val success = com.neubofy.reality.google.GoogleSheetsManager.verifyAndCreateColumns(this@ProfileActivity, sheetId)
+                            if (success) {
+                                nightlyPrefs.edit().putString("reality_sheet_id", sheetId).apply()
+                                Toast.makeText(this@ProfileActivity, "Sheet connected & mapped!", Toast.LENGTH_SHORT).show()
+                                loadSetupData()
+                            } else {
+                                Toast.makeText(this@ProfileActivity, "Failed to verify sheet.", Toast.LENGTH_LONG).show()
+                            }
+                        } catch (e: Exception) {
+                            Toast.makeText(this@ProfileActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                        loadSetupData()
+                    }
+                } else {
+                    Toast.makeText(this, "Invalid URL format", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
     companion object {
         private const val REQUEST_AUTH_TASKS = 1001
         private const val REQUEST_AUTH_DRIVE = 1002

@@ -171,6 +171,7 @@ dependencies {
     implementation("com.google.apis:google-api-services-drive:v3-rev20230520-2.0.0")
     implementation("com.google.apis:google-api-services-docs:v1-rev20230929-2.0.0")
     implementation("com.google.apis:google-api-services-calendar:v3-rev20231123-2.0.0")
+    implementation("com.google.apis:google-api-services-sheets:v4-rev20230815-2.0.0")
     
     // HTTP Client for Google APIs (Synchronized version)
     implementation("com.google.http-client:google-http-client-gson:1.45.1")

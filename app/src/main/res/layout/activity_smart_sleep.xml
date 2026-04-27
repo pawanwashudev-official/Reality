@@ -115,6 +115,15 @@
                             android:textColor="?attr/colorOnSurface"/>
 
                         <ImageButton
+                            android:id="@+id/btnAlarmDefaults"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/baseline_settings_24"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            app:tint="?attr/colorOnSurfaceVariant"
+                            android:contentDescription="Default Settings" />
+
+                        <ImageButton
                             android:id="@+id/btnRecycleBin"
                             android:layout_width="48dp"
                             android:layout_height="48dp"

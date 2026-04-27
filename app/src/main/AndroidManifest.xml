@@ -345,6 +345,13 @@
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name=".ui.activity.WakeupAlarmRingingActivity"
+            android:exported="false"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.Reality" />
+
         <receiver
             android:name=".widget.AIChatWidget"
             android:exported="true">

@@ -67,6 +67,32 @@ object GoogleDriveManager {
      * Search for a specific file by name in a specific folder.
      * Returns the first matching file's ID, or null if not found.
      */
+
+    suspend fun createSpreadsheet(context: Context, title: String, parentFolderId: String? = null): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val service = getDriveService(context) ?: return@withContext null
+
+                val fileMetadata = File().apply {
+                    name = title
+                    mimeType = "application/vnd.google-apps.spreadsheet"
+                    if (parentFolderId != null) {
+                        parents = listOf(parentFolderId)
+                    }
+                }
+
+                val file = service.files().create(fileMetadata)
+                    .setFields("id")
+                    .execute()
+
+                file.id
+            } catch (e: Exception) {
+                TerminalLogger.log("Drive Error: Failed to create spreadsheet '$title' - ${e.message}")
+                null
+            }
+        }
+    }
+
     suspend fun searchFile(context: Context, fileName: String, folderId: String? = null): String? {
         return withContext(Dispatchers.IO) {
             try {

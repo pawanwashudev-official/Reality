@@ -75,9 +75,8 @@ class WakeupAlarmService : Service() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        val fullScreenIntent = Intent(this, MainActivity::class.java).apply {
+        val fullScreenIntent = Intent(this, com.neubofy.reality.ui.activity.WakeupAlarmRingingActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("action", "wakeup_alarm")
             putExtra("id", alarmId)
         }
 

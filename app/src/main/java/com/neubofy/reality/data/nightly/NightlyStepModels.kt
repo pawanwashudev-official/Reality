@@ -55,6 +55,7 @@ object NightlySteps {
     const val STEP_SET_ALARM = 13           // AlarmManager Configuration
     const val STEP_NORMALIZE_TASKS = 14     // AI -> Google Tasks (Deduplicate & Reschedule)
     const val STEP_UPDATE_DISTRACTION = 15  // Auto-update distraction limit from AI Plan
+    const val STEP_BACKUP_SHEET = 16        // Backup to Reality Sheet
 
     // Protocol States
     const val STATE_IDLE = 0
@@ -143,6 +144,7 @@ INPUT DATA (Existing Tasks):
         STEP_SET_ALARM -> "Set Wake-up Alarm"
         STEP_NORMALIZE_TASKS -> "AI Task Cleanup"
         STEP_UPDATE_DISTRACTION -> "Update Distraction Limit"
+        STEP_BACKUP_SHEET -> "Backup to Sheet"
         else -> "Unknown Step"
     }
 

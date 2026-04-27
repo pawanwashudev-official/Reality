@@ -730,17 +730,22 @@ class NightlyPhasePlanning(
 
             // Sync to CustomReminders for UI
             val prefsLoader = com.neubofy.reality.utils.SavedPreferencesLoader(context)
+            val defaults = prefsLoader.getWakeupAlarmDefaults()
+            val alarmId = "nightly_wakeup"
             val wakeupAlarms = prefsLoader.loadWakeupAlarms()
-            wakeupAlarms.removeAll { it.id == "nightly_wakeup" }
+            wakeupAlarms.removeAll { it.id == alarmId }
             wakeupAlarms.add(com.neubofy.reality.data.model.WakeupAlarm(
-                id = "nightly_wakeup",
-                title = "Wake Up",
+                id = alarmId,
+                title = "Wake Up (AI Plan)",
+                description = "AI generated wakeup alarm based on your daily plan.",
                 hour = hour,
                 minute = min,
                 isEnabled = true,
                 repeatDays = emptyList(),
-                snoozeIntervalMins = 3,
-                maxAttempts = 5,
+                ringtoneUri = defaults.ringtoneUri,
+                vibrationEnabled = defaults.vibrationEnabled,
+                snoozeIntervalMins = defaults.snoozeIntervalMins,
+                maxAttempts = defaults.maxAttempts,
                 isDeleted = false
             ))
             prefsLoader.saveWakeupAlarms(wakeupAlarms)
@@ -951,6 +956,133 @@ class NightlyPhasePlanning(
             TerminalLogger.log("Nightly Step 15 Failed: ${e.message}")
             saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_ERROR, e.message)
             listener.onError(NightlySteps.STEP_UPDATE_DISTRACTION, "Update Failed: ${e.message}")
+        }
+    }
+
+
+    // ========== STEP 16: Backup to Reality Sheet ==========
+    suspend fun step16_backupToSheet() {
+        val stepData = loadStepData(NightlySteps.STEP_BACKUP_SHEET)
+        if (stepData.status == StepProgress.STATUS_COMPLETED) {
+            listener.onStepCompleted(NightlySteps.STEP_BACKUP_SHEET, "Backed Up", stepData.details)
+            return
+        }
+
+        listener.onStepStarted(NightlySteps.STEP_BACKUP_SHEET, "Backing up to Reality Sheet")
+        saveStepState(NightlySteps.STEP_BACKUP_SHEET, StepProgress.STATUS_RUNNING, "Preparing data...")
+
+        try {
+            val nightlyPrefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
+            val sheetId = nightlyPrefs.getString("reality_sheet_id", null)
+
+            if (sheetId.isNullOrEmpty()) {
+                val skipDetails = "Reality Sheet not configured."
+                listener.onStepCompleted(NightlySteps.STEP_BACKUP_SHEET, "Skipped", skipDetails)
+                saveStepState(NightlySteps.STEP_BACKUP_SHEET, StepProgress.STATUS_COMPLETED, skipDetails)
+                return
+            }
+
+            // Load required step data
+            val step1 = loadStepData(NightlySteps.STEP_FETCH_TASKS)
+            val step2 = loadStepData(NightlySteps.STEP_FETCH_SESSIONS)
+            val step3 = loadStepData(NightlySteps.STEP_CALC_SCREEN_TIME)
+            val step6 = loadStepData(NightlySteps.STEP_CREATE_DIARY)
+            val step7 = loadStepData(NightlySteps.STEP_ANALYZE_REFLECTION)
+            val step9 = loadStepData(NightlySteps.STEP_GENERATE_PLAN)
+            val step12 = loadStepData(NightlySteps.STEP_GENERATE_PDF)
+
+            fun extractJson(data: com.neubofy.reality.data.repository.StepData?): org.json.JSONObject {
+                if (data?.resultJson == null) return org.json.JSONObject()
+                return try { org.json.JSONObject(data.resultJson) } catch (e: Exception) { org.json.JSONObject() }
+            }
+
+            val j1 = extractJson(step1).optJSONObject("output") ?: org.json.JSONObject()
+            val j2 = extractJson(step2).optJSONObject("output") ?: org.json.JSONObject()
+            val j3 = extractJson(step3).optJSONObject("output") ?: org.json.JSONObject()
+            val j6 = extractJson(step6).optJSONObject("input") ?: org.json.JSONObject()
+            val j7 = extractJson(step7).optJSONObject("output") ?: org.json.JSONObject()
+
+            // Build the row data
+            val rowValues = mutableListOf<Any>()
+
+            // "Date"
+            rowValues.add(diaryDate.toString())
+
+            // "Step1_Tasks"
+            val totalDue = j1.optJSONArray("dueTasks")?.length() ?: 0
+            val totalComp = j1.optJSONArray("completedTasks")?.length() ?: 0
+            rowValues.add("$totalComp/$totalDue Completed")
+
+            // "Step2_SessionsCount", "Step2_TotalMins"
+            rowValues.add((j2.optJSONArray("events")?.length() ?: 0).toString())
+            rowValues.add(j2.optInt("totalPlannedMinutes", 0).toString())
+
+            // "Q1", "A1", ... "Q6", "A6" (Step 3 Tapasya questions)
+            val questions = j3.optJSONArray("questions")
+            val answers = j3.optJSONArray("answers")
+            for (i in 0 until 6) {
+                rowValues.add(questions?.optString(i, "N/A") ?: "N/A")
+                rowValues.add(answers?.optString(i, "N/A") ?: "N/A")
+            }
+
+            // "Step6_Feedback"
+            rowValues.add(j6.optString("feedback", "No feedback"))
+
+            // "XP_Tapasya", "XP_Task", "XP_Session", "XP_Distraction", "XP_Reflection", "XP_Total", "Level", "Streak"
+            val xpEarned = j7.optJSONObject("xpEarned") ?: org.json.JSONObject()
+            rowValues.add(xpEarned.optInt("tapasyaXP", 0).toString())
+            rowValues.add(xpEarned.optInt("taskXP", 0).toString())
+            rowValues.add(xpEarned.optInt("sessionXP", 0).toString())
+            rowValues.add(xpEarned.optInt("distractionBonus", 0).toString())
+            rowValues.add(xpEarned.optInt("reflectionXP", 0).toString())
+            rowValues.add(xpEarned.optInt("totalXP", 0).toString())
+            rowValues.add(j7.optInt("newLevel", 0).toString())
+            rowValues.add(j7.optInt("newStreak", 0).toString())
+
+            // "Plan_Doc_Link"
+            rowValues.add(step9.linkUrl ?: "")
+
+            // "Report_PDF_Link"
+            rowValues.add(step12.linkUrl ?: "")
+
+            // Append to sheet
+            val success = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                try {
+                    val service = com.neubofy.reality.google.GoogleAuthManager.getGoogleAccountCredential(context)?.let {
+                        com.google.api.services.sheets.v4.Sheets.Builder(
+                            com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport(),
+                            com.google.api.client.json.gson.GsonFactory.getDefaultInstance(),
+                            it
+                        ).setApplicationName("Reality").build()
+                    }
+
+                    if (service != null) {
+                        val body = com.google.api.services.sheets.v4.model.ValueRange().setValues(listOf(rowValues as List<Any>))
+                        service.spreadsheets().values()
+                            .append(sheetId, "Sheet1", body)
+                            .setValueInputOption("USER_ENTERED")
+                            .execute()
+                        true
+                    } else false
+                } catch (e: Exception) {
+                    TerminalLogger.log("Sheets Error appending row: ${e.message}")
+                    false
+                }
+            }
+
+            if (success) {
+                val details = "Successfully appended to Reality Sheet."
+                listener.onStepCompleted(NightlySteps.STEP_BACKUP_SHEET, "Backed Up", details)
+                saveStepState(NightlySteps.STEP_BACKUP_SHEET, StepProgress.STATUS_COMPLETED, details, linkUrl = "https://docs.google.com/spreadsheets/d/$sheetId")
+            } else {
+                val err = "Failed to append to Reality Sheet."
+                listener.onError(NightlySteps.STEP_BACKUP_SHEET, err)
+                saveStepState(NightlySteps.STEP_BACKUP_SHEET, StepProgress.STATUS_ERROR, err)
+            }
+        } catch (e: Exception) {
+            TerminalLogger.log("Nightly Step 16 Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_BACKUP_SHEET, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_BACKUP_SHEET, "Backup Failed: ${e.message}")
         }
     }
 
