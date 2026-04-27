@@ -780,17 +780,17 @@ class NightlyPhasePlanning(
         // Diary is for 'diaryDate', so plan is for 'diaryDate + 1'
         val planDate = diaryDate.plusDays(1)
         val targetDateStr = planDate.format(DateTimeFormatter.ISO_LOCAL_DATE) // YYYY-MM-DD
-        
+
         val stepData = loadStepData(NightlySteps.STEP_NORMALIZE_TASKS)
         if (stepData.status == StepProgress.STATUS_COMPLETED) {
              TerminalLogger.log("Nightly Phase Planning: Step 14 already completed.")
              listener.onStepCompleted(NightlySteps.STEP_NORMALIZE_TASKS, "Tasks Normalized", "Already done")
              return
         }
-        
+
         listener.onStepStarted(NightlySteps.STEP_NORMALIZE_TASKS, "AI Task Cleanup")
         saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_RUNNING, "Fetching tasks...")
-        
+
         try {
             // 1. Fetch Task List Configs for context
             val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(context)
@@ -800,7 +800,7 @@ class NightlyPhasePlanning(
             val tasksManager = com.neubofy.reality.google.GoogleTasksManager
             val taskLists = tasksManager.getTaskLists(context)
             val allPendingTasks = mutableListOf<JSONObject>()
-            
+
             for (list in taskLists) {
                 val tasks = tasksManager.getTasks(context, list.id)
                 tasks.forEach { task ->
@@ -815,45 +815,45 @@ class NightlyPhasePlanning(
                     }
                 }
             }
-            
+
             if (allPendingTasks.isEmpty()) {
                 saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_COMPLETED, "No tasks to clean")
                 listener.onStepCompleted(NightlySteps.STEP_NORMALIZE_TASKS, "Task Cleanup", "No pending tasks found")
                 return
             }
-            
+
             // 3. Prepare JSON for AI
             val tasksJsonStr = JSONArray(allPendingTasks).toString()
-            
+
             saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_RUNNING, "AI analyzing ${allPendingTasks.size} tasks...")
-            
+
             // 4. Call AI (Using Standardized Model)
             val model = com.neubofy.reality.ui.activity.AISettingsActivity.getNightlyModel(context)
             if (model.isNullOrEmpty()) {
                 throw IllegalStateException("No AI Model configured for Nightly Protocol.")
             }
-             
+
             val aiResponse = com.neubofy.reality.utils.NightlyAIHelper.normalizeTasks(
-                context = context, 
-                modelString = model, 
-                tasksJson = tasksJsonStr, 
+                context = context,
+                modelString = model,
+                tasksJson = tasksJsonStr,
                 targetDate = targetDateStr + "T00:00:00.000Z",
                 taskListConfigs = taskListConfigs
             )
-            
+
             // 5. Parse AI Response
             val responseJson = try {
                  JSONObject(aiResponse.substringAfter("```json").substringBeforeLast("```").trim())
             } catch (e: Exception) {
                  JSONObject(aiResponse) // Try direct parse
             }
-            
+
             val deleteIds = responseJson.optJSONArray("delete_ids")
             val readdTasks = responseJson.optJSONArray("readd_tasks")
-            
+
             var deletedCount = 0
             var addedCount = 0
-            
+
             // 6. Execute Deletions
             if (deleteIds != null) {
                 for (i in 0 until deleteIds.length()) {
@@ -866,7 +866,7 @@ class NightlyPhasePlanning(
                      }
                 }
             }
-            
+
             // 7. Execute Re-adds (New Tasks)
             if (readdTasks != null) {
                 for (i in 0 until readdTasks.length()) {
@@ -875,7 +875,7 @@ class NightlyPhasePlanning(
                     val startTime = taskData.optString("startTime")
                     val listId = taskData.optString("taskListId")
                     val notes = taskData.optString("notes")
-                    
+
                     if (title.isNotEmpty() && listId.isNotEmpty()) {
                         // Build title with time always expected as HH:mm|Title
                         val finalTitle = if (startTime.isNotEmpty() && !startTime.equals("null", true)) {
@@ -890,13 +890,13 @@ class NightlyPhasePlanning(
                     }
                 }
             }
-            
+
             // 8. Complete
             val resultDetails = "Deleted $deletedCount duplicates/moved tasks, Re-added $addedCount corrected tasks"
             TerminalLogger.log("Nightly Step 14: $resultDetails")
             saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_COMPLETED, resultDetails, aiResponse)
             listener.onStepCompleted(NightlySteps.STEP_NORMALIZE_TASKS, "Task Cleanup Complete", resultDetails)
-            
+
         } catch (e: Exception) {
             TerminalLogger.log("Nightly Step 14 Failed: ${e.message}")
             saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_ERROR, e.message)
@@ -950,7 +950,7 @@ class NightlyPhasePlanning(
             val details = "${oldLimit}min → ${newLimit}min"
             listener.onStepCompleted(NightlySteps.STEP_UPDATE_DISTRACTION, "Limit Updated", details)
             saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_COMPLETED, details, resultJson)
-            
+
             TerminalLogger.log("Nightly Step 15: Distraction limit updated from $oldLimit to $newLimit min")
         } catch (e: Exception) {
             TerminalLogger.log("Nightly Step 15 Failed: ${e.message}")
@@ -1022,25 +1022,26 @@ class NightlyPhasePlanning(
             rowValues.add(j2.optInt("totalPlannedMinutes", 0).toString())
 
             // "Q1", "A1", ... "Q6", "A6" (Step 3 Tapasya questions)
-            val questions = j4.optJSONArray("questions")
+            val questions = j3.optJSONArray("questions")
+            val answers = j3.optJSONArray("answers")
             for (i in 0 until 6) {
                 rowValues.add(questions?.optString(i, "N/A") ?: "N/A")
-                rowValues.add("See Diary")
+                rowValues.add(answers?.optString(i, "N/A") ?: "N/A")
             }
 
             // "Step6_Feedback"
             rowValues.add(j6.optString("feedback", "No feedback"))
 
             // "XP_Tapasya", "XP_Task", "XP_Session", "XP_Distraction", "XP_Reflection", "XP_Total", "Level", "Streak"
-            val xpEarned = j7
-            rowValues.add(xpEarned.optInt("tapasyaXp", 0).toString())
-            rowValues.add(xpEarned.optInt("taskXp", 0).toString())
-            rowValues.add(xpEarned.optInt("sessionXp", 0).toString())
-            rowValues.add(xpEarned.optInt("distractionXp", 0).toString())
-            rowValues.add(xpEarned.optInt("reflectionXp", 0).toString())
-            rowValues.add(xpEarned.optInt("totalXp", 0).toString())
-            rowValues.add(j7.optInt("level", 0).toString())
-            rowValues.add(j7.optInt("streak", 0).toString())
+            val xpEarned = j7.optJSONObject("xpEarned") ?: org.json.JSONObject()
+            rowValues.add(xpEarned.optInt("tapasyaXP", 0).toString())
+            rowValues.add(xpEarned.optInt("taskXP", 0).toString())
+            rowValues.add(xpEarned.optInt("sessionXP", 0).toString())
+            rowValues.add(xpEarned.optInt("distractionBonus", 0).toString())
+            rowValues.add(xpEarned.optInt("reflectionXP", 0).toString())
+            rowValues.add(xpEarned.optInt("totalXP", 0).toString())
+            rowValues.add(j7.optInt("newLevel", 0).toString())
+            rowValues.add(j7.optInt("newStreak", 0).toString())
 
             // "Plan_Doc_Link"
             rowValues.add(step9.linkUrl ?: "")
