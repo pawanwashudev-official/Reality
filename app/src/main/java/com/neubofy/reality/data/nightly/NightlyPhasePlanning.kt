@@ -1002,6 +1002,8 @@ class NightlyPhasePlanning(
             val j3 = extractJson(step3).optJSONObject("output") ?: extractJson(step3)
             val j6 = extractJson(step6).optJSONObject("output") ?: extractJson(step6)
             val j7 = extractJson(step7).optJSONObject("output") ?: extractJson(step7)
+            val j8 = extractJson(step8).optJSONObject("output") ?: extractJson(step8)
+            val j12 = extractJson(step12).optJSONObject("output") ?: extractJson(step12)
 
             // Build the row data
             val rowValues = mutableListOf<Any>()
@@ -1015,8 +1017,8 @@ class NightlyPhasePlanning(
             rowValues.add("$totalComp/$totalDue Completed")
 
             // "Step2_SessionsCount", "Step2_TotalMins"
-            rowValues.add((j2.optJSONArray("events")?.length() ?: 0).toString())
-            rowValues.add(j2.optInt("totalPlannedMinutes", 0).toString())
+            rowValues.add(j2.optInt("sessionCount", 0).toString())
+            rowValues.add(j2.optInt("plannedMinutes", 0).toString())
 
 
             // "Step3_ScreenTime", "Step3_PhoneTotal", "Step3_Steps", "Step3_SleepMins", "Step3_RealityRatio"
@@ -1041,10 +1043,10 @@ class NightlyPhasePlanning(
             rowValues.add(j7.optInt("streak", 0).toString())
 
             // "Plan_Doc_Link"
-            rowValues.add(step8.linkUrl ?: "")
+            rowValues.add(j8.optString("docUrl", ""))
 
             // "Report_PDF_Link"
-            rowValues.add(step12.linkUrl ?: "")
+            rowValues.add(j12.optString("pdfUrl", ""))
 
             // Append to sheet
             val success = withContext(kotlinx.coroutines.Dispatchers.IO) {
