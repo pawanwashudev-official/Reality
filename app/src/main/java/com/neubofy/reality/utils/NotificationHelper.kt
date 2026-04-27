@@ -67,6 +67,7 @@ object NotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .build()
 
         manager.notify(id, notification)

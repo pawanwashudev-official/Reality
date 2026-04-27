@@ -996,11 +996,11 @@ class NightlyPhasePlanning(
                 return try { org.json.JSONObject(data.resultJson) } catch (e: Exception) { org.json.JSONObject() }
             }
 
-            val j1 = extractJson(step1).optJSONObject("output") ?: org.json.JSONObject()
-            val j2 = extractJson(step2).optJSONObject("output") ?: org.json.JSONObject()
-            val j3 = extractJson(step3).optJSONObject("output") ?: org.json.JSONObject()
-            val j6 = extractJson(step6).optJSONObject("input") ?: org.json.JSONObject()
-            val j7 = extractJson(step7).optJSONObject("output") ?: org.json.JSONObject()
+            val j1 = extractJson(step1).optJSONObject("output") ?: extractJson(step1)
+            val j2 = extractJson(step2).optJSONObject("output") ?: extractJson(step2)
+            val j3 = extractJson(step3).optJSONObject("output") ?: extractJson(step3)
+            val j6 = extractJson(step6).optJSONObject("input") ?: extractJson(step6)
+            val j7 = extractJson(step7).optJSONObject("output") ?: extractJson(step7)
 
             // Build the row data
             val rowValues = mutableListOf<Any>()
