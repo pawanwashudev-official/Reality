@@ -1,0 +1,2 @@
+sed -i 's/val step7 = loadStepData(NightlySteps.STEP_ANALYZE_REFLECTION)/val step7 = loadStepData(NightlySteps.STEP_ANALYZE_REFLECTION)\n            val step8 = loadStepData(NightlySteps.STEP_CREATE_PLAN_DOC)/' app/src/main/java/com/neubofy/reality/data/nightly/NightlyPhasePlanning.kt
+sed -i 's/rowValues.add(step9.linkUrl ?: "")/rowValues.add(step8.linkUrl ?: "")/' app/src/main/java/com/neubofy/reality/data/nightly/NightlyPhasePlanning.kt

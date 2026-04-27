@@ -513,7 +513,6 @@ class TapasyaService : Service() {
             .setContentIntent(pendingIntent)
             .setOnlyAlertOnce(true)
             .setOngoing(true)
-            .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
             .build()
     }
 

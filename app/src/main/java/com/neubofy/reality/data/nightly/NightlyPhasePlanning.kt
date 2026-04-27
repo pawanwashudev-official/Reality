@@ -986,10 +986,9 @@ class NightlyPhasePlanning(
             val step1 = loadStepData(NightlySteps.STEP_FETCH_TASKS)
             val step2 = loadStepData(NightlySteps.STEP_FETCH_SESSIONS)
             val step3 = loadStepData(NightlySteps.STEP_CALC_SCREEN_TIME)
-            val step4 = loadStepData(NightlySteps.STEP_GENERATE_QUESTIONS)
-            val step5 = loadStepData(NightlySteps.STEP_CREATE_DIARY)
-            val step6 = loadStepData(NightlySteps.STEP_ANALYZE_REFLECTION)
-            val step7 = loadStepData(NightlySteps.STEP_FINALIZE_XP)
+            val step6 = loadStepData(NightlySteps.STEP_CREATE_DIARY)
+            val step7 = loadStepData(NightlySteps.STEP_ANALYZE_REFLECTION)
+            val step8 = loadStepData(NightlySteps.STEP_CREATE_PLAN_DOC)
             val step9 = loadStepData(NightlySteps.STEP_GENERATE_PLAN)
             val step12 = loadStepData(NightlySteps.STEP_GENERATE_PDF)
 
@@ -1001,8 +1000,6 @@ class NightlyPhasePlanning(
             val j1 = extractJson(step1).optJSONObject("output") ?: extractJson(step1)
             val j2 = extractJson(step2).optJSONObject("output") ?: extractJson(step2)
             val j3 = extractJson(step3).optJSONObject("output") ?: extractJson(step3)
-            val j4 = extractJson(step4).optJSONObject("output") ?: extractJson(step4)
-            val j5 = extractJson(step5).optJSONObject("output") ?: extractJson(step5)
             val j6 = extractJson(step6).optJSONObject("output") ?: extractJson(step6)
             val j7 = extractJson(step7).optJSONObject("output") ?: extractJson(step7)
 
@@ -1021,12 +1018,13 @@ class NightlyPhasePlanning(
             rowValues.add((j2.optJSONArray("events")?.length() ?: 0).toString())
             rowValues.add(j2.optInt("totalPlannedMinutes", 0).toString())
 
-            // "Q1", "A1", ... "Q6", "A6" (Step 3 Tapasya questions)
-            val questions = j4.optJSONArray("questions")
-            for (i in 0 until 6) {
-                rowValues.add(questions?.optString(i, "N/A") ?: "N/A")
-                rowValues.add("See Diary")
-            }
+
+            // "Step3_ScreenTime", "Step3_PhoneTotal", "Step3_Steps", "Step3_SleepMins", "Step3_RealityRatio"
+                rowValues.add(j3.optInt("usedMinutes", 0).toString())
+                rowValues.add(j3.optInt("totalPhoneMinutes", 0).toString())
+            rowValues.add(j3.optInt("steps", 0).toString())
+            rowValues.add(j3.optInt("sleepMinutes", 0).toString())
+            rowValues.add(j3.optInt("realityRatio", 0).toString())
 
             // "Step6_Feedback"
             rowValues.add(j6.optString("feedback", "No feedback"))
@@ -1043,7 +1041,7 @@ class NightlyPhasePlanning(
             rowValues.add(j7.optInt("streak", 0).toString())
 
             // "Plan_Doc_Link"
-            rowValues.add(step9.linkUrl ?: "")
+            rowValues.add(step8.linkUrl ?: "")
 
             // "Report_PDF_Link"
             rowValues.add(step12.linkUrl ?: "")

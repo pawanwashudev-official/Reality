@@ -418,6 +418,7 @@ class ProfileActivity : AppCompatActivity() {
         binding.btnForgetTasks.setOnClickListener { forgetTasks() }
         binding.btnEraseAllSetup.setOnClickListener { eraseAllSetupData() }
         findViewById<android.view.View>(R.id.card_sheet_setup)?.setOnClickListener { startSheetSetup() }
+        findViewById<android.view.View>(R.id.btn_forget_sheet)?.setOnClickListener { forgetSheet() }
 
     }
 
@@ -511,6 +512,12 @@ class ProfileActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun forgetSheet() {
+        val prefs = getSharedPreferences(NIGHTLY_PREFS, MODE_PRIVATE)
+        prefs.edit().remove("reality_sheet_id").apply()
+        loadSetupData()
     }
 
     private fun eraseAllSetupData() {

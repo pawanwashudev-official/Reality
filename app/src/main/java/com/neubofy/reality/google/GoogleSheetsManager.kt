@@ -25,12 +25,11 @@ object GoogleSheetsManager {
         "Step1_Tasks",
         "Step2_SessionsCount",
         "Step2_TotalMins",
-        "Q1", "A1",
-        "Q2", "A2",
-        "Q3", "A3",
-        "Q4", "A4",
-        "Q5", "A5",
-        "Q6", "A6",
+        "Step3_ScreenTime",
+        "Step3_PhoneTotal",
+        "Step3_Steps",
+        "Step3_SleepMins",
+        "Step3_RealityRatio",
         "Step6_Feedback",
         "XP_Tapasya",
         "XP_Task",
@@ -59,6 +58,24 @@ object GoogleSheetsManager {
             } else {
                 needsUpdate = true
                 mutableListOf()
+            }
+
+            // Remove old Q/A headers
+            val oldHeaders = listOf("Q1", "A1", "Q2", "A2", "Q3", "A3", "Q4", "A4", "Q5", "A5", "Q6", "A6")
+            var hasOldHeaders = false
+            for (header in oldHeaders) {
+                if (currentHeaders.contains(header)) {
+                    hasOldHeaders = true
+                    break
+                }
+            }
+
+            if (hasOldHeaders) {
+                currentHeaders.clear()
+                needsUpdate = true
+                for (header in REQUIRED_HEADERS) {
+                    currentHeaders.add(header)
+                }
             }
 
             // Check missing headers
