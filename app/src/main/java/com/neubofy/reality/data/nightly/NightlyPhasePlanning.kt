@@ -986,8 +986,9 @@ class NightlyPhasePlanning(
             val step1 = loadStepData(NightlySteps.STEP_FETCH_TASKS)
             val step2 = loadStepData(NightlySteps.STEP_FETCH_SESSIONS)
             val step3 = loadStepData(NightlySteps.STEP_CALC_SCREEN_TIME)
-            val step6 = loadStepData(NightlySteps.STEP_CREATE_DIARY)
-            val step7 = loadStepData(NightlySteps.STEP_ANALYZE_REFLECTION)
+            val step6 = loadStepData(NightlySteps.STEP_ANALYZE_REFLECTION)
+            val step7 = loadStepData(NightlySteps.STEP_FINALIZE_XP)
+            val step8 = loadStepData(NightlySteps.STEP_CREATE_PLAN_DOC)
             val step9 = loadStepData(NightlySteps.STEP_GENERATE_PLAN)
             val step12 = loadStepData(NightlySteps.STEP_GENERATE_PDF)
 
@@ -996,11 +997,13 @@ class NightlyPhasePlanning(
                 return try { org.json.JSONObject(data.resultJson) } catch (e: Exception) { org.json.JSONObject() }
             }
 
-            val j1 = extractJson(step1).optJSONObject("output") ?: org.json.JSONObject()
-            val j2 = extractJson(step2).optJSONObject("output") ?: org.json.JSONObject()
-            val j3 = extractJson(step3).optJSONObject("output") ?: org.json.JSONObject()
-            val j6 = extractJson(step6).optJSONObject("input") ?: org.json.JSONObject()
-            val j7 = extractJson(step7).optJSONObject("output") ?: org.json.JSONObject()
+            val j1 = extractJson(step1).optJSONObject("output") ?: extractJson(step1)
+            val j2 = extractJson(step2).optJSONObject("output") ?: extractJson(step2)
+            val j3 = extractJson(step3).optJSONObject("output") ?: extractJson(step3)
+            val j6 = extractJson(step6).optJSONObject("output") ?: extractJson(step6)
+            val j7 = extractJson(step7).optJSONObject("output") ?: extractJson(step7)
+            val j8 = extractJson(step8).optJSONObject("output") ?: extractJson(step8)
+            val j12 = extractJson(step12).optJSONObject("output") ?: extractJson(step12)
 
             // Build the row data
             val rowValues = mutableListOf<Any>()
@@ -1014,36 +1017,36 @@ class NightlyPhasePlanning(
             rowValues.add("$totalComp/$totalDue Completed")
 
             // "Step2_SessionsCount", "Step2_TotalMins"
-            rowValues.add((j2.optJSONArray("events")?.length() ?: 0).toString())
-            rowValues.add(j2.optInt("totalPlannedMinutes", 0).toString())
+            rowValues.add(j2.optInt("sessionCount", 0).toString())
+            rowValues.add(j2.optInt("plannedMinutes", 0).toString())
 
-            // "Q1", "A1", ... "Q6", "A6" (Step 3 Tapasya questions)
-            val questions = j3.optJSONArray("questions")
-            val answers = j3.optJSONArray("answers")
-            for (i in 0 until 6) {
-                rowValues.add(questions?.optString(i, "N/A") ?: "N/A")
-                rowValues.add(answers?.optString(i, "N/A") ?: "N/A")
-            }
+
+            // "Step3_ScreenTime", "Step3_PhoneTotal", "Step3_Steps", "Step3_SleepMins", "Step3_RealityRatio"
+                rowValues.add(j3.optInt("usedMinutes", 0).toString())
+                rowValues.add(j3.optInt("totalPhoneMinutes", 0).toString())
+            rowValues.add(j3.optInt("steps", 0).toString())
+            rowValues.add(j3.optInt("sleepMinutes", 0).toString())
+            rowValues.add(j3.optInt("realityRatio", 0).toString())
 
             // "Step6_Feedback"
             rowValues.add(j6.optString("feedback", "No feedback"))
 
             // "XP_Tapasya", "XP_Task", "XP_Session", "XP_Distraction", "XP_Reflection", "XP_Total", "Level", "Streak"
-            val xpEarned = j7.optJSONObject("xpEarned") ?: org.json.JSONObject()
-            rowValues.add(xpEarned.optInt("tapasyaXP", 0).toString())
-            rowValues.add(xpEarned.optInt("taskXP", 0).toString())
-            rowValues.add(xpEarned.optInt("sessionXP", 0).toString())
-            rowValues.add(xpEarned.optInt("distractionBonus", 0).toString())
-            rowValues.add(xpEarned.optInt("reflectionXP", 0).toString())
-            rowValues.add(xpEarned.optInt("totalXP", 0).toString())
-            rowValues.add(j7.optInt("newLevel", 0).toString())
-            rowValues.add(j7.optInt("newStreak", 0).toString())
+            val xpEarned = j7
+            rowValues.add(xpEarned.optInt("tapasyaXp", 0).toString())
+            rowValues.add(xpEarned.optInt("taskXp", 0).toString())
+            rowValues.add(xpEarned.optInt("sessionXp", 0).toString())
+            rowValues.add(xpEarned.optInt("distractionXp", 0).toString())
+            rowValues.add(xpEarned.optInt("reflectionXp", 0).toString())
+            rowValues.add(xpEarned.optInt("totalXp", 0).toString())
+            rowValues.add(j7.optInt("level", 0).toString())
+            rowValues.add(j7.optInt("streak", 0).toString())
 
             // "Plan_Doc_Link"
-            rowValues.add(step9.linkUrl ?: "")
+            rowValues.add(j8.optString("docUrl", ""))
 
             // "Report_PDF_Link"
-            rowValues.add(step12.linkUrl ?: "")
+            rowValues.add(j12.optString("pdfUrl", ""))
 
             // Append to sheet
             val success = withContext(kotlinx.coroutines.Dispatchers.IO) {
