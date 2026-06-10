@@ -46,6 +46,17 @@ class WakeupAlarmService : Service() {
             stopForeground(true)
             stopSelf()
             return START_NOT_STICKY
+        } else if (intent?.action == "MUTE") {
+            // Stop sound/vibration but keep timer running so it snoozes if math not completed
+            try {
+                mediaPlayer?.stop()
+                mediaPlayer?.release()
+                mediaPlayer = null
+                vibrator?.cancel()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            return START_NOT_STICKY
         }
 
         com.neubofy.reality.utils.TerminalLogger.log("WAKEUP ALARM: Service Started!")

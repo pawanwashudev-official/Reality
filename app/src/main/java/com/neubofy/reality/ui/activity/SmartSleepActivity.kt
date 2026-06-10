@@ -56,7 +56,7 @@ class SmartSleepActivity : AppCompatActivity() {
             // Stop alarm ringing as soon as QR is scanned, but keep the UI up
             // so they must finish the math problem to fully dismiss it.
             val stopIntent = android.content.Intent(this, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
-                this.action = "STOP"
+                this.action = "MUTE"
             }
             startService(stopIntent)
 
@@ -570,6 +570,12 @@ class SmartSleepActivity : AppCompatActivity() {
 
             com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleSnooze(this, alarmId ?: "nightly_wakeup", alarm?.title ?: "Wake Up", maxAttempts, interval, alarm?.ringtoneUri, alarm?.vibrationEnabled ?: true)
 
+            // Stop Service
+            val stopIntent = android.content.Intent(this, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
+                this.action = "STOP"
+            }
+            startService(stopIntent)
+
             dialog.dismiss()
             finish()
         }
@@ -587,6 +593,12 @@ class SmartSleepActivity : AppCompatActivity() {
                 if (Math.abs(userAnswer - expectedAnswer) < 0.001) {
                     // Correct!
                     tvError.visibility = android.view.View.GONE
+
+                    // Stop Service
+                    val stopIntent = android.content.Intent(this@SmartSleepActivity, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
+                        this.action = "STOP"
+                    }
+                    startService(stopIntent)
 
                     // Delete alarm if it is a non-repeating alarm
                     val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this@SmartSleepActivity)
