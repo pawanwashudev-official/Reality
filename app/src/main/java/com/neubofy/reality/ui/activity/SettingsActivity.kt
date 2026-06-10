@@ -55,6 +55,34 @@ class SettingsActivity : BaseActivity() {
 
     private fun setupListeners() {
         
+        // Features Toggle Switch Listeners
+        val featureManager = com.neubofy.reality.utils.FeatureManager(this)
+
+        binding.switchFeatureAi.setOnCheckedChangeListener { _, isChecked ->
+            featureManager.setAiEnabled(isChecked)
+            updateUI()
+        }
+        binding.switchFeatureNightly.setOnCheckedChangeListener { _, isChecked ->
+            featureManager.setNightlyProtocolEnabled(isChecked)
+            updateUI()
+        }
+        binding.switchFeatureGamification.setOnCheckedChangeListener { _, isChecked ->
+            featureManager.setGamificationEnabled(isChecked)
+            updateUI()
+        }
+        binding.switchFeatureTapasya.setOnCheckedChangeListener { _, isChecked ->
+            featureManager.setTapasyaEnabled(isChecked)
+            updateUI()
+        }
+        binding.switchFeatureReminder.setOnCheckedChangeListener { _, isChecked ->
+            featureManager.setReminderEnabled(isChecked)
+            updateUI()
+        }
+        binding.switchFeatureHealth.setOnCheckedChangeListener { _, isChecked ->
+            featureManager.setHealthConnectEnabled(isChecked)
+            updateUI()
+        }
+
         // Unified Blocklist is on Home Page -> Focus Wall card now
 
         // Block Messages
@@ -174,6 +202,50 @@ class SettingsActivity : BaseActivity() {
     
 
     private fun updateUI() {
+        // Features State
+        val featureManager = com.neubofy.reality.utils.FeatureManager(this)
+
+        // AI Feature
+        val isAiEnabled = featureManager.isAiEnabled()
+        binding.switchFeatureAi.setOnCheckedChangeListener(null) // Prevent infinite loop
+        binding.switchFeatureAi.isChecked = isAiEnabled
+        binding.switchFeatureAi.setOnCheckedChangeListener { _, isChecked -> featureManager.setAiEnabled(isChecked); updateUI() }
+        binding.cardAiSettings.visibility = if (isAiEnabled) android.view.View.VISIBLE else android.view.View.GONE
+
+        // Nightly Protocol Feature
+        val isNightlyEnabled = featureManager.isNightlyProtocolEnabled()
+        binding.switchFeatureNightly.setOnCheckedChangeListener(null)
+        binding.switchFeatureNightly.isChecked = isNightlyEnabled
+        binding.switchFeatureNightly.setOnCheckedChangeListener { _, isChecked -> featureManager.setNightlyProtocolEnabled(isChecked); updateUI() }
+        binding.cardNightlySettings.visibility = if (isNightlyEnabled) android.view.View.VISIBLE else android.view.View.GONE
+
+        // Gamification Feature
+        val isGamificationEnabled = featureManager.isGamificationEnabled()
+        binding.switchFeatureGamification.setOnCheckedChangeListener(null)
+        binding.switchFeatureGamification.isChecked = isGamificationEnabled
+        binding.switchFeatureGamification.setOnCheckedChangeListener { _, isChecked -> featureManager.setGamificationEnabled(isChecked); updateUI() }
+        binding.cardReflectionSettings.visibility = if (isGamificationEnabled) android.view.View.VISIBLE else android.view.View.GONE
+
+        // Tapasya Feature
+        val isTapasyaEnabled = featureManager.isTapasyaEnabled()
+        binding.switchFeatureTapasya.setOnCheckedChangeListener(null)
+        binding.switchFeatureTapasya.isChecked = isTapasyaEnabled
+        binding.switchFeatureTapasya.setOnCheckedChangeListener { _, isChecked -> featureManager.setTapasyaEnabled(isChecked); updateUI() }
+        binding.cardTapasyaSettings.visibility = if (isTapasyaEnabled) android.view.View.VISIBLE else android.view.View.GONE
+
+        // Reminder Feature
+        val isReminderEnabled = featureManager.isReminderEnabled()
+        binding.switchFeatureReminder.setOnCheckedChangeListener(null)
+        binding.switchFeatureReminder.isChecked = isReminderEnabled
+        binding.switchFeatureReminder.setOnCheckedChangeListener { _, isChecked -> featureManager.setReminderEnabled(isChecked); updateUI() }
+        binding.cardSettingsReminders.visibility = if (isReminderEnabled) android.view.View.VISIBLE else android.view.View.GONE
+
+        // Health Connect Feature
+        val isHealthEnabled = featureManager.isHealthConnectEnabled()
+        binding.switchFeatureHealth.setOnCheckedChangeListener(null)
+        binding.switchFeatureHealth.isChecked = isHealthEnabled
+        binding.switchFeatureHealth.setOnCheckedChangeListener { _, isChecked -> featureManager.setHealthConnectEnabled(isChecked); updateUI() }
+
         // Account Status
         if (com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)) {
             val name = com.neubofy.reality.google.GoogleAuthManager.getUserName(this)

@@ -178,6 +178,8 @@ class MainActivity : BaseActivity() {
         updateTerminalLogVisibility()
         ThemeManager.applyToAllCards(binding.root)
         
+        applyFeatureToggles()
+
         // Staggered Entry Animation
         startStaggeredAnimation()
 
@@ -185,6 +187,24 @@ class MainActivity : BaseActivity() {
         com.neubofy.reality.utils.UpdateManager.checkForUpdates(this, silent = true)
     }
     
+    private fun applyFeatureToggles() {
+        val featureManager = com.neubofy.reality.utils.FeatureManager(this)
+
+        // Gamification
+        binding.cardReflection.visibility = if (featureManager.isGamificationEnabled()) android.view.View.VISIBLE else android.view.View.GONE
+
+        // Reminder
+        binding.btnReminders.visibility = if (featureManager.isReminderEnabled()) android.view.View.VISIBLE else android.view.View.GONE
+
+        // AI
+        binding.fabAiChat.visibility = if (featureManager.isAiEnabled()) android.view.View.VISIBLE else android.view.View.GONE
+
+        // Bottom Navigation
+        val menu = binding.bottomNavigation.menu
+        menu.findItem(R.id.nav_nightly)?.isVisible = featureManager.isNightlyProtocolEnabled()
+        menu.findItem(R.id.nav_tapasya)?.isVisible = featureManager.isTapasyaEnabled()
+    }
+
     // New Staggered Animation Logic
     private fun startStaggeredAnimation() {
         val viewsToAnimate = listOf(
@@ -446,7 +466,11 @@ class MainActivity : BaseActivity() {
         // Menu Button - Show menu with options
         binding.btnInfo.setOnClickListener { view ->
             val popup = android.widget.PopupMenu(this, view)
-            popup.menu.add(0, 5, 0, "❤️ Health Dashboard")
+            val featureManager = com.neubofy.reality.utils.FeatureManager(this)
+
+            if (featureManager.isHealthConnectEnabled()) {
+                popup.menu.add(0, 5, 0, "❤️ Health Dashboard")
+            }
             popup.menu.add(0, 6, 1, "🎨 Appearance")
             popup.menu.add(0, 7, 2, "☁️ Backup & Restore")
             popup.menu.add(0, 2, 3, "📖 User Manual")
