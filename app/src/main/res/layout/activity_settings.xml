@@ -58,133 +58,50 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
 
-                    <!-- AI Toggle -->
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/baseline_auto_awesome_24"
+                        app:tint="?attr/colorOnSurface"/>
+
                     <LinearLayout
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="12dp">
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="16dp">
+
                         <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="AI"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textSize="16sp" />
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/switch_feature_ai"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
+                            android:layout_height="wrap_content"
+                            android:text="Reality Features"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Turn features on/off"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="12sp" />
                     </LinearLayout>
 
-                    <!-- Nightly Protocol Toggle -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="12dp">
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Nightly Protocol"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textSize="16sp" />
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/switch_feature_nightly"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
-                    </LinearLayout>
-
-                    <!-- Gamification Toggle -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="12dp">
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Gamification"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textSize="16sp" />
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/switch_feature_gamification"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
-                    </LinearLayout>
-
-                    <!-- Tapasya Toggle -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="12dp">
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Tapasya"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textSize="16sp" />
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/switch_feature_tapasya"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
-                    </LinearLayout>
-
-                    <!-- Reminder Toggle -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="12dp">
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Reminder"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textSize="16sp" />
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/switch_feature_reminder"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
-                    </LinearLayout>
-
-                    <!-- Health Connect Toggle -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Health Connect"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textSize="16sp" />
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/switch_feature_health"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
-                    </LinearLayout>
-
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/baseline_arrow_forward_24"
+                        app:tint="?attr/colorOnSurfaceVariant" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <!-- Account -->
             <TextView
+                android:id="@+id/tv_account_header"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Account"

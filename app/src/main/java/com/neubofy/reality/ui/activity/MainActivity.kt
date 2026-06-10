@@ -190,8 +190,10 @@ class MainActivity : BaseActivity() {
     private fun applyFeatureToggles() {
         val featureManager = com.neubofy.reality.utils.FeatureManager(this)
 
-        // Gamification
-        binding.cardReflection.visibility = if (featureManager.isGamificationEnabled()) android.view.View.VISIBLE else android.view.View.GONE
+        val isRealityProEnabled = featureManager.isRealityProEnabled()
+
+        // Reality Pro (Gamification + Google Workspace related navigation)
+        binding.cardReflection.visibility = if (isRealityProEnabled) android.view.View.VISIBLE else android.view.View.GONE
 
         // Reminder
         binding.btnReminders.visibility = if (featureManager.isReminderEnabled()) android.view.View.VISIBLE else android.view.View.GONE
@@ -201,7 +203,9 @@ class MainActivity : BaseActivity() {
 
         // Bottom Navigation
         val menu = binding.bottomNavigation.menu
-        menu.findItem(R.id.nav_nightly)?.isVisible = featureManager.isNightlyProtocolEnabled()
+        menu.findItem(R.id.nav_tasks)?.isVisible = isRealityProEnabled
+        menu.findItem(R.id.nav_calendar)?.isVisible = isRealityProEnabled
+        menu.findItem(R.id.nav_nightly)?.isVisible = isRealityProEnabled
         menu.findItem(R.id.nav_tapasya)?.isVisible = featureManager.isTapasyaEnabled()
     }
 
@@ -472,7 +476,9 @@ class MainActivity : BaseActivity() {
                 popup.menu.add(0, 5, 0, "❤️ Health Dashboard")
             }
             popup.menu.add(0, 6, 1, "🎨 Appearance")
-            popup.menu.add(0, 7, 2, "☁️ Backup & Restore")
+            if (featureManager.isRealityProEnabled()) {
+                popup.menu.add(0, 7, 2, "☁️ Backup & Restore")
+            }
             popup.menu.add(0, 2, 3, "📖 User Manual")
             popup.menu.add(0, 3, 4, "📱 About Reality")
             popup.menu.add(0, 1, 5, "🌐 Reality Website")
