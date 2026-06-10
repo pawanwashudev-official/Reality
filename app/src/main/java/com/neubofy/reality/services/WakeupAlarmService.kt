@@ -47,6 +47,16 @@ class WakeupAlarmService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+        if (intent?.action == "PAUSE_RINGING") {
+            try {
+                mediaPlayer?.stop()
+                vibrator?.cancel()
+            } catch (e: Exception) {}
+            // Give 90 seconds to solve math
+            startAutoSnoozeTimer()
+            return START_NOT_STICKY
+        }
+
 
         com.neubofy.reality.utils.TerminalLogger.log("WAKEUP ALARM: Service Started!")
         alarmId = intent?.getStringExtra("id")
@@ -136,7 +146,7 @@ class WakeupAlarmService : Service() {
     private fun startAutoSnoozeTimer() {
         autoSnoozeTimer?.cancel()
         // 1 minute
-        autoSnoozeTimer = object : CountDownTimer(45_000L, 1000) {
+        autoSnoozeTimer = object : CountDownTimer(90_000L, 1000) {
             override fun onTick(millisUntilFinished: Long) {}
             override fun onFinish() {
                 autoSnooze()

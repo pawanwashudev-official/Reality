@@ -157,10 +157,6 @@ dependencies {
     implementation("com.google.zxing:core:3.5.2")
     
     // Google Sign-In & Credential Manager
-    implementation("com.google.android.gms:play-services-auth:21.0.0")
-    implementation("androidx.credentials:credentials:1.3.0")
-    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     
     // Google APIs Client (for Tasks, Drive, Docs)
     // Using latest available versions

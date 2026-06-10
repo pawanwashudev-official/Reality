@@ -169,32 +169,9 @@ class SettingsActivity : BaseActivity() {
     }
     
     private fun handleAccountClick() {
-        if (com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)) {
-            // Already signed in -> Open Profile Activity for advanced management
-            startActivity(Intent(this, ProfileActivity::class.java))
-        } else {
-            // Sign In
-            performGoogleSignIn()
-        }
+        startActivity(Intent(this, ProfileActivity::class.java))
     }
     
-    private fun performGoogleSignIn() {
-        lifecycleScope.launch {
-            try {
-                val credential = com.neubofy.reality.google.GoogleAuthManager.signIn(this@SettingsActivity)
-                
-                if (credential != null) {
-                    android.widget.Toast.makeText(this@SettingsActivity, "Welcome ${credential.displayName}!", android.widget.Toast.LENGTH_LONG).show()
-                    updateUI()
-                } else {
-                    android.widget.Toast.makeText(this@SettingsActivity, "Sign in failed or cancelled", android.widget.Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                com.neubofy.reality.utils.TerminalLogger.log("Sign In Error: ${e.message}")
-                android.widget.Toast.makeText(this@SettingsActivity, "Error: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
-            }
-        }
-    }
 
     private fun updateUI() {
         // Account Status

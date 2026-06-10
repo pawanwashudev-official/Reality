@@ -62,29 +62,28 @@ class ProfileActivity : AppCompatActivity() {
         updateUI()
         loadSetupData()
         setupRefreshReceiver()
-        setupInfoButton()
+        setupCloudSettingsButton()
     }
 
-    private fun setupInfoButton() {
-        binding.btnInfoProfile.setOnClickListener {
-            MaterialAlertDialogBuilder(this)
-                .setTitle("Need Help?")
-                .setMessage("If you encounter any errors or need assistance with setting up your Google connections, please contact support.\n\nYou can also find more information about the app's features and privacy policy in the About page.")
-                .setPositiveButton("About Reality") { _, _ ->
-                    startActivity(Intent(this, AboutActivity::class.java))
+    private fun setupCloudSettingsButton() {
+        binding.btnCloudSettings.setOnClickListener {
+            val dialogView = layoutInflater.inflate(R.layout.dialog_cloud_settings, null)
+            val etClientId = dialogView.findViewById<android.widget.EditText>(R.id.et_client_id)
+            val etClientSecret = dialogView.findViewById<android.widget.EditText>(R.id.et_client_secret)
+
+            etClientId.setText(GoogleAuthManager.getClientId(this) ?: "")
+            etClientSecret.setText(GoogleAuthManager.getClientSecret(this) ?: "")
+
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("Google Cloud Setup")
+                .setView(dialogView)
+                .setPositiveButton("Save") { _, _ ->
+                    val clientId = etClientId.text.toString().trim()
+                    val clientSecret = etClientSecret.text.toString().trim()
+                    GoogleAuthManager.saveCloudCredentials(this, clientId, clientSecret)
+                    android.widget.Toast.makeText(this, "Credentials saved", android.widget.Toast.LENGTH_SHORT).show()
                 }
-                .setNegativeButton("Close", null)
-                .setNeutralButton("Contact Support") { _, _ ->
-                    val intent = Intent(Intent.ACTION_SENDTO).apply {
-                        data = android.net.Uri.parse("mailto:support@neubofy.com")
-                        putExtra(Intent.EXTRA_SUBJECT, "Reality App Support")
-                    }
-                    try {
-                        startActivity(intent)
-                    } catch (e: Exception) {
-                        Toast.makeText(this, "No email app found", Toast.LENGTH_SHORT).show()
-                    }
-                }
+                .setNegativeButton("Cancel", null)
                 .show()
         }
     }
@@ -145,20 +144,78 @@ class ProfileActivity : AppCompatActivity() {
     }
     
     private fun performSignIn() {
-        TerminalLogger.log("PROFILE: Starting sign-in...")
-        lifecycleScope.launch {
-            try {
-                val credential = GoogleAuthManager.signIn(this@ProfileActivity)
-                if (credential != null) {
-                    TerminalLogger.log("PROFILE: Signed in as ${credential.displayName}")
-                    Toast.makeText(this@ProfileActivity, "Welcome ${credential.displayName}!", Toast.LENGTH_SHORT).show()
-                    updateUI()
-                } else {
-                    TerminalLogger.log("PROFILE: Sign-in cancelled")
+        if (!GoogleAuthManager.hasCloudCredentials(this)) {
+            android.widget.Toast.makeText(this, "Please setup Google Cloud Project first via Settings", android.widget.Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val url = GoogleAuthManager.getAuthUrl(this)
+        if (url != null) {
+            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
+            startActivity(intent)
+
+            // Start local server to listen for redirect (Auto-catching)
+            lifecycleScope.launch {
+                val autoCode = GoogleAuthManager.startLocalServerAndGetCode()
+
+                var success = false
+                if (autoCode != null) {
+                    success = GoogleAuthManager.exchangeCodeForTokens(this@ProfileActivity, autoCode)
+                    if (success) {
+                        withContext(Dispatchers.Main) {
+                            TerminalLogger.log("PROFILE: Auto-Signed in successfully")
+                            android.widget.Toast.makeText(this@ProfileActivity, "Sign-in successful!", android.widget.Toast.LENGTH_SHORT).show()
+                            updateUI()
+                        }
+                    } else {
+                        TerminalLogger.log("PROFILE: Auto-Sign-in token exchange failed. Falling back to manual entry.")
+                    }
                 }
-            } catch (e: Exception) {
-                TerminalLogger.log("PROFILE: Sign-in error: ${e.message}")
-                Toast.makeText(this@ProfileActivity, "Sign-in failed: ${e.message}", Toast.LENGTH_LONG).show()
+
+                if (!success) {
+                    // Fallback to manual entry if server timed out or failed to catch/exchange
+                    withContext(Dispatchers.Main) {
+                        val input = android.widget.EditText(this@ProfileActivity)
+                        input.hint = "Paste URL or Code here"
+
+                        com.google.android.material.dialog.MaterialAlertDialogBuilder(this@ProfileActivity)
+                            .setTitle("Enter Auth Code or URL")
+                            .setMessage("Auto-catch timed out or failed. If the browser shows 'Site can\'t be reached', copy the entire URL from the address bar and paste it here.")
+                            .setView(input)
+                            .setPositiveButton("Submit") { _, _ ->
+                                var code = input.text.toString().trim()
+                                if (code.contains("code=")) {
+                                    try {
+                                        val uri = android.net.Uri.parse(code)
+                                        code = uri.getQueryParameter("code") ?: code
+                                    } catch (e: Exception) {
+                                        val match = Regex("code=([^&]+)").find(code)
+                                        if (match != null) {
+                                            code = match.groupValues[1]
+                                            try {
+                                                code = java.net.URLDecoder.decode(code, "UTF-8")
+                                            } catch (e2: Exception) {}
+                                        }
+                                    }
+                                }
+                                if (code.isNotEmpty()) {
+                                    lifecycleScope.launch {
+                                        val manualSuccess = GoogleAuthManager.exchangeCodeForTokens(this@ProfileActivity, code)
+                                        withContext(Dispatchers.Main) {
+                                            if (manualSuccess) {
+                                                android.widget.Toast.makeText(this@ProfileActivity, "Sign-in successful!", android.widget.Toast.LENGTH_SHORT).show()
+                                                updateUI()
+                                            } else {
+                                                android.widget.Toast.makeText(this@ProfileActivity, "Sign-in failed. Check credentials.", android.widget.Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            .setNegativeButton("Cancel", null)
+                            .show()
+                    }
+                }
             }
         }
     }
@@ -168,7 +225,7 @@ class ProfileActivity : AppCompatActivity() {
         binding.btnConnectTasks.setOnClickListener {
             connectAndTestService("Tasks", KEY_TASKS_CONNECTED, REQUEST_AUTH_TASKS) {
                 val email = GoogleAuthManager.getUserEmail(this@ProfileActivity)
-                val credential = GoogleAuthManager.getGoogleAccountCredential(this, email)
+                val credential = GoogleAuthManager.getGoogleCredential(this)
                     ?: throw IllegalStateException("Not signed in - email missing")
                 
                 val tasksService = com.google.api.services.tasks.Tasks.Builder(
@@ -187,7 +244,7 @@ class ProfileActivity : AppCompatActivity() {
         binding.btnConnectDrive.setOnClickListener {
             connectAndTestService("Drive", KEY_DRIVE_CONNECTED, REQUEST_AUTH_DRIVE) {
                 val email = GoogleAuthManager.getUserEmail(this@ProfileActivity)
-                val credential = GoogleAuthManager.getGoogleAccountCredential(this, email)
+                val credential = GoogleAuthManager.getGoogleCredential(this)
                     ?: throw IllegalStateException("Not signed in - email missing")
                 
                 val driveService = com.google.api.services.drive.Drive.Builder(
@@ -209,7 +266,7 @@ class ProfileActivity : AppCompatActivity() {
         binding.btnConnectDocs.setOnClickListener {
             connectAndTestService("Docs", KEY_DOCS_CONNECTED, REQUEST_AUTH_DOCS) {
                 val email = GoogleAuthManager.getUserEmail(this@ProfileActivity)
-                val credential = GoogleAuthManager.getGoogleAccountCredential(this, email)
+                val credential = GoogleAuthManager.getGoogleCredential(this)
                     ?: throw IllegalStateException("Not signed in - email missing")
                 
                 val docsService = com.google.api.services.docs.v1.Docs.Builder(
@@ -230,7 +287,7 @@ class ProfileActivity : AppCompatActivity() {
         binding.btnConnectCalendar.setOnClickListener {
             connectAndTestService("Calendar", KEY_CALENDAR_CONNECTED, REQUEST_AUTH_CALENDAR) {
                 val email = GoogleAuthManager.getUserEmail(this@ProfileActivity)
-                val credential = GoogleAuthManager.getGoogleAccountCredential(this, email)
+                val credential = GoogleAuthManager.getGoogleCredential(this)
                     ?: throw IllegalStateException("Not signed in - email missing")
                 
                 val calendarService = com.google.api.services.calendar.Calendar.Builder(
@@ -353,7 +410,7 @@ class ProfileActivity : AppCompatActivity() {
         } else {
             binding.tvUserName.text = "Not signed in"
             binding.tvUserEmail.text = "Sign in to connect services"
-            binding.btnSignInOut.text = "Sign in with Google"
+            binding.btnSignInOut.text = "Login directly"
             binding.btnSignInOut.setIconResource(R.drawable.baseline_account_circle_24)
             binding.ivProfile.setImageResource(R.drawable.baseline_account_circle_24)
             binding.ivProfile.imageTintList = androidx.core.content.ContextCompat.getColorStateList(this, R.color.md_theme_primary)
@@ -594,7 +651,7 @@ class ProfileActivity : AppCompatActivity() {
             try {
                 log("Getting credentials...")
                 val results = withContext(Dispatchers.IO) {
-                    val credential = GoogleAuthManager.getGoogleAccountCredential(this@ProfileActivity)
+                    val credential = GoogleAuthManager.getGoogleCredential(this@ProfileActivity)
                         ?: throw Exception("Failed to get Google credential")
 
                     val driveService = Drive.Builder(
@@ -704,7 +761,7 @@ class ProfileActivity : AppCompatActivity() {
                 Toast.makeText(this@ProfileActivity, "Verifying folders...", Toast.LENGTH_SHORT).show()
                 
                 withContext(Dispatchers.IO) {
-                    val credential = GoogleAuthManager.getGoogleAccountCredential(this@ProfileActivity)
+                    val credential = GoogleAuthManager.getGoogleCredential(this@ProfileActivity)
                         ?: throw Exception("Failed to get credential")
                     
                     val driveService = Drive.Builder(
@@ -771,7 +828,7 @@ class ProfileActivity : AppCompatActivity() {
                 var reportId: String? = null
 
                 withContext(Dispatchers.IO) {
-                    val credential = GoogleAuthManager.getGoogleAccountCredential(this@ProfileActivity)
+                    val credential = GoogleAuthManager.getGoogleCredential(this@ProfileActivity)
                         ?: throw Exception("Failed to get credential")
 
                     val driveService = Drive.Builder(
@@ -887,26 +944,11 @@ class ProfileActivity : AppCompatActivity() {
     private fun startSheetSetup() {
 
         if (!GoogleAuthManager.isSignedIn(this)) {
-            lifecycleScope.launch { GoogleAuthManager.signIn(this@ProfileActivity) }
+            performSignIn()
             return
         }
 
-        // We must ensure the user has authorized the specific scopes required for Google Sheets.
-        val account = com.google.android.gms.auth.api.signin.GoogleSignIn.getLastSignedInAccount(this)
-        if (account != null) {
-            val scope = com.google.android.gms.common.api.Scope(com.google.api.services.sheets.v4.SheetsScopes.SPREADSHEETS)
-            if (!com.google.android.gms.auth.api.signin.GoogleSignIn.hasPermissions(account, scope)) {
-                com.google.android.gms.auth.api.signin.GoogleSignIn.requestPermissions(
-                    this,
-                    9999,
-                    account,
-                    scope,
-                    com.google.android.gms.common.api.Scope(com.google.api.services.drive.DriveScopes.DRIVE_FILE)
-                )
-                Toast.makeText(this, "Please grant Sheets permission first.", Toast.LENGTH_LONG).show()
-                return
-            }
-        }
+
 
         val nightlyPrefs = getSharedPreferences(NIGHTLY_PREFS, Context.MODE_PRIVATE)
         val folderId = nightlyPrefs.getString("reality_folder_id", null)

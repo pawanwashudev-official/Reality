@@ -509,7 +509,7 @@ class NightlyPhaseData(
 
         // Dynamic folder resolution
         if (diaryFolderId.isNullOrEmpty() && !realityFolderId.isNullOrEmpty()) {
-            val credential = GoogleAuthManager.getGoogleAccountCredential(context)
+            val credential = GoogleAuthManager.getGoogleCredential(context)
             if (credential != null) {
                 val driveService = Drive.Builder(GoogleAuthManager.getHttpTransport(), GoogleAuthManager.getJsonFactory(), credential)
                     .setApplicationName("Reality").build()

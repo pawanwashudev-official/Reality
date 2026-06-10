@@ -52,6 +52,15 @@ class SmartSleepActivity : AppCompatActivity() {
     private val qrScannerLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             isUnlockedThisSession = true
+
+            // Stop alarm ringing, but DO NOT dismiss it yet.
+            // It will be dismissed ONLY when the math problem is solved.
+            // If they close the app now, it's considered a missed alarm and it will snooze/ring again.
+            val stopIntent = android.content.Intent(this, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
+                this.action = "PAUSE_RINGING"
+            }
+            startService(stopIntent)
+
             checkHealthPermissionsFlow()
             checkAndShowMathDismissDialog()
         } else {

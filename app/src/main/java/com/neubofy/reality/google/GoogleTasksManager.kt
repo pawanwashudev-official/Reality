@@ -1,7 +1,7 @@
 package com.neubofy.reality.google
 
 import android.content.Context
-import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
+import com.google.api.client.auth.oauth2.Credential
 import com.google.api.services.tasks.Tasks
 import com.google.api.services.tasks.model.Task
 import com.google.api.services.tasks.model.TaskList
@@ -22,7 +22,7 @@ object GoogleTasksManager {
     private const val APP_NAME = "Reality"
     
     private fun getTasksService(context: Context): Tasks? {
-        val credential = GoogleAuthManager.getGoogleAccountCredential(context) ?: return null
+        val credential = GoogleAuthManager.getGoogleCredential(context) ?: return null
         
         return Tasks.Builder(
             GoogleAuthManager.getHttpTransport(),
