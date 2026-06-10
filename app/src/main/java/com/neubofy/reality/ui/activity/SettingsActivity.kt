@@ -54,35 +54,6 @@ class SettingsActivity : BaseActivity() {
     }
 
     private fun setupListeners() {
-        
-        // Features Toggle Switch Listeners
-        val featureManager = com.neubofy.reality.utils.FeatureManager(this)
-
-        binding.switchFeatureAi.setOnCheckedChangeListener { _, isChecked ->
-            featureManager.setAiEnabled(isChecked)
-            updateUI()
-        }
-        binding.switchFeatureNightly.setOnCheckedChangeListener { _, isChecked ->
-            featureManager.setNightlyProtocolEnabled(isChecked)
-            updateUI()
-        }
-        binding.switchFeatureGamification.setOnCheckedChangeListener { _, isChecked ->
-            featureManager.setGamificationEnabled(isChecked)
-            updateUI()
-        }
-        binding.switchFeatureTapasya.setOnCheckedChangeListener { _, isChecked ->
-            featureManager.setTapasyaEnabled(isChecked)
-            updateUI()
-        }
-        binding.switchFeatureReminder.setOnCheckedChangeListener { _, isChecked ->
-            featureManager.setReminderEnabled(isChecked)
-            updateUI()
-        }
-        binding.switchFeatureHealth.setOnCheckedChangeListener { _, isChecked ->
-            featureManager.setHealthConnectEnabled(isChecked)
-            updateUI()
-        }
-
         // Unified Blocklist is on Home Page -> Focus Wall card now
 
         // Block Messages
