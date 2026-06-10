@@ -117,16 +117,16 @@ object GoogleAuthManager {
     }
 
     /**
-     * Generates the OAuth authorization URL based on saved Client ID.
+     * Generates the OAuth authorization URL based on saved Client ID and a specific port.
      */
-    fun getAuthorizationUrl(context: Context): String? {
+    fun getAuthorizationUrl(context: Context, port: Int): String? {
         val clientId = getClientId(context) ?: return null
-        val redirectUri = "http://127.0.0.1" // Localhost flow (OOB is deprecated)
+        val redirectUri = "http://127.0.0.1:$port" // Localhost flow
         val scopesStr = ALL_SCOPES.joinToString(" ")
 
         return "https://accounts.google.com/o/oauth2/v2/auth?" +
                 "client_id=$clientId&" +
-                "redirect_uri=$redirectUri&" +
+                "redirect_uri=${android.net.Uri.encode(redirectUri)}&" +
                 "response_type=code&" +
                 "scope=${android.net.Uri.encode(scopesStr)}&" +
                 "access_type=offline&" +

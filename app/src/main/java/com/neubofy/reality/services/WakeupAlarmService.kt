@@ -135,8 +135,8 @@ class WakeupAlarmService : Service() {
 
     private fun startAutoSnoozeTimer() {
         autoSnoozeTimer?.cancel()
-        // 1 minute
-        autoSnoozeTimer = object : CountDownTimer(45_000L, 1000) {
+        // 1.5 minutes
+        autoSnoozeTimer = object : CountDownTimer(90_000L, 1000) {
             override fun onTick(millisUntilFinished: Long) {}
             override fun onFinish() {
                 autoSnooze()

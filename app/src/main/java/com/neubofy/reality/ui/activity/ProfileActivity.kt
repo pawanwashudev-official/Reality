@@ -34,6 +34,11 @@ import com.google.api.services.tasks.Tasks
 import com.google.api.services.tasks.model.TaskList
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest
+import java.net.ServerSocket
+import java.net.Socket
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.io.PrintWriter
 
 class ProfileActivity : AppCompatActivity() {
 
@@ -112,6 +117,8 @@ class ProfileActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        isAuthServerRunning = false
+        try { localAuthServer?.close() } catch(e: Exception) {}
         LocalBroadcastManager.getInstance(this).unregisterReceiver(refreshReceiver)
     }
     
@@ -152,13 +159,101 @@ class ProfileActivity : AppCompatActivity() {
         }
     }
     
-    private fun performSignIn() {
-        val authUrl = GoogleAuthManager.getAuthorizationUrl(this)
-        if (authUrl == null) {
-            Toast.makeText(this, "Please configure Google Cloud Client ID in settings first.", Toast.LENGTH_LONG).show()
-            return
-        }
+    private var localAuthServer: ServerSocket? = null
+    private var isAuthServerRunning = false
 
+    private fun performSignIn() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                if (localAuthServer != null && !localAuthServer!!.isClosed) {
+                    localAuthServer?.close()
+                }
+                localAuthServer = ServerSocket(0) // Bind to random port
+                val port = localAuthServer!!.localPort
+                isAuthServerRunning = true
+
+                val authUrl = GoogleAuthManager.getAuthorizationUrl(this@ProfileActivity, port)
+                if (authUrl == null) {
+                    kotlinx.coroutines.withContext(Dispatchers.Main) {
+                        Toast.makeText(this@ProfileActivity, "Please configure Google Cloud Client ID in settings first.", Toast.LENGTH_LONG).show()
+                    }
+                    isAuthServerRunning = false
+                    localAuthServer?.close()
+                    return@launch
+                }
+
+                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                    Toast.makeText(this@ProfileActivity, "Opening browser for authentication...", Toast.LENGTH_SHORT).show()
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(authUrl))
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        TerminalLogger.log("Could not open browser automatically: ${e.message}")
+                        // Fallback manual approach if browser doesn't open
+                        showManualAuthDialog(authUrl, port)
+                    }
+                }
+
+                // Wait for the redirect callback
+                while (isAuthServerRunning && !localAuthServer!!.isClosed) {
+                    try {
+                        val socket: Socket = localAuthServer!!.accept()
+                        handleAuthCallback(socket, port)
+                    } catch (e: Exception) {
+                        if (isAuthServerRunning) {
+                            TerminalLogger.log("Socket accept error: ${e.message}")
+                        }
+                    }
+                }
+
+            } catch (e: Exception) {
+                TerminalLogger.log("Local server error: ${e.message}")
+            }
+        }
+    }
+
+    private fun handleAuthCallback(socket: Socket, port: Int) {
+        var authCode: String? = null
+        try {
+            val reader = BufferedReader(InputStreamReader(socket.getInputStream()))
+            val line = reader.readLine()
+
+            if (line != null && line.startsWith("GET /?")) {
+                val parts = line.split(" ")
+                if (parts.size > 1) {
+                    val uri = android.net.Uri.parse("http://127.0.0.1" + parts[1])
+                    authCode = uri.getQueryParameter("code")
+                }
+            }
+
+            val out = PrintWriter(socket.getOutputStream(), true)
+            out.println("HTTP/1.1 200 OK")
+            out.println("Content-Type: text/html")
+            out.println()
+            if (authCode != null) {
+                out.println("<html><body><h1>Authentication Successful!</h1><p>You can close this window and return to Reality.</p></body></html>")
+            } else {
+                out.println("<html><body><h1>Authentication Failed.</h1><p>Missing authorization code.</p></body></html>")
+            }
+            out.flush()
+            socket.close()
+
+            isAuthServerRunning = false
+            localAuthServer?.close()
+
+            if (authCode != null) {
+                exchangeCodeForTokens(authCode, port)
+            } else {
+                runOnUiThread {
+                    Toast.makeText(this@ProfileActivity, "Authorization code not found in redirect.", Toast.LENGTH_LONG).show()
+                }
+            }
+        } catch (e: Exception) {
+            TerminalLogger.log("Auth callback error: ${e.message}")
+        }
+    }
+
+    private fun showManualAuthDialog(authUrl: String, port: Int) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_manual_auth, null)
         val tvAuthUrl = dialogView.findViewById<android.widget.TextView>(R.id.tv_auth_url)
         val etAuthCode = dialogView.findViewById<android.widget.EditText>(R.id.et_auth_code)
@@ -171,14 +266,6 @@ class ProfileActivity : AppCompatActivity() {
             val clip = android.content.ClipData.newPlainText("Auth URL", authUrl)
             clipboard.setPrimaryClip(clip)
             Toast.makeText(this, "URL copied to clipboard. Paste in a browser to login.", Toast.LENGTH_LONG).show()
-
-            // Try to open the browser automatically
-            try {
-                val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(authUrl))
-                startActivity(intent)
-            } catch (e: Exception) {
-                TerminalLogger.log("Could not open browser automatically: ${e.message}")
-            }
         }
 
         MaterialAlertDialogBuilder(this)
@@ -187,32 +274,39 @@ class ProfileActivity : AppCompatActivity() {
             .setPositiveButton("Verify") { _, _ ->
                 val codeOrUrl = etAuthCode.text.toString().trim()
                 if (codeOrUrl.isNotEmpty()) {
-                    exchangeCodeForTokens(codeOrUrl)
+                    isAuthServerRunning = false
+                    try { localAuthServer?.close() } catch(e: Exception) {}
+
+                    var manualCode = codeOrUrl
+                    var actualPort = port
+                    if (codeOrUrl.startsWith("http")) {
+                        val uri = android.net.Uri.parse(codeOrUrl)
+                        manualCode = uri.getQueryParameter("code") ?: codeOrUrl
+                        if (uri.port != -1) {
+                            actualPort = uri.port
+                        }
+                    }
+                    exchangeCodeForTokens(manualCode, actualPort)
                 } else {
                     Toast.makeText(this, "Authorization code cannot be empty.", Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton("Cancel") { _, _ ->
+                isAuthServerRunning = false
+                try { localAuthServer?.close() } catch(e: Exception) {}
+            }
             .setCancelable(false)
             .show()
     }
 
-    private fun exchangeCodeForTokens(input: String) {
-        var authCode = input
-
-        // If the user pasted the entire redirect URL, extract the code parameter
-        if (input.startsWith("http")) {
-            val uri = android.net.Uri.parse(input)
-            authCode = uri.getQueryParameter("code") ?: input
-        }
-
+    private fun exchangeCodeForTokens(authCode: String, port: Int) {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val clientId = GoogleAuthManager.getClientId(this@ProfileActivity)
                 val clientSecret = GoogleAuthManager.getClientSecret(this@ProfileActivity)
 
                 if (clientId == null || clientSecret == null) {
-                    withContext(Dispatchers.Main) {
+                    kotlinx.coroutines.withContext(Dispatchers.Main) {
                         Toast.makeText(this@ProfileActivity, "Client credentials missing.", Toast.LENGTH_SHORT).show()
                     }
                     return@launch
@@ -224,7 +318,7 @@ class ProfileActivity : AppCompatActivity() {
                     clientId,
                     clientSecret,
                     authCode,
-                    "http://127.0.0.1"
+                    "http://127.0.0.1:$port"
                 ).execute()
 
                 val accessToken = response.accessToken
@@ -232,14 +326,14 @@ class ProfileActivity : AppCompatActivity() {
 
                 GoogleAuthManager.saveTokens(this@ProfileActivity, accessToken, refreshToken)
 
-                withContext(Dispatchers.Main) {
+                kotlinx.coroutines.withContext(Dispatchers.Main) {
                     Toast.makeText(this@ProfileActivity, "Authentication successful!", Toast.LENGTH_SHORT).show()
                     updateUI()
                 }
 
             } catch (e: Exception) {
                 TerminalLogger.log("PROFILE: Token exchange error: ${e.message}")
-                withContext(Dispatchers.Main) {
+                kotlinx.coroutines.withContext(Dispatchers.Main) {
                     Toast.makeText(this@ProfileActivity, "Failed to authenticate: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
@@ -250,9 +344,8 @@ class ProfileActivity : AppCompatActivity() {
         // Tasks connector - Simple list test
         binding.btnConnectTasks.setOnClickListener {
             connectAndTestService("Tasks", KEY_TASKS_CONNECTED, REQUEST_AUTH_TASKS) {
-                val email = GoogleAuthManager.getUserEmail(this@ProfileActivity)
-                val credential = GoogleAuthManager.getGoogleAccountCredential(this, email)
-                    ?: throw IllegalStateException("Not signed in - email missing")
+                val credential = GoogleAuthManager.getGoogleAccountCredential(this)
+                    ?: throw IllegalStateException("Not signed in - credential missing")
                 
                 val tasksService = com.google.api.services.tasks.Tasks.Builder(
                     GoogleAuthManager.getHttpTransport(),
@@ -269,9 +362,8 @@ class ProfileActivity : AppCompatActivity() {
         // Drive connector - Simple list test
         binding.btnConnectDrive.setOnClickListener {
             connectAndTestService("Drive", KEY_DRIVE_CONNECTED, REQUEST_AUTH_DRIVE) {
-                val email = GoogleAuthManager.getUserEmail(this@ProfileActivity)
-                val credential = GoogleAuthManager.getGoogleAccountCredential(this, email)
-                    ?: throw IllegalStateException("Not signed in - email missing")
+                val credential = GoogleAuthManager.getGoogleAccountCredential(this)
+                    ?: throw IllegalStateException("Not signed in - credential missing")
                 
                 val driveService = com.google.api.services.drive.Drive.Builder(
                     GoogleAuthManager.getHttpTransport(),
@@ -291,9 +383,8 @@ class ProfileActivity : AppCompatActivity() {
         // Docs connector - Create a test doc
         binding.btnConnectDocs.setOnClickListener {
             connectAndTestService("Docs", KEY_DOCS_CONNECTED, REQUEST_AUTH_DOCS) {
-                val email = GoogleAuthManager.getUserEmail(this@ProfileActivity)
-                val credential = GoogleAuthManager.getGoogleAccountCredential(this, email)
-                    ?: throw IllegalStateException("Not signed in - email missing")
+                val credential = GoogleAuthManager.getGoogleAccountCredential(this)
+                    ?: throw IllegalStateException("Not signed in - credential missing")
                 
                 val docsService = com.google.api.services.docs.v1.Docs.Builder(
                     GoogleAuthManager.getHttpTransport(),
@@ -312,9 +403,8 @@ class ProfileActivity : AppCompatActivity() {
         // Calendar connector - List calendars
         binding.btnConnectCalendar.setOnClickListener {
             connectAndTestService("Calendar", KEY_CALENDAR_CONNECTED, REQUEST_AUTH_CALENDAR) {
-                val email = GoogleAuthManager.getUserEmail(this@ProfileActivity)
-                val credential = GoogleAuthManager.getGoogleAccountCredential(this, email)
-                    ?: throw IllegalStateException("Not signed in - email missing")
+                val credential = GoogleAuthManager.getGoogleAccountCredential(this)
+                    ?: throw IllegalStateException("Not signed in - credential missing")
                 
                 val calendarService = com.google.api.services.calendar.Calendar.Builder(
                     GoogleAuthManager.getHttpTransport(),
