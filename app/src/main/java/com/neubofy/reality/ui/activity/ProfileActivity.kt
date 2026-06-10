@@ -224,6 +224,7 @@ class ProfileActivity : AppCompatActivity() {
                 if (parts.size > 1) {
                     val uri = android.net.Uri.parse("http://127.0.0.1" + parts[1])
                     authCode = uri.getQueryParameter("code")
+                    if (authCode == null) TerminalLogger.log("PROFILE: Missing code parameter in URI: $uri")
                 }
             }
 
@@ -313,14 +314,21 @@ class ProfileActivity : AppCompatActivity() {
                     return@launch
                 }
 
+
+                TerminalLogger.log("PROFILE: Exchanging code: $authCode for port $port")
+
+                TerminalLogger.log("PROFILE: Exchanging code: $authCode for port $port")
+                val decodedCode = java.net.URLDecoder.decode(authCode, "UTF-8")
                 val response = GoogleAuthorizationCodeTokenRequest(
                     GoogleAuthManager.getHttpTransport(),
                     GoogleAuthManager.getJsonFactory(),
                     clientId,
                     clientSecret,
-                    authCode,
+                    decodedCode,
                     "http://127.0.0.1:$port"
                 ).execute()
+
+
 
                 val accessToken = response.accessToken
                 val refreshToken = response.refreshToken
