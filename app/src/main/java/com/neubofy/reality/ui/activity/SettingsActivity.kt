@@ -59,6 +59,17 @@ class SettingsActivity : BaseActivity() {
             showFeaturesDialog()
         }
 
+        // Language Settings
+        binding.cardLanguage.setOnClickListener {
+            val intent = Intent(android.provider.Settings.ACTION_APP_LOCALE_SETTINGS)
+            intent.data = android.net.Uri.parse("package:$packageName")
+            try {
+                startActivity(intent)
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(this, "Language settings not found.", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+
         // Unified Blocklist is on Home Page -> Focus Wall card now
 
         // Block Messages

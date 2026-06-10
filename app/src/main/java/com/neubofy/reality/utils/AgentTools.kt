@@ -1141,78 +1141,30 @@ object AgentTools {
     private fun saveImageToGallery(context: Context, imageUrl: String, timestamp: Long): String {
         val fileName = "reality_img_$timestamp.jpg"
         
-        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            // Android 10+ - Use MediaStore
-            val contentValues = android.content.ContentValues().apply {
-                put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-                put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/Reality")
-                put(android.provider.MediaStore.MediaColumns.IS_PENDING, 1)
-            }
-            
-            val resolver = context.contentResolver
-            val uri = resolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-                ?: throw Exception("Failed to create MediaStore entry")
-            
-            try {
-                // Download image
-                val connection = java.net.URL(imageUrl).openConnection() as java.net.HttpURLConnection
-                connection.connectTimeout = 30000
-                connection.readTimeout = 30000
-                connection.connect()
-                
-                if (connection.responseCode == 200) {
-                    resolver.openOutputStream(uri)?.use { outputStream ->
-                        connection.inputStream.use { inputStream ->
-                            inputStream.copyTo(outputStream)
-                        }
-                    }
-                    
-                    // Mark as complete
-                    contentValues.clear()
-                    contentValues.put(android.provider.MediaStore.MediaColumns.IS_PENDING, 0)
-                    resolver.update(uri, contentValues, null, null)
-                    
-                    TerminalLogger.log("IMAGE: Saved to gallery - $fileName")
-                    "Pictures/Reality/$fileName"
-                } else {
-                    resolver.delete(uri, null, null)
-                    throw Exception("Download failed: ${connection.responseCode}")
+        // Use app-specific files directory to avoid any permission requirements
+        val directory = java.io.File(context.filesDir, "Images")
+        if (!directory.exists()) {
+            directory.mkdirs()
+        }
+
+        val file = java.io.File(directory, fileName)
+
+        val connection = java.net.URL(imageUrl).openConnection() as java.net.HttpURLConnection
+        connection.connectTimeout = 30000
+        connection.readTimeout = 30000
+        connection.connect()
+
+        if (connection.responseCode == 200) {
+            java.io.FileOutputStream(file).use { outputStream ->
+                connection.inputStream.use { inputStream ->
+                    inputStream.copyTo(outputStream)
                 }
-            } catch (e: Exception) {
-                resolver.delete(uri, null, null)
-                throw e
             }
+            
+            TerminalLogger.log("IMAGE: Saved to internal app storage - $fileName")
+            return file.absolutePath
         } else {
-            // Android 9 and below - Direct file access
-            val picturesDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES)
-            val realityDir = java.io.File(picturesDir, "Reality")
-            if (!realityDir.exists()) realityDir.mkdirs()
-            
-            val imageFile = java.io.File(realityDir, fileName)
-            
-            val connection = java.net.URL(imageUrl).openConnection() as java.net.HttpURLConnection
-            connection.connectTimeout = 30000
-            connection.readTimeout = 30000
-            connection.connect()
-            
-            if (connection.responseCode == 200) {
-                java.io.FileOutputStream(imageFile).use { outputStream ->
-                    connection.inputStream.use { inputStream ->
-                        inputStream.copyTo(outputStream)
-                    }
-                }
-                
-                // Notify gallery
-                val mediaScanIntent = android.content.Intent(android.content.Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
-                mediaScanIntent.data = android.net.Uri.fromFile(imageFile)
-                context.sendBroadcast(mediaScanIntent)
-                
-                TerminalLogger.log("IMAGE: Saved to - ${imageFile.absolutePath}")
-                imageFile.absolutePath
-            } else {
-                throw Exception("Download failed: ${connection.responseCode}")
-            }
+            throw Exception("HTTP Error: ${connection.responseCode}")
         }
     }
 

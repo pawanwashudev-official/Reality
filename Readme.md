@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://res.cloudinary.com/dnh4fonis/image/upload/v1766755541/gk1gp3sf5ihygmo9wfv8.png" width="180" alt="Reality Logo" style="border-radius: 20px; margin-bottom: 20px;">
+<img src="https://res.cloudinary.com/dnh4fonis/image/upload/v1781091079/ck39669alz53z3vkeiaq.png" width="180" alt="Reality Logo" style="border-radius: 20px; margin-bottom: 20px;">
 
 # Reality
 ### The Intelligent Life OS
@@ -100,22 +100,26 @@ A focus mode so intense, it's named after the Sanskrit word for "deep, burning d
 
 ## 🚀 Core Features
 
+### 🌐 International & Multi-Language Support
+- **Multiple Languages**: Supports major European and Indian languages (French, Hindi, Spanish, German, etc.).
+- **Dynamic Localization**: Instantly change app language from the dedicated Language settings card without restarting the app using Android's per-app locale options.
+
+### ⚙️ Customizable Feature Toggles (Make It Yours)
+- **Reality Pro Toggle**: Consolidates Nightly Protocol, Gamification, and Google Workspace integration into a single powerful toggle.
+- **Turn Off What You Don't Need**: Easily turn off features like AI, Tapasya, Reminders, or Health Connect to create a minimalistic layout if you prefer a simpler app experience.
+
 ### 🧠 Hybrid Agentic AI
 - **Active Agent**: AI sets your **system alarm** based on your plan.
 - **Bring Your Own Key**: Use **OpenAI, Gemini, Groq, Claude, or any OpenRouter model**.
 - **Ready-to-Use Preset**: Comes with a powerful **GPT-OSS-120B** free model out of the box.
 
-### � Daily PDF Reports (Proof of Work)
-- Beautiful, detailed PDF report generated every night.
-- Tracks task completion, focus sessions, and phone usage.
-- Auto-uploaded to Google Drive.
-
-### 🎮 Next-Gen Gamification
+### 🎮 Reality Pro: Gamification & Workspace
 - **Dynamic XP System**: Earn XP for deep work. Lose XP for breaking focus.
 - **Screen Time Bonus/Penalty**: Stay under your limit? Bonus XP. Go over? Penalty.
 - **Levels**: Your level reflects **actual digital discipline**, not just time in-app.
+- **Google Workspace Setup**: Integrated with Tasks, Drive, and Google Calendar.
 
-### 🌙 The Nightly Protocol
+### 🌙 Reality Pro: The Nightly Protocol
 Your evening ritual to win tomorrow.
 1.  **Reflect**: AI asks dynamic questions based on your day's actual data.
 2.  **Plan**: Schedule tasks and events (synced to Google).
