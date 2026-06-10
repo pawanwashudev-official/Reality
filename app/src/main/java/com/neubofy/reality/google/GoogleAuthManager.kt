@@ -72,27 +72,75 @@ object GoogleAuthManager {
     
 
 
+
     fun getAuthUrl(context: Context): String? {
         val clientId = getClientId(context) ?: return null
 
         return GoogleAuthorizationCodeRequestUrl(
             clientId,
-            "http://127.0.0.1",
+            "http://127.0.0.1:8080/Callback",
             ALL_SCOPES
         )
         .setAccessType("offline")
         .build()
     }
     
+
+    suspend fun startLocalServerAndGetCode(): String? {
+        return withContext(Dispatchers.IO) {
+            var server: java.net.ServerSocket? = null
+            try {
+                server = java.net.ServerSocket(8080, 50, java.net.InetAddress.getByName("127.0.0.1"))
+                // Set a timeout so we don't block forever if the user closes the browser
+                server.soTimeout = 120000 // 2 minutes timeout
+
+                val socket = server.accept()
+                val reader = java.io.BufferedReader(java.io.InputStreamReader(socket.inputStream))
+                var line = reader.readLine()
+                var code: String? = null
+
+                while (line != null && line.isNotEmpty()) {
+                    if (line.startsWith("GET ")) {
+                        // Example: GET /Callback?code=4/0AeaYSHD8...&scope=... HTTP/1.1
+                        val parts = line.split(" ")
+                        if (parts.size > 1) {
+                            val pathAndQuery = parts[1]
+                            val match = Regex("[?&]code=([^&]+)").find(pathAndQuery)
+                            if (match != null) {
+                                code = match.groupValues[1]
+                                try {
+                                    code = java.net.URLDecoder.decode(code, "UTF-8")
+                                } catch (e: Exception) {}
+                            }
+                        }
+                    }
+                    line = reader.readLine()
+                }
+
+                val output = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Authorization Successful!</h1><p>You can safely close this browser window and return to the Reality app.</p></body></html>"
+                socket.outputStream.write(output.toByteArray())
+                socket.outputStream.flush()
+                socket.close()
+                return@withContext code
+            } catch (e: Exception) {
+                TerminalLogger.log("GOOGLE AUTH: Server error or timeout - ${e.message}")
+                e.printStackTrace()
+                null
+            } finally {
+                server?.close()
+            }
+        }
+    }
+
     suspend fun exchangeCodeForTokens(context: Context, code: String): Boolean {
         return withContext(Dispatchers.IO) {
             val clientId = getClientId(context)
             val clientSecret = getClientSecret(context)
-            
+
             if (clientId.isNullOrBlank() || clientSecret.isNullOrBlank()) {
                 return@withContext false
             }
-            
+
             try {
                 val tokenResponse = GoogleAuthorizationCodeTokenRequest(
                     getHttpTransport(),
@@ -100,8 +148,9 @@ object GoogleAuthManager {
                     clientId,
                     clientSecret,
                     code,
-                    "http://127.0.0.1"
+                    "http://127.0.0.1:8080/Callback"
                 ).execute()
+
 
                 val accessToken = tokenResponse.accessToken
                 val refreshToken = tokenResponse.refreshToken

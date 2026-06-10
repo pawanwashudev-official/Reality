@@ -154,45 +154,69 @@ class ProfileActivity : AppCompatActivity() {
             val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
             startActivity(intent)
 
-            val input = android.widget.EditText(this)
-            input.hint = "Paste URL or Code"
+            // Start local server to listen for redirect (Auto-catching)
+            lifecycleScope.launch {
+                val autoCode = GoogleAuthManager.startLocalServerAndGetCode()
 
-            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                .setTitle("Enter Auth Code or URL")
-                .setMessage("Login in the browser. When it says 'Site can\'t be reached' (127.0.0.1), copy the entire URL from the address bar and paste it here.")
-                .setView(input)
-                .setPositiveButton("Submit") { _, _ ->
-                    var code = input.text.toString().trim()
-                    if (code.contains("code=")) {
-                        try {
-                            val uri = android.net.Uri.parse(code)
-                            code = uri.getQueryParameter("code") ?: code
-                        } catch (e: Exception) {
-                            // Extract manually if parsing fails
-                            val match = Regex("code=([^&]+)").find(code)
-                            if (match != null) {
-                                code = match.groupValues[1]
-                            }
+                var success = false
+                if (autoCode != null) {
+                    success = GoogleAuthManager.exchangeCodeForTokens(this@ProfileActivity, autoCode)
+                    if (success) {
+                        withContext(Dispatchers.Main) {
+                            TerminalLogger.log("PROFILE: Auto-Signed in successfully")
+                            android.widget.Toast.makeText(this@ProfileActivity, "Sign-in successful!", android.widget.Toast.LENGTH_SHORT).show()
+                            updateUI()
                         }
-                    }
-                    if (code.isNotEmpty()) {
-                        lifecycleScope.launch {
-                            val success = GoogleAuthManager.exchangeCodeForTokens(this@ProfileActivity, code)
-                            withContext(Dispatchers.Main) {
-                                if (success) {
-                                    TerminalLogger.log("PROFILE: Signed in successfully")
-                                    android.widget.Toast.makeText(this@ProfileActivity, "Sign-in successful!", android.widget.Toast.LENGTH_SHORT).show()
-                                    updateUI()
-                                } else {
-                                    TerminalLogger.log("PROFILE: Sign-in failed")
-                                    android.widget.Toast.makeText(this@ProfileActivity, "Sign-in failed. Check credentials and code.", android.widget.Toast.LENGTH_LONG).show()
-                                }
-                            }
-                        }
+                    } else {
+                        TerminalLogger.log("PROFILE: Auto-Sign-in token exchange failed. Falling back to manual entry.")
                     }
                 }
-                .setNegativeButton("Cancel", null)
-                .show()
+
+                if (!success) {
+                    // Fallback to manual entry if server timed out or failed to catch/exchange
+                    withContext(Dispatchers.Main) {
+                        val input = android.widget.EditText(this@ProfileActivity)
+                        input.hint = "Paste URL or Code here"
+
+                        com.google.android.material.dialog.MaterialAlertDialogBuilder(this@ProfileActivity)
+                            .setTitle("Enter Auth Code or URL")
+                            .setMessage("Auto-catch timed out or failed. If the browser shows 'Site can\'t be reached', copy the entire URL from the address bar and paste it here.")
+                            .setView(input)
+                            .setPositiveButton("Submit") { _, _ ->
+                                var code = input.text.toString().trim()
+                                if (code.contains("code=")) {
+                                    try {
+                                        val uri = android.net.Uri.parse(code)
+                                        code = uri.getQueryParameter("code") ?: code
+                                    } catch (e: Exception) {
+                                        val match = Regex("code=([^&]+)").find(code)
+                                        if (match != null) {
+                                            code = match.groupValues[1]
+                                            try {
+                                                code = java.net.URLDecoder.decode(code, "UTF-8")
+                                            } catch (e2: Exception) {}
+                                        }
+                                    }
+                                }
+                                if (code.isNotEmpty()) {
+                                    lifecycleScope.launch {
+                                        val manualSuccess = GoogleAuthManager.exchangeCodeForTokens(this@ProfileActivity, code)
+                                        withContext(Dispatchers.Main) {
+                                            if (manualSuccess) {
+                                                android.widget.Toast.makeText(this@ProfileActivity, "Sign-in successful!", android.widget.Toast.LENGTH_SHORT).show()
+                                                updateUI()
+                                            } else {
+                                                android.widget.Toast.makeText(this@ProfileActivity, "Sign-in failed. Check credentials.", android.widget.Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            .setNegativeButton("Cancel", null)
+                            .show()
+                    }
+                }
+            }
         }
     }
     
