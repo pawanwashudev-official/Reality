@@ -169,6 +169,7 @@ class ProfileActivity : AppCompatActivity() {
                     localAuthServer?.close()
                 }
                 localAuthServer = ServerSocket(0) // Bind to random port
+                localAuthServer!!.soTimeout = 60000 // 1 minute timeout for user to log in
                 val port = localAuthServer!!.localPort
                 isAuthServerRunning = true
 
@@ -231,9 +232,9 @@ class ProfileActivity : AppCompatActivity() {
             out.println("Content-Type: text/html")
             out.println()
             if (authCode != null) {
-                out.println("<html><body><h1>Authentication Successful!</h1><p>You can close this window and return to Reality.</p></body></html>")
+                out.println("<html><head><title>Reality Auth</title><style>body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #121212; color: #fff; text-align: center; } .card { background-color: #1e1e1e; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); } h1 { color: #4caf50; } p { font-size: 1.1em; color: #b3b3b3; }</style></head><body><div class='card'><h1>Authentication Successful!</h1><p>You can close this window and return to the Reality app.</p></div></body></html>")
             } else {
-                out.println("<html><body><h1>Authentication Failed.</h1><p>Missing authorization code.</p></body></html>")
+                out.println("<html><head><title>Reality Auth</title><style>body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #121212; color: #fff; text-align: center; } .card { background-color: #1e1e1e; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); } h1 { color: #f44336; } p { font-size: 1.1em; color: #b3b3b3; }</style></head><body><div class='card'><h1>Authentication Failed</h1><p>Missing authorization code. Please try again.</p></div></body></html>")
             }
             out.flush()
             socket.close()

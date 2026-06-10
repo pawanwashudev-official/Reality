@@ -47,7 +47,7 @@ class WakeupAlarmService : Service() {
             stopSelf()
             return START_NOT_STICKY
         } else if (intent?.action == "MUTE") {
-            // Stop sound/vibration but keep timer running so it snoozes if math not completed
+            // Stop sound/vibration
             try {
                 mediaPlayer?.stop()
                 mediaPlayer?.release()
@@ -56,6 +56,8 @@ class WakeupAlarmService : Service() {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+            // Restart the auto snooze timer to give the user exactly 1.5 minutes to solve the math problem
+            startAutoSnoozeTimer()
             return START_NOT_STICKY
         }
 
