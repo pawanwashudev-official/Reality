@@ -33,6 +33,7 @@ import com.google.api.services.drive.model.File as DriveFile
 import com.google.api.services.tasks.Tasks
 import com.google.api.services.tasks.model.TaskList
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest
 
 class ProfileActivity : AppCompatActivity() {
 
@@ -62,33 +63,40 @@ class ProfileActivity : AppCompatActivity() {
         updateUI()
         loadSetupData()
         setupRefreshReceiver()
-        setupInfoButton()
+        setupSettingsButton()
     }
 
-    private fun setupInfoButton() {
-        binding.btnInfoProfile.setOnClickListener {
-            MaterialAlertDialogBuilder(this)
-                .setTitle("Need Help?")
-                .setMessage("If you encounter any errors or need assistance with setting up your Google connections, please contact support.\n\nYou can also find more information about the app's features and privacy policy in the About page.")
-                .setPositiveButton("About Reality") { _, _ ->
-                    startActivity(Intent(this, AboutActivity::class.java))
-                }
-                .setNegativeButton("Close", null)
-                .setNeutralButton("Contact Support") { _, _ ->
-                    val intent = Intent(Intent.ACTION_SENDTO).apply {
-                        data = android.net.Uri.parse("mailto:support@neubofy.com")
-                        putExtra(Intent.EXTRA_SUBJECT, "Reality App Support")
-                    }
-                    try {
-                        startActivity(intent)
-                    } catch (e: Exception) {
-                        Toast.makeText(this, "No email app found", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                .show()
+    private fun setupSettingsButton() {
+        binding.btnSettingsProfile.setOnClickListener {
+            showCloudSetupDialog()
         }
     }
     
+    private fun showCloudSetupDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_cloud_setup, null)
+        val etClientId = dialogView.findViewById<android.widget.EditText>(R.id.et_client_id)
+        val etClientSecret = dialogView.findViewById<android.widget.EditText>(R.id.et_client_secret)
+
+        etClientId.setText(GoogleAuthManager.getClientId(this) ?: "")
+        etClientSecret.setText(GoogleAuthManager.getClientSecret(this) ?: "")
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Google Cloud Setup")
+            .setView(dialogView)
+            .setPositiveButton("Save") { _, _ ->
+                val clientId = etClientId.text.toString().trim()
+                val clientSecret = etClientSecret.text.toString().trim()
+                if (clientId.isNotEmpty() && clientSecret.isNotEmpty()) {
+                    GoogleAuthManager.saveClientCredentials(this, clientId, clientSecret)
+                    Toast.makeText(this, "Credentials saved", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Client ID and Secret cannot be empty", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     private val refreshReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             loadSetupData()
@@ -145,20 +153,95 @@ class ProfileActivity : AppCompatActivity() {
     }
     
     private fun performSignIn() {
-        TerminalLogger.log("PROFILE: Starting sign-in...")
-        lifecycleScope.launch {
+        val authUrl = GoogleAuthManager.getAuthorizationUrl(this)
+        if (authUrl == null) {
+            Toast.makeText(this, "Please configure Google Cloud Client ID in settings first.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_manual_auth, null)
+        val tvAuthUrl = dialogView.findViewById<android.widget.TextView>(R.id.tv_auth_url)
+        val etAuthCode = dialogView.findViewById<android.widget.EditText>(R.id.et_auth_code)
+        val btnCopy = dialogView.findViewById<android.widget.Button>(R.id.btn_copy_url)
+
+        tvAuthUrl.text = authUrl
+
+        btnCopy.setOnClickListener {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = android.content.ClipData.newPlainText("Auth URL", authUrl)
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(this, "URL copied to clipboard. Paste in a browser to login.", Toast.LENGTH_LONG).show()
+
+            // Try to open the browser automatically
             try {
-                val credential = GoogleAuthManager.signIn(this@ProfileActivity)
-                if (credential != null) {
-                    TerminalLogger.log("PROFILE: Signed in as ${credential.displayName}")
-                    Toast.makeText(this@ProfileActivity, "Welcome ${credential.displayName}!", Toast.LENGTH_SHORT).show()
-                    updateUI()
-                } else {
-                    TerminalLogger.log("PROFILE: Sign-in cancelled")
-                }
+                val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(authUrl))
+                startActivity(intent)
             } catch (e: Exception) {
-                TerminalLogger.log("PROFILE: Sign-in error: ${e.message}")
-                Toast.makeText(this@ProfileActivity, "Sign-in failed: ${e.message}", Toast.LENGTH_LONG).show()
+                TerminalLogger.log("Could not open browser automatically: ${e.message}")
+            }
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Manual Authentication")
+            .setView(dialogView)
+            .setPositiveButton("Verify") { _, _ ->
+                val codeOrUrl = etAuthCode.text.toString().trim()
+                if (codeOrUrl.isNotEmpty()) {
+                    exchangeCodeForTokens(codeOrUrl)
+                } else {
+                    Toast.makeText(this, "Authorization code cannot be empty.", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun exchangeCodeForTokens(input: String) {
+        var authCode = input
+
+        // If the user pasted the entire redirect URL, extract the code parameter
+        if (input.startsWith("http")) {
+            val uri = android.net.Uri.parse(input)
+            authCode = uri.getQueryParameter("code") ?: input
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val clientId = GoogleAuthManager.getClientId(this@ProfileActivity)
+                val clientSecret = GoogleAuthManager.getClientSecret(this@ProfileActivity)
+
+                if (clientId == null || clientSecret == null) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@ProfileActivity, "Client credentials missing.", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
+
+                val response = GoogleAuthorizationCodeTokenRequest(
+                    GoogleAuthManager.getHttpTransport(),
+                    GoogleAuthManager.getJsonFactory(),
+                    clientId,
+                    clientSecret,
+                    authCode,
+                    "http://127.0.0.1"
+                ).execute()
+
+                val accessToken = response.accessToken
+                val refreshToken = response.refreshToken
+
+                GoogleAuthManager.saveTokens(this@ProfileActivity, accessToken, refreshToken)
+
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@ProfileActivity, "Authentication successful!", Toast.LENGTH_SHORT).show()
+                    updateUI()
+                }
+
+            } catch (e: Exception) {
+                TerminalLogger.log("PROFILE: Token exchange error: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@ProfileActivity, "Failed to authenticate: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
         }
     }
@@ -887,26 +970,10 @@ class ProfileActivity : AppCompatActivity() {
     private fun startSheetSetup() {
 
         if (!GoogleAuthManager.isSignedIn(this)) {
-            lifecycleScope.launch { GoogleAuthManager.signIn(this@ProfileActivity) }
+            performSignIn()
             return
         }
 
-        // We must ensure the user has authorized the specific scopes required for Google Sheets.
-        val account = com.google.android.gms.auth.api.signin.GoogleSignIn.getLastSignedInAccount(this)
-        if (account != null) {
-            val scope = com.google.android.gms.common.api.Scope(com.google.api.services.sheets.v4.SheetsScopes.SPREADSHEETS)
-            if (!com.google.android.gms.auth.api.signin.GoogleSignIn.hasPermissions(account, scope)) {
-                com.google.android.gms.auth.api.signin.GoogleSignIn.requestPermissions(
-                    this,
-                    9999,
-                    account,
-                    scope,
-                    com.google.android.gms.common.api.Scope(com.google.api.services.drive.DriveScopes.DRIVE_FILE)
-                )
-                Toast.makeText(this, "Please grant Sheets permission first.", Toast.LENGTH_LONG).show()
-                return
-            }
-        }
 
         val nightlyPrefs = getSharedPreferences(NIGHTLY_PREFS, Context.MODE_PRIVATE)
         val folderId = nightlyPrefs.getString("reality_folder_id", null)

@@ -32,10 +32,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
         setProperty("archivesBaseName", "Reality-v${versionName}")
-        
-        // Expose WEB_CLIENT_ID from local.properties to BuildConfig
-        val webClientId = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
-        buildConfigField("String", "WEB_CLIENT_ID", "\"$webClientId\"")
     }
     
     packaging {

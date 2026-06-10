@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="1. Open the following URL in your Desktop browser and log in:"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:id="@+id/tv_auth_url"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="3"
+        android:ellipsize="end"
+        android:background="?attr/colorSurfaceVariant"
+        android:padding="8dp"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_copy_url"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Copy &amp; Open Browser"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="2. After logging in, you will be redirected to a page that may fail to load. Copy the URL of that page (or the code from the page) and paste it here:"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Authorization Code or URL">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_auth_code"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textUri"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

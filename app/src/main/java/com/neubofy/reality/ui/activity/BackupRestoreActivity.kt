@@ -1,5 +1,6 @@
 package com.neubofy.reality.ui.activity
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.LinearLayout
@@ -99,18 +100,8 @@ class BackupRestoreActivity : AppCompatActivity() {
 
         // Sign-in button
         binding.btnSignIn.setOnClickListener {
-            lifecycleScope.launch {
-                try {
-                    val result = GoogleAuthManager.signIn(this@BackupRestoreActivity)
-                    if (result != null) {
-                        checkSignInStatus()
-                        loadBackupInfo()
-                        Toast.makeText(this@BackupRestoreActivity, "Signed in!", Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(this@BackupRestoreActivity, "Sign-in failed: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
+            Toast.makeText(this, "Please sign in from the Profile page", Toast.LENGTH_LONG).show()
+            startActivity(Intent(this, ProfileActivity::class.java))
         }
     }
 

@@ -3,13 +3,7 @@ package com.neubofy.reality.google
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import androidx.credentials.CredentialManager
-import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
-import androidx.credentials.GetCredentialResponse
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.calendar.CalendarScopes
@@ -25,20 +19,21 @@ import kotlinx.coroutines.withContext
  * Centralized Google Authentication Manager.
  * 
  * Handles:
- * - Google Sign-In using Credential Manager
+ * - Google Sign-In using OAuth
  * - OAuth token management
  * - API scopes for Tasks, Drive, Docs, Calendar
  */
 object GoogleAuthManager {
-    
-    // Web Client ID from Google Cloud Console
-    private const val WEB_CLIENT_ID = com.neubofy.reality.BuildConfig.WEB_CLIENT_ID
     
     private const val PREF_NAME = "google_auth_prefs"
     private const val KEY_USER_EMAIL = "user_email"
     private const val KEY_USER_NAME = "user_display_name"
     private const val KEY_USER_PHOTO_URL = "user_photo_url"
     private const val KEY_IS_SIGNED_IN = "is_signed_in"
+    private const val KEY_CLIENT_ID = "client_id"
+    private const val KEY_CLIENT_SECRET = "client_secret"
+    private const val KEY_ACCESS_TOKEN = "access_token"
+    private const val KEY_REFRESH_TOKEN = "refresh_token"
     private const val APPLICATION_NAME = "com.neubofy.reality"
     
     // All scopes we need for full Google integration
@@ -85,125 +80,110 @@ object GoogleAuthManager {
     fun getUserPhotoUrl(context: Context): String? {
         return getPrefs(context).getString(KEY_USER_PHOTO_URL, null)
     }
-    
+
+    fun saveClientCredentials(context: Context, clientId: String, clientSecret: String) {
+        getPrefs(context).edit().apply {
+            putString(KEY_CLIENT_ID, clientId)
+            putString(KEY_CLIENT_SECRET, clientSecret)
+            apply()
+        }
+    }
+
+    fun getClientId(context: Context): String? {
+        return getPrefs(context).getString(KEY_CLIENT_ID, null)
+    }
+
+    fun getClientSecret(context: Context): String? {
+        return getPrefs(context).getString(KEY_CLIENT_SECRET, null)
+    }
+
+    fun saveTokens(context: Context, accessToken: String, refreshToken: String?) {
+        getPrefs(context).edit().apply {
+            putString(KEY_ACCESS_TOKEN, accessToken)
+            if (refreshToken != null) {
+                putString(KEY_REFRESH_TOKEN, refreshToken)
+            }
+            putBoolean(KEY_IS_SIGNED_IN, true)
+            apply()
+        }
+    }
+
+    fun getAccessToken(context: Context): String? {
+        return getPrefs(context).getString(KEY_ACCESS_TOKEN, null)
+    }
+
+    fun getRefreshToken(context: Context): String? {
+        return getPrefs(context).getString(KEY_REFRESH_TOKEN, null)
+    }
+
     /**
-     * Sign in with Google using Credential Manager.
-     * 
-     * @return GoogleIdTokenCredential on success, null on failure
+     * Generates the OAuth authorization URL based on saved Client ID.
      */
-    suspend fun signIn(activity: Activity): GoogleIdTokenCredential? {
-        return withContext(Dispatchers.IO) {
-            val credentialManager = CredentialManager.create(activity)
-            
-            val googleIdOption = GetGoogleIdOption.Builder()
-                .setFilterByAuthorizedAccounts(false)
-                .setServerClientId(WEB_CLIENT_ID)
-                .setAutoSelectEnabled(false)
-                .build()
-            
-            val request = GetCredentialRequest.Builder()
-                .addCredentialOption(googleIdOption)
-                .build()
-            
-            try {
-                val result = credentialManager.getCredential(
-                    context = activity,
-                    request = request
-                )
-                handleSignInResult(activity, result)
-            } catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
-                TerminalLogger.log("GOOGLE AUTH: User cancelled sign-in")
-                null 
-            } catch (e: Exception) {
-                TerminalLogger.log("GOOGLE AUTH: Sign-in failed - ${e.message}")
-                e.printStackTrace()
-                throw e
-            }
-        }
+    fun getAuthorizationUrl(context: Context): String? {
+        val clientId = getClientId(context) ?: return null
+        val redirectUri = "http://127.0.0.1" // Localhost flow (OOB is deprecated)
+        val scopesStr = ALL_SCOPES.joinToString(" ")
+
+        return "https://accounts.google.com/o/oauth2/v2/auth?" +
+                "client_id=$clientId&" +
+                "redirect_uri=$redirectUri&" +
+                "response_type=code&" +
+                "scope=${android.net.Uri.encode(scopesStr)}&" +
+                "access_type=offline&" +
+                "prompt=consent"
     }
-    
-    private fun handleSignInResult(context: Context, result: GetCredentialResponse): GoogleIdTokenCredential? {
-        val credential = result.credential
-        
-        return when (credential) {
-            is CustomCredential -> {
-                if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                    val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                    
-                    // In Credential Manager, the 'id' field is typically the email address
-                    val email = googleIdTokenCredential.id?.trim()
-                    val name = googleIdTokenCredential.displayName
-                    val photoUrl = googleIdTokenCredential.profilePictureUri?.toString()
-                    
-                    TerminalLogger.log("GOOGLE AUTH: Sign-in Success! Email: '$email', Name: '$name'")
-                    
-                    if (email.isNullOrEmpty()) {
-                        TerminalLogger.log("GOOGLE AUTH: ERROR - Email is totally empty! Google didn't return one.")
-                        return null
-                    }
-                    
-                    // Save user info
-                    getPrefs(context).edit().apply {
-                        putBoolean(KEY_IS_SIGNED_IN, true)
-                        putString(KEY_USER_EMAIL, email)
-                        putString(KEY_USER_NAME, name)
-                        putString(KEY_USER_PHOTO_URL, photoUrl)
-                        apply()
-                    }
-                    
-                    TerminalLogger.log("GOOGLE AUTH: Saved to prefs - signed in as $email")
-                    googleIdTokenCredential
-                } else {
-                    TerminalLogger.log("GOOGLE AUTH: Unexpected credential type: ${credential.type}")
-                    null
-                }
-            }
-            else -> {
-                TerminalLogger.log("GOOGLE AUTH: Unexpected credential class: ${credential::class.java}")
-                null
-            }
-        }
-    }
+
     
     /**
      * Sign out the current user.
      */
     fun signOut(context: Context) {
-        getPrefs(context).edit().clear().apply()
+        getPrefs(context).edit().apply {
+            remove(KEY_IS_SIGNED_IN)
+            remove(KEY_ACCESS_TOKEN)
+            remove(KEY_REFRESH_TOKEN)
+            remove(KEY_USER_EMAIL)
+            remove(KEY_USER_NAME)
+            remove(KEY_USER_PHOTO_URL)
+            // Note: We intentionally do not remove KEY_CLIENT_ID and KEY_CLIENT_SECRET
+            // so the user does not have to re-enter them if they sign out and back in.
+            apply()
+        }
         // Also clear connector prefs
         context.getSharedPreferences("google_connector_prefs", Context.MODE_PRIVATE).edit().clear().apply()
         TerminalLogger.log("GOOGLE AUTH: Signed out and cleared connections")
     }
     
     /**
-     * Get GoogleAccountCredential for API calls.
-     * Must be called after user is signed in.
+     * Get GoogleCredential for API calls using Desktop Client credentials.
+     * Must be called after user is signed in and tokens are saved.
      */
-    /**
-     * Get GoogleAccountCredential for API calls.
-     * Updated to manually create the Account object to bypass account visibility issues.
-     */
-    fun getGoogleAccountCredential(context: Context, accountEmail: String? = null): GoogleAccountCredential? {
+    fun getGoogleAccountCredential(context: Context, accountEmail: String? = null): GoogleCredential? {
         val appContext = context.applicationContext
-        val email = (accountEmail ?: getUserEmail(appContext))?.trim()?.replace("\n", "")
         
-        if (email.isNullOrEmpty()) {
-            TerminalLogger.log("GOOGLE AUTH: CRITICAL - No email found for connection")
+        val accessToken = getAccessToken(appContext)
+        val refreshToken = getRefreshToken(appContext)
+        val clientId = getClientId(appContext)
+        val clientSecret = getClientSecret(appContext)
+
+        if (accessToken.isNullOrEmpty() && refreshToken.isNullOrEmpty()) {
+            TerminalLogger.log("GOOGLE AUTH: CRITICAL - No tokens found")
             return null
         }
         
         return try {
-            // 1. Create the credential wrapper
-            val credential = GoogleAccountCredential.usingOAuth2(appContext, ALL_SCOPES)
+            val credential = GoogleCredential.Builder()
+                .setTransport(getHttpTransport())
+                .setJsonFactory(getJsonFactory())
+                .setClientSecrets(clientId, clientSecret)
+                .build()
+
+            credential.accessToken = accessToken
+            if (!refreshToken.isNullOrEmpty()) {
+                credential.refreshToken = refreshToken
+            }
             
-            // 2. CRITICAL FIX: Manually create the Account object.
-            // This bypasses the library's attempt to 'look up' the account in settings.
-            val account = android.accounts.Account(email, "com.google")
-            
-            // 3. Set the account object directly
-            credential.selectedAccount = account
-            
-            TerminalLogger.log("GOOGLE AUTH: Bridge created for [$email]")
+            TerminalLogger.log("GOOGLE AUTH: Desktop Client Bridge created")
             credential
         } catch (t: Throwable) {
             TerminalLogger.log("GOOGLE AUTH: Bridge Failed - ${t.message}")
@@ -222,14 +202,6 @@ object GoogleAuthManager {
      */
     fun getJsonFactory() = com.google.api.client.json.gson.GsonFactory.getDefaultInstance()
     
-    /**
-     * Update the Web Client ID.
-     * Call this with your actual client ID.
-     */
-    fun setWebClientId(clientId: String) {
-        // In production, this should be a build config or resource
-        // For now, we'll use a placeholder
-    }
     
     /**
      * Check if the current credential has all required scopes.
