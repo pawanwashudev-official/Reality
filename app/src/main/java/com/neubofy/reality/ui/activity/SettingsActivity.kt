@@ -181,10 +181,11 @@ class SettingsActivity : BaseActivity() {
     private fun performGoogleSignIn() {
         lifecycleScope.launch {
             try {
-                val credential = com.neubofy.reality.google.GoogleAuthManager.signIn(this@SettingsActivity)
+                android.widget.Toast.makeText(this@SettingsActivity, "Please sign in from the Profile page first.", android.widget.Toast.LENGTH_LONG).show()
+                val credential = false
                 
-                if (credential != null) {
-                    android.widget.Toast.makeText(this@SettingsActivity, "Welcome ${credential.displayName}!", android.widget.Toast.LENGTH_LONG).show()
+                if (credential) {
+                    android.widget.Toast.makeText(this@SettingsActivity, "Welcome!", android.widget.Toast.LENGTH_LONG).show()
                     updateUI()
                 } else {
                     android.widget.Toast.makeText(this@SettingsActivity, "Sign in failed or cancelled", android.widget.Toast.LENGTH_SHORT).show()

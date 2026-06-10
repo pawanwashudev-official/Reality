@@ -25,7 +25,7 @@ object GoogleDocsManager {
     private const val APP_NAME = "Reality"
     
     private fun getDocsService(context: Context): Docs? {
-        val credential = GoogleAuthManager.getGoogleAccountCredential(context) ?: return null
+        val credential = GoogleAuthManager.getGoogleCredential(context) ?: return null
         
         return Docs.Builder(
             GoogleAuthManager.getHttpTransport(),
@@ -63,7 +63,7 @@ object GoogleDocsManager {
     suspend fun getOrCreateDocument(context: Context, title: String): Pair<String, Boolean> {
         return withContext(Dispatchers.IO) {
             // First search in Drive for existing doc with this name
-            val driveCredential = GoogleAuthManager.getGoogleAccountCredential(context)
+            val driveCredential = GoogleAuthManager.getGoogleCredential(context)
                 ?: throw IllegalStateException("Not signed in")
             
             val driveService = com.google.api.services.drive.Drive.Builder(

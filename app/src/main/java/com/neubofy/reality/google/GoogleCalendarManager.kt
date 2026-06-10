@@ -18,7 +18,7 @@ object GoogleCalendarManager {
     private const val APP_NAME = "Reality"
     
     private fun getCalendarService(context: Context): Calendar? {
-        val credential = GoogleAuthManager.getGoogleAccountCredential(context) ?: return null
+        val credential = GoogleAuthManager.getGoogleCredential(context) ?: return null
         
         return Calendar.Builder(
             GoogleAuthManager.getHttpTransport(),

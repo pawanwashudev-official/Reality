@@ -12,7 +12,7 @@ import kotlinx.coroutines.withContext
 object GoogleSheetsManager {
 
     private fun getService(context: Context): Sheets? {
-        val credential = GoogleAuthManager.getGoogleAccountCredential(context) ?: return null
+        val credential = GoogleAuthManager.getGoogleCredential(context) ?: return null
         return Sheets.Builder(
             GoogleNetHttpTransport.newTrustedTransport(),
             GsonFactory.getDefaultInstance(),

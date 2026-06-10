@@ -25,7 +25,7 @@ object GoogleDriveManager {
     private const val APP_FOLDER_NAME = "Reality App Data"
     
     private fun getDriveService(context: Context): Drive? {
-        val credential = GoogleAuthManager.getGoogleAccountCredential(context) ?: return null
+        val credential = GoogleAuthManager.getGoogleCredential(context) ?: return null
         
         return Drive.Builder(
             GoogleAuthManager.getHttpTransport(),

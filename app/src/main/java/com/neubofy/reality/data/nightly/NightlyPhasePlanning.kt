@@ -84,7 +84,7 @@ class NightlyPhasePlanning(
 
             // Dynamic folder resolution
             if (planFolderId.isNullOrEmpty() && !realityFolderId.isNullOrEmpty()) {
-                val credential = GoogleAuthManager.getGoogleAccountCredential(context)
+                val credential = GoogleAuthManager.getGoogleCredential(context)
                 if (credential != null) {
                     val driveService = Drive.Builder(GoogleAuthManager.getHttpTransport(), GoogleAuthManager.getJsonFactory(), credential)
                         .setApplicationName("Reality").build()
@@ -616,7 +616,7 @@ class NightlyPhasePlanning(
 
             // Upload to Google Drive
             val pdfFileId = withContext(Dispatchers.IO) {
-                val credential = GoogleAuthManager.getGoogleAccountCredential(context)
+                val credential = GoogleAuthManager.getGoogleCredential(context)
                     ?: throw Exception("Not signed in")
 
                 val driveService = Drive.Builder(
@@ -1048,7 +1048,7 @@ class NightlyPhasePlanning(
             // Append to sheet
             val success = withContext(kotlinx.coroutines.Dispatchers.IO) {
                 try {
-                    val service = com.neubofy.reality.google.GoogleAuthManager.getGoogleAccountCredential(context)?.let {
+                    val service = com.neubofy.reality.google.GoogleAuthManager.getGoogleCredential(context)?.let {
                         com.google.api.services.sheets.v4.Sheets.Builder(
                             com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport(),
                             com.google.api.client.json.gson.GsonFactory.getDefaultInstance(),

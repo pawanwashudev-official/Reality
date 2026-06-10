@@ -101,8 +101,9 @@ class BackupRestoreActivity : AppCompatActivity() {
         binding.btnSignIn.setOnClickListener {
             lifecycleScope.launch {
                 try {
-                    val result = GoogleAuthManager.signIn(this@BackupRestoreActivity)
-                    if (result != null) {
+                    android.widget.Toast.makeText(this@BackupRestoreActivity, "Please sign in from the Profile page first.", android.widget.Toast.LENGTH_LONG).show()
+                    val result = false
+                    if (result) {
                         checkSignInStatus()
                         loadBackupInfo()
                         Toast.makeText(this@BackupRestoreActivity, "Signed in!", Toast.LENGTH_SHORT).show()
