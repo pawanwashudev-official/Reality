@@ -108,6 +108,16 @@ class SettingsActivity : BaseActivity() {
             startActivity(intent)
         }
 
+        // Language Settings
+        binding.cardLanguage.setOnClickListener {
+            val intent = Intent(android.provider.Settings.ACTION_LOCALE_SETTINGS)
+            try {
+                startActivity(intent)
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(this, "Could not open language settings.", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+
         // Auto DND Logic
         binding.cardAutoDnd.setOnClickListener {
             val notificationManager = getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager

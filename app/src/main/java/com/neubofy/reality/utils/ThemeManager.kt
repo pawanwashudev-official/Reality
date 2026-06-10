@@ -252,6 +252,17 @@ object ThemeManager {
         context.window.statusBarColor = android.graphics.Color.TRANSPARENT
         context.window.navigationBarColor = android.graphics.Color.TRANSPARENT // Ensure Nav Bar is also transparent
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(context.window, false)
+
+        val rootView = context.findViewById<android.view.View>(android.R.id.content)
+        if (rootView != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
+                val insets = windowInsets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+                val child = (view as? android.view.ViewGroup)?.getChildAt(0)
+                child?.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+                windowInsets
+            }
+            androidx.core.view.ViewCompat.requestApplyInsets(rootView)
+        }
     }
     
     /**

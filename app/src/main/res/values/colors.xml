@@ -23,7 +23,7 @@
     <color name="md_theme_onErrorContainer">#410E0B</color>
     
     <!-- Light Background (Grey for Separation) -->
-    <color name="md_theme_background">#F0F2F5</color>
+    <color name="md_theme_background">#FAFAFA</color>
     <color name="md_theme_onBackground">#000000</color>
     
     <color name="md_theme_surface">#FFFFFF</color>

@@ -49,7 +49,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clipToPadding="false"
-        android:fitsSystemWindows="true"
+
         android:paddingBottom="?attr/actionBarSize"
         android:scrollbars="vertical"
         app:layout_constraintBottom_toBottomOf="parent"

@@ -22,10 +22,10 @@
     <color name="md_theme_onErrorContainer">#FFDAD6</color>
     
     <!-- AMOLED Black Theme -->
-    <color name="md_theme_background">#000000</color>
+    <color name="md_theme_background">#121212</color>
     <color name="md_theme_onBackground">#FFFFFF</color>
     
-    <color name="md_theme_surface">#000000</color>
+    <color name="md_theme_surface">#121212</color>
     <color name="md_theme_onSurface">#E0E0E0</color>
     
     <color name="md_theme_surfaceVariant">#121212</color>

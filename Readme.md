@@ -2,7 +2,7 @@
 
 <img src="https://res.cloudinary.com/dnh4fonis/image/upload/v1766755541/gk1gp3sf5ihygmo9wfv8.png" width="180" alt="Reality Logo" style="border-radius: 20px; margin-bottom: 20px;">
 
-# Reality
+# Reality (v1.0.5)
 ### The Intelligent Life OS
 
 **Developed by Pawan Washudev | Neubofy**
@@ -73,10 +73,14 @@ Reality doesn't reinvent the wheel. It **weaponizes Google's own tools** for you
 
 ### ☁️ Google Drive Backup
 - **Automatic Reports**: Your daily PDF reports are uploaded to **YOUR** Drive folder.
+- **Auto-Connect Sheets**: Seamlessly connect your existing Google Sheets to sync data with built-in auto-find capability.
 - **Full Control**: Access, share, or delete them anytime. It's your data.
 - **No Our Servers**: We have **literally zero servers**. Your data never touches us.
 
 > **The result?** Reality becomes a power-user extension of the **Gemini-powered Google Workspace**. Not a separate silo.
+
+### 🌍 Global Support
+- Multi-language support (French, Hindi, and more based on device locale).
 
 ---
 
@@ -126,6 +130,7 @@ Your evening ritual to win tomorrow.
 - **<1% Battery**: Uses native `AlarmManager` & `JobScheduler`. Zero background drain.
 - **100% Accurate Stats**: Direct `UsageStatsManager` access.
 - **Floating Timer**: A global overlay keeps you accountable in *any* app.
+- **Polished UI**: Modern Edge-to-Edge UI for seamless immersive design.
 
 ---
 

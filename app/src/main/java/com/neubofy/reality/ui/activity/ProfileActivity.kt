@@ -958,16 +958,97 @@ class ProfileActivity : AppCompatActivity() {
             return
         }
 
-        val options = arrayOf("Create New", "Use Existing URL")
+        val options = arrayOf("Create New", "Use Existing URL", "Auto Find Sheet")
         MaterialAlertDialogBuilder(this)
             .setTitle("Reality Sheet Setup")
             .setItems(options) { _, which ->
                 when (which) {
                     0 -> createNewSheet(folderId)
                     1 -> useExistingSheet()
+                    2 -> autoFindSheet(folderId)
                 }
             }
             .show()
+    }
+
+    private fun autoFindSheet(folderId: String) {
+        val dialogView = android.view.LayoutInflater.from(this).inflate(R.layout.dialog_setup_progress, null)
+        val tvTitle = dialogView.findViewById<android.widget.TextView>(R.id.tv_title)
+        val tvLog = dialogView.findViewById<android.widget.TextView>(R.id.tv_log)
+        val progressBar = dialogView.findViewById<com.google.android.material.progressindicator.LinearProgressIndicator>(R.id.progress_bar)
+
+        tvTitle.text = "Finding Reality Sheet..."
+
+        val progressDialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+        progressDialog.show()
+
+        fun log(msg: String) {
+            runOnUiThread {
+                tvLog.append("$msg\n")
+                (tvLog.parent as? android.widget.ScrollView)?.fullScroll(android.view.View.FOCUS_DOWN)
+            }
+        }
+
+        lifecycleScope.launch {
+            try {
+                log("Searching for Reality Sheet...")
+                val credential = com.neubofy.reality.google.GoogleAuthManager.getGoogleCredential(this@ProfileActivity)
+                    ?: throw Exception("Failed to get credential")
+
+                val driveService = com.google.api.services.drive.Drive.Builder(
+                    com.neubofy.reality.google.GoogleAuthManager.getHttpTransport(),
+                    com.neubofy.reality.google.GoogleAuthManager.getJsonFactory(),
+                    credential
+                ).setApplicationName("Reality").build()
+
+                var sheetId: String? = null
+                withContext(Dispatchers.IO) {
+                    val result = driveService.files().list()
+                        .setQ("mimeType='application/vnd.google-apps.spreadsheet' and name='Reality sheet' and trashed=false and '$folderId' in parents")
+                        .setFields("files(id, name)")
+                        .execute()
+
+                    if (result.files.isNotEmpty()) {
+                        sheetId = result.files[0].id
+                    }
+                }
+
+                if (sheetId != null) {
+                    log("✓ Found Reality Sheet: $sheetId")
+                    log("Verifying sheet structure...")
+                    val success = com.neubofy.reality.google.GoogleSheetsManager.verifyAndCreateColumns(this@ProfileActivity, sheetId!!)
+                    if (success) {
+                        val nightlyPrefs = getSharedPreferences(NIGHTLY_PREFS, Context.MODE_PRIVATE)
+                        nightlyPrefs.edit().putString("reality_sheet_id", sheetId).apply()
+                        log("✅ Sheet connected & mapped!")
+                        progressBar.isIndeterminate = false
+                        progressBar.progress = 100
+                        kotlinx.coroutines.delay(1000)
+                        progressDialog.dismiss()
+                        loadSetupData()
+                        Toast.makeText(this@ProfileActivity, "Reality Sheet connected!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        log("❌ Failed to verify sheet.")
+                        progressBar.isIndeterminate = false
+                        kotlinx.coroutines.delay(3000)
+                        progressDialog.dismiss()
+                    }
+                } else {
+                    log("⚠ No 'Reality sheet' found in Reality folder")
+                    progressBar.isIndeterminate = false
+                    kotlinx.coroutines.delay(3000)
+                    progressDialog.dismiss()
+                }
+            } catch (e: Exception) {
+                log("❌ Error: ${e.message}")
+                progressBar.isIndeterminate = false
+                kotlinx.coroutines.delay(2000)
+                progressDialog.dismiss()
+            }
+        }
     }
 
     private fun createNewSheet(folderId: String) {
