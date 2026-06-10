@@ -38,7 +38,9 @@ object GoogleAuthManager {
     
     // All scopes we need for full Google integration
     val ALL_SCOPES = listOf(
-        CalendarScopes.CALENDAR,           // Full calendar access
+        CalendarScopes.CALENDAR,
+        "email",
+        "profile",           // Full calendar access
         TasksScopes.TASKS,                 // Google Tasks
         DriveScopes.DRIVE_FILE,            // Drive files created by app
         DocsScopes.DOCUMENTS,              // Google Docs

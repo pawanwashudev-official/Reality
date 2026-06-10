@@ -324,7 +324,32 @@ class ProfileActivity : AppCompatActivity() {
                 val accessToken = response.accessToken
                 val refreshToken = response.refreshToken
 
+
                 GoogleAuthManager.saveTokens(this@ProfileActivity, accessToken, refreshToken)
+
+                // Fetch user profile info
+                try {
+                    val credential = GoogleAuthManager.getGoogleAccountCredential(this@ProfileActivity)
+                    if (credential != null) {
+                        val oauth2Service = com.google.api.services.oauth2.Oauth2.Builder(
+                            GoogleAuthManager.getHttpTransport(),
+                            GoogleAuthManager.getJsonFactory(),
+                            credential
+                        ).setApplicationName("Reality").build()
+
+                        val userinfo = oauth2Service.userinfo().get().execute()
+                        val prefs = getSharedPreferences("google_auth_prefs", Context.MODE_PRIVATE)
+                        prefs.edit().apply {
+                            putString("user_email", userinfo.email)
+                            putString("user_display_name", userinfo.name)
+                            putString("user_photo_url", userinfo.picture)
+                            apply()
+                        }
+                    }
+                } catch (e: Exception) {
+                    TerminalLogger.log("Failed to fetch user info: ${e.message}")
+                }
+
 
                 kotlinx.coroutines.withContext(Dispatchers.Main) {
                     Toast.makeText(this@ProfileActivity, "Authentication successful!", Toast.LENGTH_SHORT).show()
