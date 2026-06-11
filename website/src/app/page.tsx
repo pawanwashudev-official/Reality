@@ -1,6 +1,7 @@
+/* eslint-disable react/no-unescaped-entities */
 import Image from "next/image";
 import Link from "next/link";
-import { Download, Shield, Bot, Calendar, HardDrive, Smartphone, Zap, Activity, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Download, Shield, Bot, Calendar, HardDrive, Smartphone, Zap, Activity, CheckCircle2 } from "lucide-react";
 
 export default function Home() {
   return (

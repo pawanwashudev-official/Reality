@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck, Database, Cloud, Bot, EyeOff, Code } from "lucide-react";
 
