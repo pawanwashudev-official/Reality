@@ -21,7 +21,7 @@ class AboutActivity : BaseActivity() {
         const val TELEGRAM = "https://t.me/pawanwashudev"
         const val ARRATAI = "https://arratai.com/@pawanwashudev"
         const val INSTAGRAM = "https://instagram.com/pawan_washudev"
-        const val EMAIL = "pawanwashudev@gmail.com"
+        const val EMAIL = "founder@neubofy.in"
         const val PRIVACY_POLICY = "https://realityprivicypolicy.vercel.app"
     }
 

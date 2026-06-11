@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Reality</string>
+    <string name="focus_mode">கவனம் பயன்முறை</string>
+    <string name="app_blocker">பயன்பாட்டு தடுப்பான்</string>
+    <string name="anti_uninstall">நிறுவல் தடுப்பு</string>
+    <string name="disabled">முடக்கப்பட்டது</string>
+    <string name="select_pinned_apps">பின் செய்யப்பட்ட பயன்பாடுகளைத் தேர்ந்தெடுக்கவும்</string>
+    <string name="select_blocked_apps">தடுக்கப்பட்ட பயன்பாடுகளைத் தேர்ந்தெடுக்கவும்</string>
+    <string name="start_focus_mode">கவனம் பயன்முறையைத் தொடங்கவும்</string>
+    <string name="remove_anti_uninstall">நிறுவல் தடுப்பை அகற்று</string>
+    <string name="add">சேர்</string>
+    <string name="save">சேமி</string>
+</resources>

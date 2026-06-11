@@ -600,7 +600,8 @@ OUTPUT FORMAT:
     data class AnalysisResult(
         val xp: Int,
         val satisfied: Boolean,
-        val feedback: String
+        val feedback: String,
+        val rawJson: String? = null
     )
 
     /**
@@ -663,8 +664,12 @@ You must output a single JSON object. Do not include markdown formatting like ``
 {
   "xp": (integer 0-500, score for quality of reflection),
   "satisfied": (boolean, true if reflection is good enough to accept, false if lazy/incomplete),
-  "feedback": (string, 1-2 sentence feedback. If satisfied, praise insight. If false, explain why and ask them to add more.)
-}"""
+  "feedback": (string, 1-2 sentence feedback. If satisfied, praise insight. If false, explain why and ask them to add more.),
+  "qa": [
+    { "q": "Question 1 text", "a": "Answer 1 text" }
+  ]
+}
+Include exactly the questions asked and the user's answers extracted strictly from the DIARY in the 'qa' array."""
 
         return if (customPrompt != null) {
             customPrompt.replace("{user_intro}", userIntroStr)
@@ -687,12 +692,13 @@ You must output a single JSON object. Do not include markdown formatting like ``
             return AnalysisResult(
                 xp = json.optInt("xp", 10),
                 satisfied = json.optBoolean("satisfied", true),
-                feedback = json.optString("feedback", "Good reflection.")
+                feedback = json.optString("feedback", "Good reflection."),
+                rawJson = jsonStr
             )
         } catch (e: Exception) {
             TerminalLogger.log("Nightly AI: Error parsing analysis JSON - ${e.message}")
             // Fallback to accepted if parsing fails, to avoid blocking user
-            return AnalysisResult(20, true, "Reflection recorded.")
+            return AnalysisResult(20, true, "Reflection recorded.", null)
         }
     }
 

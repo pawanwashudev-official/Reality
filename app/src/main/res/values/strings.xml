@@ -105,4 +105,7 @@
     <string name="guide">Guide</string>
     <string name="go_back">Go back</string>
     <string name="widget_description">Quick toggle Focus Mode from your home screen</string>
+    <string name="language">Language</string>
+    <string name="app_language">App Language</string>
+    <string name="select_language">Select language (e.g. English, French, Hindi)</string>
 </resources>

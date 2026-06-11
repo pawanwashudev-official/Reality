@@ -1009,35 +1009,51 @@ class NightlyPhasePlanning(
             rowValues.add(diaryDate.toString())
 
             // "Step1_Tasks"
-            val totalDue = j1.optJSONArray("dueTasks")?.length() ?: 0
-            val totalComp = j1.optJSONArray("completedTasks")?.length() ?: 0
+            val totalDue = j1.optInt("pendingCount", 0) + j1.optInt("completedCount", 0)
+            val totalComp = j1.optInt("completedCount", 0)
             rowValues.add("$totalComp/$totalDue Completed")
 
             // "Step2_SessionsCount", "Step2_TotalMins"
-            rowValues.add((j2.optJSONArray("events")?.length() ?: 0).toString())
-            rowValues.add(j2.optInt("totalPlannedMinutes", 0).toString())
+            rowValues.add(j2.optInt("sessionCount", 0).toString())
+            rowValues.add(j2.optInt("plannedMinutes", 0).toString())
 
-            // "Q1", "A1", ... "Q6", "A6" (Step 3 Tapasya questions)
-            val questions = j3.optJSONArray("questions")
-            val answers = j3.optJSONArray("answers")
+            // "Q1", "A1", ... "Q6", "A6" (Step 4 Questions, Step 6 Diary answers parsed in step 7)
+            val step6Data = loadStepData(NightlySteps.STEP_CREATE_DIARY)
+            val j6Input = extractJson(step6Data).optJSONObject("input") ?: org.json.JSONObject()
+            val questionsCount = j6Input.optInt("questionsCount", 0)
+
+            // To properly extract Q&A, we either rely on j7 which must contain it,
+            // or we extract the "qa" array from step 7 analysis output.
+            // Let's assume step 7 outputs a "qa" array with {"q": "...", "a": "..."}.
+            // If it doesn't, we fallback to N/A. The AI might not be consistently outputting 'qa'.
+            val qaList = j7.optJSONArray("qa")
             for (i in 0 until 6) {
-                rowValues.add(questions?.optString(i, "N/A") ?: "N/A")
-                rowValues.add(answers?.optString(i, "N/A") ?: "N/A")
+                if (qaList != null && i < qaList.length()) {
+                    val qaObj = qaList.optJSONObject(i)
+                    rowValues.add(qaObj?.optString("q", "N/A") ?: "N/A")
+                    rowValues.add(qaObj?.optString("a", "N/A") ?: "N/A")
+                } else {
+                    // Make sure we output exactly the number of empty columns needed to maintain structure.
+                    rowValues.add("")
+                    rowValues.add("")
+                }
             }
 
             // "Step6_Feedback"
-            rowValues.add(j6.optString("feedback", "No feedback"))
+            rowValues.add(j7.optString("feedback", "No feedback"))
 
             // "XP_Tapasya", "XP_Task", "XP_Session", "XP_Distraction", "XP_Reflection", "XP_Total", "Level", "Streak"
-            val xpEarned = j7.optJSONObject("xpEarned") ?: org.json.JSONObject()
-            rowValues.add(xpEarned.optInt("tapasyaXP", 0).toString())
-            rowValues.add(xpEarned.optInt("taskXP", 0).toString())
-            rowValues.add(xpEarned.optInt("sessionXP", 0).toString())
-            rowValues.add(xpEarned.optInt("distractionBonus", 0).toString())
-            rowValues.add(xpEarned.optInt("reflectionXP", 0).toString())
-            rowValues.add(xpEarned.optInt("totalXP", 0).toString())
-            rowValues.add(j7.optInt("newLevel", 0).toString())
-            rowValues.add(j7.optInt("newStreak", 0).toString())
+            val step8Data = loadStepData(NightlySteps.STEP_FINALIZE_XP)
+            val j8 = extractJson(step8Data).optJSONObject("output") ?: org.json.JSONObject()
+
+            rowValues.add(j8.optInt("tapasyaXp", 0).toString())
+            rowValues.add(j8.optInt("taskXp", 0).toString())
+            rowValues.add(j8.optInt("sessionXp", 0).toString())
+            rowValues.add(j8.optInt("distractionXp", 0).toString())
+            rowValues.add(j8.optInt("reflectionXp", 0).toString())
+            rowValues.add(j8.optInt("totalXp", 0).toString())
+            rowValues.add(j8.optInt("level", 0).toString())
+            rowValues.add(j8.optInt("streak", 0).toString())
 
             // "Plan_Doc_Link"
             rowValues.add(step9.linkUrl ?: "")

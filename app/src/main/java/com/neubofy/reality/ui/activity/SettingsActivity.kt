@@ -54,7 +54,22 @@ class SettingsActivity : BaseActivity() {
     }
 
     private fun setupListeners() {
-        
+        // Features Toggle Dialog
+        binding.cardFeatures.setOnClickListener {
+            showFeaturesDialog()
+        }
+
+        // Language Settings
+        binding.cardLanguage.setOnClickListener {
+            val intent = Intent(android.provider.Settings.ACTION_APP_LOCALE_SETTINGS)
+            intent.data = android.net.Uri.parse("package:$packageName")
+            try {
+                startActivity(intent)
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(this, "Language settings not found.", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+
         // Unified Blocklist is on Home Page -> Focus Wall card now
 
         // Block Messages
@@ -173,7 +188,67 @@ class SettingsActivity : BaseActivity() {
     }
     
 
+    private fun showFeaturesDialog() {
+        val featureManager = com.neubofy.reality.utils.FeatureManager(this)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_features, null)
+
+        val switchRealityPro = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switch_feature_reality_pro)
+        val switchAi = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switch_feature_ai)
+        val switchTapasya = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switch_feature_tapasya)
+        val switchReminder = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switch_feature_reminder)
+        val switchHealth = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switch_feature_health)
+
+        // Init states
+        switchRealityPro.isChecked = featureManager.isRealityProEnabled()
+        switchAi.isChecked = featureManager.isAiEnabled()
+        switchTapasya.isChecked = featureManager.isTapasyaEnabled()
+        switchReminder.isChecked = featureManager.isReminderEnabled()
+        switchHealth.isChecked = featureManager.isHealthConnectEnabled()
+
+        // Set listeners
+        switchRealityPro.setOnCheckedChangeListener { _, isChecked ->
+            featureManager.setRealityProEnabled(isChecked)
+            updateUI()
+        }
+        switchAi.setOnCheckedChangeListener { _, isChecked ->
+            featureManager.setAiEnabled(isChecked)
+            updateUI()
+        }
+        switchTapasya.setOnCheckedChangeListener { _, isChecked ->
+            featureManager.setTapasyaEnabled(isChecked)
+            updateUI()
+        }
+        switchReminder.setOnCheckedChangeListener { _, isChecked ->
+            featureManager.setReminderEnabled(isChecked)
+            updateUI()
+        }
+        switchHealth.setOnCheckedChangeListener { _, isChecked ->
+            featureManager.setHealthConnectEnabled(isChecked)
+            updateUI()
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setView(dialogView)
+            .setPositiveButton("Close", null)
+            .show()
+    }
+
     private fun updateUI() {
+        // Features State
+        val featureManager = com.neubofy.reality.utils.FeatureManager(this)
+
+        val isRealityProEnabled = featureManager.isRealityProEnabled()
+        val visibilityRealityPro = if (isRealityProEnabled) android.view.View.VISIBLE else android.view.View.GONE
+
+        binding.tvAccountHeader.visibility = visibilityRealityPro
+        binding.cardAccount.visibility = visibilityRealityPro
+        binding.cardNightlySettings.visibility = visibilityRealityPro
+        binding.cardReflectionSettings.visibility = visibilityRealityPro
+
+        binding.cardAiSettings.visibility = if (featureManager.isAiEnabled()) android.view.View.VISIBLE else android.view.View.GONE
+        binding.cardTapasyaSettings.visibility = if (featureManager.isTapasyaEnabled()) android.view.View.VISIBLE else android.view.View.GONE
+        binding.cardSettingsReminders.visibility = if (featureManager.isReminderEnabled()) android.view.View.VISIBLE else android.view.View.GONE
+
         // Account Status
         if (com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)) {
             val name = com.neubofy.reality.google.GoogleAuthManager.getUserName(this)

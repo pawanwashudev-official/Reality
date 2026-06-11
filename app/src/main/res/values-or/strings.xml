@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Reality</string>
+    <string name="focus_mode">ଫୋକସ୍ ମୋଡ୍</string>
+    <string name="app_blocker">ଆପ୍ ବ୍ଲକର୍</string>
+    <string name="anti_uninstall">ଅନଇନଷ୍ଟଲ୍ ପ୍ରତିବନ୍ଧକ</string>
+    <string name="disabled">ଅକ୍ଷମ ହୋଇଛି</string>
+    <string name="select_pinned_apps">ପିନ୍ ହୋଇଥିବା ଆପ୍ ବାଛନ୍ତୁ</string>
+    <string name="select_blocked_apps">ବ୍ଲକ୍ ହୋଇଥିବା ଆପ୍ ବାଛନ୍ତୁ</string>
+    <string name="start_focus_mode">ଫୋକସ୍ ମୋଡ୍ ଆରମ୍ଭ କରନ୍ତୁ</string>
+    <string name="remove_anti_uninstall">ଅନଇନଷ୍ଟଲ୍ ପ୍ରତିବନ୍ଧକ ହଟାନ୍ତୁ</string>
+    <string name="add">ଯୋଡନ୍ତୁ</string>
+    <string name="save">ସେଭ୍ କରନ୍ତୁ</string>
+</resources>
