@@ -1,6 +1,5 @@
 {
   "buildCommand": "cd website && npm install && npm run build",
   "outputDirectory": "website/.next",
-  "framework": "nextjs",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./website/"
+  "framework": "nextjs"
 }
