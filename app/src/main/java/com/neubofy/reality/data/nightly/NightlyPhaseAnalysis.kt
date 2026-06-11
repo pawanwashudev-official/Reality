@@ -112,10 +112,21 @@ class NightlyPhaseAnalysis(
                         put("model", nightlyModel)
                         put("diaryDocId", diaryDocId)
                     })
+
+                    // Parse rawJson to include 'qa' array if available
+                    val rawObj = try {
+                        if (result.rawJson != null) JSONObject(result.rawJson) else JSONObject()
+                    } catch (e: Exception) {
+                        JSONObject()
+                    }
+
                     put("output", JSONObject().apply {
                         put("accepted", true)
                         put("xp", result.xp)
                         put("feedback", result.feedback)
+                        if (rawObj.has("qa")) {
+                            put("qa", rawObj.optJSONArray("qa"))
+                        }
                     })
                 }.toString()
 
