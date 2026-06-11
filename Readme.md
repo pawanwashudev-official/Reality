@@ -23,6 +23,10 @@
 
 [**🌐 Official Website**](https://neubofyreality.vercel.app) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
 
+<a href="https://reality-digital-wellbeing-and-focus.en.uptodown.com/android" title="Download Reality - The Intelligent Life OS">
+<img src="https://stc.utdstc.com/img/mediakit/download-gio-big.png" alt="Download Reality - The Intelligent Life OS" height="50">
+</a>
+
 </div>
 
 ---

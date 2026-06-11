@@ -35,6 +35,9 @@ export default function Home() {
             >
               <Download className="w-4 h-4 mr-2" /> Download APK
             </Link>
+            <a href="https://reality-digital-wellbeing-and-focus.en.uptodown.com/android" target="_blank" rel="noopener noreferrer" title="Download Reality - The Intelligent Life OS">
+              <img src="https://stc.utdstc.com/img/mediakit/download-gio-big.png" alt="Download Reality - The Intelligent Life OS" className="h-9 w-auto" />
+            </a>
           </div>
         </div>
       </header>
@@ -66,6 +69,9 @@ export default function Home() {
               >
                 <Download className="w-5 h-5 mr-2" /> Download Latest APK
               </Link>
+              <a href="https://reality-digital-wellbeing-and-focus.en.uptodown.com/android" target="_blank" rel="noopener noreferrer" title="Download Reality - The Intelligent Life OS" className="h-12 w-full sm:w-auto flex items-center justify-center">
+                <img src="https://stc.utdstc.com/img/mediakit/download-gio-big.png" alt="Download Reality - The Intelligent Life OS" className="h-full w-auto object-contain" />
+              </a>
               <Link
                 href="https://github.com/pawanwashudev-official/Reality"
                 target="_blank"
@@ -396,8 +402,11 @@ export default function Home() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center rounded-lg text-lg font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:pointer-events-none disabled:opacity-50 bg-white text-blue-600 hover:bg-neutral-100 h-14 px-8 w-full sm:w-auto shadow-lg"
               >
-                <Download className="w-6 h-6 mr-2" /> Download Reality
+                <Download className="w-6 h-6 mr-2" /> Download APK
               </Link>
+              <a href="https://reality-digital-wellbeing-and-focus.en.uptodown.com/android" target="_blank" rel="noopener noreferrer" title="Download Reality - The Intelligent Life OS" className="h-14 w-full sm:w-auto flex items-center justify-center">
+                <img src="https://stc.utdstc.com/img/mediakit/download-gio-big.png" alt="Download Reality - The Intelligent Life OS" className="h-full w-auto object-contain drop-shadow-lg" />
+              </a>
             </div>
             <p className="mt-6 text-sm text-blue-200">Requires Android 8.0 or higher.</p>
           </div>
