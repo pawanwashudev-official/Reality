@@ -68,11 +68,16 @@ object GoogleAuthManager {
         if (!prefId.isNullOrBlank()) return prefId
         return if (BuildConfig.CLIENT_ID.isNotBlank()) BuildConfig.CLIENT_ID else null
     }
+
+    fun getCustomClientId(context: Context): String? = getPrefs(context).getString(KEY_CLIENT_ID, null)
+
     fun getClientSecret(context: Context): String? {
         val prefSecret = getPrefs(context).getString(KEY_CLIENT_SECRET, null)
         if (!prefSecret.isNullOrBlank()) return prefSecret
         return if (BuildConfig.CLIENT_SECRET.isNotBlank()) BuildConfig.CLIENT_SECRET else null
     }
+
+    fun getCustomClientSecret(context: Context): String? = getPrefs(context).getString(KEY_CLIENT_SECRET, null)
     fun hasCloudCredentials(context: Context): Boolean {
         val clientId = getClientId(context)
         val clientSecret = getClientSecret(context)
@@ -225,13 +230,13 @@ object GoogleAuthManager {
     fun getUserPhotoUrl(context: Context): String? = getPrefs(context).getString(KEY_USER_PHOTO_URL, null)
     
     fun signOut(context: Context) {
-        val clientId = getClientId(context)
-        val clientSecret = getClientSecret(context)
+        val customClientId = getCustomClientId(context)
+        val customClientSecret = getCustomClientSecret(context)
 
         getPrefs(context).edit().clear().apply()
-        // Keep credentials
-        if (clientId != null && clientSecret != null) {
-            saveCloudCredentials(context, clientId, clientSecret)
+        // Keep custom credentials if they were set
+        if (!customClientId.isNullOrBlank() && !customClientSecret.isNullOrBlank()) {
+            saveCloudCredentials(context, customClientId, customClientSecret)
         }
 
         context.getSharedPreferences("google_connector_prefs", Context.MODE_PRIVATE).edit().clear().apply()
