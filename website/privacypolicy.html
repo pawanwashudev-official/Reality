@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Reality App</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        h1, h2, h3 {
+            color: #111;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .nav-back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .nav-back:hover {
+            text-decoration: underline;
+        }
+        .highlight {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="/" class="nav-back">&larr; Back to Home</a>
+
+    <div class="container">
+        <h1>Privacy Policy for Reality</h1>
+        <p><strong>Effective Date:</strong> June 11, 2024</p>
+
+        <p>At Neubofy, we believe your data is yours. The Reality app was built with a fundamental "Zero Trust" architecture, meaning we do not want your data, we do not store your data, and we have no servers to send your data to.</p>
+
+        <div class="highlight">
+            <h3>The TL;DR</h3>
+            <p><strong>We have no servers. We don't collect your data. Everything stays on your device or in your personal Google Drive. There are no ads, no trackers, and no analytics SDKs sending your behavior to third parties.</strong></p>
+        </div>
+
+        <h2>1. Data Collection & Storage</h2>
+        <p>Reality operates exclusively on your local device. All app state, usage statistics, XP calculations, and blocking logic run 100% on-device.</p>
+        <ul>
+            <li><strong>Local-First:</strong> Data required for the app to function is stored locally on your device in secure app storage.</li>
+            <li><strong>No Backend Servers:</strong> Neubofy does not operate any backend databases or APIs to collect user data. Your information never touches our systems.</li>
+            <li><strong>Transient Storage:</strong> Detailed analytical data (like screen time statistics) lives locally for a maximum of 3 days before being wiped or synced exclusively to your personal Google Drive (if enabled).</li>
+        </ul>
+
+        <h2>2. Google Account Integration</h2>
+        <p>Reality offers powerful integration with Google Workspace (Docs, Tasks, Calendar, Drive). To enable these features, you must manually authorize the app via OAuth (Bring Your Own Key).</p>
+        <ul>
+            <li><strong>Your Cloud, Your Rules:</strong> If you enable Google Drive backup or Google Docs integration, your data (daily reports, AI plans, journals) is uploaded directly to <strong>your personal Google Drive</strong>. We cannot access, view, or modify these files.</li>
+            <li><strong>Scopes Used:</strong> Reality requests access to your Google Profile (email and name) solely for displaying it within the app's profile page. It may request access to Drive, Tasks, and Calendar strictly to create and manage files/tasks/events on your behalf as part of the app's core functionality.</li>
+        </ul>
+
+        <h2>3. Third-Party AI Services</h2>
+        <p>Reality uses a "Bring Your Own Key" (BYOK) model for AI features.</p>
+        <ul>
+            <li>When you use the AI Agent (for planning, reflections, etc.), prompts and relevant local context are sent directly from your device to the API provider you configure (e.g., OpenAI, Gemini, Groq, Claude, OpenRouter).</li>
+            <li>We do not proxy these requests. The privacy of your data during AI processing is governed by the respective AI provider you choose.</li>
+        </ul>
+
+        <h2>4. Advertising and Tracking</h2>
+        <p>Reality contains <strong>zero advertisements</strong> and <strong>zero third-party tracking SDKs</strong>. We do not sell, rent, or share your data with advertisers or data brokers.</p>
+
+        <h2>5. Open Source Transparency</h2>
+        <p>Reality is 100% open-source. Every line of code is publicly available on GitHub for audit. You can compile the application yourself to ensure no hidden data collection mechanisms exist.</p>
+
+        <h2>6. Changes to this Policy</h2>
+        <p>If we update this privacy policy, the changes will be reflected on this page. Because we do not collect your email address, you must review this page periodically for updates.</p>
+
+        <h2>7. Contact Us</h2>
+        <p>If you have any questions about this Privacy Policy, please contact us at: <strong>founder@neubofy.in</strong></p>
+    </div>
+
+</body>
+</html>
