@@ -23,6 +23,7 @@ import com.neubofy.reality.utils.TerminalLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import com.neubofy.reality.BuildConfig
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -62,8 +63,16 @@ object GoogleAuthManager {
         }
     }
     
-    fun getClientId(context: Context): String? = getPrefs(context).getString(KEY_CLIENT_ID, null)
-    fun getClientSecret(context: Context): String? = getPrefs(context).getString(KEY_CLIENT_SECRET, null)
+    fun getClientId(context: Context): String? {
+        val prefId = getPrefs(context).getString(KEY_CLIENT_ID, null)
+        if (!prefId.isNullOrBlank()) return prefId
+        return if (BuildConfig.CLIENT_ID.isNotBlank()) BuildConfig.CLIENT_ID else null
+    }
+    fun getClientSecret(context: Context): String? {
+        val prefSecret = getPrefs(context).getString(KEY_CLIENT_SECRET, null)
+        if (!prefSecret.isNullOrBlank()) return prefSecret
+        return if (BuildConfig.CLIENT_SECRET.isNotBlank()) BuildConfig.CLIENT_SECRET else null
+    }
     fun hasCloudCredentials(context: Context): Boolean {
         val clientId = getClientId(context)
         val clientSecret = getClientSecret(context)

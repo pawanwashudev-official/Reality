@@ -35,6 +35,10 @@ android {
         
         // Expose WEB_CLIENT_ID from local.properties to BuildConfig
         val webClientId = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
+        val clientId = localProperties.getProperty("CLIENT_ID") ?: System.getenv("CLIENT_ID") ?: ""
+        buildConfigField("String", "CLIENT_ID", "\"" + clientId + "\"")
+        val clientSecret = localProperties.getProperty("CLIENT_SECRET") ?: System.getenv("CLIENT_SECRET") ?: ""
+        buildConfigField("String", "CLIENT_SECRET", "\"" + clientSecret + "\"")
         buildConfigField("String", "WEB_CLIENT_ID", "\"$webClientId\"")
     }
     

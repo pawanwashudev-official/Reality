@@ -42,6 +42,8 @@ jobs:
           echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> local.properties
           echo "KEY_ALIAS=$KEY_ALIAS" >> local.properties
           echo "KEY_PASSWORD=$KEY_PASSWORD" >> local.properties
+          echo "CLIENT_ID=${{ secrets.CLIENT_ID }}" >> local.properties
+          echo "CLIENT_SECRET=${{ secrets.CLIENT_SECRET }}" >> local.properties
 
       - name: Make gradlew executable
         run: chmod +x gradlew
