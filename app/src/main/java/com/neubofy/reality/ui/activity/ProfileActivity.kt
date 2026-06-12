@@ -71,8 +71,8 @@ class ProfileActivity : AppCompatActivity() {
             val etClientId = dialogView.findViewById<android.widget.EditText>(R.id.et_client_id)
             val etClientSecret = dialogView.findViewById<android.widget.EditText>(R.id.et_client_secret)
 
-            etClientId.setText(GoogleAuthManager.getClientId(this) ?: "")
-            etClientSecret.setText(GoogleAuthManager.getClientSecret(this) ?: "")
+            etClientId.setText(GoogleAuthManager.getCustomClientId(this) ?: "")
+            etClientSecret.setText(GoogleAuthManager.getCustomClientSecret(this) ?: "")
 
             com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                 .setTitle("Google Cloud Setup")

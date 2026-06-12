@@ -34,8 +34,14 @@ android {
         setProperty("archivesBaseName", "Reality-v${versionName}")
         
         // Expose WEB_CLIENT_ID from local.properties to BuildConfig
-        val webClientId = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
+val webClientId = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
         buildConfigField("String", "WEB_CLIENT_ID", "\"$webClientId\"")
+
+        val defaultClientId = localProperties.getProperty("DEFAULT_CLIENT_ID") ?: ""
+        buildConfigField("String", "DEFAULT_CLIENT_ID", "\"$defaultClientId\"")
+
+        val defaultClientSecret = localProperties.getProperty("DEFAULT_CLIENT_SECRET") ?: ""
+        buildConfigField("String", "DEFAULT_CLIENT_SECRET", "\"$defaultClientSecret\"")
     }
     
     packaging {

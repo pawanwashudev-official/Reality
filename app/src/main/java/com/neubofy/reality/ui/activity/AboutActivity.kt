@@ -22,7 +22,8 @@ class AboutActivity : BaseActivity() {
         const val ARRATAI = "https://arratai.com/@pawanwashudev"
         const val INSTAGRAM = "https://instagram.com/pawan_washudev"
         const val EMAIL = "founder@neubofy.in"
-        const val PRIVACY_POLICY = "https://realityprivicypolicy.vercel.app"
+        const val PRIVACY_POLICY = "https://reality.neubofy.in/privacypolicy"
+        const val WEBSITE = "https://reality.neubofy.in"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,7 +51,7 @@ class AboutActivity : BaseActivity() {
         binding.btnGithub.setOnClickListener { openUrl(GITHUB_PROFILE) }
         
         // Website
-        binding.btnWebsite.setOnClickListener { openUrl("https://neubofyreality.vercel.app") }
+        binding.btnWebsite.setOnClickListener { openUrl(WEBSITE) }
 
         // Telegram
         binding.btnTelegram.setOnClickListener { openUrl(TELEGRAM) }
