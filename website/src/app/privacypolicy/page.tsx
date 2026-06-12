@@ -13,7 +13,7 @@ export default function PrivacyPolicy() {
         <div className="bg-white shadow-sm rounded-xl p-8 sm:p-12 border border-gray-100">
           <div className="text-center mb-10 border-b border-gray-100 pb-8">
             <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-2">Privacy Policy for Reality</h1>
-            <p className="text-gray-500 font-medium">Effective Date: June 11, 2024</p>
+            <p className="text-gray-500 font-medium">Effective Date: June 12, 2026 (Valid for 10 years)</p>
           </div>
 
           <div className="prose prose-blue max-w-none text-gray-600">
