@@ -36,12 +36,16 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
         run: |
           touch local.properties
           echo "KEYSTORE_FILE=keystore.jks" >> local.properties
           echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> local.properties
           echo "KEY_ALIAS=$KEY_ALIAS" >> local.properties
           echo "KEY_PASSWORD=$KEY_PASSWORD" >> local.properties
+          echo "DEFAULT_CLIENT_ID=$CLIENT_ID" >> local.properties
+          echo "DEFAULT_CLIENT_SECRET=$CLIENT_SECRET" >> local.properties
 
       - name: Make gradlew executable
         run: chmod +x gradlew

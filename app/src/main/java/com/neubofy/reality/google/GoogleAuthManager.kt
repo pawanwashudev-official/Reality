@@ -62,8 +62,27 @@ object GoogleAuthManager {
         }
     }
     
-    fun getClientId(context: Context): String? = getPrefs(context).getString(KEY_CLIENT_ID, null)
-    fun getClientSecret(context: Context): String? = getPrefs(context).getString(KEY_CLIENT_SECRET, null)
+    fun getCustomClientId(context: Context): String? {
+        return getPrefs(context).getString(KEY_CLIENT_ID, null)
+    }
+
+    fun getCustomClientSecret(context: Context): String? {
+        return getPrefs(context).getString(KEY_CLIENT_SECRET, null)
+    }
+
+    fun getClientId(context: Context): String? {
+        val id = getCustomClientId(context)
+        if (!id.isNullOrBlank()) return id
+        val defaultId = com.neubofy.reality.BuildConfig.DEFAULT_CLIENT_ID
+        return if (defaultId.isNotBlank()) defaultId else null
+    }
+
+    fun getClientSecret(context: Context): String? {
+        val secret = getCustomClientSecret(context)
+        if (!secret.isNullOrBlank()) return secret
+        val defaultSecret = com.neubofy.reality.BuildConfig.DEFAULT_CLIENT_SECRET
+        return if (defaultSecret.isNotBlank()) defaultSecret else null
+    }
     fun hasCloudCredentials(context: Context): Boolean {
         val clientId = getClientId(context)
         val clientSecret = getClientSecret(context)
