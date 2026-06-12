@@ -1,4 +1,30 @@
-# 🌌 REALITY - The Intelligent Life OS
+<div align="center">
+
+<img src="https://res.cloudinary.com/dnh4fonis/image/upload/v1781091079/ck39669alz53z3vkeiaq.png" width="180" alt="Reality Logo" style="border-radius: 20px; margin-bottom: 20px;">
+
+# Reality
+### The Intelligent Life OS
+
+**Developed by Pawan Washudev | Neubofy**
+
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/pawanwashudev-official/Reality?style=for-the-badge&color=orange)](https://github.com/pawanwashudev-official/Reality/releases)
+[![GitHub All Releases](https://img.shields.io/github/downloads/pawanwashudev-official/Reality/total?style=for-the-badge&color=success)](https://github.com/pawanwashudev-official/Reality/releases)
+[![License](https://img.shields.io/github/license/pawanwashudev-official/Reality?style=for-the-badge&color=blue)](https://opensource.org/licenses/Apache-2.0)
+
+[![Platform](https://img.shields.io/badge/Platform-Android-green.svg?style=for-the-badge)](https://www.android.com)
+[![Privacy](https://img.shields.io/badge/Data-Local%20%2B%20Your%20G--Drive-lock.svg?style=for-the-badge&color=teal)]()
+[![AI](https://img.shields.io/badge/AI-Bring%20Your%20Own%20Key-purple.svg?style=for-the-badge)]()
+[![Ads](https://img.shields.io/badge/Ads-ZERO-red.svg?style=for-the-badge)]()
+[![Trackers](https://img.shields.io/badge/Trackers-ZERO-red.svg?style=for-the-badge)]()
+
+> **"Stop managing your life. Start commanding it."**
+
+### 🌟 100% Open Source • Free Forever • No Ads • No Trackers • Any AI (BYO Key)
+
+[**🌐 Official Website**](https://neubofyreality.vercel.app) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
+
+</div>
+
 ## Complete App Documentation & Feature Analysis
 
 **Version:** 1.0.5 | **Platform:** Android 26+ | **Language:** Kotlin (99%) | **License:** Open Source
