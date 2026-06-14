@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Settings, Play, Pause, Square, RotateCcw, X, Home } from 'lucide-react';
+import { Settings, Play, Pause, Square, RotateCcw, X, Home, Trash2, Edit2, QrCode } from 'lucide-react';
 import Link from 'next/link';
 
 export interface TapasyaSession {
@@ -17,33 +17,64 @@ export interface TapasyaSession {
   wasAutoStopped: boolean;
 }
 
+interface ActiveSessionState {
+  isActive: boolean;
+  isRunning: boolean;
+  isPaused: boolean;
+  sessionName: string;
+  targetTimeMins: number;
+  pauseLimitMins: number;
+  sessionStart: number;
+  runningStart: number;
+  pauseStart: number;
+  elapsedRunning: number;
+  totalPause: number;
+}
+
+const DEFAULT_ACTIVE_STATE: ActiveSessionState = {
+  isActive: false,
+  isRunning: false,
+  isPaused: false,
+  sessionName: 'Tapasya',
+  targetTimeMins: 60,
+  pauseLimitMins: 15,
+  sessionStart: 0,
+  runningStart: 0,
+  pauseStart: 0,
+  elapsedRunning: 0,
+  totalPause: 0
+};
+
 export default function TapashyaPage() {
   const [sessions, setSessions] = useState<TapasyaSession[]>([]);
   const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set());
 
   // Clock State
-  const [isRunning, setIsRunning] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [elapsedRunning, setElapsedRunning] = useState(0);
-  const [totalPause, setTotalPause] = useState(0);
-  const [runningStart, setRunningStart] = useState(0);
-  const [pauseStart, setPauseStart] = useState(0);
-  const [sessionStart, setSessionStart] = useState(0);
+  const [activeState, setActiveState] = useState<ActiveSessionState>(DEFAULT_ACTIVE_STATE);
 
-  // Settings
-  const [targetTimeMins, setTargetTimeMins] = useState(60);
-  const [pauseLimitMins, setPauseLimitMins] = useState(15);
+  // Dialogs
   const [showSettings, setShowSettings] = useState(false);
+  const [showStartDialog, setShowStartDialog] = useState(false);
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+
+  // Dialog Form States
+  const [formName, setFormName] = useState('Tapasya');
+  const [formTargetTime, setFormTargetTime] = useState(60);
+  const [formPauseLimit, setFormPauseLimit] = useState(15);
+  const [renameInput, setRenameInput] = useState('');
 
   // Derived Display Values
   const [displayElapsed, setDisplayElapsed] = useState(0);
   const [displayPause, setDisplayPause] = useState(0);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // --- Initial Load & Pruning ---
   useEffect(() => {
     loadAndPruneSessions();
+    loadActiveState();
   }, []);
 
   const loadAndPruneSessions = () => {
@@ -55,7 +86,6 @@ export default function TapashyaPage() {
         const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
 
         const pruned = parsed.filter(s => s.startTime >= sevenDaysAgo);
-
         if (pruned.length !== parsed.length) {
             localStorage.setItem('tapashya_sessions', JSON.stringify(pruned));
         }
@@ -68,21 +98,58 @@ export default function TapashyaPage() {
     }
   };
 
+  const loadActiveState = () => {
+      try {
+          const stored = localStorage.getItem('tapashya_active_state');
+          if (stored) {
+              const state: ActiveSessionState = JSON.parse(stored);
+
+              if (state.isActive) {
+                  const now = Date.now();
+                  let currentPause = state.totalPause;
+
+                  if (state.isPaused) {
+                      currentPause += (now - state.pauseStart);
+                  }
+
+                  // Auto-stop check on load
+                  if (state.isPaused && currentPause >= state.pauseLimitMins * 60 * 1000) {
+                      handleStopInternal(true, state);
+                  } else {
+                      setActiveState(state);
+                      setFormName(state.sessionName);
+                      setFormTargetTime(state.targetTimeMins);
+                      setFormPauseLimit(state.pauseLimitMins);
+                  }
+              }
+          }
+      } catch (e) { console.error("Failed to parse active state", e); }
+  };
+
+  const saveActiveState = (newState: ActiveSessionState) => {
+      setActiveState(newState);
+      if (newState.isActive) {
+          localStorage.setItem('tapashya_active_state', JSON.stringify(newState));
+      } else {
+          localStorage.removeItem('tapashya_active_state');
+      }
+  };
+
   // --- Clock Logic ---
   useEffect(() => {
-    if (isRunning) {
+    if (activeState.isRunning) {
         timerRef.current = setInterval(() => {
             const now = Date.now();
-            setDisplayElapsed(elapsedRunning + (now - runningStart));
+            setDisplayElapsed(activeState.elapsedRunning + (now - activeState.runningStart));
         }, 500);
-    } else if (isPaused) {
+    } else if (activeState.isPaused) {
         timerRef.current = setInterval(() => {
             const now = Date.now();
-            const currentPause = totalPause + (now - pauseStart);
+            const currentPause = activeState.totalPause + (now - activeState.pauseStart);
             setDisplayPause(currentPause);
 
             // Auto-stop if pause limit exceeded
-            if (currentPause >= pauseLimitMins * 60 * 1000) {
+            if (currentPause >= activeState.pauseLimitMins * 60 * 1000) {
                 handleStop(true);
             }
         }, 500);
@@ -94,54 +161,97 @@ export default function TapashyaPage() {
     return () => {
         if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRunning, isPaused, elapsedRunning, totalPause, runningStart, pauseStart, pauseLimitMins]);
+  }, [activeState]);
 
-  const handleStart = () => {
-      const now = Date.now();
-      if (!isRunning && !isPaused) {
-          // Fresh start
-          setSessionStart(now);
-      } else if (isPaused) {
-          // Resume from pause
-          setTotalPause(prev => prev + (now - pauseStart));
+  // Handle Start Click (distinguish single vs double click)
+  const onStartClicked = () => {
+      if (activeState.isPaused) {
+          handleResume();
+          return;
       }
-      setRunningStart(now);
-      setIsRunning(true);
-      setIsPaused(false);
+      if (clickTimeoutRef.current !== null) {
+          // Double click detected! Bypass dialog
+          clearTimeout(clickTimeoutRef.current);
+          clickTimeoutRef.current = null;
+          startSessionWithConfig(formName, formTargetTime, formPauseLimit);
+      } else {
+          // Single click — wait to see if it becomes a double click
+          clickTimeoutRef.current = setTimeout(() => {
+              clickTimeoutRef.current = null;
+              // Open Dialog
+              setShowStartDialog(true);
+          }, 300); // 300ms window for double tap
+      }
+  };
+
+  const startSessionWithConfig = (name: string, targetMins: number, pauseMins: number) => {
+      const now = Date.now();
+      saveActiveState({
+          ...activeState,
+          isActive: true,
+          isRunning: true,
+          isPaused: false,
+          sessionName: name,
+          targetTimeMins: targetMins,
+          pauseLimitMins: pauseMins,
+          sessionStart: now,
+          runningStart: now,
+          elapsedRunning: 0,
+          totalPause: 0
+      });
+      setShowStartDialog(false);
+  };
+
+  const handleResume = () => {
+      const now = Date.now();
+      saveActiveState({
+          ...activeState,
+          isRunning: true,
+          isPaused: false,
+          totalPause: activeState.totalPause + (now - activeState.pauseStart),
+          runningStart: now
+      });
   };
 
   const handlePause = () => {
       const now = Date.now();
-      setElapsedRunning(prev => prev + (now - runningStart));
-      setPauseStart(now);
-      setIsRunning(false);
-      setIsPaused(true);
+      saveActiveState({
+          ...activeState,
+          isRunning: false,
+          isPaused: true,
+          elapsedRunning: activeState.elapsedRunning + (now - activeState.runningStart),
+          pauseStart: now
+      });
   };
 
   const handleStop = (wasAutoStopped: boolean = false) => {
-      const now = Date.now();
-      let finalElapsed = elapsedRunning;
-      let finalPause = totalPause;
+      handleStopInternal(wasAutoStopped, activeState);
+  };
 
-      if (isRunning) {
-          finalElapsed += (now - runningStart);
-      } else if (isPaused) {
-          finalPause += (now - pauseStart);
+  const handleStopInternal = (wasAutoStopped: boolean, state: ActiveSessionState) => {
+      if (!state.isActive) return;
+
+      const now = Date.now();
+      let finalElapsed = state.elapsedRunning;
+      let finalPause = state.totalPause;
+
+      if (state.isRunning) {
+          finalElapsed += (now - state.runningStart);
+      } else if (state.isPaused) {
+          finalPause += (now - state.pauseStart);
       }
 
-      const pauseLimitMs = pauseLimitMins * 60 * 1000;
+      const pauseLimitMs = state.pauseLimitMins * 60 * 1000;
+      const endTime = wasAutoStopped ? (state.pauseStart + (pauseLimitMs - state.totalPause)) : now;
 
-      const endTime = wasAutoStopped ? (pauseStart + (pauseLimitMs - totalPause)) : now;
-
-      // Calculate effective time (floored to 15 mins)
       const fifteenMins = 15 * 60 * 1000;
       const effectiveTimeMs = Math.floor(finalElapsed / fifteenMins) * fifteenMins;
 
       const newSession: TapasyaSession = {
-          sessionId: `${sessionStart}_${endTime}`,
-          name: "Tapasya Web",
-          targetTimeMs: targetTimeMins * 60 * 1000,
-          startTime: sessionStart,
+          sessionId: `${state.sessionStart}_${endTime}`,
+          name: state.sessionName,
+          targetTimeMs: state.targetTimeMins * 60 * 1000,
+          startTime: state.sessionStart,
           endTime: endTime,
           effectiveTimeMs: effectiveTimeMs,
           totalPauseMs: Math.min(finalPause, pauseLimitMs),
@@ -160,19 +270,8 @@ export default function TapashyaPage() {
       resetClock();
   };
 
-  const handleReset = () => {
-      resetClock();
-  };
-
   const resetClock = () => {
-      setIsRunning(false);
-      setIsPaused(false);
-      setElapsedRunning(0);
-      setTotalPause(0);
-      setRunningStart(0);
-      setPauseStart(0);
-      setDisplayElapsed(0);
-      setDisplayPause(0);
+      saveActiveState(DEFAULT_ACTIVE_STATE);
   };
 
   // --- UI Formatting ---
@@ -191,11 +290,11 @@ export default function TapashyaPage() {
   };
 
   const calculateProgress = () => {
-      const targetMs = targetTimeMins * 60 * 1000;
+      const targetMs = activeState.targetTimeMins * 60 * 1000;
       return targetMs > 0 ? Math.min(displayElapsed / targetMs, 1) : 0;
   };
 
-  // --- Export Logic ---
+  // --- History & Actions Logic ---
   const groupedSessions = useMemo(() => {
       const groups: Record<string, TapasyaSession[]> = {};
       sessions.forEach(session => {
@@ -237,6 +336,38 @@ export default function TapashyaPage() {
       }
   };
 
+  const handleDeleteSelected = () => {
+      if (selectedSessions.size === 0) return;
+      if (confirm(`Delete ${selectedSessions.size} session(s)?`)) {
+          const newSessions = sessions.filter(s => !selectedSessions.has(s.sessionId));
+          localStorage.setItem('tapashya_sessions', JSON.stringify(newSessions));
+          setSessions(newSessions);
+          setSelectedSessions(new Set());
+      }
+  };
+
+  const handleRenameClick = () => {
+      if (selectedSessions.size !== 1) return;
+      const id = Array.from(selectedSessions)[0];
+      const session = sessions.find(s => s.sessionId === id);
+      if (session) {
+          setRenameInput(session.name);
+          setShowRenameDialog(true);
+      }
+  };
+
+  const saveRename = () => {
+      if (selectedSessions.size !== 1) return;
+      const id = Array.from(selectedSessions)[0];
+      const newSessions = sessions.map(s => {
+          if (s.sessionId === id) return { ...s, name: renameInput };
+          return s;
+      });
+      localStorage.setItem('tapashya_sessions', JSON.stringify(newSessions));
+      setSessions(newSessions);
+      setShowRenameDialog(false);
+  };
+
   const generateDeepLink = () => {
     if (selectedSessions.size === 0) return null;
     const selectedData = sessions.filter(s => selectedSessions.has(s.sessionId));
@@ -256,21 +387,18 @@ export default function TapashyaPage() {
     return `Reality:Tapashya?data=${btoa(encodeURIComponent(serialized))}`;
   };
 
-  const isAllSelected = sessions.length > 0 && selectedSessions.size === sessions.length;
   const qrData = generateDeepLink();
 
   // --- UI Colors & States ---
   const colorPrimary = "#00695C"; // Teal
   const colorAmber = "#FFC107";
 
-
-  const statusText = isRunning ? "Focusing: Tapasya Web" : (isPaused ? "Paused" : "Ready to Focus");
-  const waveColor = isPaused ? colorAmber : colorPrimary;
+  const statusText = activeState.isRunning ? `Focusing: ${activeState.sessionName}` : (activeState.isPaused ? "Paused" : "Ready to Focus");
+  const waveColor = activeState.isPaused ? colorAmber : colorPrimary;
   const progressPercent = calculateProgress() * 100;
 
   const effectiveMinutesLive = Math.floor((Math.floor(displayElapsed / (15 * 60 * 1000)) * 15 * 60 * 1000) / 60000);
   const currentFragmentLive = Math.floor(effectiveMinutesLive / 15);
-  // Basic XP dummy calc matching android (currentFragment * 15) -> basic mapping
   const currentXpLive = currentFragmentLive * 10;
 
   return (
@@ -292,7 +420,7 @@ export default function TapashyaPage() {
 
       <main className="max-w-md mx-auto px-4 py-8">
 
-        {/* Clock View Area (Matches Android TapasyaActivity top section) */}
+        {/* Clock View Area */}
         <div className="flex flex-col items-center mb-10">
             <div className="relative w-64 h-64 rounded-full bg-white shadow-lg border border-gray-100 flex items-center justify-center overflow-hidden mb-6">
                 {/* Simulated Wave Background */}
@@ -304,14 +432,14 @@ export default function TapashyaPage() {
                     <span className="text-4xl font-mono font-bold tracking-tight text-gray-800">
                         {formatTime(displayElapsed)}
                     </span>
-                    <span className="text-sm font-medium text-gray-500 mt-2" style={{ color: isPaused ? colorAmber : colorPrimary }}>
+                    <span className="text-sm font-medium text-gray-500 mt-2 text-center px-4" style={{ color: activeState.isPaused ? colorAmber : colorPrimary }}>
                         {statusText}
                     </span>
                 </div>
             </div>
 
             {/* Live Stats */}
-            {(isRunning || isPaused) && (
+            {(activeState.isRunning || activeState.isPaused) && (
                 <div className="bg-white px-6 py-3 rounded-full shadow-sm border border-gray-100 flex items-center gap-6 mb-6">
                     <span className="text-sm font-bold text-gray-700">⚡ {currentXpLive} XP</span>
                     <span className="text-sm font-medium text-gray-500 border-l pl-6">Fragment {currentFragmentLive}</span>
@@ -319,41 +447,44 @@ export default function TapashyaPage() {
             )}
 
             {/* Rest Timer */}
-            {isPaused && (
+            {activeState.isPaused && (
                 <div className="text-sm font-bold text-amber-600 mb-6 bg-amber-50 px-4 py-2 rounded-lg border border-amber-100">
-                    Pause left: {formatTime((pauseLimitMins * 60 * 1000) - displayPause)}
+                    Pause left: {formatTime((activeState.pauseLimitMins * 60 * 1000) - displayPause)}
                 </div>
             )}
 
             {/* Control Buttons */}
             <div className="flex items-center gap-4">
-                {(!isRunning && !isPaused) && (
-                    <button onClick={handleStart} className="flex items-center gap-2 bg-[#00695C] text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:bg-[#004D40] transition-transform active:scale-95">
+                {(!activeState.isRunning && !activeState.isPaused) && (
+                    <button
+                        onClick={onStartClicked}
+                        className="flex items-center gap-2 bg-[#00695C] text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:bg-[#004D40] transition-transform active:scale-95 select-none"
+                    >
                         <Play size={20} fill="currentColor" />
                         Start
                     </button>
                 )}
 
-                {isRunning && (
+                {activeState.isRunning && (
                     <button onClick={handlePause} className="flex items-center gap-2 bg-[#651FFF] text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:bg-[#311B92] transition-transform active:scale-95">
                         <Pause size={20} fill="currentColor" />
                         Pause
                     </button>
                 )}
 
-                {isPaused && (
-                    <button onClick={handleStart} className="flex items-center gap-2 bg-[#00695C] text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:bg-[#004D40] transition-transform active:scale-95">
+                {activeState.isPaused && (
+                    <button onClick={handleResume} className="flex items-center gap-2 bg-[#00695C] text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:bg-[#004D40] transition-transform active:scale-95">
                         <Play size={20} fill="currentColor" />
                         Resume
                     </button>
                 )}
 
-                {(isRunning || isPaused) && (
+                {(activeState.isRunning || activeState.isPaused) && (
                     <>
                         <button onClick={() => handleStop(false)} className="p-4 rounded-2xl bg-[#B3261E] text-white shadow-md hover:bg-[#8C1D18] transition-transform active:scale-95">
                             <Square size={20} fill="currentColor" />
                         </button>
-                        <button onClick={handleReset} className="p-4 rounded-2xl bg-gray-200 text-gray-700 shadow-sm hover:bg-gray-300 transition-transform active:scale-95">
+                        <button onClick={resetClock} className="p-4 rounded-2xl bg-gray-200 text-gray-700 shadow-sm hover:bg-gray-300 transition-transform active:scale-95">
                             <RotateCcw size={20} />
                         </button>
                     </>
@@ -361,45 +492,42 @@ export default function TapashyaPage() {
             </div>
         </div>
 
-        <hr className="border-gray-200 mb-8" />
-
-        {/* Sync Card */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 mb-8 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#E0F2F1] rounded-bl-full opacity-50 pointer-events-none"></div>
-            <h2 className="text-xl font-bold text-[#004D40] mb-2 relative z-10 flex items-center gap-2">
-               App Sync
-            </h2>
-            <p className="text-gray-600 mb-6 relative z-10 text-sm leading-relaxed">
-              Select local sessions below to export via secure QR code.
-            </p>
-
-            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200 flex flex-col items-center justify-center min-h-[250px]">
-                {qrData ? (
+        {/* Sessions List */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            {/* History Header & Context Menu */}
+            <div className={`p-4 flex justify-between items-center transition-colors ${selectedSessions.size > 0 ? 'bg-[#E0F2F1]' : 'bg-white border-b border-gray-100'}`}>
+                {selectedSessions.size > 0 ? (
                     <>
-                        <div className="p-3 bg-white rounded-2xl shadow-sm border border-gray-100 mb-3">
-                            <QRCodeSVG value={qrData} size={180} level="L" includeMargin={false} />
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setSelectedSessions(new Set())} className="p-2 -ml-2 rounded-full hover:bg-teal-100 text-[#004D40]">
+                                <X size={20} />
+                            </button>
+                            <span className="font-bold text-[#004D40]">{selectedSessions.size} Selected</span>
                         </div>
-                        <p className="text-sm font-bold text-[#00695C]">Scan with Reality App</p>
-                        <p className="text-xs text-gray-500 mt-1">{selectedSessions.size} session(s) selected</p>
+                        <div className="flex items-center gap-1">
+                            {selectedSessions.size === 1 && (
+                                <button onClick={handleRenameClick} className="p-2 rounded-full hover:bg-teal-100 text-[#00695C]" title="Rename">
+                                    <Edit2 size={20} />
+                                </button>
+                            )}
+                            <button onClick={() => setShowExportDialog(true)} className="p-2 rounded-full hover:bg-teal-100 text-[#00695C]" title="Export QR">
+                                <QrCode size={20} />
+                            </button>
+                            <button onClick={handleDeleteSelected} className="p-2 rounded-full hover:bg-red-100 text-red-600" title="Delete">
+                                <Trash2 size={20} />
+                            </button>
+                        </div>
                     </>
                 ) : (
-                    <div className="text-center opacity-50">
-                        <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-xl mb-3 mx-auto"></div>
-                        <p className="text-sm font-medium text-gray-500">Select sessions below</p>
-                    </div>
+                    <>
+                        <h3 className="text-lg font-bold text-gray-800 px-2">History (7 Days)</h3>
+                        <button
+                            onClick={handleSelectAll}
+                            className="text-xs font-bold text-[#00695C] bg-[#E0F2F1] px-4 py-2 rounded-full active:scale-95 transition-transform">
+                            Select All
+                        </button>
+                    </>
                 )}
-            </div>
-        </div>
-
-        {/* Sessions List */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-gray-800">History (7 Days)</h3>
-                <button
-                    onClick={handleSelectAll}
-                    className="text-xs font-bold text-[#00695C] bg-[#E0F2F1] px-4 py-2 rounded-full active:scale-95 transition-transform">
-                    {isAllSelected ? "Deselect All" : "Select All"}
-                </button>
             </div>
 
             {sessions.length === 0 ? (
@@ -408,7 +536,7 @@ export default function TapashyaPage() {
                     <p className="text-xs text-gray-400 mt-1">Start focusing to generate local history.</p>
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div className="p-4 space-y-4">
                     {Object.entries(groupedSessions).map(([dateStr, daySessions]) => {
                         const allDaySelected = daySessions.length > 0 && daySessions.every(s => selectedSessions.has(s.sessionId));
                         return (
@@ -460,13 +588,109 @@ export default function TapashyaPage() {
 
       </main>
 
-      {/* Settings Bottom Sheet (Simulated) */}
+      {/* Start Session Dialog */}
+      {showStartDialog && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowStartDialog(false)}></div>
+              <div className="relative bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
+                  <h3 className="text-xl font-bold text-gray-900 mb-6">Start Session</h3>
+
+                  <div className="space-y-6">
+                      <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Session Name</label>
+                          <input
+                              type="text"
+                              value={formName}
+                              onChange={(e) => setFormName(e.target.value)}
+                              className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00695C] focus:border-[#00695C] outline-none transition-shadow"
+                          />
+                      </div>
+
+                      <div>
+                          <div className="flex justify-between items-end mb-2">
+                              <label className="text-sm font-bold text-gray-700">Target Time</label>
+                              <span className="text-[#00695C] font-black">{formatMinutes(formTargetTime)}</span>
+                          </div>
+                          <input
+                              type="range"
+                              min="15" max="360" step="15"
+                              value={formTargetTime}
+                              onChange={(e) => setFormTargetTime(Number(e.target.value))}
+                              className="w-full accent-[#00695C]"
+                          />
+                      </div>
+
+                      <div>
+                          <div className="flex justify-between items-end mb-2">
+                              <label className="text-sm font-bold text-gray-700">Pause Limit</label>
+                              <span className="text-[#00695C] font-black">{formatMinutes(formPauseLimit)}</span>
+                          </div>
+                          <input
+                              type="range"
+                              min="1" max="60" step="1"
+                              value={formPauseLimit}
+                              onChange={(e) => setFormPauseLimit(Number(e.target.value))}
+                              className="w-full accent-[#00695C]"
+                          />
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
+                          <button onClick={() => setShowStartDialog(false)} className="flex-1 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
+                          <button onClick={() => startSessionWithConfig(formName, formTargetTime, formPauseLimit)} className="flex-1 py-3 bg-[#00695C] text-white rounded-xl font-bold hover:bg-[#004D40] transition-colors">Start</button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Rename Dialog */}
+      {showRenameDialog && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowRenameDialog(false)}></div>
+              <div className="relative bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Rename Session</h3>
+                  <input
+                      type="text"
+                      value={renameInput}
+                      onChange={(e) => setRenameInput(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-3 mb-6 focus:ring-2 focus:ring-[#00695C] focus:border-[#00695C] outline-none"
+                      autoFocus
+                  />
+                  <div className="flex gap-3">
+                      <button onClick={() => setShowRenameDialog(false)} className="flex-1 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
+                      <button onClick={saveRename} className="flex-1 py-3 bg-[#00695C] text-white rounded-xl font-bold hover:bg-[#004D40] transition-colors">Save</button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Export QR Dialog */}
+      {showExportDialog && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowExportDialog(false)}></div>
+              <div className="relative bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 animate-in zoom-in-95 duration-200 flex flex-col items-center text-center">
+                  <button onClick={() => setShowExportDialog(false)} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200">
+                      <X size={20} />
+                  </button>
+                  <h3 className="text-xl font-bold text-[#004D40] mb-2">App Sync</h3>
+                  <p className="text-sm text-gray-500 mb-6">Scan with Reality App to import {selectedSessions.size} session(s).</p>
+
+                  {qrData && (
+                      <div className="p-4 bg-white rounded-2xl shadow-sm border border-gray-100 mb-2">
+                          <QRCodeSVG value={qrData} size={200} level="L" includeMargin={false} />
+                      </div>
+                  )}
+              </div>
+          </div>
+      )}
+
+      {/* Settings Bottom Sheet */}
       {showSettings && (
           <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-4">
               <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowSettings(false)}></div>
               <div className="relative bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl p-6 animate-in slide-in-from-bottom-8">
                   <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-xl font-bold text-gray-900">Tapasya Settings</h3>
+                      <h3 className="text-xl font-bold text-gray-900">Default Settings</h3>
                       <button onClick={() => setShowSettings(false)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
                           <X size={20} />
                       </button>
@@ -476,13 +700,13 @@ export default function TapashyaPage() {
                       <div>
                           <div className="flex justify-between items-end mb-2">
                               <label className="font-bold text-gray-700">Target Duration</label>
-                              <span className="text-[#00695C] font-black">{formatMinutes(targetTimeMins)}</span>
+                              <span className="text-[#00695C] font-black">{formatMinutes(formTargetTime)}</span>
                           </div>
                           <input
                               type="range"
                               min="15" max="360" step="15"
-                              value={targetTimeMins}
-                              onChange={(e) => setTargetTimeMins(Number(e.target.value))}
+                              value={formTargetTime}
+                              onChange={(e) => setFormTargetTime(Number(e.target.value))}
                               className="w-full accent-[#00695C]"
                           />
                       </div>
@@ -490,13 +714,13 @@ export default function TapashyaPage() {
                       <div>
                           <div className="flex justify-between items-end mb-2">
                               <label className="font-bold text-gray-700">Pause Limit</label>
-                              <span className="text-[#00695C] font-black">{formatMinutes(pauseLimitMins)}</span>
+                              <span className="text-[#00695C] font-black">{formatMinutes(formPauseLimit)}</span>
                           </div>
                           <input
                               type="range"
                               min="1" max="60" step="1"
-                              value={pauseLimitMins}
-                              onChange={(e) => setPauseLimitMins(Number(e.target.value))}
+                              value={formPauseLimit}
+                              onChange={(e) => setFormPauseLimit(Number(e.target.value))}
                               className="w-full accent-[#00695C]"
                           />
                       </div>
@@ -505,7 +729,7 @@ export default function TapashyaPage() {
                           onClick={() => setShowSettings(false)}
                           className="w-full py-4 bg-[#00695C] text-white rounded-2xl font-bold shadow-md hover:bg-[#004D40] active:scale-95 transition-transform"
                       >
-                          Save Settings
+                          Save Defaults
                       </button>
                   </div>
               </div>
