@@ -57,6 +57,12 @@ export default function Home() {
                   className="h-14 object-contain"
                 />
               </a>
+              <Link
+                href="/tapashya"
+                className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-[#00695C] hover:bg-[#004D40] md:py-4 md:text-lg transition-colors shadow-sm"
+              >
+                ⏳ Try Tapashya Web
+              </Link>
             </div>
           </div>
         </div>
