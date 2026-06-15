@@ -12,6 +12,18 @@ class FeatureManager(private val context: Context) {
     fun isRealityProEnabled(): Boolean = prefs.getBoolean("feature_reality_pro", false)
     fun setRealityProEnabled(enabled: Boolean) = prefs.edit().putBoolean("feature_reality_pro", enabled).apply()
 
+    fun isRealityProVerified(): Boolean {
+        val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return false
+        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        return prefs.getBoolean("feature_reality_pro_verified_$userId", false)
+    }
+
+    fun setRealityProVerified(verified: Boolean) {
+        val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
+        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        prefs.edit().putBoolean("feature_reality_pro_verified_$userId", verified).apply()
+    }
+
     fun isTapasyaEnabled(): Boolean = prefs.getBoolean("feature_tapasya", false)
     fun setTapasyaEnabled(enabled: Boolean) = prefs.edit().putBoolean("feature_tapasya", enabled).apply()
 

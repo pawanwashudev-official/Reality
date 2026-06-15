@@ -33,6 +33,12 @@ class RealityProActivity : AppCompatActivity() {
         val btnVerify = findViewById<MaterialButton>(R.id.btn_verify)
         val btnGetCode = findViewById<MaterialButton>(R.id.btn_get_code)
         val btnCancel = findViewById<MaterialButton>(R.id.btn_cancel)
+        val btnLogin = findViewById<MaterialButton>(R.id.btn_login)
+
+        btnLogin.setOnClickListener {
+            val intent = Intent(this, ProfileActivity::class.java)
+            startActivity(intent)
+        }
 
         btnVerify.setOnClickListener {
             val code = etCode.text.toString().trim()
@@ -101,7 +107,8 @@ class RealityProActivity : AppCompatActivity() {
                     withContext(Dispatchers.Main) {
                         if (responseStr.contains("SUCCESS", ignoreCase = true)) {
                             // Activation Successful
-                            FeatureManager(this@RealityProActivity).setRealityProEnabled(true)
+                            val featureManager = FeatureManager(this@RealityProActivity)
+                            featureManager.setRealityProVerified(true)
                             Toast.makeText(this@RealityProActivity, "Reality Pro Activated!", Toast.LENGTH_LONG).show()
 
                             // Go Home

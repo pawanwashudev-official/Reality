@@ -45,7 +45,6 @@ class StatisticsActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (!com.neubofy.reality.utils.RealityProManager.checkAccess(this)) return
         
         // Edge to Edge
         WindowCompat.setDecorFitsSystemWindows(window, false)

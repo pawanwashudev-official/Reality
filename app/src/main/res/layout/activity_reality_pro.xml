@@ -40,13 +40,27 @@
             android:layout_marginBottom="8dp"/>
 
         <TextView
+            android:id="@+id/tv_instructions"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="This feature requires Reality Pro. Please enter your verification code to activate it."
+            android:text="This feature requires Reality Pro.
+
+1. Please log in first.
+2. Go to our website to fill the pro access form.
+3. Get the access code and enter it below."
             android:textSize="14sp"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:gravity="center"
             android:layout_marginBottom="32dp"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_login"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Log in (Profile Page)"
+            android:paddingVertical="12dp"
+            android:layout_marginBottom="24dp"/>
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"

@@ -10,9 +10,27 @@ object RealityProManager {
      * Reality Pro activation page and finishes the calling activity.
      * @return true if access is allowed, false if blocked
      */
+
+    /**
+     * Checks if Reality Pro is verified, ignoring whether it is currently toggled on.
+     * Used for features like Tapasya that only require verification but not the global toggle.
+     */
+    fun checkVerification(activity: Activity): Boolean {
+        val featureManager = FeatureManager(activity)
+        if (!featureManager.isRealityProVerified()) {
+            val intent = Intent(activity, RealityProActivity::class.java)
+            activity.startActivity(intent)
+            activity.finish()
+            return false
+        }
+        return true
+    }
+
     fun checkAccess(activity: Activity): Boolean {
-        val isEnabled = FeatureManager(activity).isRealityProEnabled()
-        if (!isEnabled) {
+        val featureManager = FeatureManager(activity)
+        val isEnabled = featureManager.isRealityProEnabled()
+        val isVerified = featureManager.isRealityProVerified()
+        if (!isEnabled || !isVerified) {
             val intent = Intent(activity, RealityProActivity::class.java)
             activity.startActivity(intent)
             activity.finish()
