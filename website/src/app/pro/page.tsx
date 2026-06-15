@@ -3,9 +3,11 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Home } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function RealityProActivationPage() {
   const [userId, setUserId] = useState('');
+  const [isPaid, setIsPaid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [verificationCode, setVerificationCode] = useState<number | null>(null);
@@ -126,18 +128,60 @@ export default function RealityProActivationPage() {
                     </p>
                   </div>
 
+                  {userId.trim() && (
+                    <div className="mt-6 bg-blue-50 border border-blue-200 rounded-2xl p-6">
+                      <h4 className="text-lg font-bold text-gray-900 mb-4">Payment Required: ₹99</h4>
+                      <p className="text-sm text-gray-700 mb-4 font-bold text-red-600">
+                        IMPORTANT: You MUST include your User ID ({userId}) in the payment notes/description so our team can verify and approve it. Approval may take up to 6 hours.
+                      </p>
+                      <div className="flex flex-col items-center justify-center mb-6">
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 inline-block mb-4">
+                          <QRCodeSVG
+                            value={`upi://pay?pa=neubofy@pnb&pn=Reality&am=99&cu=INR&tn=${encodeURIComponent(userId)}`}
+                            size={160}
+                            level="H"
+                            includeMargin={false}
+                          />
+                        </div>
+                        <p className="text-sm font-medium text-gray-800 mb-2">Scan QR Code or click below to pay</p>
+                        <p className="text-xs text-gray-500 mb-4">UPI ID: neubofy@pnb</p>
+                        <a
+                          href={`upi://pay?pa=neubofy@pnb&pn=Reality&am=99&cu=INR&tn=${encodeURIComponent(userId)}`}
+                          className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm w-full text-center"
+                        >
+                          Pay via UPI App
+                        </a>
+                      </div>
+
+                      <div className="flex items-start mt-6">
+                        <div className="flex items-center h-5">
+                          <input
+                            id="paidCheckbox"
+                            type="checkbox"
+                            checked={isPaid}
+                            onChange={(e) => setIsPaid(e.target.checked)}
+                            className="w-5 h-5 border border-gray-300 rounded bg-white focus:ring-3 focus:ring-blue-300"
+                          />
+                        </div>
+                        <label htmlFor="paidCheckbox" className="ml-3 text-sm font-medium text-gray-900">
+                          I have paid ₹99 and included my User ID in the payment notes.
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
                   {error && (
-                    <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200">
+                    <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200 mt-6">
                       {error}
                     </div>
                   )}
 
                   <button
                     type="submit"
-                    disabled={isLoading}
-                    className="w-full flex items-center justify-center px-8 py-4 border border-transparent text-lg font-bold rounded-2xl text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isLoading || !isPaid || !userId.trim()}
+                    className="w-full flex items-center justify-center mt-6 px-8 py-4 border border-transparent text-lg font-bold rounded-2xl text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isLoading ? 'Generating...' : 'Get Verification Code'}
+                    {isLoading ? 'Submitting...' : 'Submit Form'}
                   </button>
               </form>
             )}
