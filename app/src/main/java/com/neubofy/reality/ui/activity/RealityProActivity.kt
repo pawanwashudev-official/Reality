@@ -108,7 +108,6 @@ class RealityProActivity : AppCompatActivity() {
                         if (responseStr.contains("SUCCESS", ignoreCase = true)) {
                             // Activation Successful
                             val featureManager = FeatureManager(this@RealityProActivity)
-                            featureManager.setRealityProEnabled(true)
                             featureManager.setRealityProVerified(true)
                             Toast.makeText(this@RealityProActivity, "Reality Pro Activated!", Toast.LENGTH_LONG).show()
 
