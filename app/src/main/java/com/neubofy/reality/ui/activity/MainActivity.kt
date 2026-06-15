@@ -190,7 +190,7 @@ class MainActivity : BaseActivity() {
     private fun applyFeatureToggles() {
         val featureManager = com.neubofy.reality.utils.FeatureManager(this)
 
-        val isRealityProEnabled = featureManager.isRealityProEnabled() && featureManager.isRealityProVerified()
+        val isRealityProEnabled = featureManager.isRealityProEnabled()
 
         // Reality Pro (Gamification + Google Workspace related navigation)
         binding.cardReflection.visibility = if (isRealityProEnabled) android.view.View.VISIBLE else android.view.View.GONE
@@ -476,7 +476,7 @@ class MainActivity : BaseActivity() {
                 popup.menu.add(0, 5, 0, "❤️ Health Dashboard")
             }
             popup.menu.add(0, 6, 1, "🎨 Appearance")
-            if (featureManager.isRealityProEnabled() && featureManager.isRealityProVerified()) {
+            if (featureManager.isRealityProEnabled()) {
                 popup.menu.add(0, 7, 2, "☁️ Backup & Restore")
             }
             popup.menu.add(0, 2, 3, "📖 User Manual")

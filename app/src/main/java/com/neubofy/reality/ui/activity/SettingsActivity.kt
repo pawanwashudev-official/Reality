@@ -198,6 +198,7 @@ class SettingsActivity : BaseActivity() {
         val switchReminder = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switch_feature_reminder)
         val switchHealth = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switch_feature_health)
 
+
         // Init states
         switchRealityPro.isChecked = featureManager.isRealityProEnabled()
         switchAi.isChecked = featureManager.isAiEnabled()
@@ -207,16 +208,34 @@ class SettingsActivity : BaseActivity() {
 
         // Set listeners
         switchRealityPro.setOnCheckedChangeListener { _, isChecked ->
-            featureManager.setRealityProEnabled(isChecked)
-            updateUI()
+            if (isChecked && !featureManager.isRealityProVerified()) {
+                switchRealityPro.isChecked = false
+                val intent = Intent(this, RealityProActivity::class.java)
+                startActivity(intent)
+            } else {
+                featureManager.setRealityProEnabled(isChecked)
+                updateUI()
+            }
         }
         switchAi.setOnCheckedChangeListener { _, isChecked ->
-            featureManager.setAiEnabled(isChecked)
-            updateUI()
+            if (isChecked && !featureManager.isRealityProVerified()) {
+                switchAi.isChecked = false
+                val intent = Intent(this, RealityProActivity::class.java)
+                startActivity(intent)
+            } else {
+                featureManager.setAiEnabled(isChecked)
+                updateUI()
+            }
         }
         switchTapasya.setOnCheckedChangeListener { _, isChecked ->
-            featureManager.setTapasyaEnabled(isChecked)
-            updateUI()
+            if (isChecked && !featureManager.isRealityProVerified()) {
+                switchTapasya.isChecked = false
+                val intent = Intent(this, RealityProActivity::class.java)
+                startActivity(intent)
+            } else {
+                featureManager.setTapasyaEnabled(isChecked)
+                updateUI()
+            }
         }
         switchReminder.setOnCheckedChangeListener { _, isChecked ->
             featureManager.setReminderEnabled(isChecked)
@@ -226,6 +245,7 @@ class SettingsActivity : BaseActivity() {
             featureManager.setHealthConnectEnabled(isChecked)
             updateUI()
         }
+
 
         MaterialAlertDialogBuilder(this)
             .setView(dialogView)
@@ -237,7 +257,7 @@ class SettingsActivity : BaseActivity() {
         // Features State
         val featureManager = com.neubofy.reality.utils.FeatureManager(this)
 
-        val isRealityProEnabled = featureManager.isRealityProEnabled() && featureManager.isRealityProVerified()
+        val isRealityProEnabled = featureManager.isRealityProEnabled()
         val visibilityRealityPro = if (isRealityProEnabled) android.view.View.VISIBLE else android.view.View.GONE
 
 

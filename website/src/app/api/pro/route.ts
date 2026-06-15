@@ -2,7 +2,15 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await request.json();
+    // If the proxy is called with empty body
+    let userId = "";
+    try {
+      const body = await request.json();
+      userId = body.userId;
+    } catch {
+      userId = "UNKNOWN";
+    }
+
     const apiUrl = process.env.NEXT_PUBLIC_LICENSE_API_URL;
 
     if (!apiUrl) {
@@ -22,7 +30,7 @@ export async function POST(request: Request) {
     let data;
     try {
       data = JSON.parse(text);
-    } catch {
+    } catch (_e) {
       console.error("Failed to parse JSON from license server:", text);
       return NextResponse.json({ error: 'Invalid response from license server' }, { status: 500 });
     }

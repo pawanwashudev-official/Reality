@@ -12,7 +12,8 @@ export default function RealityProActivationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId.trim()) {
+    const currentUserId = userId.trim();
+    if (!currentUserId) {
       setError('Please enter your User ID');
       return;
     }
@@ -22,36 +23,27 @@ export default function RealityProActivationPage() {
     setVerificationCode(null);
 
     try {
+      // Check localStorage first to avoid duplicate submissions
+      const cachedCode = localStorage.getItem(`reality_pro_code_${currentUserId}`);
+      if (cachedCode) {
+        setVerificationCode(parseInt(cachedCode, 10));
+        setIsLoading(false);
+        return;
+      }
+
       const apiUrl = process.env.NEXT_PUBLIC_LICENSE_API_URL;
 
       if (!apiUrl) {
         throw new Error('API URL is not configured.');
       }
 
-      // The user explicitly requested to use this exact code snippet:
-      // const apiUrl = process.env.NEXT_PUBLIC_LICENSE_API_URL;
-      // await fetch(apiUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ userId: "1234567890123456" }) });
-
-      await fetch(apiUrl, {
-        method: 'POST',
-        mode: 'no-cors', // Important for Google Apps Script redirects
-        body: JSON.stringify({ userId: userId.trim() })
-      });
-
-      // Because 'no-cors' mode is used, we cannot read the JSON response.
-      // The browser makes the response opaque.
-      // However, we MUST handle the response the user specified:
-      // { "status": "SUCCESS", "verificationCode": 12 }
-
-      // If we are forced to use `mode: 'no-cors'`, we literally cannot extract the verification code
-      // from the response body in the client due to browser security policies.
-      // We will try fetching via proxy as fallback.
+      // We use the proxy route to avoid double-firing requests and read the JSON response
       let data;
       try {
         const proxyResponse = await fetch('/api/pro', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: userId.trim() })
+          body: JSON.stringify({ userId: currentUserId })
         });
         data = await proxyResponse.json();
       } catch {
@@ -60,6 +52,7 @@ export default function RealityProActivationPage() {
 
       if (data.status === 'SUCCESS' && data.verificationCode !== undefined) {
         setVerificationCode(data.verificationCode);
+        localStorage.setItem(`reality_pro_code_${currentUserId}`, data.verificationCode.toString());
       } else {
         throw new Error(data.error || 'Failed to generate verification code');
       }
@@ -111,12 +104,7 @@ export default function RealityProActivationPage() {
                 <p className="text-sm text-green-700 mt-4">
                   Return to the Reality app and enter this code to activate Pro features.
                 </p>
-                <button
-                  onClick={() => setVerificationCode(null)}
-                  className="mt-6 text-sm text-gray-500 hover:text-gray-700 underline"
-                >
-                  Generate another code
-                </button>
+
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6 text-left">
