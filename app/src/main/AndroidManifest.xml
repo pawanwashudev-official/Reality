@@ -96,6 +96,12 @@
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name=".ui.activity.RealityProActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait" />
+
         <!-- CalendarSettingsActivity removed -->
 
         <activity

@@ -65,6 +65,7 @@
 # Reality App Specifics
 # Keep Nightly Protocol classes specifically mentioned by user as risky
 -keep class com.neubofy.reality.data.NightlyProtocolExecutor { *; }
+-keep class com.neubofy.reality.ui.activity.RealityProActivity { *; }
 -keep class com.neubofy.reality.data.nightly.** { *; }
 -keep class com.neubofy.reality.data.repository.** { *; }
 -keep class com.neubofy.reality.utils.ThemeManager { *; } 

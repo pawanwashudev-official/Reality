@@ -19,7 +19,9 @@
 
 > **"Stop managing your life. Start commanding it."**
 
-### 🌟 100% Open Source • Free Forever • No Ads • No Trackers • Any AI (BYO Key)
+### 🌟 100% Open Source • No Ads • No Trackers • Any AI (BYO Key)
+
+<p>While advanced features (like Nightly Protocol, Gamification, and Google Workspace Sync) require a one-time Reality Pro payment to support ongoing maintenance, the app remains 100% open source. You can always build the APK yourself from the source code.</p>
 
 [**🌐 Official Website**](https://neubofyreality.vercel.app) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
 
@@ -707,7 +709,7 @@ Parsing:        GSON, JSoup, Markwon
 ### vs Forest (Popular Productivity App)
 | Aspect | Reality | Forest |
 |--------|---------|--------|
-| **Price** | 🟢 Free Forever | 🔴 Paid ($3.99) |
+| **Price** | 🟢 Open Source (Pro Optional) | 🔴 Paid ($3.99) |
 | **Open Source** | 🟢 100% | 🔴 Closed |
 | **Ads/Trackers** | 🟢 Zero | 🔴 Has Ads |
 | **Data Storage** | 🟢 Your Drive | 🔴 Their Servers |
@@ -722,7 +724,7 @@ Parsing:        GSON, JSoup, Markwon
 ### vs Freedom (Enterprise Blocking)
 | Aspect | Reality | Freedom |
 |--------|---------|---------|
-| **Price** | 🟢 Free | 🔴 Subscription ($5-15/mo) |
+| **Price** | 🟢 Open Source | 🔴 Subscription ($5-15/mo) |
 | **Blocking Tech** | 🟢 Native Accessibility | 🔴 VPN-Based (high battery) |
 | **Bypass Protection** | 🟢 Loop Hole Closers (5+ checks) | 🟡 Good but VPN-limited |
 | **AI Planning** | 🟢 Yes (Nightly Protocol) | 🔴 No |
@@ -733,7 +735,7 @@ Parsing:        GSON, JSoup, Markwon
 ### vs AppBlock (Simple Blocker)
 | Aspect | Reality | AppBlock |
 |--------|---------|----------|
-| **Price** | 🟢 Free | 🟡 Freemium + Paid |
+| **Price** | 🟢 Open Source | 🟡 Freemium + Paid |
 | **Blocking** | 🟢 Advanced (Strict Mode) | 🟡 Standard |
 | **Gamification** | 🟢 Advanced XP/Levels | 🔴 None |
 | **AI Features** | 🟢 Full Nightly Protocol | 🔴 None |
@@ -745,7 +747,7 @@ Parsing:        GSON, JSoup, Markwon
 ### vs Notion (Productivity Hub)
 | Aspect | Reality | Notion |
 |--------|---------|--------|
-| **Price** | 🟢 Free | 🟡 Subscription |
+| **Price** | 🟢 Open Source | 🟡 Subscription |
 | **App Blocking** | 🟢 Yes | 🔴 No |
 | **AI Agent** | 🟢 Autonomous Planner | 🟡 AI Assistant Only |
 | **Mobile-First** | 🟢 Yes | 🟡 Web-Focused |

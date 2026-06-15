@@ -364,9 +364,32 @@ class ProfileActivity : AppCompatActivity() {
     private fun updateUI() {
         val isSignedIn = GoogleAuthManager.isSignedIn(this)
         
+        // Handle User ID logic
+        val email = GoogleAuthManager.getUserEmail(this) ?: ""
+        val tvUserId = findViewById<android.widget.TextView>(R.id.tv_user_id)
+        val btnCopyId = findViewById<android.widget.ImageView>(R.id.btn_copy_id)
+        val llUserId = findViewById<android.widget.LinearLayout>(R.id.ll_user_id)
+
+        if (isSignedIn && email.isNotEmpty()) {
+            val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(email)
+            tvUserId?.text = userId
+            llUserId?.visibility = View.VISIBLE
+
+            val copyAction = View.OnClickListener {
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("Reality User ID", userId)
+                clipboard.setPrimaryClip(clip)
+                Toast.makeText(this, "Copied ID: $userId", Toast.LENGTH_SHORT).show()
+            }
+            tvUserId?.setOnClickListener(copyAction)
+            btnCopyId?.setOnClickListener(copyAction)
+        } else {
+            tvUserId?.text = "Not logged in"
+            llUserId?.visibility = View.GONE
+        }
+
         if (isSignedIn) {
             val name = GoogleAuthManager.getUserName(this) ?: "Google User"
-            val email = GoogleAuthManager.getUserEmail(this) ?: ""
             val photoUrl = GoogleAuthManager.getUserPhotoUrl(this)
             
             binding.tvUserName.text = name

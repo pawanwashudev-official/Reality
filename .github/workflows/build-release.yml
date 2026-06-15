@@ -1,10 +1,6 @@
 name: Build Release APK
 
 on:
-  push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
@@ -38,6 +34,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          REALITY_LICENSE_URL: ${{ secrets.REALITY_LICENSE_URL }}
         run: |
           touch local.properties
           echo "KEYSTORE_FILE=keystore.jks" >> local.properties
@@ -46,6 +43,7 @@ jobs:
           echo "KEY_PASSWORD=$KEY_PASSWORD" >> local.properties
           echo "DEFAULT_CLIENT_ID=$CLIENT_ID" >> local.properties
           echo "DEFAULT_CLIENT_SECRET=$CLIENT_SECRET" >> local.properties
+          echo "REALITY_LICENSE_URL=$REALITY_LICENSE_URL" >> local.properties
 
       - name: Make gradlew executable
         run: chmod +x gradlew

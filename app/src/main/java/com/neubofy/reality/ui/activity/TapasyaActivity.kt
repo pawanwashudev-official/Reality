@@ -10,6 +10,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -38,6 +39,14 @@ class TapasyaActivity : BaseActivity() {
     
     // Day navigation (0 = today, -1 = yesterday, etc, max -6)
     private var selectedDayOffset = 0
+
+    // QR Scan Launcher
+    private val scanQrLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            // Data successfully imported, reload sessions
+            loadSessionsForSelectedDay()
+        }
+    }
     private val dateFormat = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
 
     private val requestCalendarPermissionLauncher = registerForActivityResult(
@@ -59,6 +68,7 @@ class TapasyaActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!com.neubofy.reality.utils.RealityProManager.checkAccess(this)) return
 
         enableEdgeToEdge()
         binding = ActivityTapasyaBinding.inflate(layoutInflater)
@@ -175,6 +185,11 @@ class TapasyaActivity : BaseActivity() {
         // AMOLED Mode Button
         binding.header.findViewById<View>(R.id.btn_amoled_mode)?.setOnClickListener {
              startActivity(Intent(this, AmoledFocusActivity::class.java))
+        }
+
+        // Scan QR Button
+        binding.header.findViewById<View>(R.id.btn_scan_qr)?.setOnClickListener {
+            scanQrLauncher.launch(Intent(this, QRScannerActivity::class.java))
         }
 
         // Day Navigation

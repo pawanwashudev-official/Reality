@@ -227,7 +227,7 @@
                         android:orientation="horizontal">
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💎" android:textSize="20sp"/>
                         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="100% Free &amp; Open Source" android:textColor="?attr/colorOnSurface" android:textStyle="bold" android:textSize="14sp"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="100% Open Source (Pro Optional)" android:textColor="?attr/colorOnSurface" android:textStyle="bold" android:textSize="14sp"/>
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="No ads. No tracking. No subscriptions." android:textColor="?attr/colorOnSurfaceVariant" android:textSize="12sp"/>
                         </LinearLayout>
                     </LinearLayout>
@@ -311,7 +311,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Help keep this app free, ad-free &amp; open source"
+                        android:text="Help keep this app ad-free &amp; open source"
                         android:textColor="?attr/colorOnPrimaryContainer"
                         android:textSize="13sp"
                         android:alpha="0.8"

@@ -33,7 +33,7 @@ export default function Home() {
 
           <div className="flex flex-col items-center gap-4">
             <p className="font-semibold text-gray-700 text-lg">
-              🌟 100% Open Source • Free Forever • No Ads • No Trackers • Any AI
+              🌟 100% Open Source • No Ads • No Trackers • Any AI
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mt-6">
               <a
@@ -57,6 +57,12 @@ export default function Home() {
                   className="h-14 object-contain"
                 />
               </a>
+              <Link
+                href="/tapashya"
+                className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-[#00695C] hover:bg-[#004D40] md:py-4 md:text-lg transition-colors shadow-sm"
+              >
+                ⏳ Try Tapashya Web
+              </Link>
             </div>
           </div>
         </div>
