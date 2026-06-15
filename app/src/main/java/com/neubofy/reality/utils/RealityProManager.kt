@@ -11,8 +11,10 @@ object RealityProManager {
      * @return true if access is allowed, false if blocked
      */
     fun checkAccess(activity: Activity): Boolean {
-        val isEnabled = FeatureManager(activity).isRealityProEnabled()
-        if (!isEnabled) {
+        val featureManager = FeatureManager(activity)
+        val isEnabled = featureManager.isRealityProEnabled()
+        val isVerified = featureManager.isRealityProVerified()
+        if (!isEnabled || !isVerified) {
             val intent = Intent(activity, RealityProActivity::class.java)
             activity.startActivity(intent)
             activity.finish()

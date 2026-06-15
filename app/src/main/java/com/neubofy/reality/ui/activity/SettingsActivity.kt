@@ -237,8 +237,26 @@ class SettingsActivity : BaseActivity() {
         // Features State
         val featureManager = com.neubofy.reality.utils.FeatureManager(this)
 
-        val isRealityProEnabled = featureManager.isRealityProEnabled()
+        val isRealityProEnabled = featureManager.isRealityProEnabled() && featureManager.isRealityProVerified()
         val visibilityRealityPro = if (isRealityProEnabled) android.view.View.VISIBLE else android.view.View.GONE
+
+
+        // Reality Pro Verification Card Logic
+        val isRealityProToggled = featureManager.isRealityProEnabled()
+        val isRealityProVerified = featureManager.isRealityProVerified()
+
+        val verificationCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_reality_pro_verification)
+        if (verificationCard != null) {
+            if (isRealityProToggled && !isRealityProVerified) {
+                verificationCard.visibility = android.view.View.VISIBLE
+                verificationCard.setOnClickListener {
+                    val intent = Intent(this, RealityProActivity::class.java)
+                    startActivity(intent)
+                }
+            } else {
+                verificationCard.visibility = android.view.View.GONE
+            }
+        }
 
         binding.tvAccountHeader.visibility = visibilityRealityPro
         binding.cardAccount.visibility = visibilityRealityPro
