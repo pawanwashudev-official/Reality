@@ -33,7 +33,7 @@ export default function Home() {
 
           <div className="flex flex-col items-center gap-4">
             <p className="font-semibold text-gray-700 text-lg">
-              🌟 100% Open Source • Free Forever • No Ads • No Trackers • Any AI
+              🌟 100% Open Source • No Ads • No Trackers • Any AI
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mt-6">
               <a

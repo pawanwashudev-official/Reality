@@ -9,8 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@eslint/eslintrc": "^3.3.5",
-    "eslint": "^9.14.0",
     "lucide-react": "^1.18.0",
     "next": "^14.2.35",
     "qrcode.react": "^4.2.0",
@@ -18,10 +16,12 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
     "@types/node": "^20.19.43",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "autoprefixer": "^10.5.0",
+    "eslint": "^9.14.0",
     "eslint-config-next": "^15.0.0",
     "postcss": "^8.5.15",
     "tailwindcss": "^3.4.19",

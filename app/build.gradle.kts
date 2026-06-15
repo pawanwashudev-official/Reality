@@ -42,6 +42,9 @@ val webClientId = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
 
         val defaultClientSecret = localProperties.getProperty("DEFAULT_CLIENT_SECRET") ?: ""
         buildConfigField("String", "DEFAULT_CLIENT_SECRET", "\"$defaultClientSecret\"")
+
+        val realityLicenseUrl = localProperties.getProperty("REALITY_LICENSE_URL") ?: ""
+        buildConfigField("String", "REALITY_LICENSE_URL", "\"$realityLicenseUrl\"")
     }
     
     packaging {

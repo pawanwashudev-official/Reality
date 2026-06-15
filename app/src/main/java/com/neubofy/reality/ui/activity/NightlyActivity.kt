@@ -50,6 +50,7 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!com.neubofy.reality.utils.RealityProManager.checkAccess(this)) return
 
         enableEdgeToEdge()
         binding = ActivityNightlyBinding.inflate(layoutInflater)

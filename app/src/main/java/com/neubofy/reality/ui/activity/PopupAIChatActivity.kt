@@ -16,6 +16,7 @@ class PopupAIChatActivity : AIChatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!com.neubofy.reality.utils.RealityProManager.checkAccess(this)) return
         
         // Configure window for popup style
         window.setLayout(
