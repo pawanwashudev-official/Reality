@@ -69,6 +69,16 @@
             android:contentDescription="AMOLED Mode"
             android:layout_marginEnd="4dp"/>
 
+        <ImageView
+            android:id="@+id/btn_scan_qr"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:padding="10dp"
+            android:src="@drawable/baseline_qr_code_24"
+            app:tint="?attr/colorOnSurface"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Scan QR"
+            android:layout_marginEnd="4dp"/>
 
         <ImageView
             android:id="@+id/btn_settings"
