@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/card_step"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+    app:cardCornerRadius="12dp"
+    app:strokeWidth="0dp"
+    app:cardElevation="0dp"
+    android:layout_marginBottom="8dp"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- Header Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Status Icon -->
+            <ImageView
+                android:id="@+id/icon_status"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/baseline_radio_button_unchecked_24"
+                app:tint="?attr/colorOutline"/>
+
+            <!-- Step Title -->
+            <TextView
+                android:id="@+id/tv_step_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                tools:text="1. Fetch Tasks"/>
+
+            <!-- Start/Redo Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_action"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="Start"
+                android:textSize="12sp"
+                android:minWidth="64dp"
+                app:cornerRadius="8dp"/>
+        </LinearLayout>
+
+        <!-- Detail Text -->
+        <TextView
+            android:id="@+id/tv_step_detail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginStart="36dp"
+            android:textSize="12sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            tools:text="Pending..."
+            android:visibility="visible"/>
+
+        <!-- Verification Checkbox (Hidden by default) -->
+        <CheckBox
+            android:id="@+id/cb_step_verification"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="28dp"
+            android:layout_marginTop="4dp"
+            android:textSize="12sp"
+            android:visibility="gone"
+            tools:visibility="visible"
+            tools:text="I have completed this step"/>
+
+        <!-- Open Link Button (for steps with output docs) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_open_link"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="28dp"
+            android:text="Open"
+            android:textSize="11sp"
+            android:visibility="gone"
+            app:icon="@drawable/baseline_link_24"
+            app:iconSize="14dp"/>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

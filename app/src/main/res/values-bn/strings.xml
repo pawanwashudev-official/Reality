@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Reality</string>
+    <string name="focus_mode">ফোকাস মোড</string>
+    <string name="app_blocker">অ্যাপ ব্লকার</string>
+    <string name="anti_uninstall">আনইনস্টল প্রতিরোধ</string>
+    <string name="disabled">অক্ষম</string>
+    <string name="select_pinned_apps">পিন করা অ্যাপ নির্বাচন করুন</string>
+    <string name="select_blocked_apps">ব্লক করা অ্যাপ নির্বাচন করুন</string>
+    <string name="start_focus_mode">ফোকাস মোড শুরু করুন</string>
+    <string name="remove_anti_uninstall">আনইনস্টল প্রতিরোধ সরান</string>
+    <string name="add">যোগ করুন</string>
+    <string name="save">সংরক্ষণ করুন</string>
+</resources>

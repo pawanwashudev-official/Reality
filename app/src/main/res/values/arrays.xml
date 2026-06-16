@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="url_source_options">
+        <item>No Redirect</item>
+        <item>Use Default URL</item>
+        <item>Custom URL</item>
+    </string-array>
+</resources>

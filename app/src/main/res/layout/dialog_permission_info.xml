@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:scrollbars="none"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:padding="8dp"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        tools:text="Enable App Blocker" />
+
+    <TextView
+        android:id="@+id/desc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:text="@string/accessibility_perm_desc" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/textView10"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingBottom="8dp"
+            android:text="Reality will be able to:" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/point1"
+            style="@style/TextAppearance.MaterialComponents.Subtitle1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:includeFontPadding="false"
+            android:paddingVertical="8dp"
+            android:text="@string/read_content_on_screen"
+            app:drawableLeftCompat="@drawable/baseline_done_24"
+            app:drawableTint="@color/text_color"
+            app:drawableTintMode="src_in" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/point2"
+            style="@style/TextAppearance.MaterialComponents.Subtitle1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:includeFontPadding="false"
+            android:paddingVertical="8dp"
+            android:text="@string/perform_actions_like_a_back_press"
+            app:drawableLeftCompat="@drawable/baseline_done_24"
+            app:drawableTint="@color/text_color"
+            app:drawableTintMode="src_in" />
+    </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_guide"
+            style="@style/Widget.Material3.Button.ElevatedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/guide"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btn_reject"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/reject" />
+
+        <Button
+        android:id="@+id/btn_accept"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:layout_marginBottom="8dp"
+        android:text="@string/accept" />
+
+    </LinearLayout>
+
+</ScrollView>

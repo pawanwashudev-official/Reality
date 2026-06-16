@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ============================================ -->
+    <!-- DESIGN SYSTEM - Standardized Dimensions      -->
+    <!-- per user POV: same type everywhere          -->
+    <!-- ============================================ -->
+    
+    <!-- === CORNER RADIUS (Standardized) === -->
+    <!-- Use these instead of hardcoded values -->
+    <dimen name="corner_radius_small">8dp</dimen>      <!-- Buttons, chips -->
+    <dimen name="corner_radius_medium">16dp</dimen>    <!-- Cards, dialogs -->
+    <dimen name="corner_radius_large">24dp</dimen>     <!-- Hero cards -->
+    <dimen name="corner_radius_xl">32dp</dimen>        <!-- Focus card only -->
+    <dimen name="corner_radius_full">999dp</dimen>     <!-- Fully rounded (pills) -->
+    
+    <!-- === SPACING (8dp Grid System) === -->
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_sm">8dp</dimen>
+    <dimen name="spacing_md">16dp</dimen>
+    <dimen name="spacing_lg">24dp</dimen>
+    <dimen name="spacing_xl">32dp</dimen>
+    <dimen name="spacing_xxl">48dp</dimen>
+    
+    <!-- === PADDING === -->
+    <dimen name="screen_padding_horizontal">16dp</dimen>
+    <dimen name="screen_padding_vertical">16dp</dimen>
+    <dimen name="card_padding">16dp</dimen>
+    <dimen name="dialog_padding">24dp</dimen>
+    
+    <!-- === ICON SIZES === -->
+    <dimen name="icon_size_small">20dp</dimen>
+    <dimen name="icon_size_medium">24dp</dimen>
+    <dimen name="icon_size_large">32dp</dimen>
+    <dimen name="icon_size_xl">48dp</dimen>
+    <dimen name="icon_size_hero">64dp</dimen>
+    
+    <!-- === CARD HEIGHTS === -->
+    <dimen name="card_height_compact">80dp</dimen>
+    <dimen name="card_height_regular">110dp</dimen>
+    <dimen name="card_height_large">160dp</dimen>
+    
+    <!-- === BUTTON SIZES === -->
+    <dimen name="button_height_small">36dp</dimen>
+    <dimen name="button_height_medium">48dp</dimen>
+    <dimen name="button_height_large">56dp</dimen>
+    
+    <!-- === STROKE WIDTH === -->
+    <dimen name="stroke_thin">1dp</dimen>
+    <dimen name="stroke_medium">2dp</dimen>
+    <dimen name="stroke_thick">3dp</dimen>
+    
+    <!-- === ELEVATION === -->
+    <dimen name="elevation_none">0dp</dimen>
+    <dimen name="elevation_low">2dp</dimen>
+    <dimen name="elevation_medium">4dp</dimen>
+    <dimen name="elevation_high">8dp</dimen>
+    
+    <!-- === TEXT SIZES === -->
+    <dimen name="text_size_caption">11sp</dimen>
+    <dimen name="text_size_body_small">12sp</dimen>
+    <dimen name="text_size_body">14sp</dimen>
+    <dimen name="text_size_body_large">16sp</dimen>
+    <dimen name="text_size_title">18sp</dimen>
+    <dimen name="text_size_headline">22sp</dimen>
+    <dimen name="text_size_display">28sp</dimen>
+    
+    <!-- === ANIMATION DURATIONS (can be overridden for accessibility) === -->
+    <integer name="anim_duration_instant">100</integer>
+    <integer name="anim_duration_fast">200</integer>
+    <integer name="anim_duration_normal">300</integer>
+    <integer name="anim_duration_slow">500</integer>
+    
+</resources>

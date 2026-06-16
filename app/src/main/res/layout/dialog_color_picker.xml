@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="24dp"
+    android:background="@drawable/dialog_glass_background">
+
+    <TextView
+        android:id="@+id/tv_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Color"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+    <!-- Saturation/Value Area (The "Patch") -->
+    <FrameLayout
+        android:id="@+id/saturation_container"
+        android:layout_width="0dp"
+        android:layout_height="200dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/tv_title"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+        
+        <View
+            android:id="@+id/view_sat_val"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#FF0000"/> <!-- Placeholder, set dynamically -->
+            
+        <View
+            android:id="@+id/view_cursor"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:background="@drawable/circle_shape"
+            android:backgroundTint="@android:color/white"
+            android:elevation="4dp"
+            android:translationX="0dp"
+            android:translationY="0dp"/>
+            
+    </FrameLayout>
+
+    <!-- Hue Slider -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hue"
+        android:textSize="12sp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/saturation_container"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+    <View
+        android:id="@+id/view_hue_spectrum"
+        android:layout_width="0dp"
+        android:layout_height="24dp"
+        android:layout_marginTop="4dp"
+        android:background="#000000" 
+        app:layout_constraintTop_toBottomOf="@+id/saturation_container"
+        app:layout_constraintBottom_toTopOf="@+id/tv_hex_label"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="24dp"/>
+    <!-- Note: Background set programmatically to Hue Gradient -->
+
+    <ImageView
+        android:id="@+id/view_hue_cursor"
+        android:layout_width="wrap_content"
+        android:layout_height="32dp"
+        android:src="@drawable/ic_arrow_down"
+        app:tint="?attr/colorOnSurface"
+        app:layout_constraintBottom_toTopOf="@+id/view_hue_spectrum"
+        app:layout_constraintStart_toStartOf="@+id/view_hue_spectrum"/>
+
+    <!-- Preview & Hex -->
+    <TextView
+        android:id="@+id/tv_hex_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hex Code"
+        android:textSize="12sp"
+        app:layout_constraintTop_toBottomOf="@id/view_hue_spectrum"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp"/>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/input_layout_hex"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/tv_hex_label"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/view_preview_new"
+        android:layout_marginEnd="16dp">
+        
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/input_hex"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:maxLength="7"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <View
+        android:id="@+id/view_preview_old"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="@drawable/circle_shape"
+        app:layout_constraintEnd_toStartOf="@id/view_preview_new"
+        app:layout_constraintTop_toTopOf="@id/input_layout_hex"
+        app:layout_constraintBottom_toBottomOf="@id/input_layout_hex"
+        android:layout_marginEnd="8dp"/>
+
+    <View
+        android:id="@+id/view_preview_new"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="@drawable/circle_shape"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/input_layout_hex"
+        app:layout_constraintBottom_toBottomOf="@id/input_layout_hex"/>
+
+    <Button
+        android:id="@+id/btn_select"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select Color"
+        android:layout_marginTop="24dp"
+        app:layout_constraintTop_toBottomOf="@id/input_layout_hex"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

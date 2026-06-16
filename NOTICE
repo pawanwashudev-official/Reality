@@ -1,0 +1,73 @@
+===========================================================================
+                              NOTICE
+                           Reality App
+===========================================================================
+
+Copyright (c) 2025 Pawan Washudev / Neubofy
+All Rights Reserved.
+
+===========================================================================
+                         ATTRIBUTION NOTICE
+===========================================================================
+
+This software, "Reality - Digital Focus & Productivity App", was created
+and is maintained by:
+
+  👤 Pawan Washudev
+  🏢 Neubofy
+  🌐 https://neubofyreality.vercel.app/
+  📧 GitHub: @pawanwashudev-official
+
+===========================================================================
+                      THIRD-PARTY ATTRIBUTIONS
+===========================================================================
+
+This project uses the following open-source libraries:
+
+1. Kotlin Programming Language
+   - License: Apache License 2.0
+   - https://kotlinlang.org/
+
+2. Android Jetpack Libraries
+   - License: Apache License 2.0
+   - https://developer.android.com/jetpack
+
+3. Material Design Components
+   - License: Apache License 2.0
+   - https://material.io/
+
+4. Room Database
+   - License: Apache License 2.0
+   - https://developer.android.com/training/data-storage/room
+
+5. WorkManager
+   - License: Apache License 2.0
+   - https://developer.android.com/topic/libraries/architecture/workmanager
+
+6. Lottie for Android
+   - License: Apache License 2.0
+   - https://github.com/airbnb/lottie-android
+
+===========================================================================
+                       USAGE REQUIREMENTS
+===========================================================================
+
+If you use, modify, or distribute this software, you MUST:
+
+1. ✅ Give appropriate credit to the original author (Pawan Kumar / Neubofy)
+2. ✅ Include a copy of this NOTICE file in your distribution
+3. ✅ Indicate if changes were made
+4. ✅ Release your modifications under the same GPL-3.0 license
+5. ✅ Make your source code available
+
+===========================================================================
+                         TRADEMARK NOTICE
+===========================================================================
+
+"Reality", "Neubofy", and the Reality logo are trademarks of Neubofy.
+Use of these trademarks requires explicit permission from the trademark owner.
+
+===========================================================================
+
+For the complete license, see the LICENSE file.
+For more information, visit: https://neubofyreality.vercel.app/

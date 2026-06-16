@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Main Row -->
+    <LinearLayout
+        android:id="@+id/mainRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical"
+        android:background="?attr/selectableItemBackground">
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/baseline_public_24"
+            app:tint="?attr/colorPrimary"/>
+
+        <TextView
+            android:id="@+id/tv_domain"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="16dp"
+            android:text="example.com"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="16sp"/>
+
+        <ImageView
+            android:id="@+id/btnExpand"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="8dp"
+            android:padding="4dp"
+            android:src="@drawable/ic_arrow_down"
+            android:contentDescription="Expand options" />
+
+        <ImageView
+            android:id="@+id/btn_delete"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:padding="4dp"
+            android:src="@drawable/baseline_delete_24"
+            app:tint="?attr/colorError"
+            android:clickable="true"
+            android:focusable="true"/>
+
+    </LinearLayout>
+
+    <!-- Expandable Mode Selection Section -->
+    <LinearLayout
+        android:id="@+id/modeSelectionLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:paddingStart="68dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="12dp"
+        android:background="?attr/colorSurfaceVariant">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Block during:"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:paddingBottom="8dp" />
+
+        <CheckBox
+            android:id="@+id/cbFocus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Custom Focus"
+            android:textSize="14sp"
+            android:checked="true" />
+
+        <CheckBox
+            android:id="@+id/cbAutoFocus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Auto Focus (Schedules)"
+            android:textSize="14sp"
+            android:checked="true" />
+
+        <CheckBox
+            android:id="@+id/cbBedtime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Bedtime Mode"
+            android:textSize="14sp"
+            android:checked="true" />
+
+        <CheckBox
+            android:id="@+id/cbCalendar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Calendar Events"
+            android:textSize="14sp"
+            android:checked="true" />
+
+    </LinearLayout>
+
+</LinearLayout>

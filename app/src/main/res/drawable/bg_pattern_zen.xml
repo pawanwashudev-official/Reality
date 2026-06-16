@@ -1,0 +1,42 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="400dp"
+    android:height="800dp"
+    android:viewportWidth="400"
+    android:viewportHeight="800">
+    
+    <!-- Organic Fluid Waves - Representing Flow and Reality -->
+    
+    <!-- Wave 1: Gentle top curve -->
+    <path
+        android:pathData="M-50,100 C50,150 150,50 250,120 S350,200 450,150"
+        android:strokeColor="#08FFFFFF"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"/>
+
+    <!-- Wave 2: Middle flow -->
+    <path
+        android:pathData="M-50,300 C100,250 150,350 250,320 S400,280 450,350"
+        android:strokeColor="#05FFFFFF"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"/>
+        
+    <!-- Wave 3: Vertical flow -->
+    <path
+        android:pathData="M100,-50 C150,100 50,300 120,500 S80,700 150,850"
+        android:strokeColor="#05FFFFFF"
+        android:strokeWidth="1"
+        android:fillColor="#00000000"/>
+
+    <!-- Wave 4: Bottom swell -->
+    <path
+        android:pathData="M-50,600 C100,650 200,550 300,620 S450,700 450,800"
+        android:strokeColor="#08FFFFFF"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"/>
+        
+    <!-- Subtle Particles/Stars -->
+    <path
+        android:pathData="M50,200 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0 M300,100 a1.5,1.5 0 1,0 3,0 a1.5,1.5 0 1,0 -3,0 M350,500 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0 M80,650 a1.5,1.5 0 1,0 3,0 a1.5,1.5 0 1,0 -3,0"
+        android:fillColor="#15FFFFFF"/>
+
+</vector>

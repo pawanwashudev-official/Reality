@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#050510"
+    android:fitsSystemWindows="true">
+
+    <!-- Main Content -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:gravity="center">
+
+        <ImageView
+            android:id="@+id/ivIcon"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/baseline_access_time_24"
+            app:tint="#6C63FF"
+            android:layout_marginBottom="24dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="UPCOMING SESSION"
+            android:textColor="#80FFFFFF"
+            android:textSize="14sp"
+            android:letterSpacing="0.15" />
+
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Morning Focus"
+            android:textColor="#FFFFFF"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:id="@+id/tvTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Starts in 1 minute"
+            android:textColor="#00FFC2"
+            android:textSize="20sp"
+            android:layout_marginTop="8dp" />
+
+        <!-- Auto Snooze Countdown -->
+        <TextView
+            android:id="@+id/tvAutoSnooze"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Auto-snooze in 30s"
+            android:textColor="#FF9800"
+            android:textSize="14sp"
+            android:layout_marginTop="32dp"
+            android:visibility="gone"/>
+
+    </LinearLayout>
+
+    <!-- Bottom Actions Panel -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:paddingBottom="48dp">
+
+        <!-- Action Labels -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:id="@+id/tvSnoozeLabel"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="← SNOOZE"
+                android:textColor="#FF9800"
+                android:textSize="12sp"
+                android:gravity="start"
+                android:alpha="0.8" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SLIDE"
+                android:textColor="#80FFFFFF"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tvDismissLabel"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="DISMISS →"
+                android:textColor="#00FFC2"
+                android:textSize="12sp"
+                android:gravity="end"
+                android:alpha="0.8" />
+
+        </LinearLayout>
+
+        <!-- Bidirectional Slider Container -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:background="@drawable/rounded_slider_bg">
+
+            <!-- Center Indicator -->
+            <View
+                android:layout_width="4dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:background="#40FFFFFF" />
+            
+            <!-- Snooze Zone (Left) -->
+            <View
+                android:id="@+id/viewSnoozeZone"
+                android:layout_width="80dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="start"
+                android:background="#30FF9800" />
+
+            <!-- Dismiss Zone (Right) -->
+            <View
+                android:id="@+id/viewDismissZone"
+                android:layout_width="80dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="end"
+                android:background="#3000FFC2" />
+
+            <!-- Draggable Handle -->
+            <ImageView
+                android:id="@+id/ivHandle"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_gravity="center"
+                android:src="@drawable/baseline_adjust_24"
+                app:tint="#FFFFFF"
+                android:elevation="4dp"
+                android:background="@drawable/circle_bg"/>
+
+        </FrameLayout>
+
+        <!-- Helper Text -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Drag left to snooze • Drag right to start"
+            android:textColor="#60FFFFFF"
+            android:textSize="12sp"
+            android:layout_marginTop="12dp" />
+
+    </LinearLayout>
+
+</FrameLayout>

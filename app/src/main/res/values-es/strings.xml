@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Reality</string>
+    <string name="focus_mode">Modo de Concentración</string>
+    <string name="app_blocker">Bloqueador de Aplicaciones</string>
+    <string name="anti_uninstall">Anti Desinstalación</string>
+    <string name="disabled">Deshabilitado</string>
+    <string name="select_pinned_apps">Seleccionar aplicaciones fijadas</string>
+    <string name="select_blocked_apps">Seleccionar aplicaciones bloqueadas</string>
+    <string name="start_focus_mode">Iniciar modo de concentración</string>
+    <string name="remove_anti_uninstall">Eliminar Anti-Desinstalación</string>
+    <string name="add">Añadir</string>
+    <string name="save">Guardar</string>
+</resources>

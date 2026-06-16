@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/dialog_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Calendar Sync Settings"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:id="@+id/dialog_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sync your Google Calendar to automatically block distracting apps during events."
+        android:layout_marginBottom="24dp"/>
+
+    <Button
+        android:id="@+id/btn_connect_calendar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Connect Calendar"/>
+
+    <Button
+        android:id="@+id/btn_cancel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Cancel"
+        android:background="?android:attr/selectableItemBackground"
+        android:textColor="?attr/colorPrimary"
+        android:layout_marginTop="8dp"/>
+
+</LinearLayout>

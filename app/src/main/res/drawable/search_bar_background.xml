@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#263238" /> <!-- Dark Grey -->
+    <corners android:radius="24dp" /> <!-- Pill Shape -->
+    <stroke android:width="1dp" android:color="#37474F" />
+</shape>

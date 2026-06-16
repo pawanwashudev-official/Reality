@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Reality</string>
+    <string name="focus_mode">ఫోకస్ మోడ్</string>
+    <string name="app_blocker">యాప్ బ్లాకర్</string>
+    <string name="anti_uninstall">అన్‌ఇన్‌స్టాల్ నిరోధకం</string>
+    <string name="disabled">నిలిపివేయబడింది</string>
+    <string name="select_pinned_apps">పిన్ చేసిన యాప్‌లను ఎంచుకోండి</string>
+    <string name="select_blocked_apps">బ్లాక్ చేసిన యాప్‌లను ఎంచుకోండి</string>
+    <string name="start_focus_mode">ఫోకస్ మోడ్ ప్రారంభించండి</string>
+    <string name="remove_anti_uninstall">అన్‌ఇన్‌స్టాల్ నిరోధకాన్ని తీసివేయండి</string>
+    <string name="add">జోడించు</string>
+    <string name="save">సేవ్</string>
+</resources>

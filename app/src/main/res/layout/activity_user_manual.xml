@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:colorBackground">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        app:elevation="0dp">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="User Manual" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Intro Card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardElevation="4dp"
+                app:cardCornerRadius="12dp"
+                app:cardUseCompatPadding="true"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Welcome to Reality"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorPrimary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Reality is not just an app blocker; it's a protocol for reclaiming your life from digital addiction. This manual will guide you through setting up the system for maximum effectiveness."
+                        android:textSize="14sp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- 1. Permissions -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1. Essential Setup"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                android:textColor="?attr/colorPrimary" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="To function correctly, Reality needs specific permissions:\n\n• Accessibility Service: Critical for blocking apps efficiently.\n• Usage Access: To track screen time and enforce limits.\n• Display Over Apps: To show the blocking screen.\n• Battery Optimization (Ignore): Prevents the system from killing Reality in the background."
+                android:textSize="14sp"
+                android:layout_marginBottom="24dp" />
+
+            <!-- 2. Focus Modes -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2. Focus Modes"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                android:textColor="?attr/colorPrimary" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="• Manual Focus: Start a session anytime from the Home Screen. You choose which apps are blocked in 'Settings &gt; Blocklist'.\n• Scheduled Focus: Automate your work hours in 'Schedules'. Sessions start and stop automatically.\n• Tapasya Mode: Extreme focus. Once started, you CANNOT cancel it until the timer runs out. Use with caution."
+                android:textSize="14sp"
+                android:layout_marginBottom="24dp" />
+
+            <!-- 3. Nightly Protocol -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="3. The Nightly Protocol"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                android:textColor="?attr/colorPrimary" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="This is the heart of Reality. Every night, the app helps you close your day:\n\n1. Review your day's data (Screen time, Tasks).\n2. Write a reflection diary (saved to Google Docs).\n3. Get AI Feedback and XP for your day.\n4. Plan your next day (Tasks &amp; Calendar).\n\nStart it from the 'Nightly' tab at the bottom."
+                android:textSize="14sp"
+                android:layout_marginBottom="24dp" />
+
+            <!-- 4. Safety Nets -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="4. Safety Nets"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                android:textColor="?attr/colorPrimary" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="• Emergency Access: Grants you 5 minutes of unblocked time during a session. Limited to 2 uses per day.\n• Maintenance Window: Between 00:00 and 00:10 AM, all restrictions are lifted to allow for uninstalling or changing settings if you get stuck."
+                android:textSize="14sp"
+                android:layout_marginBottom="24dp" />
+
+            <!-- SYSTEM STATUS SECTION -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardElevation="2dp"
+                app:cardCornerRadius="12dp"
+                app:contentPadding="16dp"
+                app:cardUseCompatPadding="true"
+                android:layout_marginTop="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Current System Status"
+                        android:textStyle="bold"
+                        android:textAllCaps="true"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:id="@+id/tv_system_status_details"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Loading..."
+                        android:fontFamily="monospace"
+                        android:textSize="12sp"
+                        android:textColor="?android:textColorSecondary" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+            
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="48dp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

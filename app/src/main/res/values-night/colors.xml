@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Deep Blue / Glass Theme Colors (Universal) -->
+    <color name="md_theme_primary">#00E5FF</color>
+    <color name="md_theme_onPrimary">#000B1E</color>
+    <color name="md_theme_primaryContainer">#004D40</color>
+    <color name="md_theme_onPrimaryContainer">#E0F7FA</color>
+    
+    <color name="md_theme_secondary">#7B61FF</color>
+    <color name="md_theme_onSecondary">#FFFFFF</color>
+    <color name="md_theme_secondaryContainer">#4A148C</color>
+    <color name="md_theme_onSecondaryContainer">#F3E5F5</color>
+    
+    <color name="md_theme_tertiary">#FF4081</color>
+    <color name="md_theme_onTertiary">#FFFFFF</color>
+    <color name="md_theme_tertiaryContainer">#880E4F</color>
+    <color name="md_theme_onTertiaryContainer">#FFD8E4</color>
+    
+    <color name="md_theme_error">#FF5252</color>
+    <color name="md_theme_onError">#FFFFFF</color>
+    <color name="md_theme_errorContainer">#93000A</color>
+    <color name="md_theme_onErrorContainer">#FFDAD6</color>
+    
+    <!-- AMOLED Black Theme -->
+    <color name="md_theme_background">#000000</color>
+    <color name="md_theme_onBackground">#FFFFFF</color>
+    
+    <color name="md_theme_surface">#000000</color>
+    <color name="md_theme_onSurface">#E0E0E0</color>
+    
+    <color name="md_theme_surfaceVariant">#121212</color>
+    <color name="md_theme_onSurfaceVariant">#B0B0B0</color>
+    <color name="md_theme_outline">#33FFFFFF</color>
+    <color name="md_theme_outlineVariant">#33FFFFFF</color>
+    
+    <color name="md_theme_scrim">#000000</color>
+    <color name="md_theme_inverseSurface">#E0E0E0</color>
+    <color name="md_theme_inverseOnSurface">#000000</color>
+    <color name="md_theme_inversePrimary">#00695C</color>
+    
+    <!-- Fixed Colors -->
+    <color name="md_theme_primaryFixed">#00E5FF</color>
+    <color name="md_theme_onPrimaryFixed">#00201B</color>
+    <color name="md_theme_primaryFixedDim">#00B8D4</color>
+    <color name="md_theme_onPrimaryFixedVariant">#004D40</color>
+    
+    <color name="md_theme_secondaryFixed">#7B61FF</color>
+    <color name="md_theme_onSecondaryFixed">#2A0054</color>
+    <color name="md_theme_secondaryFixedDim">#651FFF</color>
+    <color name="md_theme_onSecondaryFixedVariant">#4A148C</color>
+    
+    <color name="md_theme_tertiaryFixed">#FF4081</color>
+    <color name="md_theme_onTertiaryFixed">#880E4F</color>
+    <color name="md_theme_tertiaryFixedDim">#F50057</color>
+    <color name="md_theme_onTertiaryFixedVariant">#880E4F</color>
+    
+    <!-- Surface Containers (AMOLED Scale) -->
+    <color name="md_theme_surfaceDim">#000000</color>
+    <color name="md_theme_surfaceBright">#121212</color>
+    <color name="md_theme_surfaceContainerLowest">#000000</color>
+    <color name="md_theme_surfaceContainerLow">#000000</color>
+    <color name="md_theme_surfaceContainer">#000000</color>
+    <color name="md_theme_surfaceContainerHigh">#121212</color>
+    <color name="md_theme_surfaceContainerHighest">#1C1C1E</color>
+
+    <color name="glass_stroke">#33FFFFFF</color>
+    <!-- Deep Black Glass for Dialogs -->
+    <color name="glass_dialog_background_color">#F2000000</color>
+    
+    <!-- Glass Card (Dark Mode: 10% White on Black) -->
+    <color name="glass_card_color">#1AFFFFFF</color>
+    <color name="glass_card_stroke_color">#33FFFFFF</color>
+</resources>
+
+

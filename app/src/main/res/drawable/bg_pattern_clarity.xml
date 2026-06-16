@@ -1,0 +1,31 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="400dp"
+    android:height="800dp"
+    android:viewportWidth="400"
+    android:viewportHeight="800">
+    
+    <!-- Subtle Grid Lines Vertical -->
+    <path
+        android:pathData="M40,0 L40,800 M80,0 L80,800 M120,0 L120,800 M160,0 L160,800 M200,0 L200,800 M240,0 L240,800 M280,0 L280,800 M320,0 L320,800 M360,0 L360,800"
+        android:strokeColor="#10FFFFFF"
+        android:strokeWidth="1"/>
+
+    <!-- Subtle Grid Lines Horizontal -->
+    <path
+        android:pathData="M0,40 L400,40 M0,80 L400,80 M0,120 L400,120 M0,160 L400,160 M0,200 L400,200 M0,240 L400,240 M0,280 L400,280 M0,320 L400,320 M0,360 L400,360 M0,400 L400,400 M0,440 L400,440 M0,480 L400,480 M0,520 L400,520 M0,560 L400,560 M0,600 L400,600 M0,640 L400,640 M0,680 L400,680 M0,720 L400,720 M0,760 L400,760"
+        android:strokeColor="#10FFFFFF"
+        android:strokeWidth="1"/>
+        
+    <!-- Decorative Tech Accents (Corner Brackets) -->
+    <path
+        android:pathData="M20,20 L40,20 L40,40 M380,20 L360,20 L360,40 M20,780 L40,780 L40,760 M380,780 L360,780 L360,760"
+        android:strokeColor="#2000CEC9"
+        android:strokeWidth="2"/>
+        
+    <!-- Central Focus Circle (Subtle) -->
+    <path
+        android:pathData="M200,300 m-100,0 a100,100 0 1,0 200,0 a100,100 0 1,0 -200,0"
+        android:strokeColor="#05FFFFFF"
+        android:strokeWidth="1"/>
+        
+</vector>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Reality</string>
+    <string name="focus_mode">ध्यान मोड</string>
+    <string name="app_blocker">ऐप ब्लॉकर</string>
+    <string name="anti_uninstall">अनइंस्टॉल रोकें</string>
+    <string name="disabled">अक्षम</string>
+    <string name="select_pinned_apps">पिन किए गए ऐप चुनें</string>
+    <string name="select_blocked_apps">ब्लॉक किए गए ऐप चुनें</string>
+    <string name="start_focus_mode">ध्यान मोड शुरू करें</string>
+    <string name="remove_anti_uninstall">अनइंस्टॉल रोक हटाएं</string>
+    <string name="add">जोड़ें</string>
+    <string name="save">सहेजें</string>
+    <string name="language">भाषा</string>
+    <string name="app_language">ऐप की भाषा</string>
+    <string name="select_language">भाषा चुनें (उदा. अंग्रेजी, फ्रेंच, हिंदी)</string>
+</resources>

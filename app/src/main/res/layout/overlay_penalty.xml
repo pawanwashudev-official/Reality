@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFB71C1C"
+    android:clickable="true"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
+    
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp">
+        
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⛔"
+            android:textSize="64sp" />
+        
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ACCESS DENIED"
+            android:textSize="28sp"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp" />
+        
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="This page is blocked by Strict Mode"
+            android:textSize="16sp"
+            android:textColor="@android:color/white"
+            android:alpha="0.9"
+            android:layout_marginTop="8dp" />
+        
+        <TextView
+            android:id="@+id/tvPenaltyTimer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="00:30"
+            android:textSize="72sp"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:layout_marginTop="32dp" />
+        
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Penalty Time Remaining"
+            android:textSize="14sp"
+            android:textColor="@android:color/white"
+            android:alpha="0.7"
+            android:layout_marginTop="8dp" />
+        
+        <View
+            android:layout_width="200dp"
+            android:layout_height="1dp"
+            android:background="#40FFFFFF"
+            android:layout_marginTop="24dp" />
+        
+        <TextView
+            android:id="@+id/tvPenaltyReason"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Reason: Accessibility Page Protected"
+            android:textSize="13sp"
+            android:textColor="@android:color/white"
+            android:alpha="0.6"
+            android:layout_marginTop="16dp" />
+        
+        <TextView
+            android:layout_width="280dp"
+            android:layout_height="wrap_content"
+            android:text="You cannot interact with the device until the timer ends. This penalty helps break the urge to bypass protection."
+            android:textSize="12sp"
+            android:textColor="@android:color/white"
+            android:alpha="0.5"
+            android:gravity="center"
+            android:layout_marginTop="24dp" />
+    </LinearLayout>
+</FrameLayout>
