@@ -471,7 +471,7 @@
                 android:id="@+id/tv_setup_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Nightly Protocol Setup"
+                android:text="Neural Protocol Setup"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="?attr/colorPrimary"
@@ -713,7 +713,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Tip: Nightly Protocol uses these folders and lists to store your reflections and tasks."
+                android:text="Tip: Neural Protocol uses these folders and lists to store your reflections and tasks."
                 android:textSize="12sp"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:gravity="center"/>

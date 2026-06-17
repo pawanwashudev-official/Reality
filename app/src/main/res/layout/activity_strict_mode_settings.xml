@@ -154,7 +154,7 @@
                         android:id="@+id/switchTapasyaLock"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Lock Tapasya Settings"
+                        android:text="Lock Neural Focus Settings"
                         android:checked="true"
                         android:layout_marginBottom="8dp"
                         android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />

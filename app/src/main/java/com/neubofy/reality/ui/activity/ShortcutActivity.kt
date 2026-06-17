@@ -7,11 +7,12 @@ import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.services.AppBlockerService
 import com.neubofy.reality.ui.dialogs.StartFocusMode
 import com.neubofy.reality.utils.SavedPreferencesLoader
 
-class ShortcutActivity : AppCompatActivity() {
+class ShortcutActivity : BaseActivity() {
 
     private val savedPreferencesLoader = SavedPreferencesLoader(this)
 

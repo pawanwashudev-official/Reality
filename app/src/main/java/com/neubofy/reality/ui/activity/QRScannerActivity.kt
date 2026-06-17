@@ -11,6 +11,7 @@ import android.util.Size
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
@@ -28,7 +29,7 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class QRScannerActivity : AppCompatActivity() {
+class QRScannerActivity : BaseActivity() {
 
     private lateinit var binding: ActivityQrScannerBinding
     private lateinit var cameraExecutor: ExecutorService

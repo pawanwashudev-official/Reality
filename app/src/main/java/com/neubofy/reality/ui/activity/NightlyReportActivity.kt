@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -21,7 +22,7 @@ import io.noties.markwon.ext.tasklist.TaskListPlugin
 import com.neubofy.reality.data.model.ChatMessage
 import com.neubofy.reality.ui.adapter.ChatAdapter
 
-class NightlyReportActivity : AppCompatActivity() {
+class NightlyReportActivity : BaseActivity() {
 
     private lateinit var binding: ActivityNightlyReportBinding
     private var selectedDate: LocalDate = LocalDate.now()

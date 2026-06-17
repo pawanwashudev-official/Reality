@@ -12,6 +12,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -25,7 +26,7 @@ import com.neubofy.reality.utils.SavedPreferencesLoader
 import com.neubofy.reality.utils.StrictLockUtils
 import java.util.concurrent.TimeUnit
 
-class UsageLimitActivity : AppCompatActivity() {
+class UsageLimitActivity : BaseActivity() {
 
     private lateinit var binding: ActivityUsageLimitBinding
     private lateinit var savedPreferencesLoader: SavedPreferencesLoader

@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.chip.Chip
@@ -11,7 +12,7 @@ import com.neubofy.reality.R
 import com.neubofy.reality.databinding.ActivityPromptEditorBinding
 import com.neubofy.reality.utils.ThemeManager
 
-class PromptEditorActivity : AppCompatActivity() {
+class PromptEditorActivity : BaseActivity() {
 
     private lateinit var binding: ActivityPromptEditorBinding
     private val PREFS_NAME = "nightly_prefs"

@@ -5,6 +5,7 @@ import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.databinding.ActivityAiSettingsBinding
 import com.neubofy.reality.utils.ThemeManager
 import com.neubofy.reality.utils.ToolRegistry
@@ -12,7 +13,7 @@ import com.neubofy.reality.ui.adapter.ToolToggleAdapter
 import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
 
-class AISettingsActivity : AppCompatActivity() {
+class AISettingsActivity : BaseActivity() {
 
     private lateinit var binding: ActivityAiSettingsBinding
     private val providers = listOf("OpenAI", "Gemini", "Groq", "OpenRouter", "Perplexity", "Tavily")

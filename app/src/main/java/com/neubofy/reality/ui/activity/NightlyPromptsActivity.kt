@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.neubofy.reality.databinding.ActivityNightlyPromptsBinding
@@ -12,7 +13,7 @@ import com.neubofy.reality.utils.ThemeManager
 import org.json.JSONArray
 import org.json.JSONObject
 
-class NightlyPromptsActivity : AppCompatActivity() {
+class NightlyPromptsActivity : BaseActivity() {
 
     private lateinit var binding: ActivityNightlyPromptsBinding
 

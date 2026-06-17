@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
 import coil.load
 import coil.transform.CircleCropTransformation
@@ -34,7 +35,7 @@ import com.google.api.services.tasks.Tasks
 import com.google.api.services.tasks.model.TaskList
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
-class ProfileActivity : AppCompatActivity() {
+class ProfileActivity : BaseActivity() {
 
     private lateinit var binding: ActivityProfileBinding
     

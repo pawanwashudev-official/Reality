@@ -93,15 +93,15 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="• Manual Focus: Start a session anytime from the Home Screen. You choose which apps are blocked in 'Settings &gt; Blocklist'.\n• Scheduled Focus: Automate your work hours in 'Schedules'. Sessions start and stop automatically.\n• Tapasya Mode: Extreme focus. Once started, you CANNOT cancel it until the timer runs out. Use with caution."
+                android:text="• Manual Focus: Start a session anytime from the Home Screen. You choose which apps are blocked in 'Settings &gt; Blocklist'.\n• Scheduled Focus: Automate your work hours in 'Schedules'. Sessions start and stop automatically.\n• Neural Focus Mode: Extreme focus. Once started, you CANNOT cancel it until the timer runs out. Use with caution."
                 android:textSize="14sp"
                 android:layout_marginBottom="24dp" />
 
-            <!-- 3. Nightly Protocol -->
+            <!-- 3. Neural Protocol -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="3. The Nightly Protocol"
+                android:text="3. The Neural Protocol"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"

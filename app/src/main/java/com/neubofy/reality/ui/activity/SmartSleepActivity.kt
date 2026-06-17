@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -25,7 +26,7 @@ import java.util.Locale
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.neubofy.reality.health.HealthPermissionManager
 
-class SmartSleepActivity : AppCompatActivity() {
+class SmartSleepActivity : BaseActivity() {
 
     private lateinit var binding: ActivitySmartSleepBinding
     private val today = LocalDate.now()

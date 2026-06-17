@@ -15,11 +15,12 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.content.ContextCompat
 import com.google.android.material.button.MaterialButton
 import com.neubofy.reality.R
 
-class AdbSetupActivity : AppCompatActivity() {
+class AdbSetupActivity : BaseActivity() {
 
     private lateinit var statusText: TextView
     private val handler = Handler(Looper.getMainLooper())

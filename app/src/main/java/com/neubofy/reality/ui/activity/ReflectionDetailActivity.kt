@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.github.mikephil.charting.charts.BarChart
@@ -25,7 +26,7 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class ReflectionDetailActivity : AppCompatActivity() {
+class ReflectionDetailActivity : BaseActivity() {
 
     private lateinit var binding: ActivityReflectionDetailBinding
     private val dateRanges = arrayOf("7 Days", "14 Days", "30 Days")

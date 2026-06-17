@@ -3,6 +3,7 @@ package com.neubofy.reality.ui.activity
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -14,7 +15,7 @@ import com.neubofy.reality.databinding.ActivityAmoledFocusBinding
 import com.neubofy.reality.services.TapasyaManager
 import kotlinx.coroutines.launch
 
-class AmoledFocusActivity : AppCompatActivity() {
+class AmoledFocusActivity : BaseActivity() {
 
     private lateinit var binding: ActivityAmoledFocusBinding
 

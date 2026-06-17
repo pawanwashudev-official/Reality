@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -16,7 +17,7 @@ import com.neubofy.reality.databinding.DialogAddMessageBinding
 import com.neubofy.reality.databinding.ItemBlockMessageBinding
 import com.neubofy.reality.utils.SavedPreferencesLoader
 
-class BlockMessagesActivity : AppCompatActivity() {
+class BlockMessagesActivity : BaseActivity() {
 
     private lateinit var binding: ActivityBlockMessagesBinding
     private lateinit var prefs: SavedPreferencesLoader
