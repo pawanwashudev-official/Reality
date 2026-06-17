@@ -54,9 +54,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="12dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -71,7 +71,7 @@
                         android:layout_marginBottom="8dp"
                         android:text="Step 1: Enable Developer Options"
                         android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
+                        android:textColor="?attr/colorPrimary"
                         android:textSize="16sp" />
 
                     <TextView
@@ -96,9 +96,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="12dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -113,7 +113,7 @@
                         android:layout_marginBottom="8dp"
                         android:text="Step 2: Run Commands"
                         android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
+                        android:textColor="?attr/colorPrimary"
                         android:textSize="16sp" />
 
                     <TextView
@@ -135,7 +135,7 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="?attr/colorSurfaceVariant"
+                        android:background="@android:color/transparent"
                         android:orientation="horizontal"
                         android:padding="12dp"
                         android:gravity="center_vertical"
@@ -148,7 +148,7 @@
                             android:fontFamily="monospace"
                             android:textSize="12sp"
                             android:text="adb shell pm grant com.neubofy.reality android.permission.WRITE_SECURE_SETTINGS"
-                            android:textColor="?attr/colorOnSurface" />
+                            android:textColor="?attr/colorPrimary" />
 
                         <ImageView
                             android:id="@+id/btn_copy_cmd1"
@@ -172,7 +172,7 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="?attr/colorSurfaceVariant"
+                        android:background="@android:color/transparent"
                         android:orientation="horizontal"
                         android:padding="12dp"
                         android:gravity="center_vertical">
@@ -184,7 +184,7 @@
                             android:fontFamily="monospace"
                             android:textSize="12sp"
                             android:text="adb shell appops set com.neubofy.reality PROJECT_MEDIA allow"
-                            android:textColor="?attr/colorOnSurface" />
+                            android:textColor="?attr/colorPrimary" />
 
                         <ImageView
                             android:id="@+id/btn_copy_cmd2"

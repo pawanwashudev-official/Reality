@@ -67,7 +67,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0h 0m"
-                        android:textColor="?attr/colorOnSurface"
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                         android:textSize="24sp"
                         android:textStyle="bold"
                         android:layout_marginTop="4dp" />
@@ -98,7 +99,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0h 0m"
-                        android:textColor="?attr/colorOnSurface"
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                         android:textSize="24sp"
                         android:textStyle="bold"
                         android:layout_marginTop="4dp" />

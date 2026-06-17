@@ -7,6 +7,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.neubofy.reality.R
@@ -18,7 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ReflectionSettingsActivity : AppCompatActivity() {
+class ReflectionSettingsActivity : BaseActivity() {
 
     private lateinit var binding: ActivityReflectionSettingsBinding
     private val PREFS_NAME = "nightly_prefs"

@@ -54,10 +54,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Support Reality"
-                    android:textColor="?attr/colorOnSurface"
+                    android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                     android:textSize="28sp"
-                    android:textStyle="bold"
-                    android:fontFamily="sans-serif-medium"/>
+                    android:textStyle="bold"/>
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -75,7 +75,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="24dp"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:strokeColor="?attr/colorPrimary"
                 app:strokeWidth="2dp"
                 android:layout_marginBottom="20dp">
@@ -113,10 +113,10 @@
                         android:id="@+id/tvStoryAnimated"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textColor="?attr/colorOnSurface"
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                         android:textSize="15sp"
-                        android:lineSpacingMultiplier="1.6"
-                        android:fontFamily="serif"/>
+                        android:lineSpacingMultiplier="1.6"/>
 
                     <View
                         android:layout_width="match_parent"
@@ -140,7 +140,8 @@
                                 android:text="P"
                                 android:textSize="24sp"
                                 android:textStyle="bold"
-                                android:textColor="?attr/colorOnSurface"
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                                 android:layout_gravity="center"/>
                         </FrameLayout>
 
@@ -155,7 +156,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Pawan Washudev"
-                                android:textColor="?attr/colorOnSurface"
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                                 android:textSize="15sp"
                                 android:textStyle="bold"/>
 
@@ -177,8 +179,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="24dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="16dp">
 
@@ -211,7 +213,8 @@
                             android:layout_weight="1"
                             android:layout_marginEnd="8dp"
                             app:cardCornerRadius="16dp"
-                            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                            app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                             app:strokeWidth="0dp"
                             android:clickable="true"
                             android:focusable="true">
@@ -232,7 +235,8 @@
                             android:layout_weight="1"
                             android:layout_marginEnd="8dp"
                             app:cardCornerRadius="16dp"
-                            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                            app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                             app:strokeWidth="0dp"
                             android:clickable="true"
                             android:focusable="true">
@@ -252,7 +256,8 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             app:cardCornerRadius="16dp"
-                            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                            app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                             app:strokeWidth="0dp"
                             android:clickable="true"
                             android:focusable="true">
@@ -303,7 +308,8 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="2"
                             app:cardCornerRadius="16dp"
-                            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                            app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                             app:strokeWidth="0dp">
 
                             <com.google.android.material.textfield.TextInputLayout
@@ -366,7 +372,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="24dp"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:strokeColor="?attr/colorPrimary"
                 app:strokeWidth="2dp"
                 android:layout_marginBottom="16dp">
@@ -444,14 +450,15 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:background="?attr/colorSurfaceVariant"
+                        android:background="@drawable/glass_card_bg"
                         android:padding="16dp">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="⚠️ Not working?"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                             android:textStyle="bold"
                             android:textSize="13sp"
                             android:layout_marginBottom="8dp"/>
@@ -498,7 +505,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
-                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                 android:layout_marginBottom="24dp">
 
                 <LinearLayout
@@ -525,7 +533,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="neubofy@pnb"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                             android:textSize="16sp"
                             android:textStyle="bold"/>
 

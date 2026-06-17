@@ -24,7 +24,7 @@
             android:layout_height="44dp"
             android:padding="10dp"
             android:src="@drawable/ic_arrow_back"
-            app:tint="?attr/colorOnSurface"
+            app:tint="?attr/colorPrimary"
             android:background="@drawable/back_button_bg"
             android:contentDescription="Back"/>
 
@@ -35,7 +35,8 @@
             android:text="AI Prompts"
             android:textSize="22sp"
             android:textStyle="bold"
-            android:textColor="?attr/colorOnSurface"
+            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
             android:layout_marginStart="16dp"/>
     </LinearLayout>
 
@@ -65,8 +66,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="12dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="12dp"
                 android:clickable="true"
@@ -85,7 +86,8 @@
                         android:text="Reflection Questions"
                         android:textStyle="bold"
                         android:textSize="16sp"
-                        android:textColor="?attr/colorOnSurface"/>
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                     <TextView
                         android:layout_width="match_parent"
@@ -103,8 +105,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="12dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="12dp"
                 android:clickable="true"
@@ -123,7 +125,8 @@
                         android:text="Reflection Grader"
                         android:textStyle="bold"
                         android:textSize="16sp"
-                        android:textColor="?attr/colorOnSurface"/>
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                     <TextView
                         android:layout_width="match_parent"
@@ -141,8 +144,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="12dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="12dp"
                 android:clickable="true"
@@ -161,7 +164,8 @@
                         android:text="Plan Extraction (Step 9)"
                         android:textStyle="bold"
                         android:textSize="16sp"
-                        android:textColor="?attr/colorOnSurface"/>
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                     <TextView
                         android:layout_width="match_parent"
@@ -179,8 +183,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="12dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp"
                 android:clickable="true"
@@ -199,7 +203,8 @@
                         android:text="Report Generator (Step 11)"
                         android:textStyle="bold"
                         android:textSize="16sp"
-                        android:textColor="?attr/colorOnSurface"/>
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                     <TextView
                         android:layout_width="match_parent"
@@ -217,8 +222,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="12dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp"
                 android:clickable="true"
@@ -237,7 +242,8 @@
                         android:text="AI Task Cleanup (Step 14)"
                         android:textStyle="bold"
                         android:textSize="16sp"
-                        android:textColor="?attr/colorOnSurface"/>
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                     <TextView
                         android:layout_width="match_parent"
@@ -264,8 +270,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="12dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="12dp"
                 android:clickable="true"
@@ -284,7 +290,8 @@
                         android:text="Diary Document Template"
                         android:textStyle="bold"
                         android:textSize="16sp"
-                        android:textColor="?attr/colorOnSurface"/>
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                     <TextView
                         android:layout_width="match_parent"
@@ -302,8 +309,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="12dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp"
                 android:clickable="true"
@@ -322,7 +329,8 @@
                         android:text="Plan Document Template"
                         android:textStyle="bold"
                         android:textSize="16sp"
-                        android:textColor="?attr/colorOnSurface"/>
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                     <TextView
                         android:layout_width="match_parent"

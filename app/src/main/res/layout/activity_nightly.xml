@@ -40,7 +40,7 @@
             android:layout_height="44dp"
             android:padding="10dp"
             android:src="@drawable/ic_arrow_back"
-            app:tint="?attr/colorOnSurface"
+            app:tint="?attr/colorPrimary"
             android:background="@drawable/back_button_bg"
             android:contentDescription="Back"/>
 
@@ -51,7 +51,8 @@
             android:text="Neural Protocol"
             android:textSize="22sp"
             android:textStyle="bold"
-            android:textColor="?attr/colorOnSurface"
+            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
             android:layout_marginStart="16dp"/>
 
         <!-- Report Icon -->
@@ -61,7 +62,7 @@
             android:layout_height="44dp"
             android:padding="10dp"
             android:src="@drawable/baseline_description_24"
-            app:tint="?attr/colorOnSurface"
+            app:tint="?attr/colorPrimary"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Daily Report"
             android:layout_marginEnd="8dp"/>
@@ -72,7 +73,7 @@
             android:layout_height="44dp"
             android:padding="10dp"
             android:src="@drawable/baseline_event_24"
-            app:tint="?attr/colorOnSurface"
+            app:tint="?attr/colorPrimary"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Next Day Plan"
             android:layout_marginEnd="8dp"/>
@@ -84,7 +85,7 @@
             android:layout_height="44dp"
             android:padding="10dp"
             android:src="@drawable/baseline_settings_24"
-            app:tint="?attr/colorOnSurface"
+            app:tint="?attr/colorPrimary"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Nightly Settings"/>
     </LinearLayout>
@@ -121,9 +122,9 @@
                 android:id="@+id/card_date_selector"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 app:cardElevation="0dp"
                 android:layout_marginBottom="16dp">
@@ -157,7 +158,8 @@
                             android:text="Today, January 18"
                             android:textSize="18sp"
                             android:textStyle="bold"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                             android:gravity="center"/>
 
                         <ImageView
@@ -177,9 +179,9 @@
                 android:id="@+id/card_status"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 app:cardElevation="0dp"
                 android:layout_marginBottom="24dp">
@@ -216,7 +218,8 @@
                 android:text="Session Steps"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="?attr/colorOnSurface"
+                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                 android:layout_marginBottom="12dp"
                 android:layout_marginStart="4dp"/>
 
@@ -241,10 +244,10 @@
                     android:id="@+id/card_step_data"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                     app:cardCornerRadius="12dp"
                     app:strokeWidth="0dp"
-                    app:cardElevation="0dp"
                     android:layout_marginBottom="8dp"
                     android:clickable="true"
                     android:focusable="true">
@@ -274,7 +277,8 @@
                                 android:text="1. Collect Daily Data"
                                 android:textStyle="bold"
                                 android:layout_marginStart="16dp"
-                                android:textColor="?attr/colorOnSurface"/>
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
                                 
                             <ImageView
                                 android:id="@+id/icon_step_data"
@@ -302,10 +306,10 @@
                     android:id="@+id/card_step_questions"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                     app:cardCornerRadius="12dp"
                     app:strokeWidth="0dp"
-                    app:cardElevation="0dp"
                     android:layout_marginBottom="8dp"
                     android:clickable="true"
                     android:focusable="true">
@@ -335,7 +339,8 @@
                                 android:text="2. AI Reflection Questions"
                                 android:textStyle="bold"
                                 android:layout_marginStart="16dp"
-                                android:textColor="?attr/colorOnSurface"/>
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
                                 
                             <ImageView
                                 android:id="@+id/icon_step_questions"
@@ -363,10 +368,10 @@
                     android:id="@+id/card_step_diary"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                     app:cardCornerRadius="12dp"
                     app:strokeWidth="0dp"
-                    app:cardElevation="0dp"
                     android:layout_marginBottom="8dp"
                     android:clickable="true"
                     android:focusable="true">
@@ -396,7 +401,8 @@
                                 android:text="3. Write Diary"
                                 android:textStyle="bold"
                                 android:layout_marginStart="16dp"
-                                android:textColor="?attr/colorOnSurface"/>
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
                                 
                             <ImageView
                                 android:id="@+id/icon_step_diary"
@@ -424,10 +430,10 @@
                     android:id="@+id/card_step_analysis"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                     app:cardCornerRadius="12dp"
                     app:strokeWidth="0dp"
-                    app:cardElevation="0dp"
                     android:layout_marginBottom="8dp"
                     android:clickable="true"
                     android:focusable="true">
@@ -457,7 +463,8 @@
                                 android:text="4. AI Analysis &amp; XP"
                                 android:textStyle="bold"
                                 android:layout_marginStart="16dp"
-                                android:textColor="?attr/colorOnSurface"/>
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
                                 
                             <ImageView
                                 android:id="@+id/icon_step_analysis"
@@ -485,10 +492,10 @@
                     android:id="@+id/card_step_create_plan"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                     app:cardCornerRadius="12dp"
                     app:strokeWidth="0dp"
-                    app:cardElevation="0dp"
                     android:layout_marginBottom="8dp"
                     android:clickable="true"
                     android:focusable="true">
@@ -518,7 +525,8 @@
                                 android:text="5. Create Plan Doc"
                                 android:textStyle="bold"
                                 android:layout_marginStart="16dp"
-                                android:textColor="?attr/colorOnSurface"/>
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
                                 
                             <ImageView
                                 android:id="@+id/icon_step_create_plan"
@@ -546,10 +554,10 @@
                     android:id="@+id/card_step_process_plan"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                     app:cardCornerRadius="12dp"
                     app:strokeWidth="0dp"
-                    app:cardElevation="0dp"
                     android:layout_marginBottom="8dp"
                     android:clickable="true"
                     android:focusable="true">
@@ -579,7 +587,8 @@
                                 android:text="6. Process Plan"
                                 android:textStyle="bold"
                                 android:layout_marginStart="16dp"
-                                android:textColor="?attr/colorOnSurface"/>
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
                                 
                             <ImageView
                                 android:id="@+id/icon_step_process_plan"
@@ -621,7 +630,8 @@
                 android:id="@+id/card_logs"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                 app:cardCornerRadius="12dp"
                 app:strokeWidth="0dp"
                 android:layout_marginTop="24dp"
@@ -664,7 +674,7 @@
                     <androidx.core.widget.NestedScrollView
                         android:layout_width="match_parent"
                         android:layout_height="120dp"
-                        android:background="?attr/colorSurface"
+                        android:background="@drawable/glass_card_bg"
                         android:padding="8dp"
                         android:fillViewport="true">
 
@@ -675,7 +685,7 @@
                             android:text="Ready to start..."
                             android:textSize="11sp"
                             android:fontFamily="monospace"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"/>
                     </androidx.core.widget.NestedScrollView>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

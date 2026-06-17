@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    android:background="?attr/colorSurface">
+    android:background="@drawable/glass_card_bg">
 
     <include
         android:id="@+id/include_header"
@@ -31,7 +31,7 @@
                 app:cardCornerRadius="24dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:cardBackgroundColor="?attr/colorSurfaceContainerLow">
 
                 <LinearLayout
@@ -55,7 +55,8 @@
                         android:layout_height="wrap_content"
                         android:text="Strict Mode Inactive"
                         android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
-                        android:textColor="?attr/colorOnSurface" />
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace" />
 
                     <TextView
                         android:id="@+id/tvStatusDesc"
@@ -95,7 +96,7 @@
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:cardBackgroundColor="?attr/colorSurfaceContainer">
 
                 <LinearLayout
@@ -153,7 +154,7 @@
                         android:id="@+id/switchTapasyaLock"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Lock Tapasya Settings"
+                        android:text="Lock Neural Focus Settings"
                         android:checked="true"
                         android:layout_marginBottom="8dp"
                         android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
@@ -214,7 +215,7 @@
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:cardBackgroundColor="?attr/colorSurfaceContainer">
 
                 <LinearLayout
@@ -287,7 +288,7 @@
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:cardBackgroundColor="?attr/colorSurfaceContainer">
 
                 <LinearLayout
@@ -360,7 +361,7 @@
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:cardBackgroundColor="?attr/colorSurfaceContainer">
 
                 <LinearLayout
@@ -450,7 +451,7 @@
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:cardBackgroundColor="?attr/colorSurfaceContainer">
 
                 <LinearLayout

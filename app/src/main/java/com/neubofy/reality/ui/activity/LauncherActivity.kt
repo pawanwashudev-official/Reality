@@ -15,6 +15,7 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -31,7 +32,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class LauncherActivity : AppCompatActivity() {
+class LauncherActivity : BaseActivity() {
 
     private lateinit var binding: ActivityLauncherBinding
     private lateinit var adapter: ApplicationAdapter

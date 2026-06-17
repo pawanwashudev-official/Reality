@@ -33,7 +33,7 @@
             android:layout_height="44dp"
             android:padding="10dp"
             android:src="@drawable/ic_arrow_back"
-            app:tint="?attr/colorOnSurface"
+            app:tint="?attr/colorPrimary"
             android:background="@drawable/back_button_bg"
             android:contentDescription="Back"/>
 
@@ -51,7 +51,8 @@
                 android:text="Neural Planning"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="?attr/colorOnSurface" />
+                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace" />
 
             <TextView
                 android:id="@+id/tv_header_date"
@@ -252,8 +253,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="16dp">
 
@@ -288,8 +289,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp">
 

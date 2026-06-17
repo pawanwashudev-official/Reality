@@ -39,9 +39,9 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -62,7 +62,8 @@
                             android:layout_weight="1"
                             android:text="Enable Bedtime Mode"
                             android:textSize="16sp"
-                            android:textColor="?attr/colorOnSurface" />
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace" />
 
                         <com.google.android.material.switchmaterial.SwitchMaterial
                             android:id="@+id/switch_bedtime"
@@ -93,8 +94,9 @@
                             android:layout_weight="1"
                             android:layout_marginEnd="8dp"
                             android:text="22:00"
-                            android:textColor="?attr/colorOnSurface"
-                            app:strokeColor="?attr/colorOutline" />
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
+                            app:strokeColor="?attr/colorPrimaryContainer" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_end_time"
@@ -104,8 +106,9 @@
                             android:layout_weight="1"
                             android:layout_marginStart="8dp"
                             android:text="07:00"
-                            android:textColor="?attr/colorOnSurface"
-                            app:strokeColor="?attr/colorOutline" />
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
+                            app:strokeColor="?attr/colorPrimaryContainer" />
                     </LinearLayout>
 
                 </LinearLayout>
@@ -117,7 +120,7 @@
                 android:layout_marginTop="16dp"
                 app:cardBackgroundColor="?attr/colorSurfaceContainer"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -144,7 +147,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Apps to Block"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                             android:textStyle="bold"
                             android:textSize="14sp" />
 

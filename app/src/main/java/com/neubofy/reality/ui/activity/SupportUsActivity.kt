@@ -14,11 +14,12 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.databinding.ActivitySupportUsBinding
 import java.text.SimpleDateFormat
 import java.util.*
 
-class SupportUsActivity : AppCompatActivity() {
+class SupportUsActivity : BaseActivity() {
 
     private lateinit var binding: ActivitySupportUsBinding
     

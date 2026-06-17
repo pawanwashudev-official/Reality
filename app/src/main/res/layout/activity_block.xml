@@ -42,7 +42,8 @@
                 android:layout_marginBottom="8dp"
                 android:gravity="center"
                 android:text="Stay Focused."
-                android:textColor="?attr/colorOnSurface"
+                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                 android:textSize="28sp"
                 android:textStyle="bold" />
 

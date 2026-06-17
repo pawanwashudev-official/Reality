@@ -3,12 +3,13 @@ package com.neubofy.reality.ui.activity
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.databinding.ActivityUserManualBinding
 import com.neubofy.reality.utils.ThemeManager
 import com.neubofy.reality.utils.SavedPreferencesLoader
 import com.neubofy.reality.Constants
 
-class UserManualActivity : AppCompatActivity() {
+class UserManualActivity : BaseActivity() {
 
     private lateinit var binding: ActivityUserManualBinding
     private lateinit var savedPreferencesLoader: SavedPreferencesLoader

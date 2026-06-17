@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121212"> <!-- Dark Gray/Merged Background -->
+    android:background="?android:attr/colorBackground"> <!-- Dark Gray/Merged Background -->
 
     <!-- Background Gradient -->
     <View
@@ -46,8 +46,8 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="REALITY"
-            android:textColor="#FFFFFF"
+            android:text="REALITY ENGINE"
+            android:textColor="?attr/colorPrimary"
             android:textSize="32sp"
             android:letterSpacing="0.2"
             android:textStyle="bold"
@@ -58,7 +58,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="The Intelligent Life OS"
-            android:textColor="#B0BEC5"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:fontFamily="monospace"
             android:textSize="14sp"
             android:letterSpacing="0.1"
             android:layout_marginTop="4dp"/>
@@ -71,7 +72,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
         android:text="Stop managing your life. Start commanding it."
-        android:textColor="#66FFFFFF"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:fontFamily="monospace"
         android:textSize="12sp"
         android:layout_marginBottom="48dp"
         android:letterSpacing="0.05"

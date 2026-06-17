@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -21,7 +22,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import androidx.activity.enableEdgeToEdge
 
-class RealityProActivity : AppCompatActivity() {
+class RealityProActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)

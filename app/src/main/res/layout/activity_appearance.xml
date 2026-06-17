@@ -21,7 +21,7 @@
             android:elevation="0dp"
             app:navigationIcon="@drawable/baseline_arrow_back_24"
             app:navigationIconTint="?attr/colorOnSurface"
-            app:title="Appearance"
+            app:title="NEURAL AESTHETICS"
             app:menu="@null" /> 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -395,7 +395,7 @@
                                 android:layout_width="80dp"
                                 android:layout_height="120dp"
                                 android:src="@drawable/rounded_background_small"
-                                android:backgroundTint="?attr/colorSurface"
+                                android:backgroundTint="@android:color/transparent"
                                 android:scaleType="centerCrop"/>
                             <TextView
                                 android:layout_width="wrap_content"
@@ -717,7 +717,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Font Size Scale"
-                    android:textColor="?attr/colorOnSurface"
+                    android:textColor="?attr/colorPrimary"
+                        android:fontFamily="monospace"
                     android:layout_marginBottom="4dp"/>
                 <com.google.android.material.slider.Slider
                     android:id="@+id/slider_font_size"
@@ -732,7 +733,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Spacing/Density Scale"
-                    android:textColor="?attr/colorOnSurface"
+                    android:textColor="?attr/colorPrimary"
+                        android:fontFamily="monospace"
                     android:layout_marginBottom="4dp"/>
                 <com.google.android.material.slider.Slider
                     android:id="@+id/slider_spacing"
@@ -812,7 +814,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Noise Intensity (Grain Texture)"
-                    android:textColor="?attr/colorOnSurface"
+                    android:textColor="?attr/colorPrimary"
+                        android:fontFamily="monospace"
                     android:textStyle="bold"
                     android:layout_marginBottom="8dp"/>
                 <com.google.android.material.slider.Slider
@@ -829,7 +832,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Haptic Feedback Level"
-                    android:textColor="?attr/colorOnSurface"
+                    android:textColor="?attr/colorPrimary"
+                        android:fontFamily="monospace"
                     android:textStyle="bold"
                     android:layout_marginBottom="8dp"/>
                 <com.google.android.material.chip.ChipGroup
@@ -850,7 +854,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Motion Presets"
-                    android:textColor="?attr/colorOnSurface"
+                    android:textColor="?attr/colorPrimary"
+                        android:fontFamily="monospace"
                     android:textStyle="bold"
                     android:layout_marginBottom="8dp"/>
                 <com.google.android.material.chip.ChipGroup

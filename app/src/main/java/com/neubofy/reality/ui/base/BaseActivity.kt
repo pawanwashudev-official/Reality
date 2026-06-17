@@ -72,6 +72,12 @@ open class BaseActivity : AppCompatActivity() {
         val rootView = findViewById<View>(android.R.id.content)
         if (rootView != null) {
             ThemeManager.applyGlobalPersonalization(rootView)
+
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
+                val insets = windowInsets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+                view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+                windowInsets
+            }
         }
     }
 }

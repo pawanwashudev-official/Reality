@@ -7,13 +7,14 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.R
 
 /**
  * First-launch activity that introduces the app and collects user name.
  * After user continues, navigates to OnboardingActivity for permission setup.
  */
-class SecurityIntroActivity : AppCompatActivity() {
+class SecurityIntroActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
