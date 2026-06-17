@@ -6,7 +6,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Reality Engine - The Intelligent Life OS",
+  title: "Reality - The Intelligent Life OS",
   description: "Stop managing your life. Start commanding it. The 100% Open Source, Neural-powered productivity OS.",
 };
 
