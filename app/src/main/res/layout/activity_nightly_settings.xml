@@ -264,7 +264,7 @@
                  android:layout_marginBottom="24dp"/>
 
             <!-- Section: Data Retention Policies -->
-            <!-- Clear Nightly Memory -->
+            <!-- Clear Neural Memory -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -287,7 +287,7 @@
                 style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Clear Nightly Memory"
+                android:text="Clear Neural Memory"
                 android:textColor="?attr/colorError"
                 app:strokeColor="?attr/colorError"
                 app:icon="@drawable/baseline_delete_24"
@@ -297,7 +297,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Clears stored nightly session data from the database. Does not delete Drive files."
+                android:text="Clears stored Neural Protocol session data from the database. Does not delete Drive files."
                 android:textSize="12sp"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginBottom="24dp"/>

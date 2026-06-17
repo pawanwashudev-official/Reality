@@ -180,7 +180,7 @@
                         android:id="@+id/switchNightlyLimitLock"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Lock Nightly Limit"
+                        android:text="Lock Neural Protocol Limit"
                         android:checked="true"
                         android:layout_marginBottom="8dp"
                         android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
