@@ -39,15 +39,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-<<<<<<< HEAD
             app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="16dp"
             app:strokeColor="?attr/colorPrimaryContainer"
-=======
-            app:cardBackgroundColor="?attr/colorSurfaceContainer"
-            app:cardCornerRadius="16dp"
-            app:strokeColor="?attr/colorOutlineVariant"
->>>>>>> origin/main
             app:strokeWidth="1dp"
             app:cardElevation="0dp"
             android:clickable="true"
@@ -140,15 +134,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-<<<<<<< HEAD
             app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="16dp"
             app:strokeColor="?attr/colorPrimaryContainer"
-=======
-            app:cardBackgroundColor="?attr/colorSurfaceContainer"
-            app:cardCornerRadius="16dp"
-            app:strokeColor="?attr/colorOutlineVariant"
->>>>>>> origin/main
             app:strokeWidth="1dp"
             app:cardElevation="0dp"
             android:clickable="true"
@@ -240,15 +228,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-<<<<<<< HEAD
             app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="16dp"
             app:strokeColor="?attr/colorPrimaryContainer"
-=======
-            app:cardBackgroundColor="?attr/colorSurfaceContainer"
-            app:cardCornerRadius="16dp"
-            app:strokeColor="?attr/colorOutlineVariant"
->>>>>>> origin/main
             app:strokeWidth="1dp"
             app:cardElevation="0dp"
             android:clickable="true"
@@ -340,15 +322,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-<<<<<<< HEAD
             app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="16dp"
             app:strokeColor="?attr/colorPrimaryContainer"
-=======
-            app:cardBackgroundColor="?attr/colorSurfaceContainer"
-            app:cardCornerRadius="16dp"
-            app:strokeColor="?attr/colorOutlineVariant"
->>>>>>> origin/main
             app:strokeWidth="1dp"
             app:cardElevation="0dp"
             android:clickable="true"
@@ -407,15 +383,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-<<<<<<< HEAD
             app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="16dp"
             app:strokeColor="?attr/colorPrimaryContainer"
-=======
-            app:cardBackgroundColor="?attr/colorSurfaceContainer"
-            app:cardCornerRadius="16dp"
-            app:strokeColor="?attr/colorOutlineVariant"
->>>>>>> origin/main
             app:strokeWidth="1dp"
             app:cardElevation="0dp"
             android:clickable="true"
