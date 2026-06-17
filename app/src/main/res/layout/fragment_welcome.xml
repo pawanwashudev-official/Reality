@@ -40,7 +40,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Take Control of Your Focus"
+                android:text="Neural Engine Activated"
                 android:textSize="16sp"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginBottom="48dp" />
@@ -68,7 +68,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Block distracting apps during focus time"
+                        android:text="Cinematic UI"
                         android:textColor="?attr/colorOnSurface"
                         android:textSize="14sp"
                         android:layout_marginStart="12dp" />
@@ -90,7 +90,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Auto-sync with Google Calendar"
+                        android:text="Neural Engine"
                         android:textColor="?attr/colorOnSurface"
                         android:textSize="14sp"
                         android:layout_marginStart="12dp" />
@@ -111,7 +111,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Uninstall protection for commitment"
+                        android:text="Premium Gamification"
                         android:textColor="?attr/colorOnSurface"
                         android:textSize="14sp"
                         android:layout_marginStart="12dp" />
@@ -122,7 +122,7 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="What check I call you?"
+                android:hint="What should I call you?"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_marginBottom="24dp"
                 android:textColorHint="?attr/colorOnSurfaceVariant"

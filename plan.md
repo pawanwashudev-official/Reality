@@ -1,30 +1,26 @@
-1. **Remove Google Android Credential & Hardcoded Key Logic**
-   - In `app/build.gradle.kts`:
-     - Remove Android credential manager / identity dependencies if no longer used. Keep `google-api-client-android` and Google API service dependencies.
-   - In `app/src/main/java/com/neubofy/reality/google/GoogleAuthManager.kt`:
-     - Remove `androidx.credentials` and `com.google.android.libraries.identity.googleid` imports and usage.
-     - Remove `WEB_CLIENT_ID` usage via `BuildConfig`.
-     - Implement the new flow:
-       - Update `GoogleAuthManager` to store and manage desktop client ID and client secret (via SharedPreferences).
-       - Create a function to generate the Google OAuth authorization URL (with `response_type=code`, `access_type=offline`, `prompt=consent`, and the necessary scopes).
-       - Create a function to exchange the auth code for access & refresh tokens using Google's OAuth 2.0 token endpoint.
-       - Create a function to get an authorized Google credential using the saved tokens (e.g., `GoogleCredential.Builder()`). Replace `GoogleAccountCredential`.
-       - Update `isSignedIn`, `getUserEmail`, `getUserName`, `getUserPhotoUrl` to depend on token validity (and maybe fetch user info using the token).
-     - Update all Google service managers (`GoogleDriveManager.kt`, `GoogleDocsManager.kt`, `GoogleSheetsManager.kt`, `GoogleTasksManager.kt`, `GoogleCalendarManager.kt`) to use the new token-based credential instead of `GoogleAccountCredential`.
+1. **Update Onboarding Initial Screen (Welcome)**
+   - Modify `app/src/main/res/layout/fragment_welcome.xml`:
+     - Change "Take Control of Your Focus" (line 43) to "Neural Engine Activated" to fit the premium cinematic tagline.
+     - Update the features list text to highlight "Cinematic UI," "Neural Engine", and "Premium Gamification" by modifying the `android:text` attribute of the three `TextView` elements inside the features `LinearLayout` (lines 71, 93, 114).
+     - Fix typo in name input hint: change `android:hint="What check I call you?"` (line 125) to `android:hint="What should I call you?"`.
 
-2. **Update ProfileActivity UI**
-   - In `app/src/main/res/layout/activity_profile.xml`:
-     - Remove `btn_info_profile` (the info icon).
-     - Add a settings icon (e.g., `btn_settings_cloud`) in place of or near the old info icon to open a Google Cloud Setup dialog.
-   - In `app/src/main/java/com/neubofy/reality/ui/activity/ProfileActivity.kt`:
-     - Add logic for the settings icon to show a dialog/bottom sheet where users can input their `Client ID` and `Client Secret`. Save these in `SharedPreferences`.
-     - Update the Sign In logic:
-       - Check if Client ID and Secret are configured. If not, prompt the user to set them up.
-       - If configured, generate the OAuth URL using `GoogleAuthManager`.
-       - Open the URL in an external browser or Custom Tab for the user to log in.
-       - Prompt the user to paste the authorization code returned by Google (or intercept it via a redirect URL like `urn:ietf:wg:oauth:2.0:oob` or a local redirect if possible). *Using "copy from there till then ap should be awaiting for token and user back to app and paste that" implies OOB (out-of-band) or a manual copy-paste flow.*
-       - Exchange the code for tokens and save them.
-     - Update the profile UI to show "Ready to Login" state based on whether credentials are provided.
+2. **Update Onboarding Permissions Screen**
+   - Modify `app/src/main/res/layout/fragment_onboarding_permissions.xml`:
+     - Update colors to use dynamic themes: replace `@color/onboarding_bg` with `?android:colorBackground`, replace `@color/onboarding_text_primary` with `?attr/colorOnSurface`, replace `@color/onboarding_text_secondary` and `@color/onboarding_text_hint` with `?attr/colorOnSurfaceVariant`, replace `@color/onboarding_card_bg` with `?attr/colorSurfaceContainer`, replace `@color/onboarding_card_stroke` with `?attr/colorOutlineVariant`, replace `@color/onboarding_icon_pending` with `?attr/colorOnSurfaceVariant`, and replace `@color/onboarding_accent` with `?attr/colorPrimary`.
+     - Update the header text (line 21): change `"🔐 Setup Permissions"` to `"Neural Engine Access"`.
+     - Update the subheader text (line 30): change `"Reality needs these permissions to protect your focus. Tap each card to grant."` to `"The Neural Engine requires these permissions to protect your focus. Tap each card to grant."`.
 
-3. **Pre-commit and Test**
-   - Run the pre-commit instructions and `./gradlew assembleDebug` to ensure compilation and verification of changes.
+3. **Update Appearance Settings Screen**
+   - Modify `app/src/main/res/layout/activity_appearance.xml`:
+     - Remove `android:visibility="gone"` (line 792) from the `LinearLayout` with ID `@+id/section_elite` to expose the premium customization options.
+     - Update the text "Elite Aesthetics 3.0" (line 797) inside the `@+id/section_elite` layout to "Neural Engine / Cinematic Aesthetics".
+
+4. **Verify Edits**
+   - Run `git diff` to review all XML file modifications and ensure no unintended changes were made.
+
+5. **Test**
+   - Run `./gradlew assembleDebug` to verify compilation.
+   - Run `./gradlew test` to ensure no regressions.
+
+6. **Pre-commit**
+   - Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.

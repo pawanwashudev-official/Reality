@@ -22,7 +22,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         android:gravity="center"
-        android:text="World's Securest App"
+        android:text="Neural Engine Security Core"
         android:textColor="@color/md_theme_primary"
         android:textSize="28sp"
         android:textStyle="bold" />
