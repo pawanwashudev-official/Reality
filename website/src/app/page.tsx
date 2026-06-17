@@ -54,7 +54,7 @@ export default function Home() {
             </Link>
           </div>
           <p className="mt-6 text-sm text-gray-500 max-w-xl mx-auto">
-            100% Open Source. Official APKs require a one-time "Reality Pro" contribution to support development.
+            100% Open Source. Official APKs require a one-time &quot;Reality Pro&quot; contribution to support development.
           </p>
         </div>
       </section>

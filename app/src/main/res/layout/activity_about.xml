@@ -43,10 +43,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Reality"
-                android:textColor="?attr/colorOnSurface"
+                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                 android:textSize="32sp"
                 android:textStyle="bold"
-                android:fontFamily="sans-serif-medium"
+
                 android:layout_marginTop="16dp"/>
 
             <TextView
@@ -65,8 +66,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="24dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="32dp"
                 android:clickable="true"
@@ -96,7 +97,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Check for Updates"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                             android:textStyle="bold"
                             android:textSize="14sp"/>
 
@@ -125,8 +127,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="24dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="16dp">
 
@@ -153,7 +155,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Why Reality is Best"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+
                             android:textStyle="bold"
                             android:textSize="18sp"
                             android:layout_marginStart="12dp"/>
@@ -176,7 +179,8 @@
                         android:layout_marginBottom="12dp">
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🛡️" android:textSize="20sp"/>
                         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Strict Mode Protection" android:textColor="?attr/colorOnSurface" android:textStyle="bold" android:textSize="14sp"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Strict Mode Protection" android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace" android:textStyle="bold" android:textSize="14sp"/>
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Unbreakable locks when you need willpower" android:textColor="?attr/colorOnSurfaceVariant" android:textSize="12sp"/>
                         </LinearLayout>
                     </LinearLayout>
@@ -189,7 +193,8 @@
                         android:layout_marginBottom="12dp">
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📅" android:textSize="20sp"/>
                         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Calendar Integration" android:textColor="?attr/colorOnSurface" android:textStyle="bold" android:textSize="14sp"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Calendar Integration" android:textColor="?attr/colorPrimary"
+         android:textStyle="bold" android:textSize="14sp"/>
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Auto-focus during your meetings and events" android:textColor="?attr/colorOnSurfaceVariant" android:textSize="12sp"/>
                         </LinearLayout>
                     </LinearLayout>
@@ -202,7 +207,8 @@
                         android:layout_marginBottom="12dp">
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📊" android:textSize="20sp"/>
                         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Deep Usage Analytics" android:textColor="?attr/colorOnSurface" android:textStyle="bold" android:textSize="14sp"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Deep Usage Analytics" android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace" android:textStyle="bold" android:textSize="14sp"/>
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Understand your habits with real data" android:textColor="?attr/colorOnSurfaceVariant" android:textSize="12sp"/>
                         </LinearLayout>
                     </LinearLayout>
@@ -215,7 +221,8 @@
                         android:layout_marginBottom="12dp">
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🔔" android:textSize="20sp"/>
                         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Intelligent Reminders" android:textColor="?attr/colorOnSurface" android:textStyle="bold" android:textSize="14sp"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Intelligent Reminders" android:textColor="?attr/colorPrimary"
+         android:textStyle="bold" android:textSize="14sp"/>
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gentle nudges to stay on track" android:textColor="?attr/colorOnSurfaceVariant" android:textSize="12sp"/>
                         </LinearLayout>
                     </LinearLayout>
@@ -227,7 +234,8 @@
                         android:orientation="horizontal">
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💎" android:textSize="20sp"/>
                         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="100% Open Source (Pro Optional)" android:textColor="?attr/colorOnSurface" android:textStyle="bold" android:textSize="14sp"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="100% Open Source (Pro Optional)" android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace" android:textStyle="bold" android:textSize="14sp"/>
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="No ads. No tracking. No subscriptions." android:textColor="?attr/colorOnSurfaceVariant" android:textSize="12sp"/>
                         </LinearLayout>
                     </LinearLayout>
@@ -239,8 +247,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="24dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp">
 
@@ -267,7 +275,7 @@
                         android:text="&quot;Technology should serve you, not consume you. Reality isn't just an app—it's a movement towards digital mindfulness. We believe in reclaiming your attention, one focused session at a time.&quot;"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:textSize="15sp"
-                        android:fontFamily="serif"
+
                         android:lineSpacingMultiplier="1.5"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -336,8 +344,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="24dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp">
 
@@ -374,7 +382,8 @@
                                 android:text="P"
                                 android:textSize="32sp"
                                 android:textStyle="bold"
-                                android:textColor="?attr/colorOnSurface"
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                                 android:layout_gravity="center"/>
                         </FrameLayout>
 
@@ -389,7 +398,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Pawan Washudev"
-                                android:textColor="?attr/colorOnSurface"
+                                android:textColor="?attr/colorPrimary"
+
                                 android:textSize="20sp"
                                 android:textStyle="bold"/>
 
@@ -568,7 +578,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:textColor="?attr/colorOnSurface"
+                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                 android:textSize="15sp"
                 android:textStyle="bold"
                 android:padding="8dp"

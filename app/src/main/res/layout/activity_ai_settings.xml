@@ -39,9 +39,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutline"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 android:layout_marginBottom="24dp">
 
                 <LinearLayout
@@ -63,7 +63,8 @@
                             android:text="Auto-start Voice Input"
                             android:textSize="15sp"
                             android:textStyle="bold"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -94,9 +95,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutline"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 android:layout_marginBottom="8dp">
 
                 <LinearLayout
@@ -118,7 +119,8 @@
                             android:layout_weight="1"
                             android:text="Saved Image Models"
                             android:textSize="14sp"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_add_image_model"
@@ -165,9 +167,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutline"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 android:layout_marginBottom="8dp">
                 
                 <LinearLayout
@@ -189,7 +191,8 @@
                             android:layout_weight="1"
                             android:text="Saved Models"
                             android:textSize="14sp"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_add_chat_model"
@@ -236,9 +239,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutline"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 android:layout_marginBottom="8dp">
 
                 <LinearLayout
@@ -260,7 +263,8 @@
                             android:layout_weight="1"
                             android:text="Tavily Search API"
                             android:textSize="14sp"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_add_search_engine"
@@ -306,9 +310,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutline"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 android:layout_marginBottom="8dp">
 
                 <LinearLayout
@@ -355,7 +359,8 @@
                                 android:text="Health Connect"
                                 android:textSize="14sp"
                                 android:textStyle="bold"
-                                android:textColor="?attr/colorOnSurface"/>
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                             <TextView
                                 android:layout_width="wrap_content"
@@ -416,9 +421,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutline"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 android:layout_marginBottom="8dp">
                 
                 <LinearLayout
@@ -440,7 +445,8 @@
                             android:layout_weight="1"
                             android:text="Selected Model"
                             android:textSize="14sp"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_add_nightly_model"
@@ -497,7 +503,8 @@
                             android:layout_weight="1"
                             android:text="Personalize AI"
                             android:textSize="14sp"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                         <ImageView
                             android:id="@+id/btn_edit_introduction"
@@ -517,7 +524,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         app:cardCornerRadius="8dp"
-                        app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                        app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                         app:strokeWidth="0dp"
                         android:visibility="gone">
 
@@ -532,7 +540,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:textSize="13sp"
-                                android:textColor="?attr/colorOnSurface"/>
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                             <LinearLayout
                                 android:layout_width="match_parent"

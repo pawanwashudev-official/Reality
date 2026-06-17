@@ -40,8 +40,8 @@
                 app:cardCornerRadius="24dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant"
-                app:cardBackgroundColor="?attr/colorSurface">
+                app:strokeColor="?attr/colorPrimaryContainer"
+                app:cardBackgroundColor="@android:color/transparent">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -63,7 +63,8 @@
                         android:text="Morning Reflection"
                         android:textSize="20sp"
                         android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                         android:layout_marginBottom="4dp"/>
 
                     <TextView
@@ -83,7 +84,7 @@
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:cardBackgroundColor="?attr/colorSurfaceContainer">
 
                 <LinearLayout
@@ -112,7 +113,8 @@
                             android:text="Wake Up Alarms"
                             android:textSize="16sp"
                             android:textStyle="bold"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                         <ImageButton
                             android:id="@+id/btnAlarmDefaults"

@@ -84,7 +84,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:hint="Enter your name"
-        app:boxBackgroundColor="?attr/colorSurfaceContainerHigh"
+        app:boxBackgroundColor="@android:color/transparent"
         app:boxStrokeColor="@color/md_theme_primary"
         app:hintTextColor="@color/md_theme_onSurfaceVariant"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox">

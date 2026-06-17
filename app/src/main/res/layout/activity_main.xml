@@ -42,10 +42,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Reality"
-                android:textColor="?attr/colorOnSurface"
+                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                 android:textSize="28sp"
                 android:textStyle="bold"
-                android:fontFamily="sans-serif-medium"/>
+                />
         </LinearLayout>
 
         <ImageView
@@ -109,8 +110,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="@dimen/corner_radius_large"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginTop="8dp">
 
@@ -133,7 +135,8 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Today's Progress"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                             android:textStyle="bold"
                             android:textSize="18sp"/>
 
@@ -312,7 +315,8 @@
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:text="Study Time"
-                                android:textColor="?attr/colorOnSurface"
+                                android:textColor="?attr/colorPrimary"
+
                                 android:textSize="14sp"
                                 android:layout_marginStart="8dp"/>
 
@@ -430,10 +434,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 app:cardCornerRadius="@dimen/corner_radius_xl"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="@android:color/transparent"
+
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                app:cardElevation="0dp">
+                >
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -467,7 +472,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Ready to Start"
-                                android:textColor="?attr/colorOnSurface"
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                                 android:textSize="24sp"
                                 android:textStyle="bold"
                                 android:layout_marginTop="4dp"/>
@@ -515,8 +521,9 @@
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
                     app:cardCornerRadius="@dimen/corner_radius_large"
-                    app:cardBackgroundColor="?attr/colorSurface"
-                    app:strokeColor="?attr/colorOutlineVariant"
+                    app:cardBackgroundColor="@android:color/transparent"
+
+                    app:strokeColor="?attr/colorPrimaryContainer"
                     app:strokeWidth="1dp">
 
                     <LinearLayout
@@ -536,7 +543,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Digital Life"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+
                             android:textStyle="bold"
                             android:textSize="16sp"/>
                         
@@ -558,8 +566,9 @@
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
                     app:cardCornerRadius="@dimen/corner_radius_large"
-                    app:cardBackgroundColor="?attr/colorSurface"
-                    app:strokeColor="?attr/colorOutlineVariant"
+                    app:cardBackgroundColor="@android:color/transparent"
+
+                    app:strokeColor="?attr/colorPrimaryContainer"
                     app:strokeWidth="1dp">
 
                     <LinearLayout
@@ -579,7 +588,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Focus Wall"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                             android:textStyle="bold"
                             android:textSize="16sp"/>
 
@@ -609,7 +619,8 @@
                     android:layout_weight="1"
                     android:layout_marginEnd="6dp"
                     app:cardCornerRadius="@dimen/corner_radius_medium"
-                    app:cardBackgroundColor="?attr/colorSurface"
+                    app:cardBackgroundColor="@android:color/transparent"
+
                     app:strokeColor="@color/accent_limits_container"
                     app:strokeWidth="1dp">
 
@@ -630,7 +641,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="App Constraints"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+
                             android:textStyle="bold"
                             android:textSize="13sp"
                             android:layout_marginTop="8dp"/>
@@ -652,7 +664,8 @@
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     app:cardCornerRadius="20dp"
-                    app:cardBackgroundColor="?attr/colorSurface"
+                    app:cardBackgroundColor="@android:color/transparent"
+
                     app:strokeColor="@color/accent_groups_container"
                     app:strokeWidth="1dp">
 
@@ -673,7 +686,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Category Limits"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                             android:textStyle="bold"
                             android:textSize="13sp"
                             android:layout_marginTop="8dp"/>
@@ -704,7 +718,8 @@
                     android:layout_weight="1"
                     android:layout_marginEnd="6dp"
                     app:cardCornerRadius="@dimen/corner_radius_medium"
-                    app:cardBackgroundColor="?attr/colorSurface"
+                    app:cardBackgroundColor="@android:color/transparent"
+
                     app:strokeColor="@color/accent_schedules_container"
                     app:strokeWidth="1dp">
 
@@ -730,7 +745,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Auto-Focus"
-                                android:textColor="?attr/colorOnSurface"
+                                android:textColor="?attr/colorPrimary"
+
                                 android:textStyle="bold"
                                 android:textSize="13sp"/>
                             <TextView
@@ -751,7 +767,8 @@
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     app:cardCornerRadius="16dp"
-                    app:cardBackgroundColor="?attr/colorSurface"
+                    app:cardBackgroundColor="@android:color/transparent"
+
                     app:strokeColor="@color/accent_bedtime_container"
                     app:strokeWidth="1dp">
 
@@ -777,7 +794,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Sleep Mode"
-                                android:textColor="?attr/colorOnSurface"
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                                 android:textStyle="bold"
                                 android:textSize="13sp"/>
                             <TextView
@@ -799,8 +817,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="240dp"
                 android:layout_marginTop="24dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutline"
+                app:cardBackgroundColor="@android:color/transparent"
+
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 app:cardCornerRadius="8dp">
 
@@ -855,7 +874,7 @@
                             android:layout_height="wrap_content"
                             android:text="> System Ready..."
                             android:textColor="?attr/colorPrimary"
-                            android:fontFamily="monospace"
+
                             android:textSize="12sp"
                             android:lineSpacingExtra="4dp"/>
                     </ScrollView>
@@ -885,7 +904,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="?attr/colorSurface"
+        android:background="@drawable/glass_card_bg"
         app:menu="@menu/bottom_nav_menu"
         app:labelVisibilityMode="labeled"
         app:elevation="8dp"

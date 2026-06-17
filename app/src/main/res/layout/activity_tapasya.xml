@@ -43,7 +43,8 @@
             android:text="Tapasya"
             android:textSize="22sp"
             android:textStyle="bold"
-            android:textColor="?attr/colorOnSurface"
+            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
             android:layout_marginStart="16dp"/>
 
         <ImageView
@@ -154,8 +155,9 @@
                         android:text="00:00:00"
                         android:textSize="48sp"
                         android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
-                        android:fontFamily="monospace"
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
+
                         android:shadowColor="#80000000"
                         android:shadowDx="0"
                         android:shadowDy="2"
@@ -168,7 +170,8 @@
                         android:layout_height="wrap_content"
                         android:text="Ready"
                         android:textSize="16sp"
-                        android:textColor="?attr/colorOnSurface"
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                         android:alpha="0.8"
                         android:layout_marginTop="4dp"
                         android:shadowColor="#80000000"
@@ -183,7 +186,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         app:cardCornerRadius="16dp"
-                        app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                        app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                         app:strokeWidth="0dp"
                         android:visibility="gone">
                         
@@ -206,7 +210,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="15 XP"
-                                android:textColor="?attr/colorOnSurface"
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                                 android:textSize="14sp"
                                 android:textStyle="bold"
                                 android:layout_marginStart="6dp"/>
@@ -223,7 +228,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Frag 1"
-                                android:textColor="?attr/colorOnSurface"
+                                android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                                 android:alpha="0.8"
                                 android:textSize="13sp"/>
                         </LinearLayout>
@@ -319,7 +325,8 @@
                         android:text="Scheduled Sessions"
                         android:textSize="18sp"
                         android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                         android:layout_marginStart="4dp"/>
 
                     <com.google.android.material.button.MaterialButton
@@ -337,7 +344,8 @@
                     android:id="@+id/card_calendar_perm"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardBackgroundColor="@android:color/transparent"
+        app:cardElevation="0dp"
                     app:cardCornerRadius="16dp"
                     app:strokeWidth="0dp"
                     android:visibility="gone">
@@ -412,7 +420,8 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Today"
-                        android:textColor="?attr/colorOnSurface"
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:gravity="center"/>

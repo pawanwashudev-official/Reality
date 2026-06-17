@@ -43,15 +43,17 @@
                 android:text="Features"
                 android:textColor="?attr/colorPrimary"
                 android:textStyle="bold"
+                                android:fontFamily="monospace"
                 android:layout_marginBottom="12dp" />
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_features"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp">
 
@@ -79,9 +81,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Reality Features"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -106,15 +110,17 @@
                 android:text="Language"
                 android:textColor="?attr/colorPrimary"
                 android:textStyle="bold"
+                                android:fontFamily="monospace"
                 android:layout_marginBottom="12dp" />
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_language"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp">
 
@@ -142,9 +148,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="App Language"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -168,9 +176,10 @@
                 android:id="@+id/card_reality_pro_verification"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp"
                 android:visibility="gone">
@@ -199,9 +208,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Reality Pro Verification"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -227,15 +238,17 @@
                 android:text="Account"
                 android:textColor="?attr/colorPrimary"
                 android:textStyle="bold"
+                                android:fontFamily="monospace"
                 android:layout_marginBottom="12dp" />
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_account"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp">
 
@@ -268,9 +281,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Sign in with Google"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
 
                         <TextView
                             android:id="@+id/tv_account_status"
@@ -296,6 +311,7 @@
                 android:text="Essentials"
                 android:textColor="?attr/colorPrimary"
                 android:textStyle="bold"
+                                android:fontFamily="monospace"
                 android:layout_marginBottom="12dp" />
 
             <!-- Reminders -->
@@ -303,9 +319,10 @@
                 android:id="@+id/card_settings_reminders"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="12dp">
 
@@ -333,9 +350,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Reminders"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -358,9 +377,10 @@
                 android:id="@+id/card_settings_calendar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp">
 
@@ -388,9 +408,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Schedule Settings"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -415,6 +437,7 @@
                 android:text="Blocking"
                 android:textColor="?attr/colorPrimary"
                 android:textStyle="bold"
+                                android:fontFamily="monospace"
                 android:layout_marginBottom="12dp" />
 
             <!-- Blocklist is managed from Home Page Focus Wall card -->
@@ -423,9 +446,10 @@
                 android:id="@+id/card_block_messages"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp">
 
@@ -453,9 +477,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Block Screen Messages"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -477,9 +503,10 @@
                 android:id="@+id/card_auto_dnd"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp">
                 
@@ -507,9 +534,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Auto Do Not Disturb"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
 
                         <TextView
                             android:id="@+id/tv_dnd_status"
@@ -534,9 +563,10 @@
                 android:id="@+id/card_reality_sleep"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp"
                 android:visibility="gone">
@@ -565,9 +595,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Reality Sleep Mode"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
 
                         <TextView
                             android:id="@+id/tv_reality_sleep_status"
@@ -594,13 +626,15 @@
                 android:text="Security"
                 android:textColor="?attr/colorPrimary"
                 android:textStyle="bold"
+                                android:fontFamily="monospace"
                 android:layout_marginBottom="12dp" />
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_strict_mode"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorError"
                 app:strokeWidth="1dp">
@@ -629,9 +663,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Strict Mode"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
 
                         <TextView
                             android:id="@+id/tv_strict_status"
@@ -655,9 +691,10 @@
                 android:id="@+id/card_about"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="24dp">
@@ -686,9 +723,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="About Reality"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -713,6 +752,7 @@
                 android:text="AI &amp; Intelligence"
                 android:textColor="?attr/colorPrimary"
                 android:textStyle="bold"
+                                android:fontFamily="monospace"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="12dp" />
 
@@ -720,9 +760,10 @@
                 android:id="@+id/card_ai_settings"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp">
 
@@ -750,9 +791,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="AI Configuration"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
                             
                         <TextView
                             android:layout_width="wrap_content"
@@ -775,9 +818,10 @@
                 android:id="@+id/card_nightly_settings"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp">
 
@@ -805,9 +849,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Nightly Settings"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
                             
                         <TextView
                             android:layout_width="wrap_content"
@@ -830,9 +876,10 @@
                 android:id="@+id/card_reflection_settings"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp">
 
@@ -860,9 +907,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Reflection Settings"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
                             
                         <TextView
                             android:layout_width="wrap_content"
@@ -885,9 +934,10 @@
                 android:id="@+id/card_tapasya_settings"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp">
 
@@ -915,9 +965,11 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Tapasya Settings"
-                            android:textColor="?attr/colorOnSurface"
+                            android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                                 />
                             
                         <TextView
                             android:layout_width="wrap_content"
@@ -942,15 +994,17 @@
                 android:text="Developer"
                 android:textColor="?attr/colorPrimary"
                 android:textStyle="bold"
+                                android:fontFamily="monospace"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="12dp" />
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp">
 
@@ -984,9 +1038,11 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Show Terminal Log"
-                                android:textColor="?attr/colorOnSurface"
+                                android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
                                 android:textSize="16sp"
-                                android:textStyle="bold" />
+                                android:textStyle="bold"
+                                 />
 
                             <TextView
                                 android:layout_width="wrap_content"

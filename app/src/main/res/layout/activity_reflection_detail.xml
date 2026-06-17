@@ -35,7 +35,7 @@
                 android:layout_marginEnd="4dp"
                 android:padding="10dp"
                 android:src="@drawable/baseline_settings_24"
-                app:tint="?attr/colorOnSurface"
+                app:tint="?attr/colorPrimary"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Reflection Settings"/>
 
@@ -64,9 +64,9 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="16dp">
 
@@ -192,9 +192,9 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="16dp">
 
@@ -211,7 +211,8 @@
                         android:text="Today's XP Breakdown"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                         android:layout_marginBottom="16dp"/>
 
                     <!-- Tapasya -->
@@ -226,7 +227,8 @@
                             android:layout_height="wrap_content"
                             android:text="🧘 Tapasya XP"
                             android:textSize="14sp"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
                         <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
                         <TextView
                             android:id="@+id/tv_tapasya_xp"
@@ -249,7 +251,8 @@
                             android:layout_height="wrap_content"
                             android:text="✅ Task XP"
                             android:textSize="14sp"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
                         
                         <ImageView
                             android:id="@+id/btn_calc_task_xp"
@@ -268,7 +271,8 @@
                             android:text="+0"
                             android:textSize="14sp"
                             android:textStyle="bold"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
                     </LinearLayout>
 
                     <LinearLayout
@@ -282,7 +286,8 @@
                             android:layout_height="wrap_content"
                             android:text="📅 Session XP"
                             android:textSize="14sp"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
                         <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
                         <TextView
                             android:id="@+id/tv_session_xp"
@@ -291,7 +296,8 @@
                             android:text="+0"
                             android:textSize="14sp"
                             android:textStyle="bold"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
                     </LinearLayout>
 
                     <LinearLayout
@@ -305,7 +311,8 @@
                             android:layout_height="wrap_content"
                             android:text="📖 Diary XP"
                             android:textSize="14sp"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
                         <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
                         <TextView
                             android:id="@+id/tv_diary_xp"
@@ -328,7 +335,8 @@
                             android:layout_height="wrap_content"
                             android:text="📱 Distraction XP"
                             android:textSize="14sp"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
                         <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
                         <TextView
                             android:id="@+id/tv_bonus_xp"
@@ -348,9 +356,9 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="16dp">
 
@@ -374,7 +382,8 @@
                             android:text="📈 XP History"
                             android:textSize="16sp"
                             android:textStyle="bold"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                         <Spinner
                             android:id="@+id/spinner_xp_range"
@@ -396,9 +405,9 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="16dp">
 
@@ -422,7 +431,8 @@
                             android:text="⏱️ Study Time"
                             android:textSize="16sp"
                             android:textStyle="bold"
-                            android:textColor="?attr/colorOnSurface"/>
+                            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"/>
 
                         <Spinner
                             android:id="@+id/spinner_study_range"
@@ -444,9 +454,9 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="16dp">
 
@@ -462,7 +472,8 @@
                         android:text="📜 Detailed History"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
+                        android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
                         android:layout_marginBottom="12dp"/>
 
                     <androidx.recyclerview.widget.RecyclerView

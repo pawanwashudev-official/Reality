@@ -36,7 +36,8 @@
             android:text="Reality Pro Required"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:textColor="?attr/colorOnSurface"
+            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
             android:layout_marginBottom="8dp"/>
 
         <TextView

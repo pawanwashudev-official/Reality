@@ -97,7 +97,8 @@
             android:text="No Apps Found"
             android:textStyle="bold"
             android:textSize="16sp"
-            android:textColor="?attr/colorOnSurface"
+            android:textColor="?attr/colorPrimary"
+        android:fontFamily="monospace"
             android:layout_marginTop="16dp" />
         
         <TextView
