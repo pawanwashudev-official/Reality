@@ -788,13 +788,12 @@
                 android:id="@+id/section_elite"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
+                android:orientation="vertical">
                 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Elite Aesthetics 3.0"
+                    android:text="Neural Engine / Cinematic Aesthetics"
                     android:textSize="18sp"
                     android:textColor="?attr/colorPrimary"
                     android:textStyle="bold"

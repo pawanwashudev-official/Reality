@@ -33,7 +33,7 @@
                 android:id="@+id/tv_greeting"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Welcome Back,"
+                android:text="Neural Link Established,"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:textSize="14sp" />
 
