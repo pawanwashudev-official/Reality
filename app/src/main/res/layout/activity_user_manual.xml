@@ -49,7 +49,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Welcome to Reality"
+                        android:text="Welcome to Neural Engine"
                         android:textSize="20sp"
                         android:textStyle="bold"
                         android:textColor="?attr/colorPrimary" />
@@ -110,7 +110,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="This is the heart of Reality. Every night, the app helps you close your day:\n\n1. Review your day's data (Screen time, Tasks).\n2. Write a reflection diary (saved to Google Docs).\n3. Get AI Feedback and XP for your day.\n4. Plan your next day (Tasks &amp; Calendar).\n\nStart it from the 'Nightly' tab at the bottom."
+                android:text="This is the heart of Reality. Every night, the app helps you close your day:\n\n1. Review your day's data (Screen time, Tasks).\n2. Write a reflection diary (saved to Google Docs).\n3. Get AI Feedback and XP for your day.\n4. Plan your next day (Tasks &amp; Calendar).\n\nStart it from the 'Neural Protocol' tab at the bottom."
                 android:textSize="14sp"
                 android:layout_marginBottom="24dp" />
 

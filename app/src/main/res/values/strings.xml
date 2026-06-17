@@ -29,9 +29,9 @@
     <string name="timed_mode">Timed Mode</string>
     <string name="block_all_uninstall_attempts_for_a_set_amount_of_days">Block all uninstall attempts for a specified number of days.</string>
     <string name="password_mode">Password Mode</string>
-    <string name="block_all_uninstall_attempts_until_you_remove_anti_uninstall_with_a_password">Block all uninstall attempts until the anti-uninstall protection is removed with a password</string>
+    <string name="block_all_uninstall_attempts_until_you_remove_anti_uninstall_with_a_password">Block all uninstall attempts until the Armored Mode protection is removed with a password</string>
     <string name="next">Next</string>
-    <string name="password_mode_desc">Make sure not to forget this password. You may not be able to exit anti-uninstall without it.</string>
+    <string name="password_mode_desc">Make sure not to forget this password. You may not be able to exit Armored Mode without it.</string>
     <string name="turn_on">Turn On</string>
     <string name="timed_mode_desc">How long would you like to keep anti-uninstall enabled?</string>
     <string name="turn_on_anti_uninstall">Turn on Armored Strict Mode</string>
@@ -66,7 +66,7 @@
     <string name="end_time_must_be_after_start_time_has_passed">End time must be after start time has passed!</string>
     <string name="end_time">End Time: %1$02d:%2$02d</string>
     <string name="start_time_02d_02d">Start Time: %1$02d:%2$02d</string>
-    <string name="remaining_time_anti_uninstall">You still have %1$d days to go before unlocking anti-uninstall</string>
+    <string name="remaining_time_anti_uninstall">You still have %1$d days to go before unlocking Armored Mode</string>
     <string name="app_s_selected">%1$d app(s) selected</string>
     <string name="please_specify_start_time_first">Please Specify Start Time first</string>
     <string name="please_type_a_title">Please type a title</string>
@@ -94,10 +94,10 @@
     <string name="discard_changes">Discard Changes?</string>
     <string name="are_you_sure_you_want_to_discard_all_changes_and_exit">Are you sure you want to discard all changes and exit?</string>
     <string name="yes">Yes</string>
-    <string name="if_you_enable_this_you_won_t_be_able_to_change_configurations_such_as_adding_blocked_apps_keywords_and_more">If you enable this, you won\'t be able to change configurations such as adding blocked apps, keywords, and more until you remove anti-uninstall. Your existing changes will be used for the entire period.</string>
+    <string name="if_you_enable_this_you_won_t_be_able_to_change_configurations_such_as_adding_blocked_apps_keywords_and_more">If you enable this, you won\'t be able to change configurations such as adding blocked apps, keywords, and more until you remove Armored Mode. Your existing changes will be used for the entire period.</string>
     <string name="alert">Alert!!</string>
     <string name="i_understand">I Understand</string>
-    <string name="are_you_sure_you_want_to_turn_on_anti_uninstall_there_is_no_turning_back">ARE YOU SURE YOU WANT TO TURN ON ANTI UNINSTALL? There is no turning back...</string>
+    <string name="are_you_sure_you_want_to_turn_on_anti_uninstall_there_is_no_turning_back">ENGAGE ARMORED STRICT MODE? There is no turning back...</string>
     <string name="configure_blocker">Configure Blocker</string>
     <string name="select_apps">Select Apps</string>
     <string name="setup_auto_focus">Setup Auto-Focus</string>
