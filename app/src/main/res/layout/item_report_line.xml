@@ -9,7 +9,7 @@
         android:id="@+id/item_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="#EEEEEE"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="14sp"
         android:lineSpacingMultiplier="1.2"
         android:fontFamily="sans-serif"

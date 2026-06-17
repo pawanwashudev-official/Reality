@@ -20,7 +20,7 @@ export default function TermsOfService() {
             <div className="space-y-10">
               <section>
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Acceptance of Terms</h2>
-                <p>By downloading, accessing, or using the Reality application (&quot;the App&quot;), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the App.</p>
+                <p>By downloading, accessing, or using the Reality Engine application (&quot;the App&quot;), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the App.</p>
               </section>
 
               <section>

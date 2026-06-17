@@ -23,7 +23,7 @@
 
 <p>While advanced features (like Neural Protocol, Gamification, and Google Workspace Sync) require a one-time Reality Pro payment to support ongoing maintenance, the app remains 100% open source. You can always build the APK yourself from the source code.</p>
 
-[**🌐 Official Website**](https://neubofyreality.vercel.app) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
+[**🌐 Official Website**](https://reality.neubofy.in) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
 
 </div>
 
@@ -924,12 +924,12 @@ Built by someone who lost control of their own fingers. Designed for those who w
 
 <br><br>
 
-[**🌐 Official Website**](https://neubofyreality.vercel.app) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
+[**🌐 Official Website**](https://reality.neubofy.in) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
 
 <br><br>
 
-<a href='https://reality-digital-wellbeing-and-focus.en.uptodown.com/android' title='Download Reality - The Intelligent Life OS' >
-    <img src='https://stc.utdstc.com/img/mediakit/download-aao-big.png' alt='Download Reality - The Intelligent Life OS'>
+<a href='https://reality-digital-wellbeing-and-focus.en.uptodown.com/android' title='Download Reality Engine - The Intelligent Life OS' >
+    <img src='https://stc.utdstc.com/img/mediakit/download-aao-big.png' alt='Download Reality Engine - The Intelligent Life OS'>
 </a>
 
 </div>

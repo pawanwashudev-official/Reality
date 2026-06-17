@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#050510"
+    android:background="?android:colorBackground"
     android:fitsSystemWindows="true">
 
     <!-- Main Content -->
@@ -36,7 +36,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Morning Focus"
-            android:textColor="#FFFFFF"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="36sp"
             android:textStyle="bold"
             android:gravity="center"

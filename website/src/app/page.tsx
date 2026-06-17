@@ -41,13 +41,13 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
             <Link
-              href="https://github.com/Pawan-Washudev/reality-app/releases/latest"
+              href="https://github.com/pawanwashudev-official/Reality/releases/latest"
               className="w-full sm:w-auto px-8 py-4 bg-white text-black text-lg font-bold rounded-xl hover:bg-gray-200 transition-colors shadow-lg"
             >
               Get Professional APK
             </Link>
             <Link
-              href="https://github.com/Pawan-Washudev/reality-app"
+              href="https://github.com/pawanwashudev-official/Reality"
               className="w-full sm:w-auto px-8 py-4 bg-neural-card border border-gray-700 text-white text-lg font-bold rounded-xl hover:border-gray-500 transition-colors shadow-lg"
             >
               View Source Code
@@ -149,11 +149,23 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Quote Section */}
+      <section className="py-20 border-t border-gray-800 bg-black">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold text-white mb-6">
+            "Your data. Your focus. Your life. On YOUR terms."
+          </h2>
+          <p className="text-lg text-gray-400 mb-8">
+            Built by someone who lost control of their own fingers. Designed for those who want it back.
+          </p>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-black py-8 border-t border-gray-900">
         <div className="max-w-7xl mx-auto px-4 text-center text-gray-600 text-sm">
           <p>© {new Date().getFullYear()} Neubofy. All rights reserved.</p>
-          <p className="mt-2">Reality App is an open-source project managed by Pawan Washudev.</p>
+          <p className="mt-2">Reality Engine is an open-source project managed by Pawan Washudev.</p>
         </div>
       </footer>
     </div>

@@ -154,7 +154,7 @@ A unique feature inspired by Eastern philosophy.
 | **Arratai** | [@pawanwashudev](https://arratai.com/@pawanwashudev) |
 | **GitHub** | [pawanwashudev-official](https://github.com/pawanwashudev-official) |
 | **Email** | pawanwashudev@gmail.com |
-| **Website** | [neubofyreality.vercel.app](https://neubofyreality.vercel.app) |
+| **Website** | [reality.neubofy.in](https://reality.neubofy.in) |
 
 ---
 

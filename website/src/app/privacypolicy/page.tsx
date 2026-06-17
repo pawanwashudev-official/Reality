@@ -18,7 +18,7 @@ export default function PrivacyPolicy() {
 
           <div className="prose prose-blue max-w-none text-gray-600">
             <p className="text-lg leading-relaxed mb-8">
-              At Neubofy, we believe your data is yours. The Reality app was built with a fundamental &quot;Zero Trust&quot; architecture, meaning we do not want your data, we do not store your data, and we have no servers to send your data to.
+              At Neubofy, we believe your data is yours. The Reality Engine app was built with a fundamental &quot;Zero Trust&quot; architecture, meaning we do not want your data, we do not store your data, and we have no servers to send your data to.
             </p>
 
             <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg mb-10">

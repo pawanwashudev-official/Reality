@@ -81,7 +81,7 @@
             android:layout_weight="1"
             android:clipToPadding="false"
             android:paddingHorizontal="16dp"
-            android:paddingBottom="80dp"/> 
+            />
     </LinearLayout>
 
     <!-- Permission Request Card (Overlay) -->

@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="24dp"
-        android:paddingTop="48dp"
+
         android:paddingBottom="32dp">
 
         <!-- Header -->
