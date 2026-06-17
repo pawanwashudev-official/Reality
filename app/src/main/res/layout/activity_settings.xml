@@ -80,9 +80,14 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+<<<<<<< HEAD
                             android:text="Reality Features"
                             android:textColor="?attr/colorPrimary"
                                 android:fontFamily="monospace"
+=======
+                            android:text="Neural Features"
+                            android:textColor="?attr/colorOnSurface"
+>>>>>>> origin/main
                             android:textSize="16sp"
                             android:textStyle="bold"
                                  />
@@ -722,9 +727,14 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+<<<<<<< HEAD
                             android:text="About Reality"
                             android:textColor="?attr/colorPrimary"
                                 android:fontFamily="monospace"
+=======
+                            android:text="About Neural Engine"
+                            android:textColor="?attr/colorOnSurface"
+>>>>>>> origin/main
                             android:textSize="16sp"
                             android:textStyle="bold"
                                  />
@@ -813,7 +823,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Nightly Settings -->
+            <!-- Neural Protocol Settings -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_nightly_settings"
                 android:layout_width="match_parent"
@@ -848,9 +858,14 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+<<<<<<< HEAD
                             android:text="Nightly Settings"
                             android:textColor="?attr/colorPrimary"
                                 android:fontFamily="monospace"
+=======
+                            android:text="Neural Protocol Settings"
+                            android:textColor="?attr/colorOnSurface"
+>>>>>>> origin/main
                             android:textSize="16sp"
                             android:textStyle="bold"
                                  />
