@@ -3,6 +3,7 @@ package com.neubofy.reality.ui.activity
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
 import com.neubofy.reality.databinding.ActivityHealthDashboardBinding
 import com.neubofy.reality.utils.ThemeManager
@@ -17,7 +18,7 @@ import android.widget.TextView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.neubofy.reality.R
 
-class HealthDashboardActivity : AppCompatActivity() {
+class HealthDashboardActivity : BaseActivity() {
 
     private lateinit var binding: ActivityHealthDashboardBinding
 

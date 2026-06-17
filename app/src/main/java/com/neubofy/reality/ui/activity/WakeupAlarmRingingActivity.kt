@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.WindowManager
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.R
 import com.google.android.material.button.MaterialButton
 import java.text.SimpleDateFormat
@@ -17,7 +18,7 @@ import java.util.Locale
 
 import com.neubofy.reality.utils.ThemeManager
 
-class WakeupAlarmRingingActivity : AppCompatActivity() {
+class WakeupAlarmRingingActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)

@@ -3,6 +3,7 @@ package com.neubofy.reality.ui.activity
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
@@ -12,7 +13,7 @@ import com.neubofy.reality.ui.fragments.installation.AccessibilityGuide
 import com.neubofy.reality.ui.fragments.installation.PermissionsFragment
 import com.neubofy.reality.ui.fragments.installation.WelcomeFragment
 
-class FragmentActivity : AppCompatActivity() {
+class FragmentActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

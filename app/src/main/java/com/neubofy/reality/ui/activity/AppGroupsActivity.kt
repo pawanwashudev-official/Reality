@@ -2,6 +2,7 @@ package com.neubofy.reality.ui.activity
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.google.android.material.tabs.TabLayoutMediator
@@ -10,7 +11,7 @@ import com.neubofy.reality.ui.fragments.AllAppsFragment
 import com.neubofy.reality.ui.fragments.AppLimitsFragment
 import com.neubofy.reality.ui.fragments.GroupsFragment
 
-class AppGroupsActivity : AppCompatActivity() {
+class AppGroupsActivity : BaseActivity() {
 
     private lateinit var binding: ActivityAppGroupsBinding
 

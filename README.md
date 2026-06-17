@@ -21,7 +21,7 @@
 
 ### 🌟 100% Open Source • No Ads • No Trackers • Any AI (BYO Key)
 
-<p>While advanced features (like Nightly Protocol, Gamification, and Google Workspace Sync) require a one-time Reality Pro payment to support ongoing maintenance, the app remains 100% open source. You can always build the APK yourself from the source code.</p>
+<p>While advanced features (like Neural Protocol, Gamification, and Google Workspace Sync) require a one-time Reality Pro payment to support ongoing maintenance, the app remains 100% open source. You can always build the APK yourself from the source code.</p>
 
 [**🌐 Official Website**](https://neubofyreality.vercel.app) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
 
@@ -49,7 +49,7 @@
 **Reality** is a military-grade productivity operating system that combines:
 - **App Blocking Engine** (accessibility service-based protection)
 - **Gamification System** (XP/Streak-based discipline tracking)
-- **AI-Powered Nightly Protocol** (daily reflection, planning, & reporting)
+- **AI-Powered Neural Protocol** (daily reflection, planning, & reporting)
 - **Google Workspace Integration** (Tasks, Calendar, Drive, Docs, Sheets)
 - **Health Connect Sync** (steps, calories, sleep tracking)
 - **Intelligent Alarm System** (adaptive wake-up with math challenges)
@@ -91,7 +91,7 @@
   - Prevents accessibility service disable attempts
   - Monitors for adb shell bypasses
 
-#### Tapasya Mode (Ultra-Focus) 🔥
+#### Neural Focus Mode (Ultra-Focus) 🔥
 - Named after Sanskrit for "deep, burning discipline"
 - **Auto-activation** on scheduled focus times
 - **State Persistence** across device reboots (via BootReceiver)
@@ -175,9 +175,9 @@ The cornerstone of Reality's intelligence. A fully autonomous 4-phase evening wo
   - Categorizes: Due Today, Completed, Pending
   - Task statistics (pending count, completion %)
 
-- **Step 2: Fetch Calendar + Tapasya Sessions**
+- **Step 2: Fetch Calendar + Neural Focus Sessions**
   - Google Calendar events for the day
-  - Tapasya deep-work session logs
+  - Neural Focus deep-work session logs
   - Event duration & completion status
 
 - **Step 3: Calculate Screen Time & Health Metrics**
@@ -263,7 +263,7 @@ The cornerstone of Reality's intelligence. A fully autonomous 4-phase evening wo
 
 #### **Phase 4: Reporting & Notifications** 📈
 - Dashboard updates with today's XP gain
-- Widgets refresh (Nightly Report Widget, Plan Widget)
+- Widgets refresh (Neural Report Widget, Plan Widget)
 - Optional email reports (Gemini workspace integration)
 
 ---
@@ -359,7 +359,7 @@ The cornerstone of Reality's intelligence. A fully autonomous 4-phase evening wo
   - Local database alarms (custom created)
   - Google Tasks deadlines (synced)
   - Google Calendar notifications (synced)
-  - Nightly Protocol alarms (AI-generated)
+  - Neural Protocol alarms (AI-generated)
 
 #### Alarm Features
 - **Full-Screen Interrupt** (notification policy access required)
@@ -418,7 +418,7 @@ The cornerstone of Reality's intelligence. A fully autonomous 4-phase evening wo
 ### 9. **DEVICE CONTROL & ADMINISTRATION** 🔐
 
 #### Device Admin Features
-- **Anti-Uninstall Protection**
+- **Armored Strict Mode Protection**
   - Prevents app deletion during active focus
   - Requires security unlock
 
@@ -453,14 +453,14 @@ The cornerstone of Reality's intelligence. A fully autonomous 4-phase evening wo
   - Usage Limits
   - Strict Mode Rules
   - Gamification (XP/Streak)
-  - Nightly Protocol Settings
+  - Neural Protocol Settings
   - AI Model Preferences
   - Theme & Appearance
   - Block Messages
   - Reminders
   - App Groups
   - Per-App Limits
-  - Tapasya Sessions
+  - Neural Focus Sessions
   - Daily Statistics
   - App Blocking Configurations
 
@@ -480,7 +480,7 @@ The cornerstone of Reality's intelligence. A fully autonomous 4-phase evening wo
 
 ### 11. **ADVANCED FEATURES - HIDDEN GEMS** 🔮
 
-#### Tapasya Sessions (`TapasyaActivity`)
+#### Neural Focus Sessions (`TapasyaActivity`)
 - **Deep Work Time-Boxing**
   - Start focused work session
   - Customizable duration (30min - 4h)
@@ -495,7 +495,7 @@ The cornerstone of Reality's intelligence. A fully autonomous 4-phase evening wo
   - Lightweight widget
   - Persistent across activities
 
-- **Nightly Report Widget**
+- **Neural Report Widget**
   - Shows yesterday's XP earned
   - Daily achievements summary
   - Quick-click to view full report
@@ -505,7 +505,7 @@ The cornerstone of Reality's intelligence. A fully autonomous 4-phase evening wo
   - Upcoming calendar blocks
   - XP progress bar
 
-- **Tapasya Widget**
+- **Neural Focus Widget**
   - Current session status
   - Time remaining
   - One-tap start/stop
@@ -717,7 +717,7 @@ Parsing:        GSON, JSoup, Markwon
 | **AI Agent** | 🟢 Autonomous (Plans/Alarms/Reports) | 🔴 None |
 | **Google Integration** | 🟢 Full Ecosystem (Tasks, Cal, Drive, Docs) | 🔴 None |
 | **XP System** | 🟢 Dynamic (bonus/penalty) | 🟡 Simple Counter |
-| **Nightly Protocol** | 🟢 4-Phase AI Ritual | 🔴 None |
+| **Neural Protocol** | 🟢 4-Phase AI Ritual | 🔴 None |
 | **Health Sync** | 🟢 Steps, Calories, Sleep | 🔴 None |
 | **Battery Impact** | 🟢 <1% | 🟡 Standard |
 
@@ -727,7 +727,7 @@ Parsing:        GSON, JSoup, Markwon
 | **Price** | 🟢 Open Source | 🔴 Subscription ($5-15/mo) |
 | **Blocking Tech** | 🟢 Native Accessibility | 🔴 VPN-Based (high battery) |
 | **Bypass Protection** | 🟢 Loop Hole Closers (5+ checks) | 🟡 Good but VPN-limited |
-| **AI Planning** | 🟢 Yes (Nightly Protocol) | 🔴 No |
+| **AI Planning** | 🟢 Yes (Neural Protocol) | 🔴 No |
 | **Google Sync** | 🟢 Full | 🔴 None |
 | **Data Privacy** | 🟢 Yours Alone | 🟡 Via VPN servers |
 | **Open Source** | 🟢 Yes | 🔴 No |
@@ -738,7 +738,7 @@ Parsing:        GSON, JSoup, Markwon
 | **Price** | 🟢 Open Source | 🟡 Freemium + Paid |
 | **Blocking** | 🟢 Advanced (Strict Mode) | 🟡 Standard |
 | **Gamification** | 🟢 Advanced XP/Levels | 🔴 None |
-| **AI Features** | 🟢 Full Nightly Protocol | 🔴 None |
+| **AI Features** | 🟢 Full Neural Protocol | 🔴 None |
 | **Workspace Sync** | 🟢 Full Google Integration | 🔴 None |
 | **Health Integration** | 🟢 Yes | 🔴 No |
 | **Report Generation** | 🟢 PDF + Docs | 🔴 Basic Stats |
@@ -809,7 +809,7 @@ Parsing:        GSON, JSoup, Markwon
 - Internet (Google APIs)
 - Network State (connectivity check)
 - Device Admin (anti-uninstall)
-- Schedule Exact Alarm (Nightly Protocol)
+- Schedule Exact Alarm (Neural Protocol)
 - Query All Packages (app listing)
 - Usage Stats (screen time)
 - Access Notification Policy (DND mode)
@@ -888,8 +888,8 @@ Parsing:        GSON, JSoup, Markwon
 
 ### Power User Setup (15 minutes)
 1. Connect Google Account (Tasks, Calendar, Drive)
-2. Configure Nightly Protocol settings
-3. Set up Tapasya sessions
+2. Configure Neural Protocol settings
+3. Set up Neural Focus sessions
 4. Enable Health Connect sync
 5. Customize appearance theme
 6. Import backup (if migrating from another device)

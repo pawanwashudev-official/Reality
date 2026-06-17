@@ -2,6 +2,7 @@ package com.neubofy.reality.ui.activity
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.google.android.material.tabs.TabLayoutMediator
@@ -9,7 +10,7 @@ import com.neubofy.reality.databinding.ActivityUnifiedBlocklistBinding
 import com.neubofy.reality.ui.fragments.BlocklistAppsFragment
 import com.neubofy.reality.ui.fragments.BlocklistWebsitesFragment
 
-class UnifiedBlocklistActivity : AppCompatActivity() {
+class UnifiedBlocklistActivity : BaseActivity() {
     private lateinit var binding: ActivityUnifiedBlocklistBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {

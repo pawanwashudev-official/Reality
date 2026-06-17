@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Section: Nightly Protocol Schedule -->
+            <!-- Section: Neural Protocol Schedule -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

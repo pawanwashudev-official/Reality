@@ -3,6 +3,7 @@ package com.neubofy.reality.ui.activity
 import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import com.neubofy.reality.ui.base.BaseActivity
 import androidx.core.view.WindowCompat
 import com.neubofy.reality.R
 import com.neubofy.reality.ui.fragments.installation.OnboardingPermissionsFragment
@@ -11,7 +12,7 @@ import com.neubofy.reality.ui.fragments.installation.OnboardingPermissionsFragme
  * Onboarding activity that hosts the permissions setup flow.
  * This is shown on first launch after the user enters their name.
  */
-class OnboardingActivity : AppCompatActivity() {
+class OnboardingActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
