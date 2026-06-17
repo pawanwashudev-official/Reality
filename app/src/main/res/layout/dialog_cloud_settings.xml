@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:padding="24dp"
+    android:background="@drawable/dialog_glass_background">
 
     <TextView
         android:layout_width="match_parent"
@@ -11,6 +12,8 @@
         android:text="Configure Google Cloud BYOK\n1. Create a Desktop OAuth Client ID in Google Cloud Console.\n2. Set Redirect URI to http://127.0.0.1\n3. Paste ID and Secret below."
         android:textSize="16sp"
         android:textStyle="bold"
+        android:fontFamily="monospace"
+        android:textColor="?attr/colorPrimary"
         android:layout_marginBottom="16dp"/>
 
     <com.google.android.material.textfield.TextInputLayout

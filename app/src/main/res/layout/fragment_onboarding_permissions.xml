@@ -21,7 +21,7 @@
             android:text="🔐 Setup Permissions"
             android:textSize="28sp"
             android:textStyle="bold"
-            android:textColor="@color/onboarding_text_primary"
+            android:textColor="?attr/colorOnSurface"
             android:layout_marginBottom="8dp" />
 
         <TextView
@@ -29,7 +29,7 @@
             android:layout_height="wrap_content"
             android:text="Reality needs these permissions to protect your focus. Tap each card to grant."
             android:textSize="14sp"
-            android:textColor="@color/onboarding_text_secondary"
+            android:textColor="?attr/colorOnSurfaceVariant"
             android:lineSpacingMultiplier="1.3"
             android:layout_marginBottom="32dp" />
 
@@ -39,9 +39,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="@color/onboarding_card_bg"
+            app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="16dp"
-            app:strokeColor="@color/onboarding_card_stroke"
+            app:strokeColor="?attr/colorPrimaryContainer"
             app:strokeWidth="1dp"
             app:cardElevation="0dp"
             android:clickable="true"
@@ -83,7 +83,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Accessibility Service"
-                                android:textColor="@color/onboarding_text_primary"
+                                android:textColor="?attr/colorOnSurface"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
 
@@ -100,7 +100,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Detects which app you're using to block distractions"
-                            android:textColor="@color/onboarding_text_secondary"
+                            android:textColor="?attr/colorOnSurfaceVariant"
                             android:textSize="12sp"
                             android:layout_marginTop="4dp" />
                     </LinearLayout>
@@ -134,9 +134,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="@color/onboarding_card_bg"
+            app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="16dp"
-            app:strokeColor="@color/onboarding_card_stroke"
+            app:strokeColor="?attr/colorPrimaryContainer"
             app:strokeWidth="1dp"
             app:cardElevation="0dp"
             android:clickable="true"
@@ -178,7 +178,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Display Over Apps"
-                                android:textColor="@color/onboarding_text_primary"
+                                android:textColor="?attr/colorOnSurface"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
 
@@ -195,7 +195,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Shows block screens when you try to open blocked apps"
-                            android:textColor="@color/onboarding_text_secondary"
+                            android:textColor="?attr/colorOnSurfaceVariant"
                             android:textSize="12sp"
                             android:layout_marginTop="4dp" />
                     </LinearLayout>
@@ -228,9 +228,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="@color/onboarding_card_bg"
+            app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="16dp"
-            app:strokeColor="@color/onboarding_card_stroke"
+            app:strokeColor="?attr/colorPrimaryContainer"
             app:strokeWidth="1dp"
             app:cardElevation="0dp"
             android:clickable="true"
@@ -272,7 +272,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Usage Statistics"
-                                android:textColor="@color/onboarding_text_primary"
+                                android:textColor="?attr/colorOnSurface"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
 
@@ -289,7 +289,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Tracks app usage time for limits and statistics"
-                            android:textColor="@color/onboarding_text_secondary"
+                            android:textColor="?attr/colorOnSurfaceVariant"
                             android:textSize="12sp"
                             android:layout_marginTop="4dp" />
                     </LinearLayout>
@@ -322,9 +322,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="@color/onboarding_card_bg"
+            app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="16dp"
-            app:strokeColor="@color/onboarding_card_stroke"
+            app:strokeColor="?attr/colorPrimaryContainer"
             app:strokeWidth="1dp"
             app:cardElevation="0dp"
             android:clickable="true"
@@ -355,7 +355,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Notifications"
-                        android:textColor="@color/onboarding_text_primary"
+                        android:textColor="?attr/colorOnSurface"
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
@@ -363,7 +363,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Alerts for focus sessions, reminders, and limits"
-                        android:textColor="@color/onboarding_text_secondary"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:textSize="12sp"
                         android:layout_marginTop="4dp" />
                 </LinearLayout>
@@ -383,9 +383,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/onboarding_card_bg"
+            app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="16dp"
-            app:strokeColor="@color/onboarding_card_stroke"
+            app:strokeColor="?attr/colorPrimaryContainer"
             app:strokeWidth="1dp"
             app:cardElevation="0dp"
             android:clickable="true"
@@ -416,7 +416,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Battery Optimization"
-                        android:textColor="@color/onboarding_text_primary"
+                        android:textColor="?attr/colorOnSurface"
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
@@ -424,7 +424,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Prevents Android from killing Reality in background"
-                        android:textColor="@color/onboarding_text_secondary"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:textSize="12sp"
                         android:layout_marginTop="4dp" />
                 </LinearLayout>
@@ -451,7 +451,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="0 of 5 permissions granted"
-                android:textColor="@color/onboarding_text_secondary"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:textSize="14sp" />
         </LinearLayout>
 

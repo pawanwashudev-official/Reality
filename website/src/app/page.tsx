@@ -3,170 +3,159 @@ import Link from 'next/link';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+    <div className="min-h-screen bg-neural-bg font-outfit text-gray-100 selection:bg-neural-cyan selection:text-black">
       {/* Hero Section */}
-      <section className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
+      <section className="relative overflow-hidden border-b border-gray-800">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neural-purple/20 via-neural-bg to-neural-bg opacity-50 z-0"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center relative z-10">
           <div className="mb-8 flex justify-center">
-            <img
-              src="https://res.cloudinary.com/dnh4fonis/image/upload/v1781091079/ck39669alz53z3vkeiaq.png"
-              alt="Reality Logo"
-              className="w-32 h-32 rounded-3xl shadow-lg border border-gray-100"
-            />
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-neural-cyan to-neural-purple rounded-3xl blur opacity-25 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+              <img
+                src="https://res.cloudinary.com/dnh4fonis/image/upload/v1781091079/ck39669alz53z3vkeiaq.png"
+                alt="Reality Logo"
+                className="relative w-32 h-32 rounded-3xl shadow-xl border border-gray-700 bg-neural-card"
+              />
+            </div>
           </div>
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 mb-4">
-            Reality
+
+          <div className="inline-block mb-4 px-3 py-1 rounded-full border border-neural-cyan/30 bg-neural-cyan/10 text-neural-cyan text-xs font-mono tracking-widest uppercase">
+            SYSTEM ONLINE V1.0.6
+          </div>
+
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white mb-4 drop-shadow-md">
+            Reality <span className="text-transparent bg-clip-text bg-gradient-to-r from-neural-cyan to-neural-purple">Engine</span>
           </h1>
-          <h2 className="text-2xl md:text-3xl font-medium text-gray-600 mb-6">
+          <h2 className="text-2xl md:text-3xl font-medium text-gray-400 mb-6 font-mono">
             The Intelligent Life OS
           </h2>
           <p className="max-w-2xl mx-auto text-xl text-gray-500 mb-10 italic">
             &quot;Stop managing your life. Start commanding it.&quot;
           </p>
 
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
-            <span className="px-4 py-1.5 rounded-full text-sm font-semibold bg-green-100 text-green-800">Platform: Android</span>
-            <span className="px-4 py-1.5 rounded-full text-sm font-semibold bg-teal-100 text-teal-800">Data: Local + G-Drive</span>
-            <span className="px-4 py-1.5 rounded-full text-sm font-semibold bg-purple-100 text-purple-800">AI: BYO Key</span>
-            <span className="px-4 py-1.5 rounded-full text-sm font-semibold bg-red-100 text-red-800">Ads: ZERO</span>
+          <div className="flex flex-wrap justify-center gap-3 mb-12 font-mono">
+            <span className="px-4 py-1.5 rounded-full text-sm font-semibold border border-neural-cyan text-neural-cyan bg-neural-cyan/10 shadow-neon">Platform: Android</span>
+            <span className="px-4 py-1.5 rounded-full text-sm font-semibold border border-gray-600 text-gray-300 bg-gray-800">Data: Local + G-Cloud</span>
+            <span className="px-4 py-1.5 rounded-full text-sm font-semibold border border-neural-purple text-neural-purple bg-neural-purple/10">AI: BYOK Neural Core</span>
           </div>
 
-          <div className="flex flex-col items-center gap-4">
-            <p className="font-semibold text-gray-700 text-lg">
-              🌟 100% Open Source • No Ads • No Trackers • Any AI
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 mt-6">
-              <a
-                href="https://github.com/pawanwashudev-official/Reality/releases"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg transition-colors shadow-sm"
-              >
-                ⬇️ Download APK
-              </a>
-              <a
-                href="https://reality-digital-wellbeing-and-focus.en.uptodown.com/android"
-                title="Download Reality - The Intelligent Life OS"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block transition-transform hover:scale-105"
-              >
-                <img
-                  src="https://stc.utdstc.com/img/mediakit/download-aao-big.png"
-                  alt="Download Reality - The Intelligent Life OS"
-                  className="h-14 object-contain"
-                />
-              </a>
-              <Link
-                href="/tapashya"
-                className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-[#00695C] hover:bg-[#004D40] md:py-4 md:text-lg transition-colors shadow-sm"
-              >
-                ⏳ Try Tapashya Web
-              </Link>
-            </div>
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+            <Link
+              href="https://github.com/Pawan-Washudev/reality-app/releases/latest"
+              className="w-full sm:w-auto px-8 py-4 bg-white text-black text-lg font-bold rounded-xl hover:bg-gray-200 transition-colors shadow-lg"
+            >
+              Get Professional APK
+            </Link>
+            <Link
+              href="https://github.com/Pawan-Washudev/reality-app"
+              className="w-full sm:w-auto px-8 py-4 bg-neural-card border border-gray-700 text-white text-lg font-bold rounded-xl hover:border-gray-500 transition-colors shadow-lg"
+            >
+              View Source Code
+            </Link>
           </div>
+          <p className="mt-6 text-sm text-gray-500 max-w-xl mx-auto">
+            100% Open Source. Official APKs require a one-time "Reality Pro" contribution to support development.
+          </p>
         </div>
       </section>
 
-      {/* Why Reality Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Features Grid */}
+      <section className="py-20 bg-neural-bg relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">🤔 Why Does Reality Exist?</h2>
-            <p className="text-lg text-gray-600">We searched for the perfect productivity app. We found:</p>
+            <h2 className="text-3xl font-bold text-white mb-4">Core Architecture</h2>
+            <div className="h-1 w-20 bg-gradient-to-r from-neural-cyan to-neural-purple mx-auto rounded-full"></div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-6 mb-12">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <div className="text-red-500 text-2xl mb-2">❌ Paid Apps</div>
-              <p className="text-gray-600">Want $50/year just to block Instagram? No thanks.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl hover:border-neural-cyan transition-colors group">
+              <div className="w-12 h-12 bg-neural-cyan/20 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <span className="text-2xl text-neural-cyan">🔥</span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Tapasya (Focus Mode)</h3>
+              <p className="text-gray-400">
+                Amoled-optimized, military-grade distraction blocking. Neural sync allows automated Do Not Disturb sessions.
+              </p>
             </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <div className="text-red-500 text-2xl mb-2">❌ &quot;Free&quot; Apps</div>
-              <p className="text-gray-600">Selling your data to advertisers. You&apos;re the product.</p>
-            </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <div className="text-red-500 text-2xl mb-2">❌ One-Trick Apps</div>
-              <p className="text-gray-600">A timer here. A to-do list there. No integration.</p>
-            </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <div className="text-red-500 text-2xl mb-2">❌ Closed Ecosystems</div>
-              <p className="text-gray-600">Your data locked in proprietary servers.</p>
-            </div>
-          </div>
 
-          <div className="bg-blue-50 p-8 rounded-2xl border border-blue-100 text-center">
-            <p className="text-lg text-blue-900 font-medium leading-relaxed">
-              <strong>Reality was born from frustration.</strong> Built by two friends who lost control of their own fingers. Designed for students and working professionals who want to use their phone <strong>for getting things done</strong>, not doom-scrolling.
-            </p>
+            {/* Feature 2 */}
+            <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl hover:border-neural-purple transition-colors group">
+              <div className="w-12 h-12 bg-neural-purple/20 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <span className="text-2xl text-neural-purple">🌙</span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Nightly Protocol</h3>
+              <p className="text-gray-400">
+                End-of-day sequence that forces reflection, auto-generates professional PDF logs, and syncs tasks to G-Drive.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl hover:border-blue-500 transition-colors group">
+              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <span className="text-2xl text-blue-500">🔒</span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Strict Mode OS</h3>
+              <p className="text-gray-400">
+                Impossible-to-bypass app blocking, screen-overlay prevention, and anti-uninstall security layer.
+              </p>
+            </div>
+
+             {/* Feature 4 */}
+             <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl hover:border-pink-500 transition-colors group">
+              <div className="w-12 h-12 bg-pink-500/20 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <span className="text-2xl text-pink-500">🤖</span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Neural Assistant</h3>
+              <p className="text-gray-400">
+                Bring Your Own Key (BYOK) AI chat integrated into your daily workflow without the subscription fees.
+              </p>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl hover:border-green-500 transition-colors group">
+              <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <span className="text-2xl text-green-500">📊</span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Health Connect</h3>
+              <p className="text-gray-400">
+                Deep sync with Android Health Connect to overlay your productivity stats with sleep and biometric data.
+              </p>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl hover:border-orange-500 transition-colors group">
+              <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <span className="text-2xl text-orange-500">☁️</span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">G-Cloud BYOK</h3>
+              <p className="text-gray-400">
+                Use your own Desktop OAuth credentials to securely sync with Tasks, Calendar, Drive, and Docs locally.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Google Integration Section */}
-      <section className="py-20 bg-white border-t border-gray-200">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">💡 The Google Ecosystem Advantage</h2>
-            <p className="text-lg text-gray-600">Reality doesn&apos;t reinvent the wheel. It weaponizes Google&apos;s own tools for your productivity.</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-gray-50 p-8 rounded-2xl border border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <span className="text-2xl mr-2">📄</span> Docs
-              </h3>
-              <ul className="space-y-3 text-gray-600">
-                <li><strong>AI Diary:</strong> Your journal written directly to Google Docs.</li>
-                <li><strong>AI Plans:</strong> Tomorrow&apos;s plan as a structured Drive document.</li>
-              </ul>
-            </div>
-            <div className="bg-gray-50 p-8 rounded-2xl border border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <span className="text-2xl mr-2">✅</span> Tasks & Calendar
-              </h3>
-              <ul className="space-y-3 text-gray-600">
-                <li><strong>Native Sync:</strong> Tasks appear in Google Tasks instantly.</li>
-                <li><strong>Schedule XP:</strong> Earn XP for attending calendar blocks.</li>
-              </ul>
-            </div>
-            <div className="bg-gray-50 p-8 rounded-2xl border border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <span className="text-2xl mr-2">☁️</span> Drive Backup
-              </h3>
-              <ul className="space-y-3 text-gray-600">
-                <li><strong>Auto Reports:</strong> PDFs uploaded to your personal folder.</li>
-                <li><strong>Zero Servers:</strong> Your data never touches our systems.</li>
-              </ul>
-            </div>
-          </div>
+      {/* Philosophy Section */}
+      <section className="py-20 border-t border-gray-800 bg-neural-card/50">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+           <h2 className="text-3xl font-bold text-white mb-6">Open Source, Pro Optimized</h2>
+           <p className="text-lg text-gray-400 mb-8">
+             Reality is 100% open source. You can clone the repo and build the Android APK yourself for free.
+             However, the <span className="text-white font-semibold">Official Pro APK</span> is heavily optimized, includes standard pre-compiled assets, and buying it supports the continuous maintenance of the project.
+           </p>
+           <a href="mailto:support@neubofy.in" className="text-neural-cyan hover:underline font-mono">support@neubofy.in</a>
         </div>
       </section>
 
-      {/* Architecture Section */}
-      <section className="py-20 bg-gray-900 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-12">🔐 Privacy Architecture: Zero Trust</h2>
-          <div className="grid sm:grid-cols-2 gap-8 text-left">
-            <div>
-              <h4 className="text-xl font-bold mb-2 text-blue-400">No Servers</h4>
-              <p className="text-gray-300">We have zero backend infrastructure. Your data never touches our systems.</p>
-            </div>
-            <div>
-              <h4 className="text-xl font-bold mb-2 text-blue-400">Local-First</h4>
-              <p className="text-gray-300">All blocking logic, XP calculation, and app state runs 100% on-device.</p>
-            </div>
-            <div>
-              <h4 className="text-xl font-bold mb-2 text-blue-400">Your Cloud, Your Rules</h4>
-              <p className="text-gray-300">Backups go to your personal Google Drive. We can&apos;t access it.</p>
-            </div>
-            <div>
-              <h4 className="text-xl font-bold mb-2 text-blue-400">Open Source</h4>
-              <p className="text-gray-300">Every line of code is public. Build the APK yourself if you don&apos;t trust us.</p>
-            </div>
-          </div>
+      {/* Footer */}
+      <footer className="bg-black py-8 border-t border-gray-900">
+        <div className="max-w-7xl mx-auto px-4 text-center text-gray-600 text-sm">
+          <p>© {new Date().getFullYear()} Neubofy. All rights reserved.</p>
+          <p className="mt-2">Reality App is an open-source project managed by Pawan Washudev.</p>
         </div>
-      </section>
+      </footer>
     </div>
   );
 }

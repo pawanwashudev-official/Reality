@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="24dp"
-    android:background="?attr/colorSurface">
+    android:background="@drawable/dialog_glass_background">
 
     <TextView
         android:id="@+id/tv_title"

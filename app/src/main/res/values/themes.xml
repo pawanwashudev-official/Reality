@@ -164,7 +164,8 @@
     </style>
     
     <style name="GlassDialogTitle" parent="MaterialAlertDialog.Material3.Title.Panel">
-        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:fontFamily">monospace</item>
     </style>
     
     <style name="GlassDialogButton" parent="Widget.Material3.Button.TextButton.Dialog">
