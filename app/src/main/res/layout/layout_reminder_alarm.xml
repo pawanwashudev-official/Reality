@@ -27,7 +27,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="UPCOMING SESSION"
-            android:textColor="#80FFFFFF"
+            android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="14sp"
             android:letterSpacing="0.15" />
 
@@ -47,7 +47,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Starts in 1 minute"
-            android:textColor="#00FFC2"
+            android:textColor="?attr/colorPrimary"
             android:textSize="20sp"
             android:layout_marginTop="8dp" />
 
@@ -57,7 +57,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Auto-snooze in 30s"
-            android:textColor="#FF9800"
+            android:textColor="?attr/colorError"
             android:textSize="14sp"
             android:layout_marginTop="32dp"
             android:visibility="gone"/>
@@ -86,7 +86,7 @@
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:text="← SNOOZE"
-                android:textColor="#FF9800"
+                android:textColor="?attr/colorError"
                 android:textSize="12sp"
                 android:gravity="start"
                 android:alpha="0.8" />
@@ -95,7 +95,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="SLIDE"
-                android:textColor="#80FFFFFF"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:textSize="12sp" />
 
             <TextView
@@ -104,7 +104,7 @@
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:text="DISMISS →"
-                android:textColor="#00FFC2"
+                android:textColor="?attr/colorPrimary"
                 android:textSize="12sp"
                 android:gravity="end"
                 android:alpha="0.8" />
@@ -122,7 +122,7 @@
                 android:layout_width="4dp"
                 android:layout_height="32dp"
                 android:layout_gravity="center"
-                android:background="#40FFFFFF" />
+                android:background="?attr/colorSurfaceVariant" />
             
             <!-- Snooze Zone (Left) -->
             <View
@@ -130,7 +130,7 @@
                 android:layout_width="80dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="start"
-                android:background="#30FF9800" />
+                android:background="?attr/colorErrorContainer" />
 
             <!-- Dismiss Zone (Right) -->
             <View
@@ -138,7 +138,7 @@
                 android:layout_width="80dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="end"
-                android:background="#3000FFC2" />
+                android:background="?attr/colorPrimaryContainer" />
 
             <!-- Draggable Handle -->
             <ImageView
@@ -159,7 +159,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:text="Drag left to snooze • Drag right to start"
-            android:textColor="#60FFFFFF"
+            android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="12sp"
             android:layout_marginTop="12dp" />
 

@@ -20,7 +20,7 @@
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardBackgroundColor="#2D3748"
+        app:cardBackgroundColor="?attr/colorSurface"
         app:cardCornerRadius="12dp"
         app:strokeWidth="0dp"
         android:layout_marginBottom="12dp">
@@ -50,7 +50,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Automatically block apps during events"
-                    android:textColor="#A0AEC0"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:textSize="12sp" />
             </LinearLayout>
 
@@ -78,7 +78,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Disconnect &amp; Delete Data"
-        android:textColor="#FC8181"
+        android:textColor="?attr/colorError"
         style="@style/Widget.MaterialComponents.Button.TextButton"
         app:icon="@drawable/ic_delete_forever"
         app:iconTint="#FC8181" />
