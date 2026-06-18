@@ -29,7 +29,7 @@ export default function RootLayout({
                   alt="Reality Logo"
                   className="w-8 h-8 rounded-lg"
                 />
-                <Link href="/" className="font-bold text-xl tracking-tight text-white">Reality <span className="text-neural-cyan font-mono text-sm uppercase">Engine</span></Link>
+                <Link href="/" className="font-bold text-xl tracking-tight text-white">Reality</Link>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8 font-mono text-sm">
                 <Link href="/" className="text-gray-300 hover:text-neural-cyan transition-colors px-3 py-2 rounded-md font-medium">HOME</Link>
