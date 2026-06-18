@@ -487,7 +487,7 @@ class MainActivity : BaseActivity() {
                 when (item.itemId) {
                     1 -> {
                         // Reality Website
-                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://neubofyreality.vercel.app"))
+                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://reality.neubofy.in"))
                         startActivity(intent)
                         true
                     }

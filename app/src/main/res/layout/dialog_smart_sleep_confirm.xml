@@ -38,7 +38,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:cardCornerRadius="16dp"
-        app:cardBackgroundColor="#10FFFFFF"
+        app:cardBackgroundColor="?attr/colorSurface"
         app:strokeWidth="1dp"
         app:strokeColor="#20FFFFFF"
         android:layout_marginBottom="24dp">

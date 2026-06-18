@@ -673,7 +673,7 @@ export default function TapashyaPage() {
                       <X size={20} />
                   </button>
                   <h3 className="text-xl font-bold text-[#004D40] mb-2">App Sync</h3>
-                  <p className="text-sm text-gray-500 mb-6">Scan with Reality App to import {selectedSessions.size} session(s).</p>
+                  <p className="text-sm text-gray-500 mb-6">Scan with Reality app to import {selectedSessions.size} session(s).</p>
 
                   {qrData && (
                       <div className="p-4 bg-white rounded-2xl shadow-sm border border-gray-100 mb-2">
