@@ -165,7 +165,7 @@ export default function Home() {
       <footer className="bg-black py-8 border-t border-gray-900">
         <div className="max-w-7xl mx-auto px-4 text-center text-gray-600 text-sm">
           <p>© {new Date().getFullYear()} Neubofy. All rights reserved.</p>
-          <p className="mt-2">Reality Engine is an open-source project managed by Pawan Washudev.</p>
+          <p className="mt-2">Reality is an open-source project managed by Pawan Washudev.</p>
         </div>
       </footer>
     </div>

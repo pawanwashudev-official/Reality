@@ -928,8 +928,8 @@ Built by someone who lost control of their own fingers. Designed for those who w
 
 <br><br>
 
-<a href='https://reality-digital-wellbeing-and-focus.en.uptodown.com/android' title='Download Reality Engine - The Intelligent Life OS' >
-    <img src='https://stc.utdstc.com/img/mediakit/download-aao-big.png' alt='Download Reality Engine - The Intelligent Life OS'>
+<a href='https://reality-digital-wellbeing-and-focus.en.uptodown.com/android' title='Download Reality - The Intelligent Life OS' >
+    <img src='https://stc.utdstc.com/img/mediakit/download-aao-big.png' alt='Download Reality - The Intelligent Life OS'>
 </a>
 
 </div>

@@ -1,7 +1,7 @@
 <resources>
     <string name="support_email">support@neubofy.in</string>
     <string name="official_website">https://reality.neubofy.in</string>
-    <string name="app_name" translatable="false">Reality Engine</string>
+    <string name="app_name" translatable="false">Reality</string>
     <string name="focus_mode">Focus Mode</string>
     <string name="app_blocker">App Blocker</string>
     <string name="anti_uninstall">Armored Strict Mode</string>
