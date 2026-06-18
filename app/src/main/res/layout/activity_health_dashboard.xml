@@ -454,9 +454,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="System Permissions"
-                    android:textSize="14sp"
-                    android:textColor="?attr/colorPrimary"
-                    app:backgroundTint="?attr/colorSurfaceContainerHigh"
+                    android:textSize="12sp"
                     android:layout_gravity="end"
                     android:layout_marginTop="8dp"/>
                     

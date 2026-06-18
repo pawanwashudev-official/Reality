@@ -18,7 +18,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Reality Access"
+            android:text="Neural Engine Access"
             android:textSize="28sp"
             android:textStyle="bold"
             android:textColor="?attr/colorOnSurface"
@@ -27,7 +27,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Reality requires these permissions to protect your focus. Tap each card to grant."
+            android:text="The Neural Engine requires these permissions to protect your focus. Tap each card to grant."
             android:textSize="14sp"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:lineSpacingMultiplier="1.3"

@@ -572,8 +572,6 @@ object ThemeManager {
     }
 
     fun getAppBackgroundColor(context: Context): Int? {
-        val isNight = (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
-        if (isAmoledMode(context) && isNight) return android.graphics.Color.BLACK
          val hex = getPrefs(context).getString(KEY_APP_BACKGROUND_COLOR, null)
          return try { if (hex != null) android.graphics.Color.parseColor(hex) else null } catch (e: Exception) { null }
     }
@@ -736,11 +734,7 @@ object ThemeManager {
     }
     
     // ========== PAGE & SURFACE COLORS ==========
-    fun getPageBackgroundColor(context: Context): Int? {
-        val isNight = (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
-        if (isAmoledMode(context) && isNight) return android.graphics.Color.BLACK
-        return getModeColor(context, KEY_PAGE_BG)
-    }
+    fun getPageBackgroundColor(context: Context): Int? = getModeColor(context, KEY_PAGE_BG)
     fun setPageBackgroundColor(context: Context, hex: String?, forMode: String? = null) = setModeColor(context, KEY_PAGE_BG, hex, forMode)
     
     fun getSurfaceColor(context: Context): Int? = getModeColor(context, KEY_SURFACE_COLOR)
