@@ -124,7 +124,7 @@ export default function RealityProActivationPage() {
                       disabled={isLoading}
                     />
                     <p className="text-xs text-gray-500 mt-2">
-                      You can find your 16-character User ID on the Profile page in the Reality app.
+                      To get your User ID, go back to verification page there you will see a sign in button that will bring you to profile page and as you complete sign in you will see User ID above your Email card.
                     </p>
                   </div>
 
