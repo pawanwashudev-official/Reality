@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Home } from 'lucide-react';
+import { Home, MessageSquare, Send, Mail } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function RealityProActivationPage() {
@@ -186,8 +186,50 @@ export default function RealityProActivationPage() {
               </form>
             )}
 
-            <div className="mt-8 pt-8 border-t border-gray-100 text-sm text-gray-500 text-center">
-              Having trouble? You can also contact <a href="mailto:founder@neubofy.in" className="text-blue-600 hover:underline">founder@neubofy.in</a> for support or to request a code manually.
+            <div className="mt-12 pt-8 border-t border-gray-100">
+              <h4 className="text-xl font-bold text-gray-900 mb-6 text-center">Contact Us</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a 
+                  href="https://t.me/pawanwashudev" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center p-4 bg-blue-50 rounded-2xl border border-blue-100 hover:bg-blue-100 transition-all hover:shadow-md group"
+                >
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-blue-200">
+                    <MessageSquare size={20} className="text-blue-600" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-900">Developer</span>
+                  <span className="text-xs text-blue-600 font-medium">@pawanwashudev</span>
+                </a>
+                
+                <a 
+                  href="https://t.me/Neubofy" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center p-4 bg-indigo-50 rounded-2xl border border-indigo-100 hover:bg-indigo-100 transition-all hover:shadow-md group"
+                >
+                  <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-indigo-200">
+                    <Send size={20} className="text-indigo-600" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-900">Telegram Channel</span>
+                  <span className="text-xs text-indigo-600 font-medium">@Neubofy</span>
+                </a>
+
+                <a 
+                  href="mailto:support@neubofy.in" 
+                  className="flex flex-col items-center p-4 bg-green-50 rounded-2xl border border-green-100 hover:bg-green-100 transition-all hover:shadow-md group"
+                >
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-green-200">
+                    <Mail size={20} className="text-green-600" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-900">Support Email</span>
+                  <span className="text-xs text-green-600 font-medium">support@neubofy.in</span>
+                </a>
+              </div>
+            </div>
+
+            <div className="mt-8 text-xs text-gray-400 text-center italic">
+              Need manual help? Contact us via any of the above methods.
             </div>
         </div>
 
