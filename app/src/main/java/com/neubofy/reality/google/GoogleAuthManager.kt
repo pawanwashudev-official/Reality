@@ -51,8 +51,10 @@ object GoogleAuthManager {
         "profile"
     )
     
+    val BASIC_SCOPES = listOf("email", "profile")
+
     private fun getPrefs(context: Context) = 
-        context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        com.neubofy.reality.utils.SecurePreferences.get(context, PREF_NAME)
 
     fun saveCloudCredentials(context: Context, clientId: String, clientSecret: String) {
         getPrefs(context).edit().apply {
@@ -92,13 +94,14 @@ object GoogleAuthManager {
 
 
 
-    fun getAuthUrl(context: Context): String? {
+    fun getAuthUrl(context: Context, basicOnly: Boolean = false): String? {
         val clientId = getClientId(context) ?: return null
+        val scopes = if (basicOnly) BASIC_SCOPES else ALL_SCOPES
 
         return GoogleAuthorizationCodeRequestUrl(
             clientId,
             "http://127.0.0.1:8080/Callback",
-            ALL_SCOPES
+            scopes
         )
         .setAccessType("offline")
         .build()
@@ -136,7 +139,7 @@ object GoogleAuthManager {
                     line = reader.readLine()
                 }
 
-                val output = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Authorization Successful!</h1><p>You can safely close this browser window and return to the Reality app.</p></body></html>"
+                val output = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><style>body{background-color:#05050A;color:#FFFFFF;font-family:monospace;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;}h1{color:#00E5FF;text-shadow:0 0 10px rgba(0,229,255,0.5);}p{color:#7B61FF;margin-top:10px;}#countdown{font-size:2rem;font-weight:bold;color:#00E5FF;margin-top:20px;}</style></head><body><h1>Reality Authorization</h1><p>Authentication captured successfully.</p><p>Please wait while we process the token...</p><div id=\"countdown\">10</div><script>var timeLeft = 10;var el = document.getElementById('countdown');var timerId = setInterval(function() {if (timeLeft <= 0) {clearInterval(timerId);el.innerHTML = 'Process Complete. You may close this window and return to Reality.';} else {el.innerHTML = timeLeft;timeLeft -= 1;}}, 1000);</script></body></html>"
                 socket.outputStream.write(output.toByteArray())
                 socket.outputStream.flush()
                 socket.close()

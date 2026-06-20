@@ -501,7 +501,34 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Telegram"
+                                android:text="Dev Telegram"
+                                android:textSize="11sp"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:layout_marginTop="4dp"/>
+                        </LinearLayout>
+
+                        <!-- Neubofy Telegram -->
+                        <LinearLayout
+                            android:id="@+id/btn_neubofy_telegram"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?selectableItemBackground"
+                            android:padding="8dp">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_send_24"
+                                app:tint="?attr/colorOnSurface"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Neubofy"
                                 android:textSize="11sp"
                                 android:textColor="?attr/colorOnSurfaceVariant"
                                 android:layout_marginTop="4dp"/>

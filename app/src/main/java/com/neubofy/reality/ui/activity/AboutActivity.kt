@@ -24,6 +24,7 @@ class AboutActivity : BaseActivity() {
         const val EMAIL = "founder@neubofy.in"
         const val PRIVACY_POLICY = "https://reality.neubofy.in/privacypolicy"
         const val WEBSITE = "https://reality.neubofy.in"
+        const val NEUBOFY_TELEGRAM = "https://t.me/neubofy"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,6 +56,9 @@ class AboutActivity : BaseActivity() {
 
         // Telegram
         binding.btnTelegram.setOnClickListener { openUrl(TELEGRAM) }
+
+        // Neubofy Telegram
+        binding.btnNeubofyTelegram.setOnClickListener { openUrl(NEUBOFY_TELEGRAM) }
 
         // Arratai
         binding.btnArratai.setOnClickListener { openUrl(ARRATAI) }

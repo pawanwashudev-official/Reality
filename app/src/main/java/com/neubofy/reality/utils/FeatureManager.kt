@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 
 class FeatureManager(private val context: Context) {
-    private val prefs: SharedPreferences = context.getSharedPreferences("reality_features", Context.MODE_PRIVATE)
+    private val prefs: SharedPreferences = com.neubofy.reality.utils.SecurePreferences.get(context, "reality_features")
 
     fun isAiEnabled(): Boolean = prefs.getBoolean("feature_ai", false)
     fun setAiEnabled(enabled: Boolean) = prefs.edit().putBoolean("feature_ai", enabled).apply()
