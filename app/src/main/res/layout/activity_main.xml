@@ -103,7 +103,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingBottom="32dp">
+            android:paddingBottom="8dp">
             <!-- Reflection Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_reflection"
@@ -517,7 +517,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/card_usage_limit"
                     android:layout_width="0dp"
-                    android:layout_height="110dp"
+                    android:layout_height="75dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
                     app:cardCornerRadius="@dimen/corner_radius_large"
@@ -562,7 +562,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/blocklistCard"
                     android:layout_width="0dp"
-                    android:layout_height="110dp"
+                    android:layout_height="75dp"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
                     app:cardCornerRadius="@dimen/corner_radius_large"
@@ -615,7 +615,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/card_app_limits"
                     android:layout_width="0dp"
-                    android:layout_height="110dp"
+                    android:layout_height="75dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="6dp"
                     app:cardCornerRadius="@dimen/corner_radius_medium"
@@ -627,9 +627,9 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:padding="16dp"
-                        android:gravity="center">
+                        android:orientation="horizontal"
+                        android:padding="12dp"
+                        android:gravity="center_vertical">
 
                         <ImageView
                             android:layout_width="36dp"
@@ -660,7 +660,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/card_group_limits"
                     android:layout_width="0dp"
-                    android:layout_height="110dp"
+                    android:layout_height="75dp"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     app:cardCornerRadius="20dp"
@@ -672,9 +672,9 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:padding="16dp"
-                        android:gravity="center">
+                        android:orientation="horizontal"
+                        android:padding="12dp"
+                        android:gravity="center_vertical">
 
                         <ImageView
                             android:layout_width="36dp"
@@ -682,22 +682,26 @@
                             android:src="@drawable/baseline_group_work_24"
                             app:tint="@color/accent_groups"/>
 
-                        <TextView
+                        <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Category Limits"
-                            android:textColor="?attr/colorPrimary"
-        android:fontFamily="monospace"
-                            android:textStyle="bold"
-                            android:textSize="13sp"
-                            android:layout_marginTop="8dp"/>
-                            
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Group Limits"
-                            android:textColor="?attr/colorOnSurfaceVariant"
-                            android:textSize="11sp"/>
+                            android:orientation="vertical"
+                            android:layout_marginStart="8dp">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Categories"
+                                android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
+                                android:textStyle="bold"
+                                android:textSize="13sp"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Group Limits"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:textSize="11sp"/>
+                        </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -714,7 +718,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/schedules"
                     android:layout_width="0dp"
-                    android:layout_height="80dp"
+                    android:layout_height="75dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="6dp"
                     app:cardCornerRadius="@dimen/corner_radius_medium"
@@ -763,7 +767,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/card_bedtime"
                     android:layout_width="0dp"
-                    android:layout_height="80dp"
+                    android:layout_height="75dp"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     app:cardCornerRadius="16dp"
@@ -815,7 +819,7 @@
             <!-- Terminal Log -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="240dp"
+                android:layout_height="200dp"
                 android:layout_marginTop="24dp"
                 app:cardBackgroundColor="@android:color/transparent"
 
@@ -889,7 +893,8 @@
         android:id="@+id/fab_ai_chat"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
         android:src="@drawable/baseline_chat_24"
         app:tint="@android:color/white"
         app:backgroundTint="?attr/colorPrimary"

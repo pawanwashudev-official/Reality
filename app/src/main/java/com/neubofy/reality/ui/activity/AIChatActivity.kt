@@ -516,14 +516,14 @@ open class AIChatActivity : BaseActivity() {
                 append("All times are in IST (India Standard Time). ")
                 append("\n\nCRITICAL CONSTRAINTS:")
                 append("\n- ONE SEARCH POLICY: Web search is extremely expensive. NEVER call `web_search` more than once per user request. Consolidate ALL information needs into a single comprehensive query.")
-                append("\n- DISCOVERY FLOW: You start with only `get_tool_schema`. Always fetch schemas for the tools you need in the first turn.")
+                append("\n- DISCOVERY FLOW: You start with only `get_mcp_tools`. Always fetch the MCP for the tools you need in the first turn.")
                 append("\n- ANTI-LOOP: Do not call the same tool with the same arguments twice.")
                 append("\n- COMPLETION: Do not call tools indefinitely. Aim to answer in 2-3 steps maximum.")
                 append("\n- IMAGE: If you use `generate_image`, include the markdown link ![Generated Image](URL) in your message.")
                                 if (userIntro.isNotEmpty()) append("\n\nUser context: $userIntro")
 
                 val userFacts = com.neubofy.reality.utils.ConversationMemoryManager.getUserFactsContext(this@AIChatActivity)
-                if (userFacts != null) append("\n\n$userFacts")
+                if (userFacts != null) append("\n\n\$userFacts")
 
                 append("\n\n$toolDiscovery")
             }
@@ -620,10 +620,13 @@ open class AIChatActivity : BaseActivity() {
                         val currentRetries = toolRetryCounts.getOrDefault(callSignature, 0)
                         
                         // 1. Handle Schema Requests (Internal state update)
-                        if (toolName == "get_tool_schema") {
+                        if (toolName == "get_mcp_tools") {
                             try {
-                                val toolId = JSONObject(args).optString("tool_id")
-                                if (toolId.isNotEmpty()) requestedToolIds.add(toolId)
+                                val mcpId = JSONObject(args).optString("mcp_id")
+                                val mcp = com.neubofy.reality.utils.ToolRegistry.ALL_MCPS.find { it.id == mcpId }
+                                if (mcp != null) {
+                                    requestedToolIds.addAll(mcp.tools)
+                                }
                             } catch (e: Exception) {}
                         }
                         

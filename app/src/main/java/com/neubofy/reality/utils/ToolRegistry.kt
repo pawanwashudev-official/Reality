@@ -32,6 +32,23 @@ object ToolRegistry {
         return Instant.ofEpochMilli(epochMs).atZone(IST_ZONE).format(DateTimeFormatter.ofPattern("HH:mm"))
     }
 
+
+    // --- MCP Definitions ---
+    data class MCPMeta(
+        val id: String,
+        val name: String,
+        val desc: String,
+        val tools: List<String>
+    )
+
+    val ALL_MCPS = listOf(
+        MCPMeta("mcp_health_data", "Health & Body", "Access health, fitness, sleep, step counts, calories.", listOf("health", "usage_stats")),
+        MCPMeta("mcp_focus", "Focus & Deep Work", "Tapashya, gamification, streaks, blockers, levels.", listOf("gamification", "tapasya", "app_blocker", "action_start_focus", "action_start_tapasya", "action_add_missed_tapasya")),
+        MCPMeta("mcp_planning", "Planning & Nightly", "Tasks, reminders, study sessions, nightly plans.", listOf("tasks", "reminders", "study_sessions", "nightly", "action_add_task", "action_complete_task", "action_add_reminder")),
+        MCPMeta("mcp_alarms", "Alarms", "Manage wakeup alarms.", listOf("set_alarm", "list_alarms", "edit_alarm")),
+        MCPMeta("mcp_utility", "Utility", "Current time, images, notifications, web search, universal query, save memory.", listOf("utility_time", "web_search", "universal_query", "action_schedule_notification", "action_generate_image", "save_memory"))
+    )
+
     // --- Tool Definitions ---
     data class ToolMeta(
         val id: String,
@@ -91,17 +108,14 @@ object ToolRegistry {
      * ~50 tokens for all 9 tools
      */
     fun getDiscoveryPrompt(context: Context): String {
-        val enabled = getEnabledTools(context)
-        if (enabled.isEmpty()) return "No data tools available."
-        
-        val sb = StringBuilder("AVAILABLE TOOLS (IDs):\n")
-        enabled.forEach { t ->
-            sb.append("- ${t.id}: ${t.shortDesc}\n")
+        val sb = StringBuilder("AVAILABLE MCPs (Tool Groups):\n")
+        ALL_MCPS.forEach { mcp ->
+            sb.append("- ${mcp.id}: ${mcp.name} - ${mcp.desc}\n")
         }
         sb.append("\nPROCEDURE:")
-        sb.append("\n1. Initially, you ONLY have the `get_tool_schema(tool_id)` tool.")
-        sb.append("\n2. To use ANY tool above, MUST call `get_tool_schema` first.")
-        sb.append("\n3. Once you get the schema, it becomes available in the NEXT turn.")
+        sb.append("\n1. Initially, you ONLY have the `get_mcp_tools(mcp_id)` tool.")
+        sb.append("\n2. To use tools in an MCP above, MUST call `get_mcp_tools` first.")
+        sb.append("\n3. Once you load an MCP, its tools become available in the NEXT turn.")
         sb.append("\n4. CRITICAL: `web_search` is EXPENSIVE. Consolidate ALL information needs into ONE query per request.")
         
         return sb.toString()
@@ -348,21 +362,21 @@ object ToolRegistry {
         }
     }
 
-    // --- Meta Tool: get_tool_schema ---
+    // --- Meta Tool: get_mcp_tools ---
     val metaToolSchema = JSONObject().apply {
         put("type", "function")
         put("function", JSONObject().apply {
-            put("name", "get_tool_schema")
-            put("description", "Get the full schema for a tool before using it. MUST call this first.")
+            put("name", "get_mcp_tools")
+            put("description", "Load all tools for a specific MCP group before using them. MUST call this first.")
             put("parameters", JSONObject().apply {
                 put("type", "object")
                 put("properties", JSONObject().apply {
-                    put("tool_id", JSONObject().apply {
+                    put("mcp_id", JSONObject().apply {
                         put("type", "string")
-                        put("description", "Tool ID from the available list (e.g., 'gamification', 'tasks')")
+                        put("description", "The ID of the MCP to load (e.g. mcp_alarms)")
                     })
                 })
-                put("required", JSONArray().put("tool_id"))
+                put("required", JSONArray().put("mcp_id"))
             })
         })
     }
@@ -421,6 +435,8 @@ object ToolRegistry {
     // --- Helper: Map Function Name to Tool ID ---
     fun getToolIdForFunction(functionName: String): String? {
         return when (functionName) {
+            "save_memory" -> "mcp_utility"
+            "set_alarm", "list_alarms", "edit_alarm" -> "mcp_alarms"
             "gamification", "get_xp_stats" -> "gamification"
             "tapasya", "get_tapasya_sessions" -> "tapasya"
             "tasks", "get_tasks" -> "tasks"

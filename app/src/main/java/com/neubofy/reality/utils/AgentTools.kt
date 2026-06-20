@@ -45,16 +45,17 @@ object AgentTools {
             
             when (name) {
                 // META TOOL: Dynamic Schema Discovery
-                "get_tool_schema" -> {
-                    val toolId = args.optString("tool_id", "")
-                    if (toolId.isEmpty()) return "Error: tool_id is required"
-                    
-                    if (!ToolRegistry.isToolEnabled(context, toolId)) {
-                        return "Tool '$toolId' is disabled. Enable it in AI Settings."
+                "get_mcp_tools" -> {
+                    val mcpId = args.optString("mcp_id", "")
+                    if (mcpId.isEmpty()) "Error: mcp_id is required"
+                    else {
+                        val mcp = ToolRegistry.ALL_MCPS.find { it.id == mcpId }
+                        if (mcp != null) {
+                            "MCP tools loaded successfully: ${mcp.tools.joinToString()}. They are now available for your next action."
+                        } else {
+                            "Error: MCP not found for $mcpId"
+                        }
                     }
-                    
-                    val schema = ToolRegistry.getToolSchema(toolId)
-                    return schema?.toString(2) ?: "Unknown tool: $toolId"
                 }
 
                 // GAMIFICATION
@@ -329,6 +330,71 @@ object AgentTools {
                         put("calories_kcal", String.format("%.1f", cals))
                         put("sleep", sleep)
                     }.toString()
+                }
+
+
+                // ==================== ALARM TOOLS ====================
+                "set_alarm" -> {
+                    val title = args.optString("title", "AI Alarm")
+                    val hour = args.optInt("hour", 7)
+                    val minute = args.optInt("minute", 0)
+                    val repeatStr = args.optString("repeatDays", "")
+
+                    val repeatDays = if (repeatStr.isNotEmpty()) {
+                        repeatStr.split(",").mapNotNull { it.trim().toIntOrNull() }
+                    } else emptyList()
+
+                    val id = java.util.UUID.randomUUID().toString()
+                    val alarm = com.neubofy.reality.data.model.WakeupAlarm(
+                        id = id,
+                        title = title,
+                        hour = hour,
+                        minute = minute,
+                        repeatDays = repeatDays
+                    )
+
+                    val loader = com.neubofy.reality.utils.SavedPreferencesLoader(context)
+                    val alarms = loader.loadWakeupAlarms()
+                    alarms.add(alarm)
+                    loader.saveWakeupAlarms(alarms)
+
+                    com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(context)
+                    "Successfully set alarm '$title' for $hour:$minute. ID: $id"
+                }
+                "list_alarms" -> {
+                    val loader = com.neubofy.reality.utils.SavedPreferencesLoader(context)
+                    val alarms = loader.loadWakeupAlarms().filter { !it.isDeleted }
+                    if (alarms.isEmpty()) "No active alarms found."
+                    else alarms.joinToString("\n") { "ID: ${it.id} | ${it.title} at ${it.hour}:${it.minute} | Enabled: ${it.isEnabled}" }
+                }
+                "edit_alarm" -> {
+                    val alarmId = args.optString("alarm_id")
+                    val action = args.optString("action")
+                    val loader = com.neubofy.reality.utils.SavedPreferencesLoader(context)
+                    val alarms = loader.loadWakeupAlarms()
+                    val idx = alarms.indexOfFirst { it.id == alarmId }
+
+                    if (idx == -1) "Error: Alarm not found."
+                    else {
+                        val alarm = alarms[idx]
+                        when (action) {
+                            "enable" -> alarm.isEnabled = true
+                            "disable" -> alarm.isEnabled = false
+                            "delete" -> alarm.isDeleted = true
+                            else -> return "Invalid action. Use enable, disable, or delete."
+                        }
+                        alarms[idx] = alarm
+                        loader.saveWakeupAlarms(alarms)
+                        com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(context)
+                        "Successfully applied '$action' to alarm ${alarm.title}."
+                    }
+                }
+
+                // ==================== MEMORY TOOLS ====================
+                "save_memory" -> {
+                    val fact = args.optString("fact")
+                    com.neubofy.reality.utils.ConversationMemoryManager.addUserFact(context, fact)
+                    "Memory saved successfully."
                 }
 
                 // ==================== ACTION TOOLS ====================
