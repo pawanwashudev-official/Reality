@@ -51,6 +51,8 @@ object GoogleAuthManager {
         "profile"
     )
     
+    val BASIC_SCOPES = listOf("email", "profile")
+
     private fun getPrefs(context: Context) = 
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
@@ -92,13 +94,14 @@ object GoogleAuthManager {
 
 
 
-    fun getAuthUrl(context: Context): String? {
+    fun getAuthUrl(context: Context, basicOnly: Boolean = false): String? {
         val clientId = getClientId(context) ?: return null
+        val scopes = if (basicOnly) BASIC_SCOPES else ALL_SCOPES
 
         return GoogleAuthorizationCodeRequestUrl(
             clientId,
             "http://127.0.0.1:8080/Callback",
-            ALL_SCOPES
+            scopes
         )
         .setAccessType("offline")
         .build()

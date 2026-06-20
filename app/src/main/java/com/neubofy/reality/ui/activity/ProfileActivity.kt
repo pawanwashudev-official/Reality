@@ -154,6 +154,8 @@ class ProfileActivity : BaseActivity() {
         binding.btnSignInOut.setOnClickListener {
             if (GoogleAuthManager.isSignedIn(this)) {
                 GoogleAuthManager.signOut(this)
+                getSharedPreferences("reality_features", Context.MODE_PRIVATE).edit()
+                    .putBoolean("reality_pro_basic_sign_in", false).apply()
                 clearAllConnections()
                 updateUI()
                 TerminalLogger.log("PROFILE: Signed out")
@@ -184,6 +186,8 @@ class ProfileActivity : BaseActivity() {
                     success = GoogleAuthManager.exchangeCodeForTokens(this@ProfileActivity, autoCode)
                     if (success) {
                         withContext(Dispatchers.Main) {
+                            getSharedPreferences("reality_features", Context.MODE_PRIVATE).edit()
+                                .putBoolean("reality_pro_basic_sign_in", false).apply()
                             TerminalLogger.log("PROFILE: Auto-Signed in successfully")
                             android.widget.Toast.makeText(this@ProfileActivity, "Sign-in successful!", android.widget.Toast.LENGTH_SHORT).show()
                             updateUI()
@@ -224,6 +228,8 @@ class ProfileActivity : BaseActivity() {
                                         val manualSuccess = GoogleAuthManager.exchangeCodeForTokens(this@ProfileActivity, code)
                                         withContext(Dispatchers.Main) {
                                             if (manualSuccess) {
+                                                getSharedPreferences("reality_features", Context.MODE_PRIVATE).edit()
+                                                    .putBoolean("reality_pro_basic_sign_in", false).apply()
                                                 android.widget.Toast.makeText(this@ProfileActivity, "Sign-in successful!", android.widget.Toast.LENGTH_SHORT).show()
                                                 updateUI()
                                             } else {
@@ -390,6 +396,16 @@ class ProfileActivity : BaseActivity() {
         val tvUserId = findViewById<android.widget.TextView>(R.id.tv_user_id)
         val btnCopyId = findViewById<android.widget.ImageView>(R.id.btn_copy_id)
         val llUserId = findViewById<android.widget.LinearLayout>(R.id.ll_user_id)
+
+        val tvScopeWarning = findViewById<android.widget.TextView>(R.id.tv_scope_warning)
+        val isBasicSignIn = getSharedPreferences("reality_features", Context.MODE_PRIVATE)
+            .getBoolean("reality_pro_basic_sign_in", false)
+
+        if (isSignedIn && isBasicSignIn) {
+            tvScopeWarning?.visibility = View.VISIBLE
+        } else {
+            tvScopeWarning?.visibility = View.GONE
+        }
 
         val btnGetProAccess = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_get_pro_access)
         if (isSignedIn && !com.neubofy.reality.utils.FeatureManager(this).isRealityProVerified()) {

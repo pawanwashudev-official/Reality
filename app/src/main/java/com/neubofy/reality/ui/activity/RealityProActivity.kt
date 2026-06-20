@@ -52,8 +52,7 @@ class RealityProActivity : BaseActivity() {
         btnCancel = findViewById(R.id.btn_cancel)
 
         btnStep1Signin.setOnClickListener {
-            val intent = Intent(this, ProfileActivity::class.java)
-            startActivity(intent)
+            showKeySelectionDialog()
         }
 
         btnPayUpi.setOnClickListener {
@@ -69,6 +68,80 @@ class RealityProActivity : BaseActivity() {
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             startActivity(intent)
             finish()
+        }
+    }
+
+
+    private fun showKeySelectionDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Sign In Option")
+            .setMessage("Use your own Google Cloud credentials or use Developer Default keys.")
+            .setPositiveButton("Default Key") { _, _ ->
+                MaterialAlertDialogBuilder(this)
+                    .setTitle("Default Keys")
+                    .setMessage("Using Developer Default Keys is completely safe. The developer cannot access your data remotely and it is not stored on our servers.")
+                    .setPositiveButton("Continue") { _, _ ->
+                        performSignIn()
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+            .setNeutralButton("Own Key") { _, _ ->
+                showCustomKeyDialog()
+            }
+            .show()
+    }
+
+    private fun showCustomKeyDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_cloud_settings, null)
+        val etClientId = dialogView.findViewById<android.widget.EditText>(R.id.et_client_id)
+        val etClientSecret = dialogView.findViewById<android.widget.EditText>(R.id.et_client_secret)
+
+        etClientId.setText(GoogleAuthManager.getCustomClientId(this) ?: "")
+        etClientSecret.setText(GoogleAuthManager.getCustomClientSecret(this) ?: "")
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Google Cloud Setup")
+            .setView(dialogView)
+            .setPositiveButton("Save") { _, _ ->
+                val clientId = etClientId.text.toString().trim()
+                val clientSecret = etClientSecret.text.toString().trim()
+                GoogleAuthManager.saveCloudCredentials(this, clientId, clientSecret)
+                Toast.makeText(this, "Credentials saved", Toast.LENGTH_SHORT).show()
+                performSignIn()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun performSignIn() {
+        val url = GoogleAuthManager.getAuthUrl(this, basicOnly = true)
+        if (url != null) {
+            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
+            startActivity(intent)
+
+            lifecycleScope.launch {
+                val autoCode = GoogleAuthManager.startLocalServerAndGetCode()
+
+                var success = false
+                if (autoCode != null) {
+                    success = GoogleAuthManager.exchangeCodeForTokens(this@RealityProActivity, autoCode)
+                    if (success) {
+                        withContext(Dispatchers.Main) {
+                            getSharedPreferences("reality_features", Context.MODE_PRIVATE).edit()
+                                .putBoolean("reality_pro_basic_sign_in", true).apply()
+                            Toast.makeText(this@RealityProActivity, "Sign-in successful!", Toast.LENGTH_SHORT).show()
+                            updateStateUI()
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(this@RealityProActivity, "Sign-in failed. Check credentials.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+        } else {
+            Toast.makeText(this, "Error generating Auth URL. Check Keys.", Toast.LENGTH_LONG).show()
         }
     }
 

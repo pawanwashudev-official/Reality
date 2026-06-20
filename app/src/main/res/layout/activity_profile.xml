@@ -125,6 +125,19 @@
             android:contentDescription="Copy User ID"/>
     </LinearLayout>
         
+    <TextView
+        android:id="@+id/tv_scope_warning"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Note: If you signed in from the Reality Pro page, you only gave email access. To use Google Workspace features (Docs, Drive, Tasks), please Sign Out and Sign In here again."
+        android:textColor="#D32F2F"
+        android:textSize="12sp"
+        android:visibility="gone"
+        android:layout_marginTop="8dp"
+        android:layout_marginHorizontal="16dp"
+        app:layout_constraintTop_toBottomOf="@id/ll_user_id"
+        app:layout_constraintStart_toStartOf="parent"/>
+
     <!-- Content ScrollView -->
     <ScrollView
         android:layout_width="0dp"
@@ -132,7 +145,7 @@
         android:layout_marginTop="16dp"
         android:clipToPadding="false"
         android:paddingBottom="16dp"
-        app:layout_constraintTop_toBottomOf="@id/ll_user_id"
+        app:layout_constraintTop_toBottomOf="@id/tv_scope_warning"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
