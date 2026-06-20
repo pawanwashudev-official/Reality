@@ -63,50 +63,9 @@ class ProfileActivity : BaseActivity() {
         updateUI()
         loadSetupData()
         setupRefreshReceiver()
-        setupCloudSettingsButton()
     }
 
-    private fun setupCloudSettingsButton() {
-        binding.btnCloudSettings.setOnClickListener {
-            val dialogView = layoutInflater.inflate(R.layout.dialog_cloud_settings, null)
-            val etClientId = dialogView.findViewById<android.widget.EditText>(R.id.et_client_id)
-            val etClientSecret = dialogView.findViewById<android.widget.EditText>(R.id.et_client_secret)
 
-            val customId = GoogleAuthManager.getCustomClientId(this)
-            val customSecret = GoogleAuthManager.getCustomClientSecret(this)
-
-            if (!customId.isNullOrBlank()) {
-                etClientId.setText(customId)
-            } else {
-                etClientId.setText("")
-                if (GoogleAuthManager.getClientId(this) != null) {
-                    etClientId.hint = "Developer Default Key In Use"
-                }
-            }
-
-            if (!customSecret.isNullOrBlank()) {
-                etClientSecret.setText(customSecret)
-            } else {
-                etClientSecret.setText("")
-                if (GoogleAuthManager.getClientSecret(this) != null) {
-                    etClientSecret.hint = "Developer Default Key In Use"
-                }
-            }
-
-            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                .setTitle("Google Cloud Setup")
-                .setView(dialogView)
-                .setPositiveButton("Save") { _, _ ->
-                    val clientId = etClientId.text.toString().trim()
-                    val clientSecret = etClientSecret.text.toString().trim()
-
-                    GoogleAuthManager.saveCloudCredentials(this, clientId, clientSecret)
-                    android.widget.Toast.makeText(this, "Credentials saved", android.widget.Toast.LENGTH_SHORT).show()
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
-        }
-    }
     
     private val refreshReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -153,7 +112,7 @@ class ProfileActivity : BaseActivity() {
         binding.btnSignInOut.setOnClickListener {
             if (GoogleAuthManager.isSignedIn(this)) {
                 GoogleAuthManager.signOut(this)
-                getSharedPreferences("reality_features", Context.MODE_PRIVATE).edit()
+                com.neubofy.reality.utils.SecurePreferences.get(this@ProfileActivity, "reality_features").edit()
                     .putBoolean("reality_pro_basic_sign_in", false).apply()
                 clearAllConnections()
                 updateUI()
@@ -166,6 +125,66 @@ class ProfileActivity : BaseActivity() {
     }
     
     private fun performSignIn() {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Sign In Option")
+            .setMessage("Use your own Google Cloud credentials or use Developer Default keys.")
+            .setPositiveButton("Default Key") { _, _ ->
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle("Default Keys")
+                    .setMessage("Using Developer Default Keys is completely safe. The developer cannot access your data remotely and it is not stored on our servers.")
+                    .setPositiveButton("Continue") { _, _ ->
+                        executeSignIn()
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+            .setNeutralButton("Own Key") { _, _ ->
+                showCustomKeyDialog()
+            }
+            .show()
+    }
+
+    private fun showCustomKeyDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_cloud_settings, null)
+        val etClientId = dialogView.findViewById<android.widget.EditText>(R.id.et_client_id)
+        val etClientSecret = dialogView.findViewById<android.widget.EditText>(R.id.et_client_secret)
+
+        val customId = GoogleAuthManager.getCustomClientId(this)
+        val customSecret = GoogleAuthManager.getCustomClientSecret(this)
+
+        if (!customId.isNullOrBlank()) {
+            etClientId.setText(customId)
+        } else {
+            etClientId.setText("")
+            if (GoogleAuthManager.getClientId(this) != null) {
+                etClientId.hint = "Developer Default Key In Use"
+            }
+        }
+
+        if (!customSecret.isNullOrBlank()) {
+            etClientSecret.setText(customSecret)
+        } else {
+            etClientSecret.setText("")
+            if (GoogleAuthManager.getClientSecret(this) != null) {
+                etClientSecret.hint = "Developer Default Key In Use"
+            }
+        }
+
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Google Cloud Setup")
+            .setView(dialogView)
+            .setPositiveButton("Save") { _, _ ->
+                val clientId = etClientId.text.toString().trim()
+                val clientSecret = etClientSecret.text.toString().trim()
+                GoogleAuthManager.saveCloudCredentials(this, clientId, clientSecret)
+                android.widget.Toast.makeText(this, "Credentials saved", android.widget.Toast.LENGTH_SHORT).show()
+                executeSignIn()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun executeSignIn() {
         if (!GoogleAuthManager.hasCloudCredentials(this)) {
             android.widget.Toast.makeText(this, "Please setup Google Cloud Project first via Settings", android.widget.Toast.LENGTH_LONG).show()
             return
@@ -185,7 +204,7 @@ class ProfileActivity : BaseActivity() {
                     success = GoogleAuthManager.exchangeCodeForTokens(this@ProfileActivity, autoCode)
                     if (success) {
                         withContext(Dispatchers.Main) {
-                            getSharedPreferences("reality_features", Context.MODE_PRIVATE).edit()
+                            com.neubofy.reality.utils.SecurePreferences.get(this@ProfileActivity, "reality_features").edit()
                                 .putBoolean("reality_pro_basic_sign_in", false).apply()
                             TerminalLogger.log("PROFILE: Auto-Signed in successfully")
                             android.widget.Toast.makeText(this@ProfileActivity, "Sign-in successful!", android.widget.Toast.LENGTH_SHORT).show()
@@ -204,7 +223,7 @@ class ProfileActivity : BaseActivity() {
 
                         com.google.android.material.dialog.MaterialAlertDialogBuilder(this@ProfileActivity)
                             .setTitle("Enter Auth Code or URL")
-                            .setMessage("Auto-catch timed out or failed. If the browser shows 'Site can\'t be reached', copy the entire URL from the address bar and paste it here.")
+                            .setMessage("Auto-catch timed out or failed. If the browser shows 'Site can't be reached', copy the entire URL from the address bar and paste it here.")
                             .setView(input)
                             .setPositiveButton("Submit") { _, _ ->
                                 var code = input.text.toString().trim()
@@ -227,7 +246,7 @@ class ProfileActivity : BaseActivity() {
                                         val manualSuccess = GoogleAuthManager.exchangeCodeForTokens(this@ProfileActivity, code)
                                         withContext(Dispatchers.Main) {
                                             if (manualSuccess) {
-                                                getSharedPreferences("reality_features", Context.MODE_PRIVATE).edit()
+                                                com.neubofy.reality.utils.SecurePreferences.get(this@ProfileActivity, "reality_features").edit()
                                                     .putBoolean("reality_pro_basic_sign_in", false).apply()
                                                 android.widget.Toast.makeText(this@ProfileActivity, "Sign-in successful!", android.widget.Toast.LENGTH_SHORT).show()
                                                 updateUI()
@@ -245,7 +264,7 @@ class ProfileActivity : BaseActivity() {
             }
         }
     }
-    
+
     private fun setupConnectors() {
         // Tasks connector - Simple list test
         binding.btnConnectTasks.setOnClickListener {
@@ -397,7 +416,7 @@ class ProfileActivity : BaseActivity() {
         val llUserId = findViewById<android.widget.LinearLayout>(R.id.ll_user_id)
 
         val tvScopeWarning = findViewById<android.widget.TextView>(R.id.tv_scope_warning)
-        val isBasicSignIn = getSharedPreferences("reality_features", Context.MODE_PRIVATE)
+        val isBasicSignIn = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_features")
             .getBoolean("reality_pro_basic_sign_in", false)
 
         if (isSignedIn && isBasicSignIn) {

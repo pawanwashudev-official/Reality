@@ -54,7 +54,7 @@ object GoogleAuthManager {
     val BASIC_SCOPES = listOf("email", "profile")
 
     private fun getPrefs(context: Context) = 
-        context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        com.neubofy.reality.utils.SecurePreferences.get(context, PREF_NAME)
 
     fun saveCloudCredentials(context: Context, clientId: String, clientSecret: String) {
         getPrefs(context).edit().apply {

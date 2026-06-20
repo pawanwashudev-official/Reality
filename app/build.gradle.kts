@@ -133,6 +133,7 @@ val webClientId = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
 }
 
 dependencies {
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

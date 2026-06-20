@@ -146,7 +146,7 @@ class RealityProActivity : BaseActivity() {
                     success = GoogleAuthManager.exchangeCodeForTokens(this@RealityProActivity, autoCode)
                     if (success) {
                         withContext(Dispatchers.Main) {
-                            getSharedPreferences("reality_features", Context.MODE_PRIVATE).edit()
+                            com.neubofy.reality.utils.SecurePreferences.get(this@RealityProActivity, "reality_features").edit()
                                 .putBoolean("reality_pro_basic_sign_in", true).apply()
                             Toast.makeText(this@RealityProActivity, "Sign-in successful!", Toast.LENGTH_SHORT).show()
                             updateStateUI()
@@ -189,7 +189,7 @@ class RealityProActivity : BaseActivity() {
         // Step 2: Payment
         var savedCode: String? = null
         if (userId != null) {
-            val prefs = getSharedPreferences("reality_pro_prefs", Context.MODE_PRIVATE)
+            val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
             savedCode = prefs.getString("pro_saved_verification_code_for_$userId", null)
 
             if (savedCode != null) {
@@ -227,6 +227,30 @@ class RealityProActivity : BaseActivity() {
 
         val dialogView = layoutInflater.inflate(R.layout.dialog_upi_payment, null)
         val checkBox = dialogView.findViewById<CheckBox>(R.id.cb_payment_confirm)
+        val btnDeeplink = dialogView.findViewById<MaterialButton>(R.id.btn_upi_deeplink)
+        val btnCopy = dialogView.findViewById<MaterialButton>(R.id.btn_copy_upi)
+        val btnScan = dialogView.findViewById<MaterialButton>(R.id.btn_scan_qr)
+
+        btnDeeplink.setOnClickListener {
+            val uri = android.net.Uri.parse("upi://pay?pa=neubofy@pnb&pn=Reality&am=99&cu=INR&tn=$userId")
+            val intent = Intent(Intent.ACTION_VIEW, uri)
+            try {
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(this, "No UPI app found. Please copy ID.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        btnCopy.setOnClickListener {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = android.content.ClipData.newPlainText("UPI ID", "neubofy@pnb")
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(this, "UPI ID Copied!", Toast.LENGTH_SHORT).show()
+        }
+
+        btnScan.setOnClickListener {
+            Toast.makeText(this, "Please use the UPI App or Copy ID options.", Toast.LENGTH_LONG).show()
+        }
 
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle("Payment Required: ₹99")
@@ -303,7 +327,7 @@ class RealityProActivity : BaseActivity() {
                             val code = jsonResponse.optString("verificationCode", "")
 
                             if (status.equals("SUCCESS", ignoreCase = true) && code.isNotEmpty()) {
-                                val prefs = getSharedPreferences("reality_pro_prefs", Context.MODE_PRIVATE)
+                                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@RealityProActivity, "reality_pro_prefs")
                                 prefs.edit().putString("pro_saved_verification_code_for_$userId", code).apply()
                                 Toast.makeText(this@RealityProActivity, "Request Submitted Successfully!", Toast.LENGTH_LONG).show()
                                 updateStateUI()
@@ -344,7 +368,7 @@ class RealityProActivity : BaseActivity() {
             .setPositiveButton("Continue") { _, _ ->
                 val email = GoogleAuthManager.getUserEmail(this) ?: return@setPositiveButton
                 val userId = MD5Utils.getUserIdFromEmail(email)
-                val prefs = getSharedPreferences("reality_pro_prefs", Context.MODE_PRIVATE)
+                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
                 val savedCode = prefs.getString("pro_saved_verification_code_for_$userId", null)
 
                 if (savedCode != null) {

@@ -34,7 +34,7 @@ export default function RootLayout({
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8 font-mono text-sm">
                 <Link href="/" className="text-gray-300 hover:text-neural-cyan transition-colors px-3 py-2 rounded-md font-medium">HOME</Link>
                 <Link href="/tapashya" className="text-gray-300 hover:text-neural-cyan transition-colors px-3 py-2 rounded-md font-medium border border-neural-cyan/30 rounded-lg">TAPASYA WEB</Link>
-                <Link href="/pro" className="text-gray-300 hover:text-neural-purple transition-colors px-3 py-2 rounded-md font-medium">PRO UPGRADE</Link>
+
                 <Link href="/privacypolicy" className="text-gray-400 hover:text-white transition-colors px-3 py-2 rounded-md font-medium">PRIVACY</Link>
               </div>
             </div>
@@ -50,7 +50,7 @@ export default function RootLayout({
                 <div className="flex flex-wrap justify-center gap-6 mb-6 font-mono text-sm">
                     <Link href="/" className="text-gray-400 hover:text-neural-cyan transition-colors">Home</Link>
                     <Link href="/tapashya" className="text-gray-400 hover:text-neural-cyan transition-colors">Tapasya Web Sync</Link>
-                    <Link href="/pro" className="text-gray-400 hover:text-neural-purple transition-colors">Pro License</Link>
+
                     <Link href="/privacypolicy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</Link>
                     <Link href="/termsofservice" className="text-gray-400 hover:text-white transition-colors">Terms of Service</Link>
                 </div>

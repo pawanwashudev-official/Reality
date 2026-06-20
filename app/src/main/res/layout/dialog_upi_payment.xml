@@ -14,14 +14,28 @@
         android:textSize="14sp"
         android:layout_marginBottom="16dp" />
 
-    <TextView
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_upi_deeplink"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="UPI ID: neubofy@pnb"
-        android:textStyle="bold"
-        android:textSize="16sp"
-        android:gravity="center"
-        android:layout_marginBottom="16dp" />
+        android:text="Pay via UPI App"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_copy_upi"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Copy UPI ID (neubofy@pnb)"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_scan_qr"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Scan QR on Website"
+        android:layout_marginBottom="16dp"/>
 
     <CheckBox
         android:id="@+id/cb_payment_confirm"
