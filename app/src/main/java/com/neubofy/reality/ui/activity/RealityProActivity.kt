@@ -248,8 +248,17 @@ class RealityProActivity : BaseActivity() {
             Toast.makeText(this, "UPI ID Copied!", Toast.LENGTH_SHORT).show()
         }
 
+        val ivQrCode = dialogView.findViewById<android.widget.ImageView>(R.id.iv_qr_code)
         btnScan.setOnClickListener {
-            Toast.makeText(this, "Please use the UPI App or Copy ID options.", Toast.LENGTH_LONG).show()
+            if (ivQrCode.visibility == View.GONE) {
+                val bitmap = com.neubofy.reality.utils.QRUtils.generateQRCode("upi://pay?pa=neubofy@pnb&pn=Reality&am=99&cu=INR&tn=$userId", 512)
+                ivQrCode.setImageBitmap(bitmap)
+                ivQrCode.visibility = View.VISIBLE
+                btnScan.text = "Hide QR Code"
+            } else {
+                ivQrCode.visibility = View.GONE
+                btnScan.text = "Show QR Code"
+            }
         }
 
         val dialog = MaterialAlertDialogBuilder(this)
