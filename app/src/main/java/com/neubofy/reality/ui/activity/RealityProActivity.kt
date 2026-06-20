@@ -97,8 +97,26 @@ class RealityProActivity : BaseActivity() {
         val etClientId = dialogView.findViewById<android.widget.EditText>(R.id.et_client_id)
         val etClientSecret = dialogView.findViewById<android.widget.EditText>(R.id.et_client_secret)
 
-        etClientId.setText(GoogleAuthManager.getCustomClientId(this) ?: "")
-        etClientSecret.setText(GoogleAuthManager.getCustomClientSecret(this) ?: "")
+        val customId = GoogleAuthManager.getCustomClientId(this)
+        val customSecret = GoogleAuthManager.getCustomClientSecret(this)
+
+        if (!customId.isNullOrBlank()) {
+            etClientId.setText(customId)
+        } else {
+            etClientId.setText("")
+            if (GoogleAuthManager.getClientId(this) != null) {
+                etClientId.hint = "Developer Default Key In Use"
+            }
+        }
+
+        if (!customSecret.isNullOrBlank()) {
+            etClientSecret.setText(customSecret)
+        } else {
+            etClientSecret.setText("")
+            if (GoogleAuthManager.getClientSecret(this) != null) {
+                etClientSecret.hint = "Developer Default Key In Use"
+            }
+        }
 
         MaterialAlertDialogBuilder(this)
             .setTitle("Google Cloud Setup")
@@ -269,15 +287,9 @@ class RealityProActivity : BaseActivity() {
                 if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
                     val newUrl = conn.getHeaderField("Location")
                     conn = URL(newUrl).openConnection() as HttpURLConnection
-                    conn.requestMethod = "POST"
-                    conn.setRequestProperty("Content-Type", "application/json")
-                    conn.doOutput = true
+                    conn.requestMethod = "GET"
                     conn.connectTimeout = 10000
                     conn.readTimeout = 10000
-                    OutputStreamWriter(conn.outputStream).use { writer ->
-                        writer.write(jsonBody.toString())
-                        writer.flush()
-                    }
                     responseCode = conn.responseCode
                 }
 

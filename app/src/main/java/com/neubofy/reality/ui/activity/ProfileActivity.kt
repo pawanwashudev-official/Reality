@@ -77,18 +77,20 @@ class ProfileActivity : BaseActivity() {
 
             if (!customId.isNullOrBlank()) {
                 etClientId.setText(customId)
-            } else if (GoogleAuthManager.getClientId(this) != null) {
-                etClientId.setText("developer default")
             } else {
                 etClientId.setText("")
+                if (GoogleAuthManager.getClientId(this) != null) {
+                    etClientId.hint = "Developer Default Key In Use"
+                }
             }
 
             if (!customSecret.isNullOrBlank()) {
                 etClientSecret.setText(customSecret)
-            } else if (GoogleAuthManager.getClientSecret(this) != null) {
-                etClientSecret.setText("developer default")
             } else {
                 etClientSecret.setText("")
+                if (GoogleAuthManager.getClientSecret(this) != null) {
+                    etClientSecret.hint = "Developer Default Key In Use"
+                }
             }
 
             com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
@@ -98,10 +100,7 @@ class ProfileActivity : BaseActivity() {
                     val clientId = etClientId.text.toString().trim()
                     val clientSecret = etClientSecret.text.toString().trim()
 
-                    val idToSave = if (clientId == "developer default") "" else clientId
-                    val secretToSave = if (clientSecret == "developer default") "" else clientSecret
-
-                    GoogleAuthManager.saveCloudCredentials(this, idToSave, secretToSave)
+                    GoogleAuthManager.saveCloudCredentials(this, clientId, clientSecret)
                     android.widget.Toast.makeText(this, "Credentials saved", android.widget.Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton("Cancel", null)
