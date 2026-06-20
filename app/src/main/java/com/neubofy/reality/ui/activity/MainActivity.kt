@@ -168,8 +168,6 @@ class MainActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         
-        checkAndShowSleepVerification()
-        
         loadStatistics()
         checkAndRequestNextPermission()
         startStatusUpdater()
@@ -207,6 +205,12 @@ class MainActivity : BaseActivity() {
         menu.findItem(R.id.nav_calendar)?.isVisible = isRealityProEnabled
         menu.findItem(R.id.nav_nightly)?.isVisible = isRealityProEnabled
         menu.findItem(R.id.nav_tapasya)?.isVisible = featureManager.isTapasyaEnabled()
+
+        if (!isRealityProEnabled && !featureManager.isTapasyaEnabled()) {
+            binding.bottomNavigation.visibility = android.view.View.GONE
+        } else {
+            binding.bottomNavigation.visibility = android.view.View.VISIBLE
+        }
     }
 
     // New Staggered Animation Logic
@@ -481,10 +485,15 @@ class MainActivity : BaseActivity() {
             }
             popup.menu.add(0, 2, 3, "📖 User Manual")
             popup.menu.add(0, 3, 4, "📱 About Reality")
-            popup.menu.add(0, 1, 5, "🌐 Reality Website")
+            popup.menu.add(0, 8, 5, "⏰ Sleep & Alarm")
+            popup.menu.add(0, 1, 6, "🌐 Reality Website")
             
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
+                    8 -> {
+                        startActivity(Intent(this, SmartSleepActivity::class.java))
+                        true
+                    }
                     1 -> {
                         // Reality Website
                         val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://reality.neubofy.in"))
@@ -1221,23 +1230,4 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun checkAndShowSleepVerification() {
-        val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this)
-        if (!loader.isSmartSleepEnabled()) return
-
-        // Timing guard is now centralized in SleepInferenceHelper.inferSleepSession()
-        // It will return null if called before bedtime ends.
-
-        lifecycleScope.launch {
-            val healthManager = com.neubofy.reality.health.HealthManager(this@MainActivity)
-            val today = LocalDate.now()
-            
-            if (healthManager.isSleepSyncedToday(today)) return@launch
-
-            val session = com.neubofy.reality.utils.SleepInferenceHelper.inferSleepSession(this@MainActivity, today)
-            if (session != null) {
-                startActivity(Intent(this@MainActivity, SmartSleepActivity::class.java))
-            }
-        }
-    }
 }
