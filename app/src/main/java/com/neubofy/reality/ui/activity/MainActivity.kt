@@ -482,6 +482,7 @@ class MainActivity : BaseActivity() {
             popup.menu.add(0, 2, 3, "📖 User Manual")
             popup.menu.add(0, 3, 4, "📱 About Reality")
             popup.menu.add(0, 1, 5, "🌐 Reality Website")
+            popup.menu.add(0, 8, 6, "😴 Sleep & Alarms")
             
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
@@ -489,6 +490,10 @@ class MainActivity : BaseActivity() {
                         // Reality Website
                         val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://reality.neubofy.in"))
                         startActivity(intent)
+                        true
+                    }
+                    8 -> {
+                        startActivity(Intent(this, SmartSleepActivity::class.java))
                         true
                     }
                     5 -> {

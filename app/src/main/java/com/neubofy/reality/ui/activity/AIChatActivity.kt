@@ -520,7 +520,11 @@ open class AIChatActivity : BaseActivity() {
                 append("\n- ANTI-LOOP: Do not call the same tool with the same arguments twice.")
                 append("\n- COMPLETION: Do not call tools indefinitely. Aim to answer in 2-3 steps maximum.")
                 append("\n- IMAGE: If you use `generate_image`, include the markdown link ![Generated Image](URL) in your message.")
-                if (userIntro.isNotEmpty()) append("\n\nUser context: $userIntro")
+                                if (userIntro.isNotEmpty()) append("\n\nUser context: $userIntro")
+
+                val userFacts = com.neubofy.reality.utils.ConversationMemoryManager.getUserFactsContext(this@AIChatActivity)
+                if (userFacts != null) append("\n\n$userFacts")
+
                 append("\n\n$toolDiscovery")
             }
             

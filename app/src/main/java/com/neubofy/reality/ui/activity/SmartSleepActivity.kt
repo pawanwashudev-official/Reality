@@ -50,23 +50,40 @@ class SmartSleepActivity : BaseActivity() {
         var isUnlockedThisSession = false
     }
 
+    private var pendingDismissAlarmId: String? = null
+    private var pendingExpectedAnswer: Double? = null
+
     private val qrScannerLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             isUnlockedThisSession = true
 
-            // Stop alarm ringing, but DO NOT dismiss it yet.
-            // It will be dismissed ONLY when the math problem is solved.
-            // If they close the app now, it's considered a missed alarm and it will snooze/ring again.
-            val stopIntent = android.content.Intent(this, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
-                this.action = "PAUSE_RINGING"
-            }
-            startService(stopIntent)
+            // The user has successfully scanned QR. Now we can actually stop and delete the alarm.
+            val alarmId = pendingDismissAlarmId
+            if (alarmId != null) {
+                // Stop Service
+                val stopIntent = android.content.Intent(this@SmartSleepActivity, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
+                    this.action = "STOP"
+                }
+                startService(stopIntent)
+                // Delete alarm if it is a non-repeating alarm
+                val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this@SmartSleepActivity)
+                val alarms = loader.loadWakeupAlarms()
+                val idx = alarms.indexOfFirst { it.id == alarmId }
+                if (idx != -1 && alarms[idx].repeatDays.isEmpty()) {
+                    alarms[idx] = alarms[idx].copy(isDeleted = true)
+                    loader.saveWakeupAlarms(alarms)
+                }
+                com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(this@SmartSleepActivity)
 
-            checkHealthPermissionsFlow()
-            checkAndShowMathDismissDialog()
+                lifecycleScope.launch {
+                    com.neubofy.reality.utils.SleepInferenceHelper.autoConfirmSleep(this@SmartSleepActivity)
+                    loadSessions() // Refresh UI
+                }
+
+                pendingDismissAlarmId = null
+            }
         } else {
-            Toast.makeText(this, "Scan QR to unlock", Toast.LENGTH_SHORT).show()
-            finish()
+             android.widget.Toast.makeText(this, "QR Scan Required to Dismiss Alarm", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -104,14 +121,8 @@ class SmartSleepActivity : BaseActivity() {
         setupRecyclerView()
         setupUI()
         
-        // QR Gatekeeper: Any entry to this page requires scan
-        if (!isUnlockedThisSession) {
-            binding.root.visibility = View.GONE // Hide until verified
-            qrScannerLauncher.launch(android.content.Intent(this, QRScannerActivity::class.java))
-        } else {
-            checkHealthPermissionsFlow()
-            checkAndShowMathDismissDialog()
-        }
+        checkHealthPermissionsFlow()
+        checkAndShowMathDismissDialog()
     }
 
     private fun checkHealthPermissionsFlow() {
