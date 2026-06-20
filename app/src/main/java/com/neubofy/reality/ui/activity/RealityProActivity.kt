@@ -1,28 +1,42 @@
 package com.neubofy.reality.ui.activity
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
+import android.widget.CheckBox
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import com.neubofy.reality.ui.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.neubofy.reality.BuildConfig
 import com.neubofy.reality.R
 import com.neubofy.reality.google.GoogleAuthManager
+import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.utils.FeatureManager
 import com.neubofy.reality.utils.MD5Utils
 import com.neubofy.reality.utils.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
-import androidx.activity.enableEdgeToEdge
 
 class RealityProActivity : BaseActivity() {
+
+    private lateinit var btnStep1Signin: MaterialButton
+    private lateinit var cardStep2: MaterialCardView
+    private lateinit var btnPayUpi: MaterialButton
+    private lateinit var cardStep3: MaterialCardView
+    private lateinit var btnVerify: MaterialButton
+    private lateinit var btnCancel: MaterialButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)
@@ -30,29 +44,24 @@ class RealityProActivity : BaseActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_reality_pro)
 
-        val etCode = findViewById<TextInputEditText>(R.id.et_activation_code)
-        val btnVerify = findViewById<MaterialButton>(R.id.btn_verify)
-        val btnGetCode = findViewById<MaterialButton>(R.id.btn_get_code)
-        val btnCancel = findViewById<MaterialButton>(R.id.btn_cancel)
-        val btnLogin = findViewById<MaterialButton>(R.id.btn_login)
+        btnStep1Signin = findViewById(R.id.btn_step1_signin)
+        cardStep2 = findViewById(R.id.card_step2)
+        btnPayUpi = findViewById(R.id.btn_pay_upi)
+        cardStep3 = findViewById(R.id.card_step3)
+        btnVerify = findViewById(R.id.btn_verify)
+        btnCancel = findViewById(R.id.btn_cancel)
 
-        btnLogin.setOnClickListener {
+        btnStep1Signin.setOnClickListener {
             val intent = Intent(this, ProfileActivity::class.java)
             startActivity(intent)
         }
 
-        btnVerify.setOnClickListener {
-            val code = etCode.text.toString().trim()
-            if (code.isEmpty()) {
-                Toast.makeText(this, "Please enter an activation code", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            verifyCode(code)
+        btnPayUpi.setOnClickListener {
+            showUpiPaymentDialog()
         }
 
-        btnGetCode.setOnClickListener {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://reality.neubofy.in/pro"))
-            startActivity(intent)
+        btnVerify.setOnClickListener {
+            showVerifyDialog()
         }
 
         btnCancel.setOnClickListener {
@@ -61,6 +70,206 @@ class RealityProActivity : BaseActivity() {
             startActivity(intent)
             finish()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateStateUI()
+    }
+
+    private fun updateStateUI() {
+        val email = GoogleAuthManager.getUserEmail(this) ?: ""
+        val isSignedIn = GoogleAuthManager.isSignedIn(this) && email.isNotEmpty()
+        val userId = if (isSignedIn) MD5Utils.getUserIdFromEmail(email) else null
+
+        // Step 1: Identity
+        if (isSignedIn && userId != null) {
+            btnStep1Signin.isEnabled = false
+            btnStep1Signin.text = "Signed In"
+            cardStep2.alpha = 1.0f
+            btnPayUpi.isEnabled = true
+        } else {
+            btnStep1Signin.isEnabled = true
+            btnStep1Signin.text = "Sign In with Google"
+            cardStep2.alpha = 0.5f
+            btnPayUpi.isEnabled = false
+        }
+
+        // Step 2: Payment
+        var savedCode: String? = null
+        if (userId != null) {
+            val prefs = getSharedPreferences("reality_pro_prefs", Context.MODE_PRIVATE)
+            savedCode = prefs.getString("pro_saved_verification_code_for_$userId", null)
+
+            if (savedCode != null) {
+                btnPayUpi.isEnabled = false
+                btnPayUpi.text = "Submitted"
+                cardStep3.alpha = 1.0f
+                btnVerify.isEnabled = true
+            } else {
+                if (isSignedIn) {
+                    btnPayUpi.isEnabled = true
+                    btnPayUpi.text = "UPI (₹99)"
+                }
+                cardStep3.alpha = 0.5f
+                btnVerify.isEnabled = false
+            }
+        } else {
+            cardStep3.alpha = 0.5f
+            btnVerify.isEnabled = false
+        }
+
+        // Step 3: Verification
+        val featureManager = FeatureManager(this)
+        if (featureManager.isRealityProVerified()) {
+            btnVerify.isEnabled = false
+            btnVerify.text = "Verified"
+        } else if (savedCode != null) {
+            btnVerify.isEnabled = true
+            btnVerify.text = "Verify Status"
+        }
+    }
+
+    private fun showUpiPaymentDialog() {
+        val email = GoogleAuthManager.getUserEmail(this) ?: return
+        val userId = MD5Utils.getUserIdFromEmail(email)
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_upi_payment, null)
+        val checkBox = dialogView.findViewById<CheckBox>(R.id.cb_payment_confirm)
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle("Payment Required: ₹99")
+            .setView(dialogView)
+            .setPositiveButton("Submit Request", null)
+            .setNegativeButton("Cancel", null)
+            .setCancelable(false)
+            .create()
+
+        dialog.setOnShowListener {
+            val submitBtn = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)
+            submitBtn.isEnabled = false
+
+            checkBox.setOnCheckedChangeListener { _, isChecked ->
+                submitBtn.isEnabled = isChecked
+            }
+
+            submitBtn.setOnClickListener {
+                dialog.dismiss()
+                submitPaymentRequest(userId)
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun submitPaymentRequest(userId: String) {
+        val baseUrl = BuildConfig.REALITY_LICENSE_URL
+
+        if (baseUrl.isEmpty()) {
+            Toast.makeText(this, "License URL not configured in build.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        btnPayUpi.isEnabled = false
+        btnPayUpi.text = "Submitting..."
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                // Post request to Reality License URL to log payment submission
+                val url = URL(baseUrl)
+                var conn = url.openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.doOutput = true
+                conn.connectTimeout = 10000
+                conn.readTimeout = 10000
+
+                val jsonBody = JSONObject()
+                jsonBody.put("userId", userId)
+
+                OutputStreamWriter(conn.outputStream).use { writer ->
+                    writer.write(jsonBody.toString())
+                    writer.flush()
+                }
+
+                var responseCode = conn.responseCode
+                if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
+                    val newUrl = conn.getHeaderField("Location")
+                    conn = URL(newUrl).openConnection() as HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.doOutput = true
+                    conn.connectTimeout = 10000
+                    conn.readTimeout = 10000
+                    OutputStreamWriter(conn.outputStream).use { writer ->
+                        writer.write(jsonBody.toString())
+                        writer.flush()
+                    }
+                    responseCode = conn.responseCode
+                }
+
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val responseStr = conn.inputStream.bufferedReader().use { it.readText() }.trim()
+
+                    withContext(Dispatchers.Main) {
+                        try {
+                            val jsonResponse = JSONObject(responseStr)
+                            val status = jsonResponse.optString("status", "")
+                            val code = jsonResponse.optString("verificationCode", "")
+
+                            if (status.equals("SUCCESS", ignoreCase = true) && code.isNotEmpty()) {
+                                val prefs = getSharedPreferences("reality_pro_prefs", Context.MODE_PRIVATE)
+                                prefs.edit().putString("pro_saved_verification_code_for_$userId", code).apply()
+                                Toast.makeText(this@RealityProActivity, "Request Submitted Successfully!", Toast.LENGTH_LONG).show()
+                                updateStateUI()
+                            } else {
+                                val errorMsg = jsonResponse.optString("error", "Unknown error")
+                                Toast.makeText(this@RealityProActivity, "Submission failed: $errorMsg", Toast.LENGTH_LONG).show()
+                                resetUpiButton()
+                            }
+                        } catch (e: Exception) {
+                            Toast.makeText(this@RealityProActivity, "Invalid response from server", Toast.LENGTH_LONG).show()
+                            resetUpiButton()
+                        }
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@RealityProActivity, "Server Error: $responseCode", Toast.LENGTH_LONG).show()
+                        resetUpiButton()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@RealityProActivity, "Network Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    resetUpiButton()
+                }
+            }
+        }
+    }
+
+    private fun resetUpiButton() {
+        btnPayUpi.isEnabled = true
+        btnPayUpi.text = "UPI (₹99)"
+    }
+
+    private fun showVerifyDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Manual Verification")
+            .setMessage("Because we verify payments manually to keep the app independent, approval may take up to 1 hour during the day (IST) or up to 6 hours overnight (IST). Please do not spam the verify button.")
+            .setPositiveButton("Continue") { _, _ ->
+                val email = GoogleAuthManager.getUserEmail(this) ?: return@setPositiveButton
+                val userId = MD5Utils.getUserIdFromEmail(email)
+                val prefs = getSharedPreferences("reality_pro_prefs", Context.MODE_PRIVATE)
+                val savedCode = prefs.getString("pro_saved_verification_code_for_$userId", null)
+
+                if (savedCode != null) {
+                    verifyCode(savedCode)
+                } else {
+                    Toast.makeText(this, "No verification code found. Please submit payment request first.", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun verifyCode(vCode: String) {
@@ -118,7 +327,7 @@ class RealityProActivity : BaseActivity() {
                             startActivity(intent)
                             finish()
                         } else {
-                            Toast.makeText(this@RealityProActivity, "Verification failed: Invalid code", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this@RealityProActivity, "We haven't verified your payment yet. Please check back later.", Toast.LENGTH_LONG).show()
                             resetVerifyButton()
                         }
                     }
@@ -139,7 +348,7 @@ class RealityProActivity : BaseActivity() {
 
     private fun resetVerifyButton() {
         findViewById<MaterialButton>(R.id.btn_verify).isEnabled = true
-        findViewById<MaterialButton>(R.id.btn_verify).text = "Verify & Activate"
+        findViewById<MaterialButton>(R.id.btn_verify).text = "Verify Status"
     }
 
     @Deprecated("Deprecated in Java")

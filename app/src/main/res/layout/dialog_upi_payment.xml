@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="IMPORTANT: You MUST include your User ID in the payment notes/description so our team can verify and approve it. Approval may take up to 6 hours."
+        android:textColor="#D32F2F"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="UPI ID: neubofy@pnb"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <CheckBox
+        android:id="@+id/cb_payment_confirm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="I have paid ₹99 and included my User ID in the payment notes."
+        android:textSize="14sp" />
+
+</LinearLayout>

@@ -72,8 +72,24 @@ class ProfileActivity : BaseActivity() {
             val etClientId = dialogView.findViewById<android.widget.EditText>(R.id.et_client_id)
             val etClientSecret = dialogView.findViewById<android.widget.EditText>(R.id.et_client_secret)
 
-            etClientId.setText(GoogleAuthManager.getCustomClientId(this) ?: "")
-            etClientSecret.setText(GoogleAuthManager.getCustomClientSecret(this) ?: "")
+            val customId = GoogleAuthManager.getCustomClientId(this)
+            val customSecret = GoogleAuthManager.getCustomClientSecret(this)
+
+            if (!customId.isNullOrBlank()) {
+                etClientId.setText(customId)
+            } else if (GoogleAuthManager.getClientId(this) != null) {
+                etClientId.setText("developer default")
+            } else {
+                etClientId.setText("")
+            }
+
+            if (!customSecret.isNullOrBlank()) {
+                etClientSecret.setText(customSecret)
+            } else if (GoogleAuthManager.getClientSecret(this) != null) {
+                etClientSecret.setText("developer default")
+            } else {
+                etClientSecret.setText("")
+            }
 
             com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                 .setTitle("Google Cloud Setup")
@@ -81,7 +97,11 @@ class ProfileActivity : BaseActivity() {
                 .setPositiveButton("Save") { _, _ ->
                     val clientId = etClientId.text.toString().trim()
                     val clientSecret = etClientSecret.text.toString().trim()
-                    GoogleAuthManager.saveCloudCredentials(this, clientId, clientSecret)
+
+                    val idToSave = if (clientId == "developer default") "" else clientId
+                    val secretToSave = if (clientSecret == "developer default") "" else clientSecret
+
+                    GoogleAuthManager.saveCloudCredentials(this, idToSave, secretToSave)
                     android.widget.Toast.makeText(this, "Credentials saved", android.widget.Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton("Cancel", null)
@@ -370,6 +390,16 @@ class ProfileActivity : BaseActivity() {
         val tvUserId = findViewById<android.widget.TextView>(R.id.tv_user_id)
         val btnCopyId = findViewById<android.widget.ImageView>(R.id.btn_copy_id)
         val llUserId = findViewById<android.widget.LinearLayout>(R.id.ll_user_id)
+
+        val btnGetProAccess = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_get_pro_access)
+        if (isSignedIn && !com.neubofy.reality.utils.FeatureManager(this).isRealityProVerified()) {
+            btnGetProAccess?.visibility = View.VISIBLE
+            btnGetProAccess?.setOnClickListener {
+                startActivity(Intent(this, RealityProActivity::class.java))
+            }
+        } else {
+            btnGetProAccess?.visibility = View.GONE
+        }
 
         if (isSignedIn && email.isNotEmpty()) {
             val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(email)
