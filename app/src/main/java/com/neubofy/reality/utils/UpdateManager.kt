@@ -140,35 +140,30 @@ object UpdateManager {
             timeZone = java.util.TimeZone.getTimeZone("UTC")
         }
 
+        var maxAssetTime = 0L
         for (i in 0 until assetsArray.length()) {
             val asset = assetsArray.getJSONObject(i)
             val name = asset.getString("name")
             if (name.endsWith(".apk")) {
                 val updatedAtStr = asset.optString("updated_at", "")
+                var assetTime = 0L
                 val formattedDate = try {
                     val date = parseFormat.parse(updatedAtStr)
-                    if (date != null) displayFormat.format(date) else updatedAtStr
+                    if (date != null) {
+                        assetTime = date.time
+                        displayFormat.format(date)
+                    } else updatedAtStr
                 } catch (e: Exception) {
                     updatedAtStr
+                }
+                if (assetTime > maxAssetTime) {
+                    maxAssetTime = assetTime
                 }
                 apkAssets.add(Triple(name, asset.getString("browser_download_url"), formattedDate))
             }
         }
 
         val releaseNotes = release.getString("body")
-
-        // The published_at date of the GitHub release
-        val publishedAtStr = release.optString("published_at", "")
-        var releaseTime = 0L
-        if (publishedAtStr.isNotEmpty()) {
-            releaseTime = try {
-                val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
-                format.timeZone = java.util.TimeZone.getTimeZone("UTC")
-                format.parse(publishedAtStr)?.time ?: 0L
-            } catch (e: Exception) {
-                0L
-            }
-        }
 
         val appLastUpdateTime = try {
             context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
@@ -183,15 +178,16 @@ object UpdateManager {
             isNewerVersion(latestVersion, BuildConfig.VERSION_NAME)
         }
 
-        // If the release was published AFTER our app was last updated,
+        // If the APK asset was updated AFTER our app was last updated,
         // it means the APK changed without a version bump, so it's a valid new update.
-        if (!isEligible && latestVersion == BuildConfig.VERSION_NAME && releaseTime > appLastUpdateTime && releaseTime > 0L) {
+        if (!isEligible && latestVersion == BuildConfig.VERSION_NAME && maxAssetTime > appLastUpdateTime && maxAssetTime > 0L) {
             isEligible = true
         }
 
         if (isEligible && apkAssets.isNotEmpty()) {
             withContext(Dispatchers.Main) {
-                if (apkAssets.size == 1) {
+                val isStrictlyNewer = isNewerVersion(latestVersion, BuildConfig.VERSION_NAME)
+                if (isStrictlyNewer && apkAssets.size == 1) {
                     val finalNotes = "$releaseNotes\n\nAPK File Date: ${apkAssets[0].third}"
                     showUpdateDialog(context, latestVersion, apkAssets[0].second, finalNotes)
                 } else {
