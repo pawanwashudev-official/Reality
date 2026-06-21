@@ -134,12 +134,24 @@ object UpdateManager {
         val latestVersion = release.getString("tag_name").replace("v", "")
         val assetsArray = release.getJSONArray("assets")
 
-        val apkAssets = mutableListOf<Pair<String, String>>()
+        val apkAssets = mutableListOf<Triple<String, String, String>>()
+        val displayFormat = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+        val parseFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+            timeZone = java.util.TimeZone.getTimeZone("UTC")
+        }
+
         for (i in 0 until assetsArray.length()) {
             val asset = assetsArray.getJSONObject(i)
             val name = asset.getString("name")
             if (name.endsWith(".apk")) {
-                apkAssets.add(Pair(name, asset.getString("browser_download_url")))
+                val updatedAtStr = asset.optString("updated_at", "")
+                val formattedDate = try {
+                    val date = parseFormat.parse(updatedAtStr)
+                    if (date != null) displayFormat.format(date) else updatedAtStr
+                } catch (e: Exception) {
+                    updatedAtStr
+                }
+                apkAssets.add(Triple(name, asset.getString("browser_download_url"), formattedDate))
             }
         }
 
@@ -180,7 +192,8 @@ object UpdateManager {
         if (isEligible && apkAssets.isNotEmpty()) {
             withContext(Dispatchers.Main) {
                 if (apkAssets.size == 1) {
-                    showUpdateDialog(context, latestVersion, apkAssets[0].second, releaseNotes)
+                    val finalNotes = "$releaseNotes\n\nAPK File Date: ${apkAssets[0].third}"
+                    showUpdateDialog(context, latestVersion, apkAssets[0].second, finalNotes)
                 } else {
                     showApkSelectionDialog(context, latestVersion, apkAssets, releaseNotes)
                 }
@@ -235,12 +248,13 @@ object UpdateManager {
         }
     }
 
-    private fun showApkSelectionDialog(context: Context, version: String, apks: List<Pair<String, String>>, notes: String) {
-        val names = apks.map { it.first }.toTypedArray()
+    private fun showApkSelectionDialog(context: Context, version: String, apks: List<Triple<String, String, String>>, notes: String) {
+        val names = apks.map { "${it.first}\nDate: ${it.third}" }.toTypedArray()
         AlertDialog.Builder(context)
             .setTitle("Select Update APK")
             .setItems(names) { _, which ->
-                showUpdateDialog(context, version, apks[which].second, notes)
+                val finalNotes = "$notes\n\nAPK File Date: ${apks[which].third}"
+                showUpdateDialog(context, version, apks[which].second, finalNotes)
             }
             .setNegativeButton("Cancel", null)
             .show()
