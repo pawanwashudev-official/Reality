@@ -2,6 +2,7 @@ package com.neubofy.reality.utils
 
 import android.content.Context
 import android.util.Log
+import android.app.AlertDialog
 import com.azhon.appupdate.manager.DownloadManager
 import com.neubofy.reality.BuildConfig
 import com.neubofy.reality.R
@@ -45,14 +46,33 @@ object UpdateManager {
                 val response = fetchGitHubRelease()
                 if (response != null) {
                     val latestVersion = response.getString("tag_name").replace("v", "")
-                    val downloadUrl = response.getJSONArray("assets")
-                        .getJSONObject(0) // Logic: first asset is the APK
-                        .getString("browser_download_url")
+                    val assetsArray = response.getJSONArray("assets")
+
+                    val apkAssets = mutableListOf<Pair<String, String>>()
+                    for (i in 0 until assetsArray.length()) {
+                        val asset = assetsArray.getJSONObject(i)
+                        val name = asset.getString("name")
+                        if (name.endsWith(".apk")) {
+                            apkAssets.add(Pair(name, asset.getString("browser_download_url")))
+                        }
+                    }
+
                     val releaseNotes = response.getString("body")
 
-                    if (isNewerVersion(latestVersion, BuildConfig.VERSION_NAME)) {
+                    // If manual check (!silent), allow same version update. Otherwise, require strictly newer.
+                    val isEligible = if (!silent) {
+                        isNewerOrEqualVersion(latestVersion, BuildConfig.VERSION_NAME)
+                    } else {
+                        isNewerVersion(latestVersion, BuildConfig.VERSION_NAME)
+                    }
+
+                    if (isEligible && apkAssets.isNotEmpty()) {
                         withContext(Dispatchers.Main) {
-                            showUpdateDialog(context, latestVersion, downloadUrl, releaseNotes)
+                            if (apkAssets.size == 1) {
+                                showUpdateDialog(context, latestVersion, apkAssets[0].second, releaseNotes)
+                            } else {
+                                showApkSelectionDialog(context, latestVersion, apkAssets, releaseNotes)
+                            }
                         }
                     } else {
                         if (!silent) withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
@@ -94,6 +114,32 @@ object UpdateManager {
         } catch (e: Exception) {
             latest != current // Fallback to string comparison
         }
+    }
+
+    private fun isNewerOrEqualVersion(latest: String, current: String): Boolean {
+        return try {
+            val latestParts = latest.split(".").map { it.toInt() }
+            val currentParts = current.split(".").map { it.toInt() }
+
+            for (i in 0 until minOf(latestParts.size, currentParts.size)) {
+                if (latestParts[i] > currentParts[i]) return true
+                if (latestParts[i] < currentParts[i]) return false
+            }
+            latestParts.size >= currentParts.size
+        } catch (e: Exception) {
+            true // Fallback to allow if string comparison fails
+        }
+    }
+
+    private fun showApkSelectionDialog(context: Context, version: String, apks: List<Pair<String, String>>, notes: String) {
+        val names = apks.map { it.first }.toTypedArray()
+        AlertDialog.Builder(context)
+            .setTitle("Select Update APK")
+            .setItems(names) { _, which ->
+                showUpdateDialog(context, version, apks[which].second, notes)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun showUpdateDialog(context: Context, version: String, url: String, notes: String) {
