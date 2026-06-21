@@ -9,6 +9,7 @@
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/pawanwashudev-official/Reality?style=for-the-badge&color=orange)](https://github.com/pawanwashudev-official/Reality/releases)
 [![GitHub All Releases](https://img.shields.io/github/downloads/pawanwashudev-official/Reality/total?style=for-the-badge&color=success)](https://github.com/pawanwashudev-official/Reality/releases)
+[![License](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg?style=for-the-badge)](https://www.android.com)
 [![Privacy](https://img.shields.io/badge/Data-Local%20%2B%20Your%20G--Drive-lock.svg?style=for-the-badge&color=teal)]()
 [![AI](https://img.shields.io/badge/AI-Bring%20Your%20Own%20Key-purple.svg?style=for-the-badge)]()
@@ -24,21 +25,6 @@
 [**🌐 Official Website**](https://reality.neubofy.in) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
 
 </div>
-
-## Complete App Documentation & Feature Analysis
-
-**Version:** 1.0.5 | **Platform:** Android 26+ | **Language:** Kotlin (99%) | **License:** Open Source
-**Developer:** Pawan Washudev (Neubofy) | **Website:** https://reality.neubofy.in
-
----
-
-## 📋 TABLE OF CONTENTS
-1. [Executive Summary](#executive-summary)
-2. [Complete Feature Matrix](#complete-feature-matrix)
-3. [Deep Technical Architecture](#deep-technical-architecture)
-4. [All Hidden & Advanced Features](#all-hidden--advanced-features)
-5. [Competitive Comparison](#competitive-comparison)
-6. [System Requirements & Permissions](#system-requirements--permissions)
 
 ---
 
