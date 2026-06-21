@@ -120,11 +120,7 @@ class QRScannerActivity : BaseActivity() {
                         if (barcode.valueType == Barcode.TYPE_TEXT || barcode.valueType == Barcode.TYPE_URL) {
                             val rawValue = barcode.rawValue
                             if (rawValue != null) {
-                                if (rawValue == "reality://smart_sleep") {
-                                    isProcessing = true
-                                    handleSmartSleepSuccess()
-                                    break
-                                } else if (rawValue.startsWith("Reality:Tapashya?data=")) {
+                                if (rawValue.startsWith("Reality:Tapashya?data=")) {
                                     isProcessing = true
                                     handleTapashyaSync(rawValue)
                                     break
@@ -136,14 +132,6 @@ class QRScannerActivity : BaseActivity() {
                 .addOnCompleteListener {
                     imageProxy.close()
                 }
-        }
-    }
-
-    private fun handleSmartSleepSuccess() {
-        runOnUiThread {
-            Toast.makeText(this, "Success! Morning Reflection Unlocked.", Toast.LENGTH_SHORT).show()
-            setResult(RESULT_OK)
-            finish()
         }
     }
 

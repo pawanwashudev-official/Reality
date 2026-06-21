@@ -46,31 +46,6 @@ class SmartSleepActivity : BaseActivity() {
 
     private var isMathDialogShowing = false
 
-    companion object {
-        var isUnlockedThisSession = false
-    }
-
-    private val qrScannerLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
-            isUnlockedThisSession = true
-
-            // Stop alarm ringing, but DO NOT dismiss it yet.
-            // It will be dismissed ONLY when the math problem is solved.
-            // If they close the app now, it's considered a missed alarm and it will snooze/ring again.
-            val stopIntent = android.content.Intent(this, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
-                this.action = "PAUSE_RINGING"
-            }
-            startService(stopIntent)
-
-            checkHealthPermissionsFlow()
-            checkAndShowMathDismissDialog()
-        } else {
-            Toast.makeText(this, "Scan QR to unlock", Toast.LENGTH_SHORT).show()
-            finish()
-        }
-    }
-
-
     private var selectedRingtoneUri: String? = null
 
     private val ringtonePickerLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
@@ -104,14 +79,7 @@ class SmartSleepActivity : BaseActivity() {
         setupRecyclerView()
         setupUI()
         
-        // QR Gatekeeper: Any entry to this page requires scan
-        if (!isUnlockedThisSession) {
-            binding.root.visibility = View.GONE // Hide until verified
-            qrScannerLauncher.launch(android.content.Intent(this, QRScannerActivity::class.java))
-        } else {
-            checkHealthPermissionsFlow()
-            checkAndShowMathDismissDialog()
-        }
+        checkHealthPermissionsFlow()
     }
 
     private fun checkHealthPermissionsFlow() {
@@ -147,19 +115,17 @@ class SmartSleepActivity : BaseActivity() {
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        checkAndShowMathDismissDialog()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        isUnlockedThisSession = false // Lock again on next launch
     }
 
     private fun setupToolbar() {
         val toolbar = binding.includeHeader.toolbar
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "Morning Reflection"
+        supportActionBar?.title = "Sleep & Alarm"
         val formatter = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.getDefault())
         supportActionBar?.subtitle = today.format(formatter)
         toolbar.setNavigationOnClickListener { finish() }
@@ -527,113 +493,6 @@ class SmartSleepActivity : BaseActivity() {
         dialog.show()
     }
 
-    private fun checkAndShowMathDismissDialog() {
-        if (isMathDialogShowing) return
-        val action = intent.getStringExtra("action")
-        val activeAlarmId = com.neubofy.reality.services.WakeupAlarmService.activeAlarmId
-
-        if ((action == "wakeup_alarm" || activeAlarmId != null) && activeAlarmId != null) {
-            val alarmId = intent.getStringExtra("id") ?: activeAlarmId
-            showMathDismissDialog(alarmId)
-        }
-    }
-
-    private fun showMathDismissDialog(alarmId: String?) {
-        isMathDialogShowing = true
-        val dialogView = layoutInflater.inflate(com.neubofy.reality.R.layout.dialog_math_alarm_dismiss, null)
-        val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
-        dialog.setCancelable(false)
-        dialog.setContentView(dialogView)
-
-        val tvMathProblem = dialogView.findViewById<android.widget.TextView>(com.neubofy.reality.R.id.tvMathProblem)
-        val etMathAnswer = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(com.neubofy.reality.R.id.etMathAnswer)
-        val tvError = dialogView.findViewById<android.widget.TextView>(com.neubofy.reality.R.id.tvError)
-        val btnSnooze = dialogView.findViewById<com.google.android.material.button.MaterialButton>(com.neubofy.reality.R.id.btnSnooze)
-        val btnDismiss = dialogView.findViewById<com.google.android.material.button.MaterialButton>(com.neubofy.reality.R.id.btnDismiss)
-
-        // Generate math problem
-        var a = (11..99).random() / 10.0
-        var b = (11..99).random() / 10.0
-
-        // Ensure max 2 or 3 decimals total in product to not be too complex
-        if ((0..1).random() == 1) {
-            a = (11..99).random() / 100.0
-        }
-
-        val expectedAnswer = Math.round(a * b * 1000.0) / 1000.0
-        tvMathProblem.text = "${a} × ${b} = ?"
-
-        btnSnooze.setOnClickListener {
-            // Auto snooze based on loader configuration
-            val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this)
-            val alarm = loader.loadWakeupAlarms().find { it.id == alarmId }
-            val interval = alarm?.snoozeIntervalMins ?: 3
-            val maxAttempts = alarm?.maxAttempts ?: 5
-
-            com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleSnooze(this, alarmId ?: "nightly_wakeup", alarm?.title ?: "Wake Up", maxAttempts, interval, alarm?.ringtoneUri, alarm?.vibrationEnabled ?: true)
-
-            // Stop Service
-            val stopIntent = android.content.Intent(this, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
-                this.action = "STOP"
-            }
-            startService(stopIntent)
-
-            dialog.dismiss()
-            finish()
-        }
-
-        btnDismiss.setOnClickListener {
-            val userAnswerStr = etMathAnswer.text.toString()
-            if (userAnswerStr.isEmpty()) {
-                tvError.visibility = android.view.View.VISIBLE
-                tvError.text = "Please enter an answer"
-                return@setOnClickListener
-            }
-
-            try {
-                val userAnswer = userAnswerStr.toDouble()
-                if (Math.abs(userAnswer - expectedAnswer) < 0.001) {
-                    // Correct!
-                    tvError.visibility = android.view.View.GONE
-
-                    // Stop Service
-                    val stopIntent = android.content.Intent(this@SmartSleepActivity, com.neubofy.reality.services.WakeupAlarmService::class.java).apply {
-                        this.action = "STOP"
-                    }
-                    startService(stopIntent)
-                    // Delete alarm if it is a non-repeating alarm
-                    val loader = com.neubofy.reality.utils.SavedPreferencesLoader(this@SmartSleepActivity)
-                    val alarms = loader.loadWakeupAlarms()
-                    val idx = alarms.indexOfFirst { it.id == alarmId }
-                    if (idx != -1 && alarms[idx].repeatDays.isEmpty()) {
-                        alarms[idx] = alarms[idx].copy(isDeleted = true)
-                        loader.saveWakeupAlarms(alarms)
-                    }
-                    com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(this@SmartSleepActivity)
-
-
-                    // Calculate start time based on current end time and user confirmation
-                    // (Assuming inference algorithm is robust or standard sleep tracking happens via sleep verification)
-                    // Launch SleepInferenceHelper to auto log
-                    lifecycleScope.launch {
-                        com.neubofy.reality.utils.SleepInferenceHelper.autoConfirmSleep(this@SmartSleepActivity)
-                        loadSessions() // Refresh UI
-                    }
-
-                    dialog.dismiss()
-                } else {
-                    tvError.visibility = android.view.View.VISIBLE
-                    tvError.text = "Incorrect answer, try again."
-                }
-            } catch (e: Exception) {
-                tvError.visibility = android.view.View.VISIBLE
-                tvError.text = "Invalid number format."
-            }
-        }
-
-        dialog.setOnDismissListener { isMathDialogShowing = false }
-        dialog.show()
-    }
 
     private fun updateUiState() {
         binding.cardEmptyState.visibility = if (sessions.isEmpty()) View.VISIBLE else View.GONE

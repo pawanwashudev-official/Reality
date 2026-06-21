@@ -3,8 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="?android:colorBackground">
+    android:layout_height="match_parent">
 
     <!-- Background Gradient -->
     <View
@@ -199,7 +198,7 @@
         android:orientation="horizontal"
         android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        android:background="?android:colorBackground">
+        >
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnFinish"
