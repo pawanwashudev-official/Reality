@@ -14,6 +14,8 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.TimeUnit
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 /**
  * Handle professional app updates via GitHub Releases.
@@ -59,11 +61,33 @@ object UpdateManager {
 
                     val releaseNotes = response.getString("body")
 
+                    // The published_at date of the GitHub release
+                    val publishedAtStr = response.getString("published_at")
+                    val releaseTime = try {
+                        val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+                        format.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                        format.parse(publishedAtStr)?.time ?: 0L
+                    } catch (e: Exception) {
+                        0L
+                    }
+
+                    val appLastUpdateTime = try {
+                        context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
+                    } catch (e: Exception) {
+                        0L
+                    }
+
                     // If manual check (!silent), allow same version update. Otherwise, require strictly newer.
-                    val isEligible = if (!silent) {
+                    var isEligible = if (!silent) {
                         isNewerOrEqualVersion(latestVersion, BuildConfig.VERSION_NAME)
                     } else {
                         isNewerVersion(latestVersion, BuildConfig.VERSION_NAME)
+                    }
+
+                    // If it's a silent check but the release was published AFTER our app was last updated,
+                    // it means the APK changed without a version bump, so it's a valid new update.
+                    if (silent && !isEligible && latestVersion == BuildConfig.VERSION_NAME && releaseTime > appLastUpdateTime && releaseTime > 0L) {
+                        isEligible = true
                     }
 
                     if (isEligible && apkAssets.isNotEmpty()) {
