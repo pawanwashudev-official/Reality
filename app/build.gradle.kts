@@ -20,14 +20,14 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace = "com.neubofy.reality"
-    compileSdk = 35  // Android 15 for future compatibility
+    compileSdk = 36  // Android 16 for future compatibility
 
     defaultConfig {
         applicationId = "com.neubofy.reality"
         minSdk = 26
-        targetSdk = 35  // Android 15
-        versionCode = 26
-        versionName = "1.0.6"
+        targetSdk = 36  // Android 16
+        versionCode = 27
+        versionName = "1.0.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
