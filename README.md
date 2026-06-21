@@ -9,7 +9,7 @@
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/pawanwashudev-official/Reality?style=for-the-badge&color=orange)](https://github.com/pawanwashudev-official/Reality/releases)
 [![GitHub All Releases](https://img.shields.io/github/downloads/pawanwashudev-official/Reality/total?style=for-the-badge&color=success)](https://github.com/pawanwashudev-official/Reality/releases)
-[![License](https://img.shields.io/github/license/pawanwashudev-official/Reality?style=for-the-badge&color=blue)](https://opensource.org/licenses/Apache-2.0)
+[![License](https://img.shields.io/github/license/pawanwashudev-official/Reality?style=for-the-badge&color=blue)](https://www.gnu.org/licenses/gpl-3.0)
 
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg?style=for-the-badge)](https://www.android.com)
 [![Privacy](https://img.shields.io/badge/Data-Local%20%2B%20Your%20G--Drive-lock.svg?style=for-the-badge&color=teal)]()
