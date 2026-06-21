@@ -198,7 +198,7 @@
         android:orientation="horizontal"
         android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        android:background="?android:colorBackground">
+        >
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnFinish"
