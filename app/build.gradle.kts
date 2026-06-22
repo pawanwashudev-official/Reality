@@ -20,14 +20,14 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace = "com.neubofy.reality"
-    compileSdk = 35  // Android 15 for future compatibility
+    compileSdk = 36  // Android 16 for future compatibility
 
     defaultConfig {
         applicationId = "com.neubofy.reality"
         minSdk = 26
-        targetSdk = 35  // Android 15
-        versionCode = 26
-        versionName = "1.0.6"
+        targetSdk = 36  // Android 16
+        versionCode = 27
+        versionName = "1.0.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -45,6 +45,9 @@ val webClientId = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
 
         val realityLicenseUrl = localProperties.getProperty("REALITY_LICENSE_URL") ?: ""
         buildConfigField("String", "REALITY_LICENSE_URL", "\"$realityLicenseUrl\"")
+
+        val buildTimestamp = System.currentTimeMillis()
+        buildConfigField("Long", "BUILD_TIMESTAMP", "${buildTimestamp}L")
     }
     
     packaging {
@@ -111,7 +114,8 @@ val webClientId = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
     applicationVariants.all {
         outputs.all {
             val output = this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            output?.outputFileName = "Reality-v${versionName}-${buildType.name}.apk"
+            val timestamp = defaultConfig.buildConfigFields["BUILD_TIMESTAMP"]?.value?.replace("L", "") ?: ""
+            output?.outputFileName = "Reality-v${versionName}-${timestamp}-${buildType.name}.apk"
         }
     }
     compileOptions {
