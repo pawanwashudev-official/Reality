@@ -1,7 +1,6 @@
 name: Build Release APK
 
 on:
-  push:
   workflow_dispatch:
 
 jobs:
@@ -60,18 +59,4 @@ jobs:
           name: app-release
           path: app/build_v4/outputs/apk/release/*.apk
 
-      - name: Extract Version
-        id: get_version
-        run: |
-          VERSION_NAME=$(grep "versionName =" app/build.gradle.kts | awk -F'"' '{print $2}')
-          echo "VERSION_NAME=v$VERSION_NAME" >> $GITHUB_ENV
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        if: github.event_name == 'push'
-        with:
-          tag_name: ${{ env.VERSION_NAME }}
-          name: Release ${{ env.VERSION_NAME }}
-          files: app/build_v4/outputs/apk/release/*.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
