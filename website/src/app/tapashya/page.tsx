@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Settings, Play, Pause, Square, RotateCcw, X, Home, Trash2, Edit2, QrCode } from 'lucide-react';
+import { Settings, Play, Pause, Square, RotateCcw, X, Trash2, Edit2, QrCode, ArrowLeft, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import Link from 'next/link';
 
 export interface TapasyaSession {
@@ -17,8 +17,14 @@ export interface TapasyaSession {
   wasAutoStopped: boolean;
 }
 
-interface ActiveSessionState {
-  isActive: boolean;
+interface CalendarEvent {
+  id: string;
+  title: string;
+  startTime: number;
+  endTime: number;
+}
+
+interface ActiveSessionState {  isActive: boolean;
   isRunning: boolean;
   isPaused: boolean;
   sessionName: string;
@@ -67,6 +73,83 @@ export default function TapashyaPage() {
   // Derived Display Values
   const [displayElapsed, setDisplayElapsed] = useState(0);
   const [displayPause, setDisplayPause] = useState(0);
+
+  // Day Navigator State
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
+  // Calendar State
+  const [calendarToken, setCalendarToken] = useState<string | null>(null);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [recommendedEvent, setRecommendedEvent] = useState<CalendarEvent | null>(null);
+
+  useEffect(() => {
+      // Check for token in hash
+      if (typeof window !== 'undefined') {
+          const hash = window.location.hash;
+          if (hash.includes('access_token=')) {
+              const params = new URLSearchParams(hash.substring(1));
+              const token = params.get('access_token');
+              if (token) {
+                  localStorage.setItem('google_calendar_token', token);
+                  setCalendarToken(token);
+                  window.location.hash = ''; // Clear hash
+              }
+          } else {
+              const token = localStorage.getItem('google_calendar_token');
+              if (token) setCalendarToken(token);
+          }
+      }
+  }, []);
+
+  useEffect(() => {
+      if (calendarToken) {
+          fetchTodayEvents();
+      }
+  }, [calendarToken]);
+
+  const fetchTodayEvents = async () => {
+      try {
+          const startOfDay = new Date();
+          startOfDay.setHours(0, 0, 0, 0);
+          const endOfDay = new Date();
+          endOfDay.setHours(23, 59, 59, 999);
+
+          const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${startOfDay.toISOString()}&timeMax=${endOfDay.toISOString()}&singleEvents=true&orderBy=startTime`, {
+              headers: { Authorization: `Bearer ${calendarToken}` }
+          });
+
+          if (res.status === 401) {
+              // Token expired
+              localStorage.removeItem('google_calendar_token');
+              setCalendarToken(null);
+              return;
+          }
+
+          const data = await res.json();
+          if (data.items) {
+              const now = new Date().getTime();
+              const validEvents = data.items.filter((e: {start?: {dateTime?: string}, end?: {dateTime?: string}}) => e.start?.dateTime && e.end?.dateTime).map((e: {id: string, summary?: string, start: {dateTime: string}, end: {dateTime: string}}) => ({
+                  id: e.id,
+                  title: e.summary || 'Study Session',
+                  startTime: new Date(e.start.dateTime).getTime(),
+                  endTime: new Date(e.end.dateTime).getTime()
+              }));
+
+              setCalendarEvents(validEvents);
+
+              // Find recommended: running or first upcoming
+              const recommended = validEvents.find((e: CalendarEvent) => e.endTime > now);
+              setRecommendedEvent(recommended || null);
+          }
+      } catch (err) {
+          console.error("Failed to fetch events", err);
+      }
+  };
+
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -173,12 +256,21 @@ export default function TapashyaPage() {
           // Double click detected! Bypass dialog
           clearTimeout(clickTimeoutRef.current);
           clickTimeoutRef.current = null;
-          startSessionWithConfig(formName, formTargetTime, formPauseLimit);
+          if (recommendedEvent) {
+              const durationMins = Math.floor((recommendedEvent.endTime - recommendedEvent.startTime) / 60000);
+              startSessionWithConfig(recommendedEvent.title, durationMins, formPauseLimit);
+          } else {
+              startSessionWithConfig(formName, formTargetTime, formPauseLimit);
+          }
       } else {
           // Single click — wait to see if it becomes a double click
           clickTimeoutRef.current = setTimeout(() => {
               clickTimeoutRef.current = null;
               // Open Dialog
+              if (recommendedEvent) {
+                  setFormName(recommendedEvent.title);
+                  setFormTargetTime(Math.floor((recommendedEvent.endTime - recommendedEvent.startTime) / 60000));
+              }
               setShowStartDialog(true);
           }, 300); // 300ms window for double tap
       }
@@ -314,26 +406,29 @@ export default function TapashyaPage() {
       });
   };
 
-  const handleToggleDay = (dateStr: string) => {
-      const daySessions = groupedSessions[dateStr] || [];
-      const allSelected = daySessions.every(s => selectedSessions.has(s.sessionId));
-
-      setSelectedSessions(prev => {
-          const next = new Set(prev);
-          daySessions.forEach(s => {
-              if (allSelected) next.delete(s.sessionId);
-              else next.add(s.sessionId);
-          });
-          return next;
+  const handlePrevDay = () => {
+      setSelectedDate(prev => {
+          const d = new Date(prev);
+          d.setDate(d.getDate() - 1);
+          return d;
       });
   };
 
-  const handleSelectAll = () => {
-      if (selectedSessions.size === sessions.length && sessions.length > 0) {
-          setSelectedSessions(new Set());
-      } else {
-          setSelectedSessions(new Set(sessions.map(s => s.sessionId)));
-      }
+  const handleNextDay = () => {
+      setSelectedDate(prev => {
+          const d = new Date(prev);
+          d.setDate(d.getDate() + 1);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return d > today ? today : d;
+      });
+  };
+
+  const isToday = (date: Date) => {
+      const today = new Date();
+      return date.getDate() === today.getDate() &&
+             date.getMonth() === today.getMonth() &&
+             date.getFullYear() === today.getFullYear();
   };
 
   const handleDeleteSelected = () => {
@@ -402,23 +497,27 @@ export default function TapashyaPage() {
   const currentXpLive = currentFragmentLive * 10;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans pb-24">
-      {/* Header */}
-      <header className="bg-[#00695C] text-white p-4 shadow-md sticky top-0 z-50">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans pb-24 pt-8">
+      <main className="max-w-md mx-auto px-4">
+        {/* Android-like Header */}
+        <div className="flex items-center justify-between pb-8">
           <div className="flex items-center gap-3">
-            <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-[#004D40] transition-colors">
-              <Home size={20} />
+            <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-gray-200 transition-colors text-gray-700">
+              <ArrowLeft size={24} />
             </Link>
-            <h1 className="text-xl font-bold tracking-tight">Tapashya</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#00695C] font-mono">Neural Focus</h1>
           </div>
-          <button onClick={() => setShowSettings(true)} className="p-2 rounded-full hover:bg-[#004D40] transition-colors">
-             <Settings size={20} />
-          </button>
+          <div className="flex gap-2">
+            {!calendarToken && (
+              <a href="/api/auth/google" className="flex items-center gap-2 px-4 py-2 bg-[#E0F2F1] text-[#00695C] rounded-full text-sm font-bold hover:bg-[#B2DFDB] transition-colors">
+                 <Calendar size={16} /> Connect
+              </a>
+            )}
+            <button onClick={() => setShowSettings(true)} className="p-2 rounded-full hover:bg-gray-200 transition-colors text-gray-700">
+               <Settings size={24} />
+            </button>
+          </div>
         </div>
-      </header>
-
-      <main className="max-w-md mx-auto px-4 py-8">
 
         {/* Clock View Area */}
         <div className="flex flex-col items-center mb-10">
@@ -492,98 +591,137 @@ export default function TapashyaPage() {
             </div>
         </div>
 
-        {/* Sessions List */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            {/* History Header & Context Menu */}
-            <div className={`p-4 flex justify-between items-center transition-colors ${selectedSessions.size > 0 ? 'bg-[#E0F2F1]' : 'bg-white border-b border-gray-100'}`}>
-                {selectedSessions.size > 0 ? (
-                    <>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setSelectedSessions(new Set())} className="p-2 -ml-2 rounded-full hover:bg-teal-100 text-[#004D40]">
-                                <X size={20} />
-                            </button>
-                            <span className="font-bold text-[#004D40]">{selectedSessions.size} Selected</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            {selectedSessions.size === 1 && (
-                                <button onClick={handleRenameClick} className="p-2 rounded-full hover:bg-teal-100 text-[#00695C]" title="Rename">
-                                    <Edit2 size={20} />
-                                </button>
-                            )}
-                            <button onClick={() => setShowExportDialog(true)} className="p-2 rounded-full hover:bg-teal-100 text-[#00695C]" title="Export QR">
-                                <QrCode size={20} />
-                            </button>
-                            <button onClick={handleDeleteSelected} className="p-2 rounded-full hover:bg-red-100 text-red-600" title="Delete">
-                                <Trash2 size={20} />
-                            </button>
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        <h3 className="text-lg font-bold text-gray-800 px-2">History (7 Days)</h3>
-                        <button
-                            onClick={handleSelectAll}
-                            className="text-xs font-bold text-[#00695C] bg-[#E0F2F1] px-4 py-2 rounded-full active:scale-95 transition-transform">
-                            Select All
-                        </button>
-                    </>
-                )}
-            </div>
-
-            {sessions.length === 0 ? (
-                <div className="text-center py-10">
-                    <p className="text-gray-500 font-medium">No sessions recorded yet.</p>
-                    <p className="text-xs text-gray-400 mt-1">Start focusing to generate local history.</p>
+        {/* Scheduled Sessions Section */}
+        <div className="mt-8 mb-6">
+            <h3 className="text-lg font-bold text-gray-800 px-2 mb-4 font-mono">Scheduled Sessions</h3>
+            {!calendarToken ? (
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col items-center justify-center text-center">
+                    <Calendar size={32} className="text-gray-400 mb-3" />
+                    <p className="text-gray-600 font-medium mb-4">Sync with your calendar to see study blocks.</p>
+                    <a href="/api/auth/google" className="px-6 py-2 bg-[#00695C] text-white rounded-full font-bold shadow hover:bg-[#004D40] transition-colors">
+                        Connect Calendar
+                    </a>
+                </div>
+            ) : calendarEvents.length === 0 ? (
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col items-center text-center">
+                    <p className="text-gray-500 font-medium">No events for today.</p>
                 </div>
             ) : (
-                <div className="p-4 space-y-4">
-                    {Object.entries(groupedSessions).map(([dateStr, daySessions]) => {
-                        const allDaySelected = daySessions.length > 0 && daySessions.every(s => selectedSessions.has(s.sessionId));
+                <div className="space-y-3">
+                    {calendarEvents.map((evt) => {
+                        const isRecommended = recommendedEvent?.id === evt.id;
                         return (
-                            <div key={dateStr} className="border border-gray-100 rounded-2xl overflow-hidden">
-                                <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={allDaySelected}
-                                            onChange={() => handleToggleDay(dateStr)}
-                                            className="w-5 h-5 text-[#00695C] rounded border-gray-300 focus:ring-[#00695C]"
-                                        />
-                                        <span className="font-bold text-gray-700 text-sm">{dateStr === new Date().toLocaleDateString() ? 'Today' : dateStr}</span>
-                                    </label>
-                                    <span className="text-xs font-bold text-gray-400">
-                                        {daySessions.length} Session{daySessions.length !== 1 && 's'}
-                                    </span>
+                            <div key={evt.id} className={`bg-white rounded-2xl p-4 shadow-sm border ${isRecommended ? 'border-[#00695C]' : 'border-gray-100'} flex items-center justify-between`}>
+                                <div>
+                                    <h4 className="font-bold text-gray-800 text-sm">{evt.title}</h4>
+                                    <p className="text-xs text-gray-500 font-medium mt-1">
+                                        {new Date(evt.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(evt.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                    {isRecommended && <span className="text-[10px] bg-[#E0F2F1] text-[#00695C] font-bold px-2 py-0.5 rounded uppercase mt-2 inline-block">Recommended</span>}
                                 </div>
-                                <div className="p-2 space-y-1">
-                                     {daySessions.map(session => (
-                                         <label key={session.sessionId} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors group">
-                                             <div className="flex items-center gap-3">
-                                                 <input
-                                                    type="checkbox"
-                                                    checked={selectedSessions.has(session.sessionId)}
-                                                    onChange={() => handleToggleSession(session.sessionId)}
-                                                    className="w-5 h-5 text-[#00695C] rounded border-gray-300 focus:ring-[#00695C]"
-                                                 />
-                                                 <div>
-                                                     <div className="font-bold text-gray-800 text-sm group-hover:text-[#00695C] transition-colors">{session.name}</div>
-                                                     <div className="text-xs text-gray-500 font-medium mt-0.5">
-                                                        {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                     </div>
-                                                 </div>
-                                             </div>
-                                             <div className="text-right">
-                                                 <div className="text-sm font-black text-[#651FFF]">{formatMinutes(Math.floor(session.effectiveTimeMs / 60000))}</div>
-                                                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Effective</div>
-                                             </div>
-                                         </label>
-                                     ))}
-                                </div>
+                                <button
+                                    onClick={() => startSessionWithConfig(evt.title, Math.floor((evt.endTime - evt.startTime) / 60000), formPauseLimit)}
+                                    className="p-2 bg-[#00695C] text-white rounded-full hover:bg-[#004D40] transition-colors"
+                                >
+                                    <Play size={16} fill="currentColor" />
+                                </button>
                             </div>
                         );
                     })}
                 </div>
             )}
+        </div>
+
+        {/* Session History Section */}
+        <div className="mt-8">
+            {/* Day Navigator */}
+            <div className="flex items-center justify-between mb-4">
+                <button
+                    onClick={handlePrevDay}
+                    className="p-2 rounded-full hover:bg-gray-200 transition-colors text-gray-700"
+                    title="Previous Day"
+                >
+                    <ChevronLeft size={24} />
+                </button>
+                <div className="text-center flex-1">
+                    <span className="text-lg font-bold text-[#00695C] font-mono">
+                        {isToday(selectedDate) ? 'Today' : selectedDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </span>
+                </div>
+                <button
+                    onClick={handleNextDay}
+                    disabled={isToday(selectedDate)}
+                    className={`p-2 rounded-full transition-colors ${isToday(selectedDate) ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-200 text-gray-700'}`}
+                    title="Next Day"
+                >
+                    <ChevronRight size={24} />
+                </button>
+            </div>
+
+            {/* Context Menu or Empty Header */}
+            {selectedSessions.size > 0 && (
+                <div className="bg-[#E0F2F1] rounded-2xl p-4 flex justify-between items-center mb-4 shadow-sm border border-teal-100">
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setSelectedSessions(new Set())} className="p-2 -ml-2 rounded-full hover:bg-teal-200 text-[#004D40]">
+                            <X size={20} />
+                        </button>
+                        <span className="font-bold text-[#004D40]">{selectedSessions.size} Selected</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        {selectedSessions.size === 1 && (
+                            <button onClick={handleRenameClick} className="p-2 rounded-full hover:bg-teal-200 text-[#00695C]" title="Rename">
+                                <Edit2 size={20} />
+                            </button>
+                        )}
+                        <button onClick={() => setShowExportDialog(true)} className="p-2 rounded-full hover:bg-teal-200 text-[#00695C]" title="Export QR">
+                            <QrCode size={20} />
+                        </button>
+                        <button onClick={handleDeleteSelected} className="p-2 rounded-full hover:bg-red-100 text-red-600" title="Delete">
+                            <Trash2 size={20} />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Sessions List for Selected Day */}
+            <div className="space-y-3">
+                {(() => {
+                    const daySessions = groupedSessions[selectedDate.toLocaleDateString()] || [];
+
+                    if (daySessions.length === 0) {
+                        return (
+                            <div className="text-center py-10">
+                                <p className="text-gray-500 font-medium">No sessions recorded</p>
+                            </div>
+                        );
+                    }
+
+                    return daySessions.map(session => (
+                        <div key={session.sessionId} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <label className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors group">
+                                <div className="flex items-center gap-4">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedSessions.has(session.sessionId)}
+                                        onChange={() => handleToggleSession(session.sessionId)}
+                                        className="w-5 h-5 text-[#00695C] rounded border-gray-300 focus:ring-[#00695C]"
+                                    />
+                                    <div>
+                                        <div className="font-bold text-gray-800 text-base group-hover:text-[#00695C] transition-colors">{session.name}</div>
+                                        <div className="text-xs text-gray-500 font-medium mt-1">
+                                            {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-sm font-black text-[#651FFF]">{formatMinutes(Math.floor(session.effectiveTimeMs / 60000))}</div>
+                                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Effective</div>
+                                </div>
+                            </label>
+                        </div>
+                    ));
+                })()}
+            </div>
         </div>
 
       </main>
