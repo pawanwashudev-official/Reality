@@ -45,6 +45,9 @@ val webClientId = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
 
         val realityLicenseUrl = localProperties.getProperty("REALITY_LICENSE_URL") ?: ""
         buildConfigField("String", "REALITY_LICENSE_URL", "\"$realityLicenseUrl\"")
+
+        val buildTimestamp = System.currentTimeMillis()
+        buildConfigField("Long", "BUILD_TIMESTAMP", "${buildTimestamp}L")
     }
     
     packaging {
@@ -111,7 +114,8 @@ val webClientId = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
     applicationVariants.all {
         outputs.all {
             val output = this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            output?.outputFileName = "Reality-v${versionName}-${buildType.name}.apk"
+            val timestamp = defaultConfig.buildConfigFields["BUILD_TIMESTAMP"]?.value?.replace("L", "") ?: ""
+            output?.outputFileName = "Reality-v${versionName}-${timestamp}-${buildType.name}.apk"
         }
     }
     compileOptions {

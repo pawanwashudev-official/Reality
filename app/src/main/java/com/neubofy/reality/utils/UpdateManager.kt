@@ -28,7 +28,7 @@ object UpdateManager {
     private const val KEY_LAST_CHECK_TIME = "last_check_time"
     private const val CHECK_INTERVAL_DAYS = 7L
 
-    private const val GITHUB_API_URL = "https://api.github.com/repos/pawanwashudev-official/Reality/releases"
+    private const val GITHUB_API_URL = "https://api.github.com/repos/pawanwashudev-official/Reality/releases/latest"
 
     /**
      * Check for updates.
@@ -46,13 +46,50 @@ object UpdateManager {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val releases = fetchGitHubReleases()
-                if (releases != null && releases.length() > 0) {
-                    processReleases(context, releases, silent, onNoUpdate)
-                } else {
-                    if (!silent) withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
-                }
+                val response = fetchGitHubRelease()
+                if (response != null) {
+                    val latestVersion = response.getString("tag_name").replace("v", "")
+                    val assetsArray = response.getJSONArray("assets")
 
+                    var bestApkUrl = ""
+                    var maxTimestamp = 0L
+
+                    // Regex to extract timestamp from Reality-v1.0.7-123456789-release.apk
+                    val regex = Regex(".*-(\\d{13,})-.*\\.apk")
+
+                    for (i in 0 until assetsArray.length()) {
+                        val asset = assetsArray.getJSONObject(i)
+                        val name = asset.getString("name")
+                        if (name.endsWith(".apk")) {
+                            val match = regex.find(name)
+                            if (match != null) {
+                                val timestamp = match.groupValues[1].toLongOrNull() ?: 0L
+                                if (timestamp > maxTimestamp) {
+                                    maxTimestamp = timestamp
+                                    bestApkUrl = asset.getString("browser_download_url")
+                                }
+                            } else {
+                                // Fallback if filename doesn't match the new convention
+                                if (bestApkUrl.isEmpty()) {
+                                    bestApkUrl = asset.getString("browser_download_url")
+                                }
+                            }
+                        }
+                    }
+
+                    val releaseNotes = response.getString("body")
+
+                    // Compare remote timestamp with local BUILD_TIMESTAMP
+                    val isEligible = maxTimestamp > BuildConfig.BUILD_TIMESTAMP || isNewerVersion(latestVersion, BuildConfig.VERSION_NAME)
+
+                    if (isEligible && bestApkUrl.isNotEmpty()) {
+                        withContext(Dispatchers.Main) {
+                            showUpdateDialog(context, latestVersion, bestApkUrl, releaseNotes)
+                        }
+                    } else {
+                        if (!silent) withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
+                    }
+                }
                 // Save last check time even if no update found
                 prefs.edit().putLong(KEY_LAST_CHECK_TIME, now).apply()
             } catch (e: Exception) {
@@ -62,144 +99,7 @@ object UpdateManager {
         }
     }
 
-    private suspend fun processReleases(context: Context, releases: JSONArray, silent: Boolean, onNoUpdate: (() -> Unit)?) {
-        // Find the most recent release
-        var targetRelease: JSONObject? = null
-        var isPreRelease = false
-
-        if (releases.length() > 0) {
-            targetRelease = releases.getJSONObject(0)
-            isPreRelease = targetRelease.optBoolean("prerelease", false)
-        }
-
-        if (targetRelease == null) {
-            if (!silent) withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
-            return
-        }
-
-        if (isPreRelease && !silent) {
-            // Ask user if they want the pre-release
-            withContext(Dispatchers.Main) {
-                AlertDialog.Builder(context)
-                    .setTitle("Pre-release Available")
-                    .setMessage("A pre-release version is available. Do you want to install it?")
-                    .setPositiveButton("Yes") { _, _ ->
-                        CoroutineScope(Dispatchers.IO).launch {
-                            evaluateReleaseAndPrompt(context, targetRelease, silent, onNoUpdate)
-                        }
-                    }
-                    .setNegativeButton("No") { _, _ ->
-                        CoroutineScope(Dispatchers.IO).launch {
-                            // Find the first non-prerelease
-                            val stableRelease = run {
-                                for (i in 0 until releases.length()) {
-                                    val rel = releases.getJSONObject(i)
-                                    if (!rel.optBoolean("prerelease", false)) {
-                                        return@run rel
-                                    }
-                                }
-                                null
-                            }
-                            if (stableRelease != null) {
-                                evaluateReleaseAndPrompt(context, stableRelease, silent, onNoUpdate)
-                            } else {
-                                withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
-                            }
-                        }
-                    }
-                    .setCancelable(false)
-                    .show()
-            }
-        } else if (isPreRelease && silent) {
-            // In silent mode, skip prereleases
-            val stableRelease = run {
-                for (i in 0 until releases.length()) {
-                    val rel = releases.getJSONObject(i)
-                    if (!rel.optBoolean("prerelease", false)) {
-                        return@run rel
-                    }
-                }
-                null
-            }
-            if (stableRelease != null) {
-                evaluateReleaseAndPrompt(context, stableRelease, silent, onNoUpdate)
-            }
-        } else {
-            // It's a stable release or silent check is ok
-            evaluateReleaseAndPrompt(context, targetRelease, silent, onNoUpdate)
-        }
-    }
-
-    private suspend fun evaluateReleaseAndPrompt(context: Context, release: JSONObject, silent: Boolean, onNoUpdate: (() -> Unit)?) {
-        val latestVersion = release.getString("tag_name").replace("v", "")
-        val assetsArray = release.getJSONArray("assets")
-
-        val apkAssets = mutableListOf<Triple<String, String, String>>()
-        val displayFormat = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
-        val parseFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
-            timeZone = java.util.TimeZone.getTimeZone("UTC")
-        }
-
-        var maxAssetTime = 0L
-        for (i in 0 until assetsArray.length()) {
-            val asset = assetsArray.getJSONObject(i)
-            val name = asset.getString("name")
-            if (name.endsWith(".apk")) {
-                val updatedAtStr = asset.optString("updated_at", "")
-                var assetTime = 0L
-                val formattedDate = try {
-                    val date = parseFormat.parse(updatedAtStr)
-                    if (date != null) {
-                        assetTime = date.time
-                        displayFormat.format(date)
-                    } else updatedAtStr
-                } catch (e: Exception) {
-                    updatedAtStr
-                }
-                if (assetTime > maxAssetTime) {
-                    maxAssetTime = assetTime
-                }
-                apkAssets.add(Triple(name, asset.getString("browser_download_url"), formattedDate))
-            }
-        }
-
-        val releaseNotes = release.getString("body")
-
-        val appLastUpdateTime = try {
-            context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
-        } catch (e: Exception) {
-            0L
-        }
-
-        // If manual check (!silent), allow same version update. Otherwise, require strictly newer.
-        var isEligible = if (!silent) {
-            isNewerOrEqualVersion(latestVersion, BuildConfig.VERSION_NAME)
-        } else {
-            isNewerVersion(latestVersion, BuildConfig.VERSION_NAME)
-        }
-
-        // If the APK asset was updated AFTER our app was last updated,
-        // it means the APK changed without a version bump, so it's a valid new update.
-        if (!isEligible && latestVersion == BuildConfig.VERSION_NAME && maxAssetTime > appLastUpdateTime && maxAssetTime > 0L) {
-            isEligible = true
-        }
-
-        if (isEligible && apkAssets.isNotEmpty()) {
-            withContext(Dispatchers.Main) {
-                val isStrictlyNewer = isNewerVersion(latestVersion, BuildConfig.VERSION_NAME)
-                if (isStrictlyNewer && apkAssets.size == 1) {
-                    val finalNotes = "$releaseNotes\n\nAPK File Date: ${apkAssets[0].third}"
-                    showUpdateDialog(context, latestVersion, apkAssets[0].second, finalNotes)
-                } else {
-                    showApkSelectionDialog(context, latestVersion, apkAssets, releaseNotes)
-                }
-            }
-        } else {
-            if (!silent) withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
-        }
-    }
-
-    private fun fetchGitHubReleases(): JSONArray? {
+    private fun fetchGitHubRelease(): JSONObject? {
         return try {
             val url = URL(GITHUB_API_URL)
             val connection = url.openConnection() as HttpURLConnection
@@ -208,7 +108,7 @@ object UpdateManager {
             connection.readTimeout = 10000
             
             val content = connection.inputStream.bufferedReader().use { it.readText() }
-            JSONArray(content)
+            JSONObject(content)
         } catch (e: Exception) {
             null
         }
@@ -244,17 +144,6 @@ object UpdateManager {
         }
     }
 
-    private fun showApkSelectionDialog(context: Context, version: String, apks: List<Triple<String, String, String>>, notes: String) {
-        val names = apks.map { "${it.first}\nDate: ${it.third}" }.toTypedArray()
-        AlertDialog.Builder(context)
-            .setTitle("Select Update APK")
-            .setItems(names) { _, which ->
-                val finalNotes = "$notes\n\nAPK File Date: ${apks[which].third}"
-                showUpdateDialog(context, version, apks[which].second, finalNotes)
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
 
     private fun showUpdateDialog(context: Context, version: String, url: String, notes: String) {
         // azhon AppUpdate manager handles the professional UI and installation prompt
