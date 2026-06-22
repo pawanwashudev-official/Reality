@@ -10,7 +10,15 @@ export async function GET(req: NextRequest) {
 
   const clientId = process.env.CLIENT_ID;
   const clientSecret = process.env.CLIENT_SECRET;
-  const redirectUri = process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/google` : 'http://localhost:3000/api/auth/callback/google';
+
+  let baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
+
+  // Vercel sometimes forwards HTTP internally. Force HTTPS in production if it's not localhost.
+  if (baseUrl.includes('reality.neubofy.in') && baseUrl.startsWith('http://')) {
+      baseUrl = baseUrl.replace('http://', 'https://');
+  }
+
+  const redirectUri = `${baseUrl}/api/auth/callback/google`;
 
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',

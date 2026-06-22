@@ -1,8 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const clientId = process.env.CLIENT_ID;
-  const redirectUri = process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/google` : 'http://localhost:3000/api/auth/callback/google';
+
+  // Use Vercel production URL if available, otherwise fallback to the incoming request's origin
+  // Note: VERCEL_URL is sometimes a preview branch URL. req.nextUrl.origin ensures it matches the browser.
+  let baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
+
+  // Vercel sometimes forwards HTTP internally. Force HTTPS in production if it's not localhost.
+  if (baseUrl.includes('reality.neubofy.in') && baseUrl.startsWith('http://')) {
+      baseUrl = baseUrl.replace('http://', 'https://');
+  }
+
+  const redirectUri = `${baseUrl}/api/auth/callback/google`;
 
   if (!clientId) {
     return NextResponse.json({ error: 'Missing CLIENT_ID env var' }, { status: 500 });
