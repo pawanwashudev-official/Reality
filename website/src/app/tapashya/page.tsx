@@ -79,6 +79,8 @@ export default function TapashyaPage() {
   const [showEditTimeDialog, setShowEditTimeDialog] = useState(false);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
+  const [showRunningEditDialog, setShowRunningEditDialog] = useState(false);
+  const [runningEditStartTime, setRunningEditStartTime] = useState('');
 
   // Derived Display Values
   const [displayElapsed, setDisplayElapsed] = useState(0);
@@ -496,6 +498,28 @@ export default function TapashyaPage() {
       }
   };
 
+
+  const handleRunningEditClick = () => {
+      const start = new Date(activeState.sessionStart);
+      setRunningEditStartTime(`${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`);
+      setShowRunningEditDialog(true);
+  };
+
+  const saveRunningEditTime = () => {
+      const startSplit = runningEditStartTime.split(':');
+      const newStart = new Date(activeState.sessionStart);
+      newStart.setHours(parseInt(startSplit[0], 10), parseInt(startSplit[1], 10), 0, 0);
+
+      saveActiveState({
+          ...activeState,
+          sessionStart: newStart.getTime(),
+          runningStart: newStart.getTime(),
+          elapsedRunning: 0,
+          totalPause: 0
+      });
+      setShowRunningEditDialog(false);
+  };
+
   const saveEditTime = () => {
       if (selectedSessions.size !== 1) return;
       const id = Array.from(selectedSessions)[0];
@@ -661,6 +685,9 @@ export default function TapashyaPage() {
                         </button>
                         <button onClick={resetClock} className="p-4 rounded-2xl bg-white/10 text-gray-300 shadow-2xl shadow-black/80 hover:bg-gray-300 transition-transform active:scale-95">
                             <RotateCcw size={20} />
+                        </button>
+                        <button onClick={handleRunningEditClick} className="p-4 rounded-2xl bg-[#00E5FF]/20 text-[#00E5FF] shadow-2xl shadow-black/80 hover:bg-[#00B8D4]/30 transition-transform active:scale-95" title="Edit Start Time">
+                            <Edit2 size={20} />
                         </button>
                     </>
                 )}
@@ -923,7 +950,32 @@ export default function TapashyaPage() {
           </div>
       )}
 
-            {/* Edit Time Dialog */}
+                  {/* Edit Running Time Dialog */}
+      {showRunningEditDialog && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowRunningEditDialog(false)}></div>
+              <div className="relative bg-white/5 backdrop-blur-md w-full max-w-sm rounded-3xl shadow-2xl shadow-black/80 p-6 animate-in zoom-in-95 duration-200">
+                  <h3 className="text-xl font-bold text-white mb-6">Edit Active Start Time</h3>
+                  <div className="space-y-4 mb-6">
+                      <div>
+                          <label className="block text-sm font-bold text-gray-300 mb-2">Start Time</label>
+                          <input
+                              type="time"
+                              value={runningEditStartTime}
+                              onChange={(e) => setRunningEditStartTime(e.target.value)}
+                              className="w-full bg-[#05050A]/50 text-white border border-white/20 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00E5FF] focus:border-[#00E5FF] outline-none"
+                          />
+                      </div>
+                  </div>
+                  <div className="flex gap-3">
+                      <button onClick={() => setShowRunningEditDialog(false)} className="flex-1 py-3 text-gray-300 font-bold hover:bg-white/10 rounded-xl transition-colors">Cancel</button>
+                      <button onClick={saveRunningEditTime} className="flex-1 py-3 bg-[#00E5FF] text-white rounded-xl font-bold hover:bg-[#00B8D4] transition-colors">Save</button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Edit Time Dialog */}
       {showEditTimeDialog && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowEditTimeDialog(false)}></div>
