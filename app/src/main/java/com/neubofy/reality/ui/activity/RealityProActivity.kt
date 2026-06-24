@@ -227,23 +227,16 @@ class RealityProActivity : BaseActivity() {
     }
 
     private fun showVerifyDialog() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Manual Verification")
-            .setMessage("Because we verify payments manually to keep the app independent, approval may take up to 1 hour during the day (IST) or up to 6 hours overnight (IST). Please do not spam the verify button.")
-            .setPositiveButton("Continue") { _, _ ->
-                val email = GoogleAuthManager.getUserEmail(this) ?: return@setPositiveButton
-                val userId = MD5Utils.getUserIdFromEmail(email)
-                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
-                val savedCode = prefs.getString("pro_saved_verification_code_for_$userId", null)
+        val email = GoogleAuthManager.getUserEmail(this) ?: return
+        val userId = MD5Utils.getUserIdFromEmail(email)
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
+        val savedCode = prefs.getString("pro_saved_verification_code_for_$userId", null)
 
-                if (savedCode != null) {
-                    verifyCode(savedCode)
-                } else {
-                    Toast.makeText(this, "No verification code found. Please submit payment request first.", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+        if (savedCode != null) {
+            verifyCode(savedCode)
+        } else {
+            Toast.makeText(this, "No verification code found. Please submit payment request first.", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun verifyCode(vCode: String) {

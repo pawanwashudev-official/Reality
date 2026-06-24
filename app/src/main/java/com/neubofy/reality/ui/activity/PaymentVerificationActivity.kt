@@ -93,7 +93,7 @@ class PaymentVerificationActivity : BaseActivity() {
         btnSubmitRequest = findViewById(R.id.btn_submit_request)
 
         btnUpiDeeplink.setOnClickListener {
-            val uri = android.net.Uri.parse("upi://pay?pa=neubofy@pnb&pn=Reality&am=99&cu=INR&tn=$userId")
+            val uri = android.net.Uri.parse("upi://pay?pa=neubofy@pnb&pn=Reality&am=99&cu=INR")
             val intent = Intent(Intent.ACTION_VIEW, uri)
             try {
                 upiPaymentLauncher.launch(intent)
@@ -111,7 +111,7 @@ class PaymentVerificationActivity : BaseActivity() {
 
         btnScanQr.setOnClickListener {
             if (ivQrCode.visibility == View.GONE) {
-                val bitmap = QRUtils.generateQRCode("upi://pay?pa=neubofy@pnb&pn=Reality&am=99&cu=INR&tn=$userId", 512)
+                val bitmap = QRUtils.generateQRCode("upi://pay?pa=neubofy@pnb&pn=Reality&am=99&cu=INR", 512)
                 ivQrCode.setImageBitmap(bitmap)
                 ivQrCode.visibility = View.VISIBLE
                 btnScanQr.text = "Hide QR Code"
