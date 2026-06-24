@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Download, Star, Shield, Lock, Brain, Smartphone, Database, HeartPulse, Moon, Zap, Activity, CheckCircle, Crosshair, Target, EyeOff, Layout, FileText, SmartphoneCharging, Cpu } from 'lucide-react';
+import { Download, Star, Shield, Lock, Brain, Smartphone, Database, HeartPulse, Moon, Zap, CheckCircle, Crosshair, Target, EyeOff, Layout, FileText, SmartphoneCharging, Cpu } from 'lucide-react';
 
 export default async function Home() {
 
@@ -16,8 +16,10 @@ export default async function Home() {
           if (releases && releases.length > 0) {
               latestVersion = releases[0].name || latestVersion;
               let totalDownloads = 0;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               releases.forEach((release: any) => {
                   if (release.assets) {
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       release.assets.forEach((asset: any) => {
                           totalDownloads += asset.download_count;
                       });
@@ -311,7 +313,7 @@ export default async function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-neural-cyan/5 pointer-events-none"></div>
         <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-8 leading-tight">
-            "Your data. Your focus. Your life.<br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-neural-cyan to-neural-purple">On YOUR terms.</span>"
+            &quot;Your data. Your focus. Your life.<br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-neural-cyan to-neural-purple">On YOUR terms.</span>&quot;
           </h2>
           <p className="text-xl text-gray-400 mb-4 italic">
             Built by someone who lost control of their own fingers. Designed for those who want it back.

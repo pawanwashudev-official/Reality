@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Link from 'next/link';
+import { Crown } from 'lucide-react';
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -34,6 +35,7 @@ export default function RootLayout({
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8 font-mono text-sm">
                 <Link href="/" className="text-gray-300 hover:text-neural-cyan transition-colors px-3 py-2 rounded-md font-medium">HOME</Link>
                 <Link href="/tapashya" className="text-gray-300 hover:text-neural-cyan transition-colors px-3 py-2 rounded-md font-medium border border-neural-cyan/30 rounded-lg">TAPASYA WEB</Link>
+                <Link href="/promembers" className="text-gray-300 hover:text-yellow-500 transition-colors px-3 py-2 rounded-md font-medium border border-yellow-500/30 rounded-lg flex items-center gap-2"><Crown size={14}/> PRO MEMBERS</Link>
 
                 <Link href="/privacypolicy" className="text-gray-400 hover:text-white transition-colors px-3 py-2 rounded-md font-medium">PRIVACY</Link>
               </div>
@@ -50,6 +52,7 @@ export default function RootLayout({
                 <div className="flex flex-wrap justify-center gap-6 mb-6 font-mono text-sm">
                     <Link href="/" className="text-gray-400 hover:text-neural-cyan transition-colors">Home</Link>
                     <Link href="/tapashya" className="text-gray-400 hover:text-neural-cyan transition-colors">Tapasya Web Sync</Link>
+                    <Link href="/promembers" className="text-gray-400 hover:text-yellow-500 transition-colors">Pro Members</Link>
 
                     <Link href="/privacypolicy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</Link>
                     <Link href="/termsofservice" className="text-gray-400 hover:text-white transition-colors">Terms of Service</Link>
