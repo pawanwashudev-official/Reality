@@ -1,6 +1,7 @@
 name: Build Release APK
 
 on:
+  push:
   workflow_dispatch:
 
 jobs:
@@ -19,7 +20,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: gradle
-
 
       - name: Decode Keystore
         env:
@@ -50,13 +50,20 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
+      - name: Extract Version Name
+        id: version
+        run: |
+          VERSION_NAME=$(grep -E 'versionName\s*=\s*".*"' app/build.gradle.kts | sed -E 's/.*versionName\s*=\s*"([^"]+)".*/\1/')
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+          echo "Extracted version: $VERSION_NAME"
+
       - name: Build Release APK
         run: ./gradlew assembleRelease
 
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: app/build_v4/outputs/apk/release/*.apk
-
-  
+      - name: Create Release & Upload APK
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK_PATH=$(find app/build_v4/outputs/apk/release -name "*.apk" | head -n 1)
+          echo "Found APK at $APK_PATH"
+          gh release upload "v$VERSION_NAME" "$APK_PATH" --clobber || gh release create "v$VERSION_NAME" "$APK_PATH" --title "Release v$VERSION_NAME" --notes "Automated release via GitHub Actions."
