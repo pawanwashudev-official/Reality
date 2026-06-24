@@ -1,7 +1,8 @@
 import React from 'react';
-import { Shield, Crown, User, Calendar, Database, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Crown, Database } from 'lucide-react';
+import ProMembersClient from './ProMembersClient';
 
-// Force dynamic rendering to ensure fresh data and allow search params
+// Force dynamic rendering to allow search params but utilize caching
 export const dynamic = 'force-dynamic';
 
 interface ProMember {
@@ -26,8 +27,9 @@ async function getProMembers(page: number, pageSize: number): Promise<MembersRes
 
   try {
     const res = await fetch(`${dbUrl}?page=${page}&pageSize=${pageSize}`, {
-      // Don't cache so we get live data
-      cache: 'no-store'
+      // Use Next.js caching to revalidate the data every 60 seconds.
+      // This fulfills the latency and caching requirements, keeping the page incredibly fast.
+      next: { revalidate: 60 }
     });
 
     if (!res.ok) {
@@ -83,119 +85,12 @@ export default async function ProMembersPage({
         </div>
       </section>
 
-      {/* Members Grid */}
-      <section className="py-16 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          {members.length === 0 ? (
-            <div className="text-center py-20 bg-neural-card/30 border border-gray-800 rounded-2xl">
-              <Shield className="mx-auto text-gray-600 mb-4" size={48} />
-              <h3 className="text-xl font-bold text-gray-400">No members found</h3>
-              <p className="text-gray-500 mt-2">Could not retrieve the member list at this time.</p>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {members.map((member, index) => (
-                  <MemberCard key={`${member.userId}-${index}`} member={member} />
-                ))}
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="mt-12 flex justify-center items-center gap-4">
-                  {currentPage > 1 ? (
-                    <a
-                      href={`?page=${currentPage - 1}`}
-                      className="p-2 bg-neural-card border border-gray-700 rounded-lg hover:border-neural-cyan hover:text-neural-cyan transition-colors"
-                    >
-                      <ChevronLeft size={20} />
-                    </a>
-                  ) : (
-                    <div className="p-2 bg-neural-card/30 border border-gray-800 text-gray-600 rounded-lg cursor-not-allowed">
-                      <ChevronLeft size={20} />
-                    </div>
-                  )}
-
-                  <span className="font-mono text-gray-400">
-                    Page <span className="text-white">{currentPage}</span> of {totalPages}
-                  </span>
-
-                  {currentPage < totalPages ? (
-                    <a
-                      href={`?page=${currentPage + 1}`}
-                      className="p-2 bg-neural-card border border-gray-700 rounded-lg hover:border-neural-cyan hover:text-neural-cyan transition-colors"
-                    >
-                      <ChevronRight size={20} />
-                    </a>
-                  ) : (
-                    <div className="p-2 bg-neural-card/30 border border-gray-800 text-gray-600 rounded-lg cursor-not-allowed">
-                      <ChevronRight size={20} />
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function MemberCard({ member }: { member: ProMember }) {
-  // Format the date if it's a valid string
-  let displayDate = member.dateJoined;
-  try {
-    const d = new Date(member.dateJoined);
-    if (!isNaN(d.getTime())) {
-      displayDate = d.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    }
-  } catch {
-    // Keep original string if parsing fails
-  }
-
-  // Obfuscate the user ID slightly for privacy if it's long enough
-  let displayId = member.userId;
-  if (displayId.length > 8) {
-    displayId = `${displayId.substring(0, 4)}...${displayId.substring(displayId.length - 4)}`;
-  }
-
-  return (
-    <div className="group relative bg-neural-card border border-gray-800 p-6 rounded-2xl hover:border-yellow-500/50 transition-all duration-300 shadow-lg hover:shadow-yellow-500/10">
-      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity duration-500">
-        <Sparkles className="text-yellow-500" size={40} />
-      </div>
-
-      <div className="flex items-center gap-4 mb-4 relative z-10">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-800 to-black border border-gray-700 flex items-center justify-center shadow-inner">
-          <User className="text-gray-400 group-hover:text-white transition-colors" size={24} />
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <Shield className="text-green-500" size={14} />
-            <span className="text-xs font-bold text-green-500 tracking-wider">VERIFIED</span>
-          </div>
-          <div className="font-mono text-white text-lg mt-1 tracking-tight" title={member.userId}>
-            {displayId}
-          </div>
-        </div>
-      </div>
-
-      <div className="pt-4 border-t border-gray-800/50 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-2 text-gray-500 text-sm font-mono">
-          <Calendar size={14} />
-          <span>Joined</span>
-        </div>
-        <div className="text-gray-300 text-sm font-medium">
-          {displayDate}
-        </div>
-      </div>
+      {/* Interactive Client Component for Search, Sort, and Grid Display */}
+      <ProMembersClient
+        initialMembers={members}
+        currentPage={currentPage}
+        totalPages={totalPages}
+      />
     </div>
   );
 }
