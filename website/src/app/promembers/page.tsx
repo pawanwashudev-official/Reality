@@ -1,5 +1,5 @@
 import React from 'react';
-import { Crown, Database } from 'lucide-react';
+import { Crown, Database, Heart } from 'lucide-react';
 import ProMembersClient from './ProMembersClient';
 
 // Force dynamic rendering to allow search params but utilize caching
@@ -80,6 +80,18 @@ export default async function ProMembersPage({
               <Database className="text-neural-cyan mb-2" size={24} />
               <span className="text-2xl font-bold text-white">{total}</span>
               <span className="text-xs text-gray-500 font-mono uppercase mt-1">Total Active</span>
+            </div>
+          </div>
+
+          <div className="mt-12 max-w-3xl mx-auto bg-neural-card/30 border border-gray-800 p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-6 text-left shadow-lg backdrop-blur-sm">
+            <div className="w-12 h-12 rounded-full bg-pink-500/10 border border-pink-500/20 flex items-center justify-center shrink-0">
+              <Heart className="text-pink-500 fill-pink-500/20" size={24} />
+            </div>
+            <div>
+              <h3 className="text-white font-bold mb-1 tracking-tight">Our Heartfelt Thanks</h3>
+              <p className="text-sm text-gray-400 leading-relaxed">
+                These are the people who contributed to Reality. Thanks to them, we are able to maintain this open-source project and provide proper updates and patches on a regular basis.
+              </p>
             </div>
           </div>
         </div>
