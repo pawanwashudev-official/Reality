@@ -64,7 +64,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Step 1: Identity &amp; Checksum"
+                        android:text="Step 1: Identity"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:textColor="?attr/colorOnSurface"
@@ -73,7 +73,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Sign in is required to verify your identity with Google and ensure 1 Pro license is mapped to 1 real user. For complete privacy, your email is never sent to our servers. We generate a one-way MD5 checksum on your device and use only 16 characters of it as your unique, irreversible User ID."
+                        android:text="Sign in is required to verify your identity with Google and link your Pro license."
                         android:textSize="14sp"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="16dp"/>
@@ -174,7 +174,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="After submitting payment, verify your status to unlock Pro features. Approvals are manual."
+                        android:text="After submitting payment, verify your status to unlock Pro features."
                         android:textSize="14sp"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="16dp"/>
