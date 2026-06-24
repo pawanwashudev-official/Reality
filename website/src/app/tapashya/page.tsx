@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Settings, Play, Pause, Square, RotateCcw, X, Trash2, Edit2, QrCode, ArrowLeft, ChevronLeft, ChevronRight, Calendar, Maximize2, Minimize2 } from 'lucide-react';
+import { Settings, Play, Pause, Square, RotateCcw, X, Trash2, Edit2, QrCode, ArrowLeft, ChevronLeft, ChevronRight, Calendar, Maximize2, Minimize2, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 export interface TapasyaSession {
@@ -75,7 +75,10 @@ export default function TapashyaPage() {
   const [formName, setFormName] = useState('Tapasya');
   const [formTargetTime, setFormTargetTime] = useState(60);
   const [formPauseLimit, setFormPauseLimit] = useState(15);
-  const [renameInput, setRenameInput] = useState('');
+    const [renameInput, setRenameInput] = useState('');
+  const [showEditTimeDialog, setShowEditTimeDialog] = useState(false);
+  const [editStartTime, setEditStartTime] = useState('');
+  const [editEndTime, setEditEndTime] = useState('');
 
   // Derived Display Values
   const [displayElapsed, setDisplayElapsed] = useState(0);
@@ -478,6 +481,49 @@ export default function TapashyaPage() {
       }
   };
 
+
+  const handleEditTimeClick = () => {
+      if (selectedSessions.size !== 1) return;
+      const id = Array.from(selectedSessions)[0];
+      const session = sessions.find(s => s.sessionId === id);
+      if (session) {
+          // Format as HH:MM for input[type="time"]
+          const start = new Date(session.startTime);
+          const end = new Date(session.endTime);
+          setEditStartTime(`${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`);
+          setEditEndTime(`${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`);
+          setShowEditTimeDialog(true);
+      }
+  };
+
+  const saveEditTime = () => {
+      if (selectedSessions.size !== 1) return;
+      const id = Array.from(selectedSessions)[0];
+
+      const newSessions = sessions.map(s => {
+          if (s.sessionId === id) {
+              const startSplit = editStartTime.split(':');
+              const endSplit = editEndTime.split(':');
+
+              const newStart = new Date(s.startTime);
+              newStart.setHours(parseInt(startSplit[0], 10), parseInt(startSplit[1], 10), 0, 0);
+
+              const newEnd = new Date(s.endTime);
+              newEnd.setHours(parseInt(endSplit[0], 10), parseInt(endSplit[1], 10), 0, 0);
+
+              // Recalculate effective time based on new bounds?
+              // Keep it simple: just update the timestamps. The effective time remains what it was originally calculated as during the active running session.
+              // Or we can adjust it if they shrink the window smaller than effective time, but that's complex. Let's just update the visual times.
+
+              return { ...s, startTime: newStart.getTime(), endTime: newEnd.getTime() };
+          }
+          return s;
+      });
+      localStorage.setItem('tapashya_sessions', JSON.stringify(newSessions));
+      setSessions(newSessions);
+      setShowEditTimeDialog(false);
+  };
+
   const saveRename = () => {
       if (selectedSessions.size !== 1) return;
       const id = Array.from(selectedSessions)[0];
@@ -699,9 +745,14 @@ export default function TapashyaPage() {
                     </div>
                     <div className="flex items-center gap-1">
                         {selectedSessions.size === 1 && (
-                            <button onClick={handleRenameClick} className="p-2 rounded-full hover:bg-teal-200 text-[#00E5FF]" title="Rename">
-                                <Edit2 size={20} />
-                            </button>
+                            <>
+                                <button onClick={handleRenameClick} className="p-2 rounded-full hover:bg-teal-200 text-[#00E5FF]" title="Rename">
+                                    <Edit2 size={20} />
+                                </button>
+                                <button onClick={handleEditTimeClick} className="p-2 rounded-full hover:bg-teal-200 text-[#00E5FF]" title="Edit Time">
+                                    <Clock size={20} />
+                                </button>
+                            </>
                         )}
                         <button onClick={() => setShowExportDialog(true)} className="p-2 rounded-full hover:bg-teal-200 text-[#00E5FF]" title="Export QR">
                             <QrCode size={20} />
@@ -810,7 +861,7 @@ export default function TapashyaPage() {
                               type="text"
                               value={formName}
                               onChange={(e) => setFormName(e.target.value)}
-                              className="w-full border border-white/20 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00E5FF] focus:border-[#00E5FF] outline-none transition-shadow"
+                              className="w-full bg-[#05050A]/50 text-white border border-white/20 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00E5FF] focus:border-[#00E5FF] outline-none transition-shadow"
                           />
                       </div>
 
@@ -861,12 +912,46 @@ export default function TapashyaPage() {
                       type="text"
                       value={renameInput}
                       onChange={(e) => setRenameInput(e.target.value)}
-                      className="w-full border border-white/20 rounded-xl px-4 py-3 mb-6 focus:ring-2 focus:ring-[#00E5FF] focus:border-[#00E5FF] outline-none"
+                      className="w-full bg-[#05050A]/50 text-white border border-white/20 rounded-xl px-4 py-3 mb-6 focus:ring-2 focus:ring-[#00E5FF] focus:border-[#00E5FF] outline-none"
                       autoFocus
                   />
                   <div className="flex gap-3">
                       <button onClick={() => setShowRenameDialog(false)} className="flex-1 py-3 text-gray-300 font-bold hover:bg-white/10 rounded-xl transition-colors">Cancel</button>
                       <button onClick={saveRename} className="flex-1 py-3 bg-[#00E5FF] text-white rounded-xl font-bold hover:bg-[#00B8D4] transition-colors">Save</button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+            {/* Edit Time Dialog */}
+      {showEditTimeDialog && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowEditTimeDialog(false)}></div>
+              <div className="relative bg-white/5 backdrop-blur-md w-full max-w-sm rounded-3xl shadow-2xl shadow-black/80 p-6 animate-in zoom-in-95 duration-200">
+                  <h3 className="text-xl font-bold text-white mb-6">Edit Time</h3>
+                  <div className="space-y-4 mb-6">
+                      <div>
+                          <label className="block text-sm font-bold text-gray-300 mb-2">Start Time</label>
+                          <input
+                              type="time"
+                              value={editStartTime}
+                              onChange={(e) => setEditStartTime(e.target.value)}
+                              className="w-full bg-[#05050A]/50 text-white border border-white/20 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00E5FF] focus:border-[#00E5FF] outline-none"
+                          />
+                      </div>
+                      <div>
+                          <label className="block text-sm font-bold text-gray-300 mb-2">End Time</label>
+                          <input
+                              type="time"
+                              value={editEndTime}
+                              onChange={(e) => setEditEndTime(e.target.value)}
+                              className="w-full bg-[#05050A]/50 text-white border border-white/20 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00E5FF] focus:border-[#00E5FF] outline-none"
+                          />
+                      </div>
+                  </div>
+                  <div className="flex gap-3">
+                      <button onClick={() => setShowEditTimeDialog(false)} className="flex-1 py-3 text-gray-300 font-bold hover:bg-white/10 rounded-xl transition-colors">Cancel</button>
+                      <button onClick={saveEditTime} className="flex-1 py-3 bg-[#00E5FF] text-white rounded-xl font-bold hover:bg-[#00B8D4] transition-colors">Save</button>
                   </div>
               </div>
           </div>
