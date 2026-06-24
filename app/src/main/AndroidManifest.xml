@@ -97,6 +97,13 @@
             android:screenOrientation="portrait" />
 
         <activity
+            android:name=".ui.activity.PaymentVerificationActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Reality"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".ui.activity.RealityProActivity"
             android:exported="false"
             android:theme="@style/Theme.Reality"
