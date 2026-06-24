@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Settings, Play, Pause, Square, RotateCcw, X, Trash2, Edit2, QrCode, ArrowLeft, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { Settings, Play, Pause, Square, RotateCcw, X, Trash2, Edit2, QrCode, ArrowLeft, ChevronLeft, ChevronRight, Calendar, Maximize2, Minimize2 } from 'lucide-react';
 import Link from 'next/link';
 
 export interface TapasyaSession {
@@ -57,6 +57,13 @@ export default function TapashyaPage() {
 
   // Clock State
   const [activeState, setActiveState] = useState<ActiveSessionState>(DEFAULT_ACTIVE_STATE);
+
+
+  // Mini Mode State
+  const [isMiniMode, setIsMiniMode] = useState(false);
+  const [miniPos, setMiniPos] = useState({ x: 20, y: 20 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
 
   // Dialogs
   const [showSettings, setShowSettings] = useState(false);
@@ -277,6 +284,10 @@ export default function TapashyaPage() {
   };
 
   const startSessionWithConfig = (name: string, targetMins: number, pauseMins: number) => {
+      if (activeState.isRunning || activeState.isPaused) {
+          alert("Active or paused timers must be stopped first.");
+          return;
+      }
       const now = Date.now();
       saveActiveState({
           ...activeState,
@@ -364,6 +375,22 @@ export default function TapashyaPage() {
 
   const resetClock = () => {
       saveActiveState(DEFAULT_ACTIVE_STATE);
+  };
+
+
+  // --- Mini Mode Handlers ---
+  const handlePointerDown = (e: React.PointerEvent) => {
+      setIsDragging(true);
+      dragStartPos.current = { x: e.clientX - miniPos.x, y: e.clientY - miniPos.y };
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+  const handlePointerMove = (e: React.PointerEvent) => {
+      if (!isDragging) return;
+      setMiniPos({ x: e.clientX - dragStartPos.current.x, y: e.clientY - dragStartPos.current.y });
+  };
+  const handlePointerUp = (e: React.PointerEvent) => {
+      setIsDragging(false);
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
   };
 
   // --- UI Formatting ---
@@ -485,7 +512,7 @@ export default function TapashyaPage() {
   const qrData = generateDeepLink();
 
   // --- UI Colors & States ---
-  const colorPrimary = "#00695C"; // Teal
+  const colorPrimary = "#00E5FF"; // Teal
   const colorAmber = "#FFC107";
 
   const statusText = activeState.isRunning ? `Focusing: ${activeState.sessionName}` : (activeState.isPaused ? "Paused" : "Ready to Focus");
@@ -497,23 +524,26 @@ export default function TapashyaPage() {
   const currentXpLive = currentFragmentLive * 10;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans pb-24 pt-8">
+    <div className="min-h-screen bg-[#05050A] text-white font-sans pb-24 pt-8">
       <main className="max-w-md mx-auto px-4">
         {/* Android-like Header */}
         <div className="flex items-center justify-between pb-8">
           <div className="flex items-center gap-3">
-            <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-gray-200 transition-colors text-gray-700">
+            <Link href="/" className="p-2 -ml-2 rounded-full hover:bg-white/20 transition-colors text-gray-300">
               <ArrowLeft size={24} />
             </Link>
-            <h1 className="text-2xl font-bold tracking-tight text-[#00695C] font-mono">Neural Focus</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#00E5FF] font-mono">Neural Focus</h1>
           </div>
           <div className="flex gap-2">
             {!calendarToken && (
-              <a href="/api/auth/google" className="flex items-center gap-2 px-4 py-2 bg-[#E0F2F1] text-[#00695C] rounded-full text-sm font-bold hover:bg-[#B2DFDB] transition-colors">
+              <a href="/api/auth/google" className="flex items-center gap-2 px-4 py-2 bg-[#00E5FF]/10 text-[#00E5FF] rounded-full text-sm font-bold hover:bg-[#B2DFDB] transition-colors">
                  <Calendar size={16} /> Connect
               </a>
             )}
-            <button onClick={() => setShowSettings(true)} className="p-2 rounded-full hover:bg-gray-200 transition-colors text-gray-700">
+            <button onClick={() => setIsMiniMode(true)} className="p-2 rounded-full hover:bg-white/20 transition-colors text-gray-300">
+               <Minimize2 size={24} />
+            </button>
+            <button onClick={() => setShowSettings(true)} className="p-2 rounded-full hover:bg-white/20 transition-colors text-gray-300">
                <Settings size={24} />
             </button>
           </div>
@@ -521,17 +551,17 @@ export default function TapashyaPage() {
 
         {/* Clock View Area */}
         <div className="flex flex-col items-center mb-10">
-            <div className="relative w-64 h-64 rounded-full bg-white shadow-lg border border-gray-100 flex items-center justify-center overflow-hidden mb-6">
+            <div className="relative w-64 h-64 rounded-full bg-white/5 backdrop-blur-md shadow-2xl shadow-black/80 border border-white/10 flex items-center justify-center overflow-hidden mb-6">
                 {/* Simulated Wave Background */}
                 <div
                     className="absolute bottom-0 w-full transition-all duration-1000 ease-in-out opacity-20"
                     style={{ height: `${progressPercent}%`, backgroundColor: waveColor }}
                 />
                 <div className="relative z-10 flex flex-col items-center">
-                    <span className="text-4xl font-mono font-bold tracking-tight text-gray-800">
+                    <span className="text-4xl font-mono font-bold tracking-tight text-gray-100">
                         {formatTime(displayElapsed)}
                     </span>
-                    <span className="text-sm font-medium text-gray-500 mt-2 text-center px-4" style={{ color: activeState.isPaused ? colorAmber : colorPrimary }}>
+                    <span className="text-sm font-medium text-gray-400 mt-2 text-center px-4" style={{ color: activeState.isPaused ? colorAmber : colorPrimary }}>
                         {statusText}
                     </span>
                 </div>
@@ -539,9 +569,9 @@ export default function TapashyaPage() {
 
             {/* Live Stats */}
             {(activeState.isRunning || activeState.isPaused) && (
-                <div className="bg-white px-6 py-3 rounded-full shadow-sm border border-gray-100 flex items-center gap-6 mb-6">
-                    <span className="text-sm font-bold text-gray-700">⚡ {currentXpLive} XP</span>
-                    <span className="text-sm font-medium text-gray-500 border-l pl-6">Fragment {currentFragmentLive}</span>
+                <div className="bg-white/5 backdrop-blur-md px-6 py-3 rounded-full shadow-2xl shadow-black/80 border border-white/10 flex items-center gap-6 mb-6">
+                    <span className="text-sm font-bold text-gray-300">⚡ {currentXpLive} XP</span>
+                    <span className="text-sm font-medium text-gray-400 border-l pl-6">Fragment {currentFragmentLive}</span>
                 </div>
             )}
 
@@ -557,7 +587,7 @@ export default function TapashyaPage() {
                 {(!activeState.isRunning && !activeState.isPaused) && (
                     <button
                         onClick={onStartClicked}
-                        className="flex items-center gap-2 bg-[#00695C] text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:bg-[#004D40] transition-transform active:scale-95 select-none"
+                        className="flex items-center gap-2 bg-[#00E5FF] text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:bg-[#00B8D4] transition-transform active:scale-95 select-none"
                     >
                         <Play size={20} fill="currentColor" />
                         Start
@@ -565,14 +595,14 @@ export default function TapashyaPage() {
                 )}
 
                 {activeState.isRunning && (
-                    <button onClick={handlePause} className="flex items-center gap-2 bg-[#651FFF] text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:bg-[#311B92] transition-transform active:scale-95">
+                    <button onClick={handlePause} className="flex items-center gap-2 bg-[#7B61FF] text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:bg-[#5E48D6] transition-transform active:scale-95">
                         <Pause size={20} fill="currentColor" />
                         Pause
                     </button>
                 )}
 
                 {activeState.isPaused && (
-                    <button onClick={handleResume} className="flex items-center gap-2 bg-[#00695C] text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:bg-[#004D40] transition-transform active:scale-95">
+                    <button onClick={handleResume} className="flex items-center gap-2 bg-[#00E5FF] text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:bg-[#00B8D4] transition-transform active:scale-95">
                         <Play size={20} fill="currentColor" />
                         Resume
                     </button>
@@ -583,7 +613,7 @@ export default function TapashyaPage() {
                         <button onClick={() => handleStop(false)} className="p-4 rounded-2xl bg-[#B3261E] text-white shadow-md hover:bg-[#8C1D18] transition-transform active:scale-95">
                             <Square size={20} fill="currentColor" />
                         </button>
-                        <button onClick={resetClock} className="p-4 rounded-2xl bg-gray-200 text-gray-700 shadow-sm hover:bg-gray-300 transition-transform active:scale-95">
+                        <button onClick={resetClock} className="p-4 rounded-2xl bg-white/10 text-gray-300 shadow-2xl shadow-black/80 hover:bg-gray-300 transition-transform active:scale-95">
                             <RotateCcw size={20} />
                         </button>
                     </>
@@ -593,35 +623,35 @@ export default function TapashyaPage() {
 
         {/* Scheduled Sessions Section */}
         <div className="mt-8 mb-6">
-            <h3 className="text-lg font-bold text-gray-800 px-2 mb-4 font-mono">Scheduled Sessions</h3>
+            <h3 className="text-lg font-bold text-gray-100 px-2 mb-4 font-mono">Scheduled Sessions</h3>
             {!calendarToken ? (
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col items-center justify-center text-center">
+                <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 shadow-2xl shadow-black/80 border border-white/10 flex flex-col items-center justify-center text-center">
                     <Calendar size={32} className="text-gray-400 mb-3" />
-                    <p className="text-gray-600 font-medium mb-4">Sync with your calendar to see study blocks.</p>
-                    <a href="/api/auth/google" className="px-6 py-2 bg-[#00695C] text-white rounded-full font-bold shadow hover:bg-[#004D40] transition-colors">
+                    <p className="text-gray-300 font-medium mb-4">Sync with your calendar to see study blocks.</p>
+                    <a href="/api/auth/google" className="px-6 py-2 bg-[#00E5FF] text-white rounded-full font-bold shadow hover:bg-[#00B8D4] transition-colors">
                         Connect Calendar
                     </a>
                 </div>
             ) : calendarEvents.length === 0 ? (
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col items-center text-center">
-                    <p className="text-gray-500 font-medium">No events for today.</p>
+                <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 shadow-2xl shadow-black/80 border border-white/10 flex flex-col items-center text-center">
+                    <p className="text-gray-400 font-medium">No events for today.</p>
                 </div>
             ) : (
                 <div className="space-y-3">
                     {calendarEvents.map((evt) => {
                         const isRecommended = recommendedEvent?.id === evt.id;
                         return (
-                            <div key={evt.id} className={`bg-white rounded-2xl p-4 shadow-sm border ${isRecommended ? 'border-[#00695C]' : 'border-gray-100'} flex items-center justify-between`}>
+                            <div key={evt.id} className={`bg-white/5 backdrop-blur-md rounded-2xl p-4 shadow-2xl shadow-black/80 border ${isRecommended ? 'border-[#00E5FF]' : 'border-white/10'} flex items-center justify-between`}>
                                 <div>
-                                    <h4 className="font-bold text-gray-800 text-sm">{evt.title}</h4>
-                                    <p className="text-xs text-gray-500 font-medium mt-1">
+                                    <h4 className="font-bold text-gray-100 text-sm">{evt.title}</h4>
+                                    <p className="text-xs text-gray-400 font-medium mt-1">
                                         {new Date(evt.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(evt.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </p>
-                                    {isRecommended && <span className="text-[10px] bg-[#E0F2F1] text-[#00695C] font-bold px-2 py-0.5 rounded uppercase mt-2 inline-block">Recommended</span>}
+                                    {isRecommended && <span className="text-[10px] bg-[#00E5FF]/10 text-[#00E5FF] font-bold px-2 py-0.5 rounded uppercase mt-2 inline-block">Recommended</span>}
                                 </div>
                                 <button
                                     onClick={() => startSessionWithConfig(evt.title, Math.floor((evt.endTime - evt.startTime) / 60000), formPauseLimit)}
-                                    className="p-2 bg-[#00695C] text-white rounded-full hover:bg-[#004D40] transition-colors"
+                                    className="p-2 bg-[#00E5FF] text-white rounded-full hover:bg-[#00B8D4] transition-colors"
                                 >
                                     <Play size={16} fill="currentColor" />
                                 </button>
@@ -638,20 +668,20 @@ export default function TapashyaPage() {
             <div className="flex items-center justify-between mb-4">
                 <button
                     onClick={handlePrevDay}
-                    className="p-2 rounded-full hover:bg-gray-200 transition-colors text-gray-700"
+                    className="p-2 rounded-full hover:bg-white/20 transition-colors text-gray-300"
                     title="Previous Day"
                 >
                     <ChevronLeft size={24} />
                 </button>
                 <div className="text-center flex-1">
-                    <span className="text-lg font-bold text-[#00695C] font-mono">
+                    <span className="text-lg font-bold text-[#00E5FF] font-mono">
                         {isToday(selectedDate) ? 'Today' : selectedDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                     </span>
                 </div>
                 <button
                     onClick={handleNextDay}
                     disabled={isToday(selectedDate)}
-                    className={`p-2 rounded-full transition-colors ${isToday(selectedDate) ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-200 text-gray-700'}`}
+                    className={`p-2 rounded-full transition-colors ${isToday(selectedDate) ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-white/20 text-gray-300'}`}
                     title="Next Day"
                 >
                     <ChevronRight size={24} />
@@ -660,20 +690,20 @@ export default function TapashyaPage() {
 
             {/* Context Menu or Empty Header */}
             {selectedSessions.size > 0 && (
-                <div className="bg-[#E0F2F1] rounded-2xl p-4 flex justify-between items-center mb-4 shadow-sm border border-teal-100">
+                <div className="bg-[#00E5FF]/10 rounded-2xl p-4 flex justify-between items-center mb-4 shadow-2xl shadow-black/80 border border-[#00E5FF]/20">
                     <div className="flex items-center gap-2">
-                        <button onClick={() => setSelectedSessions(new Set())} className="p-2 -ml-2 rounded-full hover:bg-teal-200 text-[#004D40]">
+                        <button onClick={() => setSelectedSessions(new Set())} className="p-2 -ml-2 rounded-full hover:bg-teal-200 text-[#00B8D4]">
                             <X size={20} />
                         </button>
-                        <span className="font-bold text-[#004D40]">{selectedSessions.size} Selected</span>
+                        <span className="font-bold text-[#00B8D4]">{selectedSessions.size} Selected</span>
                     </div>
                     <div className="flex items-center gap-1">
                         {selectedSessions.size === 1 && (
-                            <button onClick={handleRenameClick} className="p-2 rounded-full hover:bg-teal-200 text-[#00695C]" title="Rename">
+                            <button onClick={handleRenameClick} className="p-2 rounded-full hover:bg-teal-200 text-[#00E5FF]" title="Rename">
                                 <Edit2 size={20} />
                             </button>
                         )}
-                        <button onClick={() => setShowExportDialog(true)} className="p-2 rounded-full hover:bg-teal-200 text-[#00695C]" title="Export QR">
+                        <button onClick={() => setShowExportDialog(true)} className="p-2 rounded-full hover:bg-teal-200 text-[#00E5FF]" title="Export QR">
                             <QrCode size={20} />
                         </button>
                         <button onClick={handleDeleteSelected} className="p-2 rounded-full hover:bg-red-100 text-red-600" title="Delete">
@@ -691,30 +721,30 @@ export default function TapashyaPage() {
                     if (daySessions.length === 0) {
                         return (
                             <div className="text-center py-10">
-                                <p className="text-gray-500 font-medium">No sessions recorded</p>
+                                <p className="text-gray-400 font-medium">No sessions recorded</p>
                             </div>
                         );
                     }
 
                     return daySessions.map(session => (
-                        <div key={session.sessionId} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            <label className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors group">
+                        <div key={session.sessionId} className="bg-white/5 backdrop-blur-md rounded-2xl shadow-2xl shadow-black/80 border border-white/10 overflow-hidden">
+                            <label className="flex items-center justify-between p-4 cursor-pointer hover:bg-[#05050A] transition-colors group">
                                 <div className="flex items-center gap-4">
                                     <input
                                         type="checkbox"
                                         checked={selectedSessions.has(session.sessionId)}
                                         onChange={() => handleToggleSession(session.sessionId)}
-                                        className="w-5 h-5 text-[#00695C] rounded border-gray-300 focus:ring-[#00695C]"
+                                        className="w-5 h-5 text-[#00E5FF] rounded border-white/20 focus:ring-[#00E5FF]"
                                     />
                                     <div>
-                                        <div className="font-bold text-gray-800 text-base group-hover:text-[#00695C] transition-colors">{session.name}</div>
-                                        <div className="text-xs text-gray-500 font-medium mt-1">
+                                        <div className="font-bold text-gray-100 text-base group-hover:text-[#00E5FF] transition-colors">{session.name}</div>
+                                        <div className="text-xs text-gray-400 font-medium mt-1">
                                             {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </div>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-sm font-black text-[#651FFF]">{formatMinutes(Math.floor(session.effectiveTimeMs / 60000))}</div>
+                                    <div className="text-sm font-black text-[#7B61FF]">{formatMinutes(Math.floor(session.effectiveTimeMs / 60000))}</div>
                                     <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Effective</div>
                                 </div>
                             </label>
@@ -726,55 +756,95 @@ export default function TapashyaPage() {
 
       </main>
 
+      {/* Mini Mode Overlay */}
+      {isMiniMode && (
+          <div
+              className="fixed z-[200] bg-[#05050A]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-4 shadow-2xl flex flex-col items-center cursor-move"
+              style={{ left: miniPos.x, top: miniPos.y, touchAction: 'none' }}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+          >
+              <button onClick={(e) => { e.stopPropagation(); setIsMiniMode(false); }} className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white rounded-full hover:bg-white/10">
+                  <Maximize2 size={16} />
+              </button>
+              <div className="text-sm font-bold text-[#00E5FF] mb-1 font-mono">{activeState.sessionName}</div>
+              <div className="text-2xl font-mono font-bold text-white mb-2">{formatTime(displayElapsed)}</div>
+
+              <div className="flex gap-2" onPointerDown={(e) => e.stopPropagation()}>
+                  {activeState.isRunning ? (
+                      <button onClick={handlePause} className="p-2 bg-[#7B61FF] text-white rounded-full hover:bg-[#5E48D6]">
+                          <Pause size={16} fill="currentColor" />
+                      </button>
+                  ) : activeState.isPaused ? (
+                      <button onClick={handleResume} className="p-2 bg-[#00E5FF] text-white rounded-full hover:bg-[#00B8D4]">
+                          <Play size={16} fill="currentColor" />
+                      </button>
+                  ) : (
+                      <button onClick={onStartClicked} className="p-2 bg-[#00E5FF] text-white rounded-full hover:bg-[#00B8D4]">
+                          <Play size={16} fill="currentColor" />
+                      </button>
+                  )}
+                  {(activeState.isRunning || activeState.isPaused) && (
+                      <button onClick={() => handleStop(false)} className="p-2 bg-[#B3261E] text-white rounded-full hover:bg-[#8C1D18]">
+                          <Square size={16} fill="currentColor" />
+                      </button>
+                  )}
+              </div>
+          </div>
+      )}
+
+
       {/* Start Session Dialog */}
       {showStartDialog && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowStartDialog(false)}></div>
-              <div className="relative bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
-                  <h3 className="text-xl font-bold text-gray-900 mb-6">Start Session</h3>
+              <div className="relative bg-white/5 backdrop-blur-md w-full max-w-sm rounded-3xl shadow-2xl shadow-black/80 p-6 animate-in zoom-in-95 duration-200">
+                  <h3 className="text-xl font-bold text-white mb-6">Start Session</h3>
 
                   <div className="space-y-6">
                       <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">Session Name</label>
+                          <label className="block text-sm font-bold text-gray-300 mb-2">Session Name</label>
                           <input
                               type="text"
                               value={formName}
                               onChange={(e) => setFormName(e.target.value)}
-                              className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00695C] focus:border-[#00695C] outline-none transition-shadow"
+                              className="w-full border border-white/20 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00E5FF] focus:border-[#00E5FF] outline-none transition-shadow"
                           />
                       </div>
 
                       <div>
                           <div className="flex justify-between items-end mb-2">
-                              <label className="text-sm font-bold text-gray-700">Target Time</label>
-                              <span className="text-[#00695C] font-black">{formatMinutes(formTargetTime)}</span>
+                              <label className="text-sm font-bold text-gray-300">Target Time</label>
+                              <span className="text-[#00E5FF] font-black">{formatMinutes(formTargetTime)}</span>
                           </div>
                           <input
                               type="range"
                               min="15" max="360" step="15"
                               value={formTargetTime}
                               onChange={(e) => setFormTargetTime(Number(e.target.value))}
-                              className="w-full accent-[#00695C]"
+                              className="w-full accent-[#00E5FF]"
                           />
                       </div>
 
                       <div>
                           <div className="flex justify-between items-end mb-2">
-                              <label className="text-sm font-bold text-gray-700">Pause Limit</label>
-                              <span className="text-[#00695C] font-black">{formatMinutes(formPauseLimit)}</span>
+                              <label className="text-sm font-bold text-gray-300">Pause Limit</label>
+                              <span className="text-[#00E5FF] font-black">{formatMinutes(formPauseLimit)}</span>
                           </div>
                           <input
                               type="range"
                               min="1" max="60" step="1"
                               value={formPauseLimit}
                               onChange={(e) => setFormPauseLimit(Number(e.target.value))}
-                              className="w-full accent-[#00695C]"
+                              className="w-full accent-[#00E5FF]"
                           />
                       </div>
 
                       <div className="flex gap-3 pt-2">
-                          <button onClick={() => setShowStartDialog(false)} className="flex-1 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
-                          <button onClick={() => startSessionWithConfig(formName, formTargetTime, formPauseLimit)} className="flex-1 py-3 bg-[#00695C] text-white rounded-xl font-bold hover:bg-[#004D40] transition-colors">Start</button>
+                          <button onClick={() => setShowStartDialog(false)} className="flex-1 py-3 text-gray-300 font-bold hover:bg-white/10 rounded-xl transition-colors">Cancel</button>
+                          <button onClick={() => startSessionWithConfig(formName, formTargetTime, formPauseLimit)} className="flex-1 py-3 bg-[#00E5FF] text-white rounded-xl font-bold hover:bg-[#00B8D4] transition-colors">Start</button>
                       </div>
                   </div>
               </div>
@@ -785,18 +855,18 @@ export default function TapashyaPage() {
       {showRenameDialog && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowRenameDialog(false)}></div>
-              <div className="relative bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Rename Session</h3>
+              <div className="relative bg-white/5 backdrop-blur-md w-full max-w-sm rounded-3xl shadow-2xl shadow-black/80 p-6 animate-in zoom-in-95 duration-200">
+                  <h3 className="text-xl font-bold text-white mb-4">Rename Session</h3>
                   <input
                       type="text"
                       value={renameInput}
                       onChange={(e) => setRenameInput(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-3 mb-6 focus:ring-2 focus:ring-[#00695C] focus:border-[#00695C] outline-none"
+                      className="w-full border border-white/20 rounded-xl px-4 py-3 mb-6 focus:ring-2 focus:ring-[#00E5FF] focus:border-[#00E5FF] outline-none"
                       autoFocus
                   />
                   <div className="flex gap-3">
-                      <button onClick={() => setShowRenameDialog(false)} className="flex-1 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
-                      <button onClick={saveRename} className="flex-1 py-3 bg-[#00695C] text-white rounded-xl font-bold hover:bg-[#004D40] transition-colors">Save</button>
+                      <button onClick={() => setShowRenameDialog(false)} className="flex-1 py-3 text-gray-300 font-bold hover:bg-white/10 rounded-xl transition-colors">Cancel</button>
+                      <button onClick={saveRename} className="flex-1 py-3 bg-[#00E5FF] text-white rounded-xl font-bold hover:bg-[#00B8D4] transition-colors">Save</button>
                   </div>
               </div>
           </div>
@@ -806,15 +876,15 @@ export default function TapashyaPage() {
       {showExportDialog && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowExportDialog(false)}></div>
-              <div className="relative bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 animate-in zoom-in-95 duration-200 flex flex-col items-center text-center">
-                  <button onClick={() => setShowExportDialog(false)} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200">
+              <div className="relative bg-white/5 backdrop-blur-md w-full max-w-sm rounded-3xl shadow-2xl shadow-black/80 p-8 animate-in zoom-in-95 duration-200 flex flex-col items-center text-center">
+                  <button onClick={() => setShowExportDialog(false)} className="absolute top-4 right-4 p-2 bg-white/10 rounded-full hover:bg-white/20">
                       <X size={20} />
                   </button>
-                  <h3 className="text-xl font-bold text-[#004D40] mb-2">App Sync</h3>
-                  <p className="text-sm text-gray-500 mb-6">Scan with Reality app to import {selectedSessions.size} session(s).</p>
+                  <h3 className="text-xl font-bold text-[#00B8D4] mb-2">App Sync</h3>
+                  <p className="text-sm text-gray-400 mb-6">Scan with Reality app to import {selectedSessions.size} session(s).</p>
 
                   {qrData && (
-                      <div className="p-4 bg-white rounded-2xl shadow-sm border border-gray-100 mb-2">
+                      <div className="p-4 bg-white/5 backdrop-blur-md rounded-2xl shadow-2xl shadow-black/80 border border-white/10 mb-2">
                           <QRCodeSVG value={qrData} size={200} level="L" includeMargin={false} />
                       </div>
                   )}
@@ -826,10 +896,10 @@ export default function TapashyaPage() {
       {showSettings && (
           <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-4">
               <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowSettings(false)}></div>
-              <div className="relative bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl p-6 animate-in slide-in-from-bottom-8">
+              <div className="relative bg-white/5 backdrop-blur-md w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl shadow-black/80 p-6 animate-in slide-in-from-bottom-8">
                   <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-xl font-bold text-gray-900">Default Settings</h3>
-                      <button onClick={() => setShowSettings(false)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
+                      <h3 className="text-xl font-bold text-white">Default Settings</h3>
+                      <button onClick={() => setShowSettings(false)} className="p-2 bg-white/10 rounded-full hover:bg-white/20">
                           <X size={20} />
                       </button>
                   </div>
@@ -837,35 +907,35 @@ export default function TapashyaPage() {
                   <div className="space-y-6">
                       <div>
                           <div className="flex justify-between items-end mb-2">
-                              <label className="font-bold text-gray-700">Target Duration</label>
-                              <span className="text-[#00695C] font-black">{formatMinutes(formTargetTime)}</span>
+                              <label className="font-bold text-gray-300">Target Duration</label>
+                              <span className="text-[#00E5FF] font-black">{formatMinutes(formTargetTime)}</span>
                           </div>
                           <input
                               type="range"
                               min="15" max="360" step="15"
                               value={formTargetTime}
                               onChange={(e) => setFormTargetTime(Number(e.target.value))}
-                              className="w-full accent-[#00695C]"
+                              className="w-full accent-[#00E5FF]"
                           />
                       </div>
 
                       <div>
                           <div className="flex justify-between items-end mb-2">
-                              <label className="font-bold text-gray-700">Pause Limit</label>
-                              <span className="text-[#00695C] font-black">{formatMinutes(formPauseLimit)}</span>
+                              <label className="font-bold text-gray-300">Pause Limit</label>
+                              <span className="text-[#00E5FF] font-black">{formatMinutes(formPauseLimit)}</span>
                           </div>
                           <input
                               type="range"
                               min="1" max="60" step="1"
                               value={formPauseLimit}
                               onChange={(e) => setFormPauseLimit(Number(e.target.value))}
-                              className="w-full accent-[#00695C]"
+                              className="w-full accent-[#00E5FF]"
                           />
                       </div>
 
                       <button
                           onClick={() => setShowSettings(false)}
-                          className="w-full py-4 bg-[#00695C] text-white rounded-2xl font-bold shadow-md hover:bg-[#004D40] active:scale-95 transition-transform"
+                          className="w-full py-4 bg-[#00E5FF] text-white rounded-2xl font-bold shadow-md hover:bg-[#00B8D4] active:scale-95 transition-transform"
                       >
                           Save Defaults
                       </button>
