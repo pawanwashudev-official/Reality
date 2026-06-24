@@ -151,10 +151,16 @@ class PaymentVerificationActivity : BaseActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
+                val credential = GoogleAuthManager.getGoogleCredential(this@PaymentVerificationActivity)
+                val accessToken = credential?.accessToken
+
                 val url = URL(baseUrl)
                 var conn = url.openConnection() as HttpURLConnection
                 conn.requestMethod = "POST"
                 conn.setRequestProperty("Content-Type", "application/json")
+                if (accessToken != null) {
+                    conn.setRequestProperty("Authorization", "Bearer $accessToken")
+                }
                 conn.doOutput = true
                 conn.connectTimeout = 10000
                 conn.readTimeout = 10000
@@ -176,6 +182,9 @@ class PaymentVerificationActivity : BaseActivity() {
                     val newUrl = conn.getHeaderField("Location")
                     conn = URL(newUrl).openConnection() as HttpURLConnection
                     conn.requestMethod = "GET"
+                    if (accessToken != null) {
+                        conn.setRequestProperty("Authorization", "Bearer $accessToken")
+                    }
                     conn.connectTimeout = 10000
                     conn.readTimeout = 10000
                     responseCode = conn.responseCode
