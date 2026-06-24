@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { Settings, Play, Pause, Square, RotateCcw, X, Trash2, Edit2, QrCode, ArrowLeft, ChevronLeft, ChevronRight, Calendar, Maximize2, Minimize2, Clock } from 'lucide-react';
 import Link from 'next/link';
@@ -61,6 +62,7 @@ export default function TapashyaPage() {
 
   // Mini Mode State
   const [isMiniMode, setIsMiniMode] = useState(false);
+  const [pipWindow, setPipWindow] = useState<Window | null>(null);
   const [miniPos, setMiniPos] = useState({ x: 20, y: 20 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
@@ -383,6 +385,60 @@ export default function TapashyaPage() {
   };
 
 
+
+  const handleOpenMiniMode = async () => {
+    if ('documentPictureInPicture' in window) {
+      try {
+        const pip = await (window as { documentPictureInPicture?: { requestWindow: (options?: { width?: number; height?: number; }) => Promise<Window> } }).documentPictureInPicture!.requestWindow({
+          width: 250,
+          height: 150,
+        });
+
+        // Copy tailwind styles
+        [...document.styleSheets].forEach((styleSheet) => {
+          try {
+            const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+            const style = document.createElement('style');
+            style.textContent = cssRules;
+            pip.document.head.appendChild(style);
+          } catch {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.type = styleSheet.type;
+            link.media = styleSheet.media.mediaText;
+            link.href = styleSheet.href || '';
+            pip.document.head.appendChild(link);
+          }
+        });
+
+        // Add font
+        const fontLink = document.createElement('link');
+        fontLink.rel = 'stylesheet';
+        fontLink.href = 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap';
+        pip.document.head.appendChild(fontLink);
+
+        // Body styling
+        pip.document.body.style.backgroundColor = '#05050A';
+        pip.document.body.style.margin = '0';
+        pip.document.body.style.display = 'flex';
+        pip.document.body.style.alignItems = 'center';
+        pip.document.body.style.justifyContent = 'center';
+        pip.document.body.style.fontFamily = "'Outfit', sans-serif";
+
+        pip.addEventListener('pagehide', () => {
+          setPipWindow(null);
+        });
+
+        setPipWindow(pip);
+      } catch (err) {
+        console.error(err);
+        setIsMiniMode(true);
+      }
+    } else {
+      setIsMiniMode(true);
+    }
+  };
+
   // --- Mini Mode Handlers ---
   const handlePointerDown = (e: React.PointerEvent) => {
       setIsDragging(true);
@@ -535,11 +591,14 @@ export default function TapashyaPage() {
               const newEnd = new Date(s.endTime);
               newEnd.setHours(parseInt(endSplit[0], 10), parseInt(endSplit[1], 10), 0, 0);
 
-              // Recalculate effective time based on new bounds?
-              // Keep it simple: just update the timestamps. The effective time remains what it was originally calculated as during the active running session.
-              // Or we can adjust it if they shrink the window smaller than effective time, but that's complex. Let's just update the visual times.
 
-              return { ...s, startTime: newStart.getTime(), endTime: newEnd.getTime() };
+              // Recalculate effective time based on new bounds
+              let newElapsed = (newEnd.getTime() - newStart.getTime()) - s.totalPauseMs;
+              if (newElapsed < 0) newElapsed = 0;
+              const newEffectiveTimeMs = Math.floor(newElapsed / (15 * 60 * 1000)) * (15 * 60 * 1000);
+
+              return { ...s, startTime: newStart.getTime(), endTime: newEnd.getTime(), effectiveTimeMs: newEffectiveTimeMs };
+
           }
           return s;
       });
@@ -610,7 +669,7 @@ export default function TapashyaPage() {
                  <Calendar size={16} /> Connect
               </a>
             )}
-            <button onClick={() => setIsMiniMode(true)} className="p-2 rounded-full hover:bg-white/20 transition-colors text-gray-300">
+            <button onClick={handleOpenMiniMode} className="p-2 rounded-full hover:bg-white/20 transition-colors text-gray-300">
                <Minimize2 size={24} />
             </button>
             <button onClick={() => setShowSettings(true)} className="p-2 rounded-full hover:bg-white/20 transition-colors text-gray-300">
@@ -833,6 +892,37 @@ export default function TapashyaPage() {
         </div>
 
       </main>
+
+
+      {/* PiP Mini Mode */}
+      {pipWindow && createPortal(
+          <div className="flex flex-col items-center justify-center p-4 w-full h-full">
+              <div className="text-sm font-bold text-[#00E5FF] mb-1 font-mono">{activeState.sessionName}</div>
+              <div className="text-3xl font-mono font-bold text-white mb-4">{formatTime(displayElapsed)}</div>
+
+              <div className="flex gap-4">
+                  {activeState.isRunning ? (
+                      <button onClick={handlePause} className="p-3 bg-[#7B61FF] text-white rounded-full hover:bg-[#5E48D6]">
+                          <Pause size={20} fill="currentColor" />
+                      </button>
+                  ) : activeState.isPaused ? (
+                      <button onClick={handleResume} className="p-3 bg-[#00E5FF] text-white rounded-full hover:bg-[#00B8D4]">
+                          <Play size={20} fill="currentColor" />
+                      </button>
+                  ) : (
+                      <button onClick={onStartClicked} className="p-3 bg-[#00E5FF] text-white rounded-full hover:bg-[#00B8D4]">
+                          <Play size={20} fill="currentColor" />
+                      </button>
+                  )}
+                  {(activeState.isRunning || activeState.isPaused) && (
+                      <button onClick={() => handleStop(false)} className="p-3 bg-[#B3261E] text-white rounded-full hover:bg-[#8C1D18]">
+                          <Square size={20} fill="currentColor" />
+                      </button>
+                  )}
+              </div>
+          </div>,
+          pipWindow.document.body
+      )}
 
       {/* Mini Mode Overlay */}
       {isMiniMode && (
