@@ -220,6 +220,21 @@ object ThemeManager {
      * Call this BEFORE super.onCreate() and setContentView().
      */
     fun applyTheme(context: Context) {
+        // Automatically set the cinematic preset on first load if not set
+        val prefs = getPrefs(context)
+        if (!prefs.contains("theme_initialized")) {
+            prefs.edit()
+                .putBoolean("theme_initialized", true)
+                .putString("app_background_color", "#05050A")
+                .putString("popup_bg_color", "#1A1A24")
+                .putString("dark_page_bg", "#05050A")
+                .putString("dark_surface", "#1AFFFFFF")
+                .putString("light_page_bg", "#F0F0F5")
+                .putString("light_surface", "#FFFFFF")
+                .putString(KEY_BACKGROUND_PATTERN, BackgroundPattern.ZEN.name)
+                .apply()
+        }
+
         // Apply dark mode setting
         val darkMode = getDarkMode(context)
         AppCompatDelegate.setDefaultNightMode(darkMode.nightMode)
