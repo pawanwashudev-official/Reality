@@ -486,7 +486,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:gravity="center"
-            android:text="🔒 All data stays on your device\nReality is 100% open source"
+            android:text="🔒 All data stays on your device\nReality is 99.999% open source. The only exception is a serverless Google Apps Script used for one-time Pro activation verification."
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="11sp"
             android:lineSpacingMultiplier="1.3" />
