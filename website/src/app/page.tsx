@@ -4,12 +4,12 @@ import { Download, Star, Shield, Lock, Brain, Smartphone, Database, HeartPulse, 
 
 export default async function Home() {
 
-  let latestVersion = "1.0.6";
-  let downloadCount = "500+";
+  let latestVersion = "1.0.7";
+  let downloadCount = "1000+";
 
   try {
       const res = await fetch('https://api.github.com/repos/pawanwashudev-official/Reality/releases', {
-          next: { revalidate: 3600 } // Cache for 1 hour
+          next: { revalidate: 360 }
       });
       if (res.ok) {
           const releases = await res.json();
