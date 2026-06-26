@@ -301,7 +301,7 @@ object AgentTools {
 
                 // HEALTH STATS
                 "health", "get_health_stats" -> {
-                    val prefs = context.getSharedPreferences("ai_prefs", Context.MODE_PRIVATE)
+                    val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs")
                     if (!prefs.getBoolean("health_access_enabled", false)) {
                         return "Health access is disabled. Enable it in AI Settings."
                     }
@@ -629,7 +629,7 @@ object AgentTools {
                     val saveToGallery = args.optString("save_to_gallery", "true") != "false"
                     
                     // Get image model settings (New System)
-                    val aiPrefs = context.getSharedPreferences("ai_prefs", Context.MODE_PRIVATE)
+                    val aiPrefs = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs")
                     val imageModel = aiPrefs.getString("image_model", "Pollinations: Free") ?: "Pollinations: Free"
                     
                     // Build enhanced prompt with style
@@ -800,7 +800,7 @@ object AgentTools {
                     if (query.isEmpty()) return "Error: 'query' parameter is required."
                     val maxResults = args.optInt("max_results", 5).coerceIn(1, 10)
                     
-                    val prefs = context.getSharedPreferences("ai_prefs", Context.MODE_PRIVATE)
+                    val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs")
                     val searchEngine = prefs.getString("search_engine", "") ?: ""
                     
                     if (searchEngine.isEmpty() || !searchEngine.contains("Tavily")) {
@@ -1090,7 +1090,7 @@ object AgentTools {
                                 }
                                 
                                 "health" -> {
-                                    val prefs = context.getSharedPreferences("ai_prefs", Context.MODE_PRIVATE)
+                                    val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs")
                                     if (!prefs.getBoolean("health_access_enabled", false)) {
                                         results.put("health", JSONObject().put("error", "Health access disabled"))
                                     } else if (!com.neubofy.reality.health.HealthManager.isHealthConnectAvailable(context)) {

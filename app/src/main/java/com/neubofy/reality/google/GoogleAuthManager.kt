@@ -56,6 +56,9 @@ object GoogleAuthManager {
     private fun getPrefs(context: Context) = 
         com.neubofy.reality.utils.SecurePreferences.get(context, PREF_NAME)
 
+    private fun getConnectorPrefs(context: Context) =
+        com.neubofy.reality.utils.SecurePreferences.get(context, "google_connector_prefs")
+
     fun saveCloudCredentials(context: Context, clientId: String, clientSecret: String) {
         getPrefs(context).edit().apply {
             putString(KEY_CLIENT_ID, clientId)
@@ -247,7 +250,7 @@ object GoogleAuthManager {
             saveCloudCredentials(context, clientId, clientSecret)
         }
 
-        context.getSharedPreferences("google_connector_prefs", Context.MODE_PRIVATE).edit().clear().apply()
+        com.neubofy.reality.utils.SecurePreferences.get(context, "google_connector_prefs").edit().clear().apply()
         TerminalLogger.log("GOOGLE AUTH: Signed out and cleared connections")
     }
     

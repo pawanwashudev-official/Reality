@@ -230,7 +230,7 @@ open class AIChatActivity : BaseActivity() {
         
         handleSessionInit(text)
 
-        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
         val savedModelString = prefs.getString("model", "OpenAI: gpt-3.5-turbo") ?: "OpenAI: gpt-3.5-turbo"
         
         val (provider, model) = if (savedModelString.contains(": ")) {

@@ -96,71 +96,57 @@ export default function TapashyaPage() {
   });
 
   // Calendar State
-  const [calendarToken, setCalendarToken] = useState<string | null>(null);
+  const [calendarConnected, setCalendarConnected] = useState<boolean>(false);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [recommendedEvent, setRecommendedEvent] = useState<CalendarEvent | null>(null);
 
   useEffect(() => {
-      // Check for token in hash
-      if (typeof window !== 'undefined') {
-          const hash = window.location.hash;
-          if (hash.includes('access_token=')) {
-              const params = new URLSearchParams(hash.substring(1));
-              const token = params.get('access_token');
-              if (token) {
-                  localStorage.setItem('google_calendar_token', token);
-                  setCalendarToken(token);
-                  window.location.hash = ''; // Clear hash
-              }
-          } else {
-              const token = localStorage.getItem('google_calendar_token');
-              if (token) setCalendarToken(token);
-          }
+      // Clean up hash if coming from old auth flow or just to be safe
+      if (typeof window !== 'undefined' && window.location.hash.includes('access_token=')) {
+          window.location.hash = '';
       }
-  }, []);
 
-  useEffect(() => {
-      if (calendarToken) {
-          fetchTodayEvents();
-      }
-  }, [calendarToken]);
+      const checkConnection = async () => {
+          await fetchTodayEvents();
+      };
+
+      checkConnection();
+  }, []);
 
   const fetchTodayEvents = async () => {
       try {
-          const startOfDay = new Date();
-          startOfDay.setHours(0, 0, 0, 0);
-          const endOfDay = new Date();
-          endOfDay.setHours(23, 59, 59, 999);
-
-          const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${startOfDay.toISOString()}&timeMax=${endOfDay.toISOString()}&singleEvents=true&orderBy=startTime`, {
-              headers: { Authorization: `Bearer ${calendarToken}` }
-          });
+          const res = await fetch('/api/calendar/events');
 
           if (res.status === 401) {
-              // Token expired
-              localStorage.removeItem('google_calendar_token');
-              setCalendarToken(null);
+              setCalendarConnected(false);
               return;
           }
 
-          const data = await res.json();
-          if (data.items) {
-              const now = new Date().getTime();
-              const validEvents = data.items.filter((e: {start?: {dateTime?: string}, end?: {dateTime?: string}}) => e.start?.dateTime && e.end?.dateTime).map((e: {id: string, summary?: string, start: {dateTime: string}, end: {dateTime: string}}) => ({
-                  id: e.id,
-                  title: e.summary || 'Study Session',
-                  startTime: new Date(e.start.dateTime).getTime(),
-                  endTime: new Date(e.end.dateTime).getTime()
-              }));
+          if (res.ok) {
+              setCalendarConnected(true);
+              const data = await res.json();
+              if (data.events) {
+                  const now = new Date().getTime();
+                  const validEvents = data.events;
+                  setCalendarEvents(validEvents);
 
-              setCalendarEvents(validEvents);
-
-              // Find recommended: running or first upcoming
-              const recommended = validEvents.find((e: CalendarEvent) => e.endTime > now);
-              setRecommendedEvent(recommended || null);
+                  const recommended = validEvents.find((e: CalendarEvent) => e.endTime > now);
+                  setRecommendedEvent(recommended || null);
+              }
           }
       } catch (err) {
           console.error("Failed to fetch events", err);
+      }
+  };
+
+  const disconnectCalendar = async () => {
+      try {
+          await fetch('/api/auth/logout', { method: 'POST' });
+          setCalendarConnected(false);
+          setCalendarEvents([]);
+          setRecommendedEvent(null);
+      } catch (e) {
+          console.error("Failed to disconnect", e);
       }
   };
 
@@ -664,10 +650,14 @@ export default function TapashyaPage() {
             <h1 className="text-2xl font-bold tracking-tight text-[#00E5FF] font-mono">Neural Focus</h1>
           </div>
           <div className="flex gap-2">
-            {!calendarToken && (
+            {!calendarConnected ? (
               <a href="/api/auth/google" className="flex items-center gap-2 px-4 py-2 bg-[#00E5FF]/10 text-[#00E5FF] rounded-full text-sm font-bold hover:bg-[#B2DFDB] transition-colors">
                  <Calendar size={16} /> Connect
               </a>
+            ) : (
+              <button onClick={disconnectCalendar} className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 rounded-full text-sm font-bold hover:bg-red-500/20 transition-colors">
+                 <Calendar size={16} /> Disconnect
+              </button>
             )}
             <button onClick={handleOpenMiniMode} className="p-2 rounded-full hover:bg-white/20 transition-colors text-gray-300">
                <Minimize2 size={24} />
@@ -756,7 +746,7 @@ export default function TapashyaPage() {
         {/* Scheduled Sessions Section */}
         <div className="mt-8 mb-6">
             <h3 className="text-lg font-bold text-gray-100 px-2 mb-4 font-mono">Scheduled Sessions</h3>
-            {!calendarToken ? (
+            {!calendarConnected ? (
                 <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 shadow-2xl shadow-black/80 border border-white/10 flex flex-col items-center justify-center text-center">
                     <Calendar size={32} className="text-gray-400 mb-3" />
                     <p className="text-gray-300 font-medium mb-4">Sync with your calendar to see study blocks.</p>

@@ -25,7 +25,7 @@ class AIChatWidget : AppWidgetProvider() {
     companion object {
         fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
             // Check if voice auto-trigger is enabled
-            val prefs = context.getSharedPreferences("ai_prefs", Context.MODE_PRIVATE)
+            val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs")
             val voiceAuto = prefs.getBoolean("widget_voice_auto", false)
             
             // Intent to launch AI Chat (Popup Version)
