@@ -423,22 +423,20 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:weightSum="5">
+                        android:orientation="vertical">
+
 
                         <!-- GitHub -->
                         <LinearLayout
                             android:id="@+id/btn_github"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
                             android:clickable="true"
                             android:focusable="true"
                             android:background="?selectableItemBackground"
-                            android:padding="8dp">
-
+                            android:padding="16dp">
                             <ImageView
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
@@ -448,24 +446,22 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="GitHub"
-                                android:textSize="11sp"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                android:layout_marginTop="4dp"/>
+                                android:textSize="16sp"
+                                android:textColor="?attr/colorOnSurface"
+                                android:layout_marginStart="16dp"/>
                         </LinearLayout>
 
                         <!-- Website -->
                         <LinearLayout
                             android:id="@+id/btn_website"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
                             android:clickable="true"
                             android:focusable="true"
                             android:background="?selectableItemBackground"
-                            android:padding="8dp">
-
+                            android:padding="16dp">
                             <ImageView
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
@@ -475,105 +471,39 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Website"
-                                android:textSize="11sp"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                android:layout_marginTop="4dp"/>
+                                android:textSize="16sp"
+                                android:textColor="?attr/colorOnSurface"
+                                android:layout_marginStart="16dp"/>
                         </LinearLayout>
 
-                        <!-- Telegram -->
-                        <LinearLayout
-                            android:id="@+id/btn_telegram"
-                            android:layout_width="0dp"
+                        <!-- Contact Developer -->
+                        <TextView
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:background="?selectableItemBackground"
-                            android:padding="8dp">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@drawable/baseline_send_24"
-                                app:tint="?attr/colorOnSurface"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Dev Telegram"
-                                android:textSize="11sp"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                android:layout_marginTop="4dp"/>
-                        </LinearLayout>
-
-                        <!-- Neubofy Telegram -->
-                        <LinearLayout
-                            android:id="@+id/btn_neubofy_telegram"
-                            android:layout_width="0dp"
+                            android:text="Contact Developer Directly:"
+                            android:textColor="?attr/colorPrimary"
+                            android:textStyle="bold"
+                            android:layout_marginTop="24dp"
+                            android:layout_marginBottom="8dp"/>
+                        <TextView
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:background="?selectableItemBackground"
-                            android:padding="8dp">
+                            android:text="Having difficulties or need help? Reach out directly via Email or Telegram."
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="12sp"
+                            android:layout_marginBottom="16dp"/>
 
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@drawable/baseline_send_24"
-                                app:tint="?attr/colorOnSurface"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Neubofy"
-                                android:textSize="11sp"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                android:layout_marginTop="4dp"/>
-                        </LinearLayout>
-
-                        <!-- Arratai -->
-                        <LinearLayout
-                            android:id="@+id/btn_arratai"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:background="?selectableItemBackground"
-                            android:padding="8dp">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@drawable/baseline_auto_awesome_24"
-                                app:tint="?attr/colorOnSurface"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Arratai"
-                                android:textSize="11sp"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                android:layout_marginTop="4dp"/>
-                        </LinearLayout>
-
-                        <!-- Contact -->
+                        <!-- Email -->
                         <LinearLayout
                             android:id="@+id/btn_contact"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
                             android:clickable="true"
                             android:focusable="true"
                             android:background="?selectableItemBackground"
-                            android:padding="8dp">
-
+                            android:padding="16dp">
                             <ImageView
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
@@ -582,10 +512,35 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Email"
-                                android:textSize="11sp"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                android:layout_marginTop="4dp"/>
+                                android:text="Email Support"
+                                android:textSize="16sp"
+                                android:textColor="?attr/colorOnSurface"
+                                android:layout_marginStart="16dp"/>
+                        </LinearLayout>
+
+                        <!-- Dev Telegram -->
+                        <LinearLayout
+                            android:id="@+id/btn_telegram"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?selectableItemBackground"
+                            android:padding="16dp">
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_send_24"
+                                app:tint="?attr/colorOnSurface"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Developer Telegram"
+                                android:textSize="16sp"
+                                android:textColor="?attr/colorOnSurface"
+                                android:layout_marginStart="16dp"/>
                         </LinearLayout>
 
                     </LinearLayout>

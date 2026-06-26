@@ -113,8 +113,11 @@ export default async function ProMembersPage() {
             </div>
             <div>
               <h3 className="text-white font-bold mb-1 tracking-tight">Our Heartfelt Thanks</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
+              <p className="text-sm text-gray-400 leading-relaxed mb-2">
                 These are the people who contributed to Reality. Thanks to them, we are able to maintain this open-source project and provide proper updates and patches on a regular basis.
+              </p>
+              <p className="text-xs text-gray-500 font-mono leading-relaxed bg-black/30 p-3 rounded-lg border border-gray-800/50">
+                <strong className="text-gray-400">Privacy Notice:</strong> We do not collect or store your name, email, or any personal details. The identifiers shown below are generated hashed User IDs used strictly for anonymous Pro verification.
               </p>
             </div>
           </div>

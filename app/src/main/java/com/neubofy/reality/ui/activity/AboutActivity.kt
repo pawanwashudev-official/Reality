@@ -58,10 +58,10 @@ class AboutActivity : BaseActivity() {
         binding.btnTelegram.setOnClickListener { openUrl(TELEGRAM) }
 
         // Neubofy Telegram
-        binding.btnNeubofyTelegram.setOnClickListener { openUrl(NEUBOFY_TELEGRAM) }
+        // binding.btnNeubofyTelegram.setOnClickListener { openUrl(NEUBOFY_TELEGRAM) }
 
         // Arratai
-        binding.btnArratai.setOnClickListener { openUrl(ARRATAI) }
+        // binding.btnArratai.setOnClickListener { openUrl(ARRATAI) }
 
         // Email / Contact
         binding.btnContact.setOnClickListener {

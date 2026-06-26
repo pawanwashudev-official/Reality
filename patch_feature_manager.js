@@ -1,30 +1,12 @@
-package com.neubofy.reality.utils
+const fs = require('fs');
 
-import android.content.Context
-import android.content.SharedPreferences
+let kt = fs.readFileSync('app/src/main/java/com/neubofy/reality/utils/FeatureManager.kt', 'utf8');
 
-class FeatureManager(private val context: Context) {
-    private val prefs: SharedPreferences = com.neubofy.reality.utils.SecurePreferences.get(context, "reality_features")
+// The most robust way to store a "do not bypass" flag locally without a server and without external storage
+// is to use `android.provider.Settings.System` OR write a small file to Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+// Let's create a robust trial manager.
 
-    fun isAiEnabled(): Boolean = prefs.getBoolean("feature_ai", false)
-    fun setAiEnabled(enabled: Boolean) = prefs.edit().putBoolean("feature_ai", enabled).apply()
-
-    fun isRealityProEnabled(): Boolean = prefs.getBoolean("feature_reality_pro", false)
-    fun setRealityProEnabled(enabled: Boolean) = prefs.edit().putBoolean("feature_reality_pro", enabled).apply()
-
-    fun isRealityProVerified(): Boolean {
-        val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return false
-        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
-        return prefs.getBoolean("feature_reality_pro_verified_$userId", false)
-    }
-
-
-    fun setRealityProVerified(verified: Boolean) {
-        val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
-        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
-        prefs.edit().putBoolean("feature_reality_pro_verified_$userId", verified).apply()
-    }
-
+const robustTrialLogic = `
     private fun getDeviceUniqueId(): String {
         return android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ANDROID_ID) ?: "unknown"
     }
@@ -56,7 +38,7 @@ class FeatureManager(private val context: Context) {
                 if (extFile != null && extFile.exists()) {
                     val content = extFile.readText()
                     // Format: userId:endTime,deviceId:endTime
-                    val lines = content.split("\n")
+                    val lines = content.split("\\n")
                     for (line in lines) {
                         val parts = line.split("=")
                         if (parts.size == 2 && (parts[0] == userId || parts[0] == getDeviceUniqueId())) {
@@ -110,21 +92,18 @@ class FeatureManager(private val context: Context) {
             val extFile = getExternalTrialFile()
             if (extFile != null) {
                 val deviceId = getDeviceUniqueId()
-                extFile.appendText("$userId=$trialEndTime\n")
-                extFile.appendText("$deviceId=$trialEndTime\n")
+                extFile.appendText("$userId=$trialEndTime\\n")
+                extFile.appendText("$deviceId=$trialEndTime\\n")
             }
         } catch (e: Exception) {
             // Ignore
         }
     }
+`;
 
+kt = kt.replace(
+    /fun isTrialActive\(\): Boolean \{[\s\S]*?fun activateTrial\(\) \{[\s\S]*?prefs\.edit\(\)\.putLong\("trial_end_time_\$userId", trialEndTime\)\.apply\(\)\n    \}/,
+    robustTrialLogic.trim()
+);
 
-    fun isTapasyaEnabled(): Boolean = prefs.getBoolean("feature_tapasya", false)
-    fun setTapasyaEnabled(enabled: Boolean) = prefs.edit().putBoolean("feature_tapasya", enabled).apply()
-
-    fun isReminderEnabled(): Boolean = prefs.getBoolean("feature_reminder", false)
-    fun setReminderEnabled(enabled: Boolean) = prefs.edit().putBoolean("feature_reminder", enabled).apply()
-
-    fun isHealthConnectEnabled(): Boolean = prefs.getBoolean("feature_health", false)
-    fun setHealthConnectEnabled(enabled: Boolean) = prefs.edit().putBoolean("feature_health", enabled).apply()
-}
+fs.writeFileSync('app/src/main/java/com/neubofy/reality/utils/FeatureManager.kt', kt);

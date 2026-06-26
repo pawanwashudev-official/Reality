@@ -142,7 +142,7 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {paginatedMembers.map((member, index) => (
-                  <MemberCard key={`${member.userId}-${index}`} member={member} />
+                  <MemberCard key={`${member.userId}-${index}`} member={member} searchQuery={searchQuery} />
                 ))}
               </div>
 
@@ -186,7 +186,7 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
   );
 }
 
-function MemberCard({ member }: { member: ProMember }) {
+function MemberCard({ member, searchQuery }: { member: ProMember, searchQuery: string }) {
   // Format the date if it's a valid string
   let displayDate = member.dateJoined;
   try {
@@ -202,7 +202,15 @@ function MemberCard({ member }: { member: ProMember }) {
     // Keep original string if parsing fails
   }
 
-  const displayId = member.userId;
+
+  let displayId = member.userId;
+  // If the user hasn't typed the exact ID, hide the middle
+  if (searchQuery.trim().toLowerCase() !== member.userId.toLowerCase() && member.userId.length > 8) {
+     const start = member.userId.substring(0, 4);
+     const end = member.userId.substring(member.userId.length - 4);
+     displayId = `${start}****${end}`;
+  }
+
 
   return (
     <div className="group relative bg-neural-card border border-gray-800 p-6 rounded-2xl hover:border-yellow-500/50 transition-all duration-300 shadow-lg hover:shadow-yellow-500/10 overflow-hidden">
