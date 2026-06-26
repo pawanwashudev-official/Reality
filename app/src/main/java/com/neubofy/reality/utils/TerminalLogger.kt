@@ -18,12 +18,25 @@ object TerminalLogger {
         logList.add("> System Initialized...")
     }
 
+    // Basic redaction for sensitive keys in logs
+    private fun redact(msg: String): String {
+        var redacted = msg
+        // Redact Bearer tokens
+        redacted = redacted.replace(Regex("Bearer [a-zA-Z0-9\\-_\\.]+"), "Bearer [REDACTED]")
+        // Redact API keys (sk-...)
+        redacted = redacted.replace(Regex("sk-[a-zA-Z0-9]{20,}"), "sk-[REDACTED]")
+        // Redact generic tokens if labeled
+        redacted = redacted.replace(Regex("(?i)(token|key)=([a-zA-Z0-9\\-_]+)"), "$1=[REDACTED]")
+        return redacted
+    }
+
     fun log(msg: String) {
+        val safeMsg = redact(msg)
         val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        val entry = "> [$time] $msg"
+        val entry = "> [$time] $safeMsg"
         
-        // Also log to Android logcat for debugging
-        android.util.Log.d("RealityDebug", msg)
+        // Logs are strictly local
+        android.util.Log.d("RealityDebug", safeMsg)
         
         synchronized(logList) {
             logList.add(entry)

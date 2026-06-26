@@ -70,13 +70,13 @@ object ToolRegistry {
 
     // --- Settings Helpers ---
     fun isToolEnabled(context: Context, toolId: String): Boolean {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, PREFS_NAME)
         val tool = ALL_TOOLS.find { it.id == toolId } ?: return false
         return prefs.getBoolean("$KEY_PREFIX$toolId", tool.defaultEnabled)
     }
 
     fun setToolEnabled(context: Context, toolId: String, enabled: Boolean) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, PREFS_NAME)
         prefs.edit().putBoolean("$KEY_PREFIX$toolId", enabled).apply()
     }
 

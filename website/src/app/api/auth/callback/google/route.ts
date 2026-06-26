@@ -1,19 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getStateCookie, clearStateCookie, setTokenCookie, getTokenCookie } from '@/lib/tokenCookie';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get('code');
+  const state = searchParams.get('state');
 
-  if (!code) {
-    return NextResponse.json({ error: 'Missing code' }, { status: 400 });
+  if (!code || !state) {
+    return NextResponse.json({ error: 'Missing code or state' }, { status: 400 });
   }
+
+  const savedState = await getStateCookie();
+  if (state !== savedState) {
+      return NextResponse.json({ error: 'Invalid state' }, { status: 403 });
+  }
+
+  await clearStateCookie();
 
   const clientId = process.env.CLIENT_ID;
   const clientSecret = process.env.CLIENT_SECRET;
 
   let baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
 
-  // Vercel sometimes forwards HTTP internally. Force HTTPS in production if it's not localhost.
   if (baseUrl.includes('reality.neubofy.in') && baseUrl.startsWith('http://')) {
       baseUrl = baseUrl.replace('http://', 'https://');
   }
@@ -35,11 +43,27 @@ export async function GET(req: NextRequest) {
   const tokenData = await tokenResponse.json();
 
   if (!tokenResponse.ok) {
-    return NextResponse.json({ error: 'Failed to exchange code', details: tokenData }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to exchange code' }, { status: 500 });
   }
 
-  const redirectUrl = new URL('/tapashya', req.url);
-  redirectUrl.hash = `access_token=${tokenData.access_token}${tokenData.refresh_token ? `&refresh_token=${tokenData.refresh_token}` : ''}&expires_in=${tokenData.expires_in}`;
+  let finalRefreshToken = tokenData.refresh_token;
+  if (!finalRefreshToken) {
+      // If user has reconnect without prompt=consent we might not get refresh token, check if we have one
+      const oldToken = await getTokenCookie();
+      if (oldToken && oldToken.refresh_token) {
+          finalRefreshToken = oldToken.refresh_token;
+      }
+  }
+
+  // Save the token securely
+  await setTokenCookie({
+      access_token: tokenData.access_token,
+      refresh_token: finalRefreshToken,
+      expires_in: tokenData.expires_in,
+      expires_at: Date.now() + (tokenData.expires_in * 1000)
+  });
+
+  const redirectUrl = new URL('/tapashya?connected=1', req.url);
 
   return NextResponse.redirect(redirectUrl);
 }

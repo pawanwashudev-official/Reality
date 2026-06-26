@@ -26,6 +26,32 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- ==================== PRIVACY NOTICE ==================== -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Privacy: Data is sent to the selected AI provider only when you actively use AI features. Sensitive context (Health, Calendar) is strictly local unless its toggle is enabled below."
+                        android:textSize="12sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- ==================== WIDGET VOICE SETTINGS ==================== -->
             <TextView
                 android:layout_width="wrap_content"

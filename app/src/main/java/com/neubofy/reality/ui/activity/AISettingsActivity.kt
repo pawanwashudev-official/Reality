@@ -61,13 +61,13 @@ class AISettingsActivity : BaseActivity() {
             mutableListOf(),
             "",
             { selected ->
-                val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
                 prefs.edit().putString("nightly_model", selected).apply()
                 nightlyModelsAdapter.setSelected(selected)
                 Toast.makeText(this, "Set as Nightly default: $selected", Toast.LENGTH_SHORT).show()
             },
             { model ->
-                val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
                 val set = prefs.getStringSet("cached_nightly_models", mutableSetOf())?.toMutableSet()
                 if (set != null && set.remove(model)) {
                     prefs.edit().putStringSet("cached_nightly_models", set).apply()
@@ -92,13 +92,13 @@ class AISettingsActivity : BaseActivity() {
             mutableListOf(),
             "",
             { selected ->
-                val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
                 prefs.edit().putString("model", selected).apply()
                 chatModelsAdapter.setSelected(selected)
                 Toast.makeText(this, "Set as default: $selected", Toast.LENGTH_SHORT).show()
             },
             { model ->
-                val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
                 val set = prefs.getStringSet("cached_models", mutableSetOf())?.toMutableSet()
                 if (set != null && set.remove(model)) {
                     prefs.edit().putStringSet("cached_models", set).apply()
@@ -117,7 +117,7 @@ class AISettingsActivity : BaseActivity() {
                 Toast.makeText(this, "Please enter something about yourself", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+            val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
             prefs.edit().putString("user_introduction", intro).apply()
             Toast.makeText(this, "Personalization saved!", Toast.LENGTH_SHORT).show()
             updateIntroductionDisplay()
@@ -132,7 +132,7 @@ class AISettingsActivity : BaseActivity() {
         
         // Delete introduction
         binding.btnDeleteIntroduction.setOnClickListener {
-            val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+            val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
             prefs.edit().remove("user_introduction").apply()
             binding.etUserIntroduction.text?.clear()
             updateIntroductionDisplay()
@@ -155,13 +155,13 @@ class AISettingsActivity : BaseActivity() {
             mutableListOf(),
             "",
             { selected ->
-                val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
                 prefs.edit().putString("search_engine", selected).apply()
                 searchEnginesAdapter.setSelected(selected)
                 Toast.makeText(this, "Set as Search Engine: $selected", Toast.LENGTH_SHORT).show()
             },
             { model ->
-                val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
                 val set = prefs.getStringSet("cached_search_engines", mutableSetOf())?.toMutableSet()
                 if (set != null && set.remove(model)) {
                     prefs.edit().putStringSet("cached_search_engines", set).apply()
@@ -188,13 +188,13 @@ class AISettingsActivity : BaseActivity() {
             mutableListOf(),
             "",
             { selected ->
-                val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
                 prefs.edit().putString("image_model", selected).apply()
                 imageModelsAdapter.setSelected(selected)
                 Toast.makeText(this, "Set as Image default: $selected", Toast.LENGTH_SHORT).show()
             },
             { model ->
-                val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
                 val set = prefs.getStringSet("cached_image_models", mutableSetOf())?.toMutableSet()
                 if (set != null && set.remove(model)) {
                     prefs.edit().putStringSet("cached_image_models", set).apply()
@@ -209,7 +209,7 @@ class AISettingsActivity : BaseActivity() {
     
     // --- Widget Voice Setting ---
     private fun setupWidgetVoice() {
-        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
         val isEnabled = prefs.getBoolean("widget_voice_auto", false)
         binding.switchWidgetVoice.isChecked = isEnabled
         
@@ -255,7 +255,7 @@ class AISettingsActivity : BaseActivity() {
         lifecycleScope.launch {
              val hasPerms = com.neubofy.reality.health.HealthManager(this@AISettingsActivity).hasPermissions()
              binding.switchHealthAccess.isChecked = hasPerms
-             val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+             val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
              prefs.edit().putBoolean("health_access_enabled", hasPerms).apply()
              
              if (hasPerms) {
@@ -267,7 +267,7 @@ class AISettingsActivity : BaseActivity() {
     }
     
     private fun setupHealthDashboard() {
-        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
         val isEnabled = prefs.getBoolean("health_access_enabled", false)
         binding.switchHealthAccess.isChecked = isEnabled
         
@@ -342,7 +342,7 @@ class AISettingsActivity : BaseActivity() {
         spinnerProvider.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
                 val selectedProvider = parent?.getItemAtPosition(position).toString()
-                val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
                 val key = prefs.getString("api_key_$selectedProvider", "")
                 etApiKey.setText(key)
                 // Hide model spinner when provider changes
@@ -448,7 +448,7 @@ class AISettingsActivity : BaseActivity() {
     }
 
     private fun saveModelFromDialog(provider: String, apiKey: String, modelName: String) {
-        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
         val fullModelName = "$provider: $modelName"
 
         // Save API key for this provider
@@ -513,14 +513,14 @@ class AISettingsActivity : BaseActivity() {
     }
 
     private fun loadSearchEngines() {
-        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
         val cached = prefs.getStringSet("cached_search_engines", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         val current = prefs.getString("search_engine", "") ?: ""
         searchEnginesAdapter.updateData(cached.toList().sorted(), current)
     }
 
     private fun loadImageModels() {
-        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
         val cached = prefs.getStringSet("cached_image_models", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         
         // Add Pollinations as Free preset
@@ -540,14 +540,14 @@ class AISettingsActivity : BaseActivity() {
     }
 
     private fun loadChatModels() {
-        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
         val model = prefs.getString("model", "")
         val cachedModels = prefs.getStringSet("cached_models", emptySet())?.sorted() ?: emptyList()
         chatModelsAdapter.updateData(cachedModels, model ?: "")
     }
 
     private fun updateNightlyModelDisplay() {
-        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
         var cachedModels = prefs.getStringSet("cached_nightly_models", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         
         // Preset Injection
@@ -584,7 +584,7 @@ class AISettingsActivity : BaseActivity() {
     }
     
     private fun updateIntroductionDisplay() {
-        val prefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
         val intro = prefs.getString("user_introduction", null)
         
         if (intro.isNullOrEmpty()) {
@@ -671,7 +671,7 @@ class AISettingsActivity : BaseActivity() {
          * Get the selected model for Nightly Protocol
          */
         fun getNightlyModel(context: android.content.Context): String? {
-            val prefs = context.getSharedPreferences("ai_prefs", MODE_PRIVATE)
+            val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs")
             return prefs.getString("nightly_model", null)
         }
 
@@ -679,7 +679,7 @@ class AISettingsActivity : BaseActivity() {
          * Get the user introduction for AI personalization
          */
         fun getUserIntroduction(context: android.content.Context): String? {
-            val prefs = context.getSharedPreferences("ai_prefs", MODE_PRIVATE)
+            val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs")
             return prefs.getString("user_introduction", null)
         }
 
@@ -687,7 +687,7 @@ class AISettingsActivity : BaseActivity() {
          * Get API key for a specific provider
          */
         fun getApiKey(context: android.content.Context, provider: String): String? {
-            val prefs = context.getSharedPreferences("ai_prefs", MODE_PRIVATE)
+            val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs")
             return prefs.getString("api_key_$provider", null)
         }
 

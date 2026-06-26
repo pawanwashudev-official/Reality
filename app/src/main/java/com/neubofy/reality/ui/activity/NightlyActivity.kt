@@ -804,7 +804,7 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
     
     private fun updateSetupStatus() {
         lifecycleScope.launch {
-            val aiPrefs = getSharedPreferences("ai_prefs", MODE_PRIVATE)
+            val aiPrefs = com.neubofy.reality.utils.SecurePreferences.get(this@NightlyActivity, "ai_prefs")
             val nightlyModel = aiPrefs.getString("nightly_model", null)
             
             val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)

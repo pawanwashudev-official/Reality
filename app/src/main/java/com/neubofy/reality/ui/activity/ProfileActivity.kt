@@ -523,7 +523,7 @@ class ProfileActivity : BaseActivity() {
         button: com.google.android.material.button.MaterialButton,
         prefKey: String
     ) {
-        val isConnected = getSharedPreferences(PREF_NAME, MODE_PRIVATE).getBoolean(prefKey, false)
+        val isConnected = com.neubofy.reality.utils.SecurePreferences.get(this, PREF_NAME).getBoolean(prefKey, false)
         if (isConnected) {
             statusView.text = "Connected ✓"
             statusView.setTextColor(getColor(R.color.md_theme_primary))
@@ -536,11 +536,11 @@ class ProfileActivity : BaseActivity() {
     }
     
     private fun setConnected(prefKey: String, connected: Boolean) {
-        getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit().putBoolean(prefKey, connected).apply()
+        com.neubofy.reality.utils.SecurePreferences.get(this, PREF_NAME).edit().putBoolean(prefKey, connected).apply()
     }
     
     private fun clearAllConnections() {
-        getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit().clear().apply()
+        com.neubofy.reality.utils.SecurePreferences.get(this, PREF_NAME).edit().clear().apply()
         getSharedPreferences(NIGHTLY_PREFS, MODE_PRIVATE).edit().clear().apply()
         
         // Also clear task list configs from DB
