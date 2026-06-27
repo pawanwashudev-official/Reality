@@ -42,6 +42,12 @@ class SettingsActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         updateUI()
+
+        // Show Settings Tour
+        val appPrefs = getSharedPreferences("app_preferences", MODE_PRIVATE)
+        if (!appPrefs.getBoolean("settings_tour_shown", false)) {
+            binding.root.post { showSettingsTour() }
+        }
     }
 
     private fun setupToolbar() {
@@ -187,11 +193,7 @@ class SettingsActivity : BaseActivity() {
             handleAccountClick()
         }
 
-        // Show Settings Tour
-        val appPrefs = getSharedPreferences("app_preferences", MODE_PRIVATE)
-        if (!appPrefs.getBoolean("settings_tour_shown", false)) {
-            showSettingsTour()
-        }
+
     }
 
     private fun showSettingsTour() {
@@ -211,8 +213,8 @@ class SettingsActivity : BaseActivity() {
                     .titleTextColor(android.R.color.white)
                     .descriptionTextSize(14)
                     .descriptionTextColor(android.R.color.white)
-                    .cancelable(false)
-                    .transparentTarget(true),
+                    .cancelable(true)
+                    .transparentTarget(false),
                 com.getkeepsafe.taptargetview.TapTarget.forView(featuresCard, "Neural Features", "Enable or disable Reality Pro, AI, Tapasya, and more.")
                     .outerCircleColor(R.color.md_theme_primary)
                     .targetCircleColor(android.R.color.white)
@@ -220,8 +222,8 @@ class SettingsActivity : BaseActivity() {
                     .titleTextColor(android.R.color.white)
                     .descriptionTextSize(14)
                     .descriptionTextColor(android.R.color.white)
-                    .cancelable(false)
-                    .transparentTarget(true),
+                    .cancelable(true)
+                    .transparentTarget(false),
                 com.getkeepsafe.taptargetview.TapTarget.forView(strictModeCard, "Strict Mode", "Lock your app settings with a timer or password to prevent tampering.")
                     .outerCircleColor(R.color.md_theme_primary)
                     .targetCircleColor(android.R.color.white)
@@ -229,8 +231,8 @@ class SettingsActivity : BaseActivity() {
                     .titleTextColor(android.R.color.white)
                     .descriptionTextSize(14)
                     .descriptionTextColor(android.R.color.white)
-                    .cancelable(false)
-                    .transparentTarget(true),
+                    .cancelable(true)
+                    .transparentTarget(false),
                 com.getkeepsafe.taptargetview.TapTarget.forView(aboutCard, "About Reality", "Check for OTA updates and contact support.")
                     .outerCircleColor(R.color.md_theme_primary)
                     .targetCircleColor(android.R.color.white)
@@ -238,8 +240,8 @@ class SettingsActivity : BaseActivity() {
                     .titleTextColor(android.R.color.white)
                     .descriptionTextSize(14)
                     .descriptionTextColor(android.R.color.white)
-                    .cancelable(false)
-                    .transparentTarget(true)
+                    .cancelable(true)
+                    .transparentTarget(false)
             )
             .listener(object : com.getkeepsafe.taptargetview.TapTargetSequence.Listener {
                 override fun onSequenceFinish() {
