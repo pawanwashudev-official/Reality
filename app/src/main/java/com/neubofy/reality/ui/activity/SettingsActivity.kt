@@ -84,6 +84,11 @@ class SettingsActivity : BaseActivity() {
             startActivity(intent)
         }
 
+        binding.cardPermissionManager.setOnClickListener {
+            val intent = Intent(this, PermissionManagerActivity::class.java)
+            startActivity(intent)
+        }
+
         // Schedule Settings (Opens ScheduleListActivity with settings dialog)
         binding.cardSettingsCalendar.setOnClickListener {
             val intent = Intent(this, ScheduleListActivity::class.java)
@@ -279,6 +284,8 @@ class SettingsActivity : BaseActivity() {
                     val intent = Intent(this, RealityProActivity::class.java)
                     startActivity(intent)
                 }
+
+
             } else {
                 verificationCard.visibility = android.view.View.GONE
             }

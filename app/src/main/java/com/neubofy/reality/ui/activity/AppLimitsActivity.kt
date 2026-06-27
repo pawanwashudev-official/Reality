@@ -24,4 +24,9 @@ class AppLimitsActivity : BaseActivity() {
                 .commit()
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        com.neubofy.reality.utils.PermissionHelper.checkAndPromptForCore(this)
+    }
 }

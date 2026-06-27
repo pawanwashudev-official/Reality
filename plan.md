@@ -1,84 +1,39 @@
-1. **Create Secure Token Utility:**
-   - Create `website/src/lib/tokenCookie.ts` for AES-GCM encryption/decryption of tokens using Web Crypto API. Provide `setTokenCookie`, `getTokenCookie`, `clearTokenCookie`, `setStateCookie`, `getStateCookie`, and `clearStateCookie` functions.
-   - Run verification (`cat website/src/lib/tokenCookie.ts`) to ensure the file is created correctly.
+1. **Remove Unused Permissions & Clean up ADB Setup**:
+   - In `app/src/main/AndroidManifest.xml`, use `replace_with_git_merge_diff` to delete the `<uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" ... />` line and `AdbSetupActivity`.
+   - Delete `AdbSetupActivity.kt` and `activity_adb_setup.xml` files.
+   - Verify changes using `cat` on `AndroidManifest.xml` and `ls` to ensure files are deleted.
 
-2. **Update OAuth Start Route:**
-   - Modify `website/src/app/api/auth/google/route.ts` to generate a random state, set it as a short-lived HttpOnly cookie using `tokenCookie.ts`, and pass it in the Google OAuth URL.
-   - Run verification (`cat website/src/app/api/auth/google/route.ts`) to ensure the file was updated.
+2. **Remove Onboarding Permissions Flow & Adjust Navigation**:
+   - In `MainActivity.kt`:
+      - Use `replace_with_git_merge_diff` to remove the intent that navigates to `OnboardingActivity` when `onboarding_v2_complete` is false.
+      - Use `replace_with_git_merge_diff` to remove the `checkAndRequestNextPermission()` method and its call in `onResume()`.
+   - In `SecurityIntroActivity.kt`:
+      - Use `replace_with_git_merge_diff` to change the navigation intent from `OnboardingActivity` to `MainActivity` upon completing the intro.
+   - Verify changes using `cat` on `MainActivity.kt` and `SecurityIntroActivity.kt`.
+   - Delete the onboarding files: `OnboardingActivity.kt`, `OnboardingPermissionsFragment.kt`, `PermissionsFragment.kt`, `activity_onboarding.xml`, `fragment_onboarding_permissions.xml`, and `fragment_permissions.xml`.
+   - Verify deletions with `ls`.
 
-3. **Update OAuth Callback Route:**
-   - Modify `website/src/app/api/auth/callback/google/route.ts` to verify the state cookie, exchange the code for tokens, save the encrypted token in an HttpOnly cookie using `tokenCookie.ts`, clear the state cookie, and redirect to `/tapashya?connected=1` without tokens in the URL.
-   - Run verification (`cat website/src/app/api/auth/callback/google/route.ts`) to ensure the file was updated.
+3. **Fix the View Pro Members Button in RealityProActivity**:
+   - In `RealityProActivity.kt`, use `replace_with_git_merge_diff` to move `setContentView(R.layout.activity_reality_pro)` to execute *before* `findViewById(R.id.btn_view_pro_members)`.
+   - Verify the fix using `cat RealityProActivity.kt`.
 
-4. **Update Frontend Token Handling (Tapasya):**
-   - Modify `website/src/app/tapashya/page.tsx` to remove `localStorage` and URL hash token parsing. Fetch calendar events by calling the new internal API `/api/calendar/events`. Update UI state for disconnected/connected.
-   - Run verification (`cat website/src/app/tapashya/page.tsx`) to ensure the file was updated.
+4. **Add Permission Manager to Settings**:
+   - In `activity_settings.xml`, use `replace_with_git_merge_diff` to add a new MaterialCardView for "Permission Manager".
+   - Create `PermissionManagerActivity.kt` and `activity_permission_manager.xml`.
+   - The UI should dynamically display the permissions required by the app based on enabled features (Core: Accessibility, Usage, Overlay, Battery, Notifications; Optional based on features: Health Connect, Alarm, Device Admin, Calendar).
+   - In `AndroidManifest.xml`, register `PermissionManagerActivity`.
+   - Verify the creation and updates using `cat`.
 
-5. **Create Calendar Events API:**
-   - Create `website/src/app/api/calendar/events/route.ts` to read the encrypted cookie, refresh the token if needed using Google API, fetch primary calendar events for today, and return sanitized data (id, title, start, end).
-   - Run verification (`cat website/src/app/api/calendar/events/route.ts`) to ensure the file was created.
+5. **On-Demand Permission Prompts on Feature Page Opens**:
+   - Create a `PermissionHelper.kt` utility with a `checkAndPromptFor` method.
+   - Use `replace_with_git_merge_diff` to call this utility in `onResume` of key activities: `AppLimitsActivity.kt`, `UnifiedBlocklistActivity.kt`, `ScheduleListActivity.kt`, `TapasyaActivity.kt` and others that clearly need permissions.
+   - Verify the changes using `cat` on the modified files.
 
-6. **Create Logout Route:**
-   - Create `website/src/app/api/auth/logout/route.ts` to clear the token cookie.
-   - Run verification (`cat website/src/app/api/auth/logout/route.ts`) to ensure the file was created.
+6. **Tests**:
+   - Run a gradle build using `./gradlew assembleDebug` to verify compilation and functionality.
 
-7. **Delete Refresh Route:**
-   - Delete `website/src/app/api/auth/refresh/route.ts`.
-   - Run verification (`ls website/src/app/api/auth/refresh`) to ensure deletion.
+7. **Pre Commit Steps**:
+   - Complete pre commit steps to make sure proper testing, verifications, reviews and reflections are done.
 
-8. **Update Website Security Headers:**
-   - Modify `website/next.config.mjs` to add security headers (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`).
-   - Run verification (`cat website/next.config.mjs`) to ensure update.
-
-9. **Update Website Privacy Policy:**
-   - Modify `website/src/app/privacypolicy/page.tsx` to reflect local-first Vercel serverless reality, explicit cookie usage, and AI provider data flow. Update date to May 19, 2024 (current date approx).
-   - Run verification (`cat website/src/app/privacypolicy/page.tsx`) to ensure files are updated.
-
-10. **Update Website Terms of Service:**
-    - Modify `website/src/app/termsofservice/page.tsx` to reflect the updated architecture.
-    - Run verification (`cat website/src/app/termsofservice/page.tsx`) to ensure files are updated.
-
-11. **Android Security Fixes - AndroidManifest:**
-    - Modify `app/src/main/AndroidManifest.xml` to set `android:allowBackup="false"` and `android:fullBackupContent="false"`. Add data extraction rules metadata if target SDK requires.
-    - Run verification (`cat app/src/main/AndroidManifest.xml`) to ensure update.
-
-12. **Android Security Fixes - Extraction Rules:**
-    - Create `app/src/main/res/xml/data_extraction_rules.xml` excluding sensitive paths.
-    - Run verification (`cat app/src/main/res/xml/data_extraction_rules.xml`) to ensure file was created.
-
-13. **Android Security Fixes - Password Hashing:**
-    - Modify `app/src/main/java/com/neubofy/reality/utils/SecurityUtils.kt` to use PBKDF2WithHmacSHA256. Add backward compatibility for existing 64-char SHA-256 hashes.
-    - Run verification (`cat app/src/main/java/com/neubofy/reality/utils/SecurityUtils.kt`) to ensure update.
-
-14. **Android Security Fixes - SecurePrefs (AI 1):**
-    - Modify `app/src/main/java/com/neubofy/reality/ui/activity/AISettingsActivity.kt` and `app/src/main/java/com/neubofy/reality/ui/activity/AIChatActivity.kt` to use `SecurePreferences.get(context, "ai_prefs")`.
-    - Run verification (`cat app/src/main/java/com/neubofy/reality/ui/activity/AISettingsActivity.kt` and `cat app/src/main/java/com/neubofy/reality/ui/activity/AIChatActivity.kt`) to ensure files are updated.
-
-15. **Android Security Fixes - SecurePrefs (AI 2):**
-    - Modify `app/src/main/java/com/neubofy/reality/utils/AgentTools.kt`, `app/src/main/java/com/neubofy/reality/utils/ToolRegistry.kt`, `app/src/main/java/com/neubofy/reality/widget/AIChatWidget.kt`, `app/src/main/java/com/neubofy/reality/ui/activity/NightlyActivity.kt` to use `SecurePreferences.get(context, "ai_prefs")`.
-    - Run verification on updated files using `cat`.
-
-16. **Android Security Fixes - SecurePrefs (GoogleAuthManager):**
-    - Modify `app/src/main/java/com/neubofy/reality/google/GoogleAuthManager.kt` to use `SecurePreferences` for "google_connector_prefs".
-    - Run verification (`cat app/src/main/java/com/neubofy/reality/google/GoogleAuthManager.kt`) to ensure update.
-
-17. **Android Security Fixes - TerminalLogger Redaction:**
-    - Modify `app/src/main/java/com/neubofy/reality/utils/TerminalLogger.kt` to redact sensitive patterns (Bearer tokens, AI keys, passwords) before logging.
-    - Run verification (`cat app/src/main/java/com/neubofy/reality/utils/TerminalLogger.kt`) to ensure file is updated.
-
-18. **Android Security Fixes - CrashLogger Redaction:**
-    - Modify `app/src/main/java/com/neubofy/reality/CrashLogger.kt` to redact sensitive patterns before writing to file.
-    - Run verification (`cat app/src/main/java/com/neubofy/reality/CrashLogger.kt`) to ensure file is updated.
-
-19. **Android Security Fixes - AI Privacy UI:**
-    - Modify `app/src/main/res/layout/activity_ai_settings.xml` to add a privacy note regarding AI data access.
-    - Run verification (`cat app/src/main/res/layout/activity_ai_settings.xml`) to ensure file is updated.
-
-20. **Pre-commit Steps:**
-    - Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.
-
-21. **Final Validation:**
-    - Run Vercel build (`cd website && npm run build`) and linting (`cd website && npm run lint`).
-    - Run `cd website && npm audit`.
-    - Run Android debug build (`./gradlew assembleDebug`).
-    - Run automated tests (`cd website && npm run test` if exists, and Android `./gradlew test`).
+8. **Submit**:
+   - Call the `submit` tool to finalize the task.

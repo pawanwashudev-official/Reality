@@ -35,6 +35,11 @@ class UnifiedBlocklistActivity : BaseActivity() {
             }
         }.attach()
     }
+
+    override fun onResume() {
+        super.onResume()
+        com.neubofy.reality.utils.PermissionHelper.checkAndPromptForCore(this)
+    }
     
     inner class ViewPagerAdapter(activity: androidx.fragment.app.FragmentActivity) : androidx.viewpager2.adapter.FragmentStateAdapter(activity) {
         override fun getItemCount(): Int = 2

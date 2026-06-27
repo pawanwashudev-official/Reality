@@ -9,9 +9,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import com.neubofy.reality.R
 import com.neubofy.reality.ui.fragments.anti_uninstall.ChooseModeFragment
-import com.neubofy.reality.ui.fragments.installation.AccessibilityGuide
-import com.neubofy.reality.ui.fragments.installation.PermissionsFragment
-import com.neubofy.reality.ui.fragments.installation.WelcomeFragment
 
 class FragmentActivity : BaseActivity() {
 
@@ -31,15 +28,6 @@ class FragmentActivity : BaseActivity() {
             when (fragmentId) {
                 ChooseModeFragment.FRAGMENT_ID -> {
                     fragment = ChooseModeFragment()
-                }
-                WelcomeFragment.FRAGMENT_ID -> {
-                    fragment = WelcomeFragment()
-                }
-                PermissionsFragment.FRAGMENT_ID -> {
-                    fragment = PermissionsFragment()
-                }
-                AccessibilityGuide.FRAGMENT_ID -> {
-                    fragment = AccessibilityGuide()
                 }
             }
             if (fragment != null) {
