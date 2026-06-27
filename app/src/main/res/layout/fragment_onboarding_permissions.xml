@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
 
     android:fillViewport="true">
 
@@ -486,7 +487,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:gravity="center"
-            android:text="🔒 All data stays on your device\nReality is 99.999% open source. The only exception is a serverless Google Apps Script used for one-time Pro activation verification."
+            android:text="🔒 All data stays on your device\nReality is 99.9% open source. The only exception is a serverless Google Apps Script used for one-time Pro activation verification."
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="11sp"
             android:lineSpacingMultiplier="1.3" />

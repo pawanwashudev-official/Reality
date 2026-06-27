@@ -75,7 +75,7 @@ export default async function Home() {
              </div>
              <div className="flex items-center gap-2 text-gray-400 bg-neural-card/50 px-4 py-2 rounded-lg border border-gray-800">
                 <Shield size={18} className="text-green-500" />
-                <span className="font-mono text-sm">100% Open Source</span>
+                <span className="font-mono text-sm">99.9% Open Source</span>
              </div>
           </div>
 
@@ -214,7 +214,7 @@ export default async function Home() {
                      <ListItem text="RAM: 256MB minimum (typical 50-100MB usage)" />
                      <ListItem text="Storage: 150MB app + database" />
                      <ListItem text="Battery Impact: < 1% drain (Military Grade Native Accessibility)" />
-                     <ListItem text="Connectivity: Optional (works offline, Google Sync requires internet)" />
+                     <ListItem text="Connectivity: Optional (works offline, Google Sync and Pro features require internet)" />
                      <div className="mt-6 pt-6 border-t border-gray-800">
                          <h4 className="text-white font-semibold mb-3">Core Permissions:</h4>
                          <div className="flex flex-wrap gap-2">
