@@ -20,7 +20,7 @@
 
 ### 🌟 100% Open Source • No Ads • No Trackers • Any AI (BYO Key)
 
-<p>While advanced features (like Neural Protocol, Gamification, and Google Workspace Sync) require a one-time Reality Pro payment to support ongoing maintenance, the app remains 100% open source. You can always build the APK yourself from the source code.</p>
+<p>While advanced features (like Neural Protocol, Gamification, and Google Workspace Sync) require a yearly Reality Pro subscription to support ongoing maintenance, the app remains 100% open source. You can always build the APK yourself from the source code.</p>
 
 [**🌐 Official Website**](https://reality.neubofy.in) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
 

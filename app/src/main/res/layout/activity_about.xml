@@ -237,7 +237,7 @@
                         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="99.9% Open Source (Pro Optional)" android:textColor="?attr/colorPrimary"
         android:fontFamily="monospace" android:textStyle="bold" android:textSize="14sp"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="No ads. No tracking. No subscriptions." android:textColor="?attr/colorOnSurfaceVariant" android:textSize="12sp"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="No ads. No tracking." android:textColor="?attr/colorOnSurfaceVariant" android:textSize="12sp"/>
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>

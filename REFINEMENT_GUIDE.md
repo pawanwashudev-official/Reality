@@ -5,7 +5,7 @@ This document serves as the "source of truth" for any coding agent or developer 
 ## 1. Project Vision & Monetization Strategy
 - **Core Identity:** Reality is a comprehensive productivity and "super app" designed for deep focus (Tapasya), nightly reflection, and health monitoring.
 - **Open Source Commitment:** The entire repository and source code will remain 100% public.
-- **Monetization:** To sustain development, we provide a "ready-to-use" optimized APK for a one-time payment.
+- **Monetization:** To sustain development, we provide a "ready-to-use" optimized APK for a yearly subscription.
 - **User Promise:** Paid APK users receive a highly optimized, complete, and significantly improved UI compared to the base open-source builds.
 
 ## 2. Branding & Official Information

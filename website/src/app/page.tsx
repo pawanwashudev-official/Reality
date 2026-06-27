@@ -109,7 +109,7 @@ export default async function Home() {
             <h2 className="text-3xl font-bold text-white mb-6">Built for Focus, Not Friction.</h2>
             <p className="text-lg text-gray-400 leading-relaxed mb-6">
               In a world optimized to steal your attention, standard app blockers are just speed bumps.
-              Reality is an impenetrable fortress. It combines military-grade app blocking with an onboard autonomous AI agent to force intentional living. No cloud dependencies, no subscription fees, no bypasses.
+              Reality is an impenetrable fortress. It combines military-grade app blocking with an onboard autonomous AI agent to force intentional living. No cloud dependencies, no bypasses.
             </p>
         </div>
       </section>
@@ -144,7 +144,7 @@ export default async function Home() {
             <FeatureCard
               icon={<Brain className="text-pink-500" size={28} />}
               title="Neural Assistant"
-              desc="Bring Your Own Key (BYOK) AI chat integrated into your daily workflow without the subscription fees."
+              desc="Bring Your Own Key (BYOK) AI chat integrated into your daily workflow."
               colorClass="group-hover:border-pink-500 bg-pink-500/10"
             />
              <FeatureCard

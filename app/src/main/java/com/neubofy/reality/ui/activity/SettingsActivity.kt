@@ -273,21 +273,12 @@ class SettingsActivity : BaseActivity() {
 
 
         // Reality Pro Verification Card Logic
-        val isRealityProToggled = featureManager.isRealityProEnabled()
-        val isRealityProVerified = featureManager.isRealityProVerified()
-
         val verificationCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_reality_pro_verification)
         if (verificationCard != null) {
-            if (isRealityProToggled && !isRealityProVerified) {
-                verificationCard.visibility = android.view.View.VISIBLE
-                verificationCard.setOnClickListener {
-                    val intent = Intent(this, RealityProActivity::class.java)
-                    startActivity(intent)
-                }
-
-
-            } else {
-                verificationCard.visibility = android.view.View.GONE
+            verificationCard.visibility = android.view.View.VISIBLE
+            verificationCard.setOnClickListener {
+                val intent = Intent(this, RealityProActivity::class.java)
+                startActivity(intent)
             }
         }
 
