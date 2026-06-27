@@ -273,118 +273,12 @@ class SettingsActivity : BaseActivity() {
 
 
         // Reality Pro Verification Card Logic
-        val isRealityProToggled = featureManager.isRealityProEnabled()
-        val isRealityProVerified = featureManager.isRealityProVerified()
-        val isTrialActive = featureManager.isTrialActive()
-        val hasUsedTrial = featureManager.hasUsedTrial()
-
-        val cardTrial = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_trial_plan)
-        val cardPaid = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_paid_plan)
-
-        if (cardTrial != null && cardPaid != null) {
-            val tvTrialStatus = findViewById<android.widget.TextView>(R.id.tv_trial_status)
-            val llTrialTimes = findViewById<android.widget.LinearLayout>(R.id.ll_trial_times)
-            val tvTrialStart = findViewById<android.widget.TextView>(R.id.tv_trial_start)
-            val tvTrialExpiry = findViewById<android.widget.TextView>(R.id.tv_trial_expiry)
-            val btnTrialAction = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_trial_action)
-            val tvActivatePaidOption = findViewById<android.widget.TextView>(R.id.tv_activate_paid_option)
-
-            val tvPaidStatus = findViewById<android.widget.TextView>(R.id.tv_paid_status)
-            val llPaidTimes = findViewById<android.widget.LinearLayout>(R.id.ll_paid_times)
-            val tvPaidStart = findViewById<android.widget.TextView>(R.id.tv_paid_start)
-            val tvPaidExpiry = findViewById<android.widget.TextView>(R.id.tv_paid_expiry)
-            val btnPaidAction = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_paid_action)
-
-            val dateFormat = java.text.SimpleDateFormat("MMM dd, yyyy HH:mm", java.util.Locale.getDefault())
-
-            if (isRealityProVerified) {
-                // Paid Pro is active
-                cardTrial.visibility = android.view.View.GONE
-                cardPaid.visibility = android.view.View.VISIBLE
-
-                tvPaidStatus.text = "Paid plan active"
-                llPaidTimes.visibility = android.view.View.VISIBLE
-
-                val startTime = featureManager.getRealityProStartTime()
-                val endTime = featureManager.getRealityProEndTime()
-
-                tvPaidStart.text = "Activated: " + if (startTime > 0) dateFormat.format(java.util.Date(startTime)) else "Unknown"
-                tvPaidExpiry.text = "Expires: " + if (endTime > 0) dateFormat.format(java.util.Date(endTime)) else "Unknown"
-
-                btnPaidAction.text = "Manage Paid Plan"
-                btnPaidAction.isEnabled = true
-                btnPaidAction.setOnClickListener {
-                    val intent = Intent(this, RealityProActivity::class.java)
-                    startActivity(intent)
-                }
-
-            } else {
-                // Not verified. Show trial and possibly paid
-                cardTrial.visibility = android.view.View.VISIBLE
-
-                if (isTrialActive) {
-                    tvTrialStatus.text = "Trial Active"
-                    llTrialTimes.visibility = android.view.View.VISIBLE
-                    tvActivatePaidOption.visibility = android.view.View.VISIBLE
-
-                    val start = featureManager.getTrialStartTime()
-                    val end = featureManager.getTrialEndTime()
-
-                    tvTrialStart.text = "Started: " + if (start > 0) dateFormat.format(java.util.Date(start)) else "Unknown"
-                    tvTrialExpiry.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
-
-                    btnTrialAction.text = "Trial Active"
-                    btnTrialAction.isEnabled = false
-
-                    cardPaid.visibility = android.view.View.GONE
-                } else if (hasUsedTrial) {
-                    tvTrialStatus.text = "Trial plan expired"
-                    llTrialTimes.visibility = android.view.View.GONE
-                    tvActivatePaidOption.visibility = android.view.View.GONE
-
-                    btnTrialAction.text = "Trial Credit Used"
-                    btnTrialAction.isEnabled = false
-
-                    // Shrink trial card width by adding margins
-                    val params = cardTrial.layoutParams as android.view.ViewGroup.MarginLayoutParams
-                    params.marginStart = 64
-                    params.marginEnd = 64
-                    cardTrial.layoutParams = params
-
-                    cardPaid.visibility = android.view.View.VISIBLE
-                    tvPaidStatus.text = "Not active"
-                    llPaidTimes.visibility = android.view.View.GONE
-                    btnPaidAction.text = "Purchase Paid Plan"
-                    btnPaidAction.setOnClickListener {
-                        val intent = Intent(this, RealityProActivity::class.java)
-                        startActivity(intent)
-                    }
-                } else {
-                    // Not used
-                    tvTrialStatus.text = "Not activated"
-                    llTrialTimes.visibility = android.view.View.GONE
-                    tvActivatePaidOption.visibility = android.view.View.VISIBLE
-
-                    // Reset margins in case it was shrunk previously
-                    val params = cardTrial.layoutParams as android.view.ViewGroup.MarginLayoutParams
-                    params.marginStart = 0
-                    params.marginEnd = 0
-                    cardTrial.layoutParams = params
-
-                    btnTrialAction.text = "Start 3-Day Trial"
-                    btnTrialAction.isEnabled = true
-                    btnTrialAction.setOnClickListener {
-                        val intent = Intent(this, RealityProActivity::class.java)
-                        startActivity(intent)
-                    }
-
-                    cardPaid.visibility = android.view.View.GONE
-                }
-
-                tvActivatePaidOption.setOnClickListener {
-                    val intent = Intent(this, RealityProActivity::class.java)
-                    startActivity(intent)
-                }
+        val verificationCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_reality_pro_verification)
+        if (verificationCard != null) {
+            verificationCard.visibility = android.view.View.VISIBLE
+            verificationCard.setOnClickListener {
+                val intent = Intent(this, RealityProActivity::class.java)
+                startActivity(intent)
             }
         }
 

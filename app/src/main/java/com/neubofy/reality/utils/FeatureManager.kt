@@ -80,7 +80,15 @@ class FeatureManager(private val context: Context) {
             return true
         }
 
-        return System.currentTimeMillis() < verifiedUntil
+        val isValid = verifiedUntil > 0 && System.currentTimeMillis() < verifiedUntil
+        if (!isValid && verifiedUntil > 0) {
+            // Subscription expired. Wipe it out directly.
+            setRealityProVerified(false)
+            val proPrefs = com.neubofy.reality.utils.SecurePreferences.get(context, "reality_pro_prefs")
+            proPrefs.edit().remove("pro_saved_verification_code_for_$userId").apply()
+            prefs.edit().remove("feature_reality_pro_start_time_$userId").apply()
+        }
+        return isValid
     }
 
     fun setRealityProVerified(verified: Boolean) {
@@ -92,6 +100,7 @@ class FeatureManager(private val context: Context) {
             prefs.edit().putLong("feature_reality_pro_verified_until_$userId", verifiedUntil).apply()
         } else {
             prefs.edit().remove("feature_reality_pro_verified_until_$userId").apply()
+            prefs.edit().remove("feature_reality_pro_verified_$userId").apply()
         }
     }
 

@@ -130,6 +130,31 @@
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="16dp"/>
 
+                    <LinearLayout
+                        android:id="@+id/ll_trial_dates"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone"
+                        android:layout_marginBottom="16dp">
+
+                        <TextView
+                            android:id="@+id/tv_trial_start_date"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Started: -"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tv_trial_expiry_date"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Expires: -"
+                            android:textColor="?attr/colorError"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_trial_signin"
                         style="@style/Widget.Material3.Button.OutlinedButton"
@@ -152,6 +177,7 @@
 
             <!-- Paid Plan Section -->
             <TextView
+                android:id="@+id/tv_or_yearly_subscription"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Or get a Yearly Subscription"
@@ -159,9 +185,47 @@
                 android:textStyle="bold"
                 android:textColor="?attr/colorPrimary"
                 android:layout_marginBottom="16dp"
-                android:layout_marginTop="8dp"/>
+                android:layout_marginTop="8dp"
+                android:visibility="gone"/>
+
+            <LinearLayout
+                android:id="@+id/ll_paid_dates"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:padding="16dp"
+                android:background="?attr/colorSurfaceVariant"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Paid Plan Active"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorPrimary"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:id="@+id/tv_paid_start_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Started: -"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tv_paid_expiry_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Expires: -"
+                    android:textColor="?attr/colorError"
+                    android:textSize="14sp" />
+            </LinearLayout>
 
             <!-- Paid Plan Identity Card -->
+
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_step1_paid"
                 android:layout_width="match_parent"
