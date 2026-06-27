@@ -162,6 +162,7 @@ class HealthDashboardActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        com.neubofy.reality.utils.PermissionHelper.checkAndPromptForCore(this)
         loadData() // Refresh on resume in case permissions granted
         checkAndShowSleepVerification()
     }

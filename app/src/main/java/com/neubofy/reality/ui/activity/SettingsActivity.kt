@@ -84,6 +84,11 @@ class SettingsActivity : BaseActivity() {
             startActivity(intent)
         }
 
+        binding.cardPermissionManager.setOnClickListener {
+            val intent = Intent(this, PermissionManagerActivity::class.java)
+            startActivity(intent)
+        }
+
         // Schedule Settings (Opens ScheduleListActivity with settings dialog)
         binding.cardSettingsCalendar.setOnClickListener {
             val intent = Intent(this, ScheduleListActivity::class.java)
@@ -212,9 +217,11 @@ class SettingsActivity : BaseActivity() {
                 switchRealityPro.isChecked = false
                 val intent = Intent(this, RealityProActivity::class.java)
                 startActivity(intent)
-            } else {
+            } else if (!isChecked || featureManager.isRealityProVerified() || featureManager.isTrialActive()) {
                 featureManager.setRealityProEnabled(isChecked)
                 updateUI()
+            } else {
+                switchRealityPro.isChecked = false
             }
         }
         switchAi.setOnCheckedChangeListener { _, isChecked ->
@@ -222,9 +229,11 @@ class SettingsActivity : BaseActivity() {
                 switchAi.isChecked = false
                 val intent = Intent(this, RealityProActivity::class.java)
                 startActivity(intent)
-            } else {
+            } else if (!isChecked || featureManager.isRealityProVerified() || featureManager.isTrialActive()) {
                 featureManager.setAiEnabled(isChecked)
                 updateUI()
+            } else {
+                switchAi.isChecked = false
             }
         }
         switchTapasya.setOnCheckedChangeListener { _, isChecked ->
@@ -232,9 +241,11 @@ class SettingsActivity : BaseActivity() {
                 switchTapasya.isChecked = false
                 val intent = Intent(this, RealityProActivity::class.java)
                 startActivity(intent)
-            } else {
+            } else if (!isChecked || featureManager.isRealityProVerified() || featureManager.isTrialActive()) {
                 featureManager.setTapasyaEnabled(isChecked)
                 updateUI()
+            } else {
+                switchTapasya.isChecked = false
             }
         }
         switchReminder.setOnCheckedChangeListener { _, isChecked ->
@@ -273,6 +284,8 @@ class SettingsActivity : BaseActivity() {
                     val intent = Intent(this, RealityProActivity::class.java)
                     startActivity(intent)
                 }
+
+
             } else {
                 verificationCard.visibility = android.view.View.GONE
             }

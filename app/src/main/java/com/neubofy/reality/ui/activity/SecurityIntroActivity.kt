@@ -36,8 +36,8 @@ class SecurityIntroActivity : BaseActivity() {
                 .putBoolean("intro_shown", true)
                 .apply()
 
-            // Navigate to Onboarding Permissions Activity
-            val intent = Intent(this, OnboardingActivity::class.java)
+            // Navigate directly to MainActivity
+            val intent = Intent(this, MainActivity::class.java)
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
             finish()

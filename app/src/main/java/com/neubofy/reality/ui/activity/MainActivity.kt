@@ -39,9 +39,6 @@ import com.neubofy.reality.databinding.DialogRemoveAntiUninstallBinding
 import com.neubofy.reality.services.AppBlockerService
 import com.neubofy.reality.ui.dialogs.StartFocusMode
 import com.neubofy.reality.ui.fragments.anti_uninstall.ChooseModeFragment
-import com.neubofy.reality.ui.fragments.installation.AccessibilityGuide
-import com.neubofy.reality.ui.fragments.installation.PermissionsFragment
-import com.neubofy.reality.ui.fragments.installation.WelcomeFragment
 import com.neubofy.reality.utils.SavedPreferencesLoader
 import kotlinx.coroutines.*
 import com.neubofy.reality.utils.FocusStatusManager
@@ -106,13 +103,6 @@ class MainActivity : BaseActivity() {
             finish()
             return
         }
-        
-        if (!prefs.getBoolean("onboarding_v2_complete", false)) {
-            val intent = Intent(this, OnboardingActivity::class.java)
-            startActivity(intent)
-            finish()
-            return
-        }
 
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -169,7 +159,6 @@ class MainActivity : BaseActivity() {
         super.onResume()
         
         loadStatistics()
-        checkAndRequestNextPermission()
         startStatusUpdater()
         updateGreeting()
         updateThemeVisuals()
@@ -944,92 +933,10 @@ class MainActivity : BaseActivity() {
         isAntiUninstallOn = antiUninstallPrefs.getBoolean("is_anti_uninstall_on", false)
     }
 
-    private fun checkAndRequestNextPermission() {
-        // 1. Accessibility Service (Highest Priority for Blocking)
-        if (!isAccessibilityServiceEnabled(AppBlockerService::class.java)) {
-            makeAccessibilityInfoDialog("Reality Blocker", AppBlockerService::class.java)
-            return
-        }
-        
-        // 2. Usage Access (Required for Limits/Statistics)
-        if (!com.neubofy.reality.utils.UsageUtils.hasUsageStatsPermission(this)) {
-            MaterialAlertDialogBuilder(this)
-                .setTitle("Usage Access Required")
-                .setMessage("To track time and enforce limits, Reality needs Usage Access.")
-                .setPositiveButton("Grant") { _, _ ->
-                     startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-                }
-                .setCancelable(false)
-                .show()
-            return
-        }
-        
-        // 3. Overlay Permission (Required for Blocking Screen)
-        if (!Settings.canDrawOverlays(this)) {
-            MaterialAlertDialogBuilder(this)
-                .setTitle("Overlay Permission Required")
-                .setMessage("To show the block screen, Reality needs 'Display over other apps' permission.")
-                .setPositiveButton("Grant") { _, _ ->
-                     startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
-                }
-                .setCancelable(false)
-                .show()
-            return
-        }
-
-        // 4. Battery Optimization (Critical for Stability)
-        val pm = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
-        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-             MaterialAlertDialogBuilder(this)
-                .setTitle("Unrestricted Battery Access")
-                .setMessage("To prevent the blocker from stopping randomly, Reality needs 'Unrestricted' battery access.\n\nTap 'Grant' -> Select 'All apps' -> Find 'Reality' -> Choose 'Don't optimize'.")
-                .setPositiveButton("Grant") { _, _ ->
-                     val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-                     intent.data = android.net.Uri.parse("package:$packageName")
-                     try {
-                        startActivity(intent)
-                     } catch(e: Exception) {
-                        // Fallback to generic settings if direct request fails
-                        startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-                     }
-                }
-                .setCancelable(false)
-                .show()
-            return
-        }
-
-        // 5. Notification Permission (Android 13+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS, options)
-             }
-        }
-        
-
-    }
-
     private fun isAccessibilityServiceEnabled(service: Class<out AccessibilityService>): Boolean {
         val expectedComponentName = ComponentName(this, service)
         val enabledServices = Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
         return enabledServices?.contains(expectedComponentName.flattenToString()) == true
-    }
-
-    private fun makeAccessibilityInfoDialog(title: String, service: Class<out AccessibilityService>) {
-        val binding = DialogPermissionInfoBinding.inflate(layoutInflater)
-        binding.title.text = "Enable $title"
-        binding.desc.text = "To block apps effectively, Reality needs Accessibility permission.\n\n1. Tap 'Enable'.\n2. Find 'Reality' or 'Installed Apps'.\n3. Turn ON 'Reality Blocker'."
-        
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setView(binding.root)
-            .create()
-
-        binding.btnAccept.setOnClickListener {
-            openAccessibilityServiceScreen(service)
-            dialog.dismiss()
-        }
-        binding.btnReject.text = "Later"
-        binding.btnReject.setOnClickListener { dialog.dismiss() }
-        dialog.show()
     }
 
     private fun makeDeviceAdminPermissionDialog() {

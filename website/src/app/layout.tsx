@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Reality - The Intelligent Life OS",
-  description: "Stop managing your life. Start commanding it. The 100% Open Source, Neural-powered productivity OS.",
+  description: "Stop managing your life. Start commanding it. The 99.9% Open Source, Neural-powered productivity OS.",
 };
 
 export default function RootLayout({
