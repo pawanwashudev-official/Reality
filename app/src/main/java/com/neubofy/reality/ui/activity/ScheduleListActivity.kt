@@ -59,6 +59,11 @@ class ScheduleListActivity : BaseActivity() {
         if (intent.getBooleanExtra("OPEN_SETTINGS", false)) {
             binding.root.post { showSyncSettingsDialog() }
         }
+
+        // Request calendar permission immediately when opened
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_CALENDAR) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            calendarPermissionLauncher.launch(android.Manifest.permission.READ_CALENDAR)
+        }
     }
     
     private fun setupToolbar() {

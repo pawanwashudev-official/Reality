@@ -42,6 +42,12 @@ class SettingsActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         updateUI()
+
+        // Show Settings Tour
+        val appPrefs = getSharedPreferences("app_preferences", MODE_PRIVATE)
+        if (!appPrefs.getBoolean("settings_tour_shown", false)) {
+            binding.root.post { showSettingsTour() }
+        }
     }
 
     private fun setupToolbar() {
@@ -186,6 +192,67 @@ class SettingsActivity : BaseActivity() {
         binding.cardAccount.setOnClickListener {
             handleAccountClick()
         }
+
+
+    }
+
+    private fun showSettingsTour() {
+        val permissionCard = findViewById<android.view.View>(R.id.card_permission_manager)
+        val featuresCard = findViewById<android.view.View>(R.id.card_features)
+        val strictModeCard = findViewById<android.view.View>(R.id.card_strict_mode)
+        val aboutCard = findViewById<android.view.View>(R.id.card_about)
+
+        if (permissionCard == null || featuresCard == null || strictModeCard == null || aboutCard == null) return
+
+        com.getkeepsafe.taptargetview.TapTargetSequence(this)
+            .targets(
+                com.getkeepsafe.taptargetview.TapTarget.forView(permissionCard, "Permission Manager", "The most important section. Manage core permissions like Accessibility and Usage Access centrally here.")
+                    .outerCircleColor(R.color.md_theme_primary)
+                    .targetCircleColor(android.R.color.white)
+                    .titleTextSize(20)
+                    .titleTextColor(android.R.color.white)
+                    .descriptionTextSize(14)
+                    .descriptionTextColor(android.R.color.white)
+                    .cancelable(true)
+                    .transparentTarget(false),
+                com.getkeepsafe.taptargetview.TapTarget.forView(featuresCard, "Neural Features", "Enable or disable Reality Pro, AI, Tapasya, and more.")
+                    .outerCircleColor(R.color.md_theme_primary)
+                    .targetCircleColor(android.R.color.white)
+                    .titleTextSize(20)
+                    .titleTextColor(android.R.color.white)
+                    .descriptionTextSize(14)
+                    .descriptionTextColor(android.R.color.white)
+                    .cancelable(true)
+                    .transparentTarget(false),
+                com.getkeepsafe.taptargetview.TapTarget.forView(strictModeCard, "Strict Mode", "Lock your app settings with a timer or password to prevent tampering.")
+                    .outerCircleColor(R.color.md_theme_primary)
+                    .targetCircleColor(android.R.color.white)
+                    .titleTextSize(20)
+                    .titleTextColor(android.R.color.white)
+                    .descriptionTextSize(14)
+                    .descriptionTextColor(android.R.color.white)
+                    .cancelable(true)
+                    .transparentTarget(false),
+                com.getkeepsafe.taptargetview.TapTarget.forView(aboutCard, "About Reality", "Check for OTA updates and contact support.")
+                    .outerCircleColor(R.color.md_theme_primary)
+                    .targetCircleColor(android.R.color.white)
+                    .titleTextSize(20)
+                    .titleTextColor(android.R.color.white)
+                    .descriptionTextSize(14)
+                    .descriptionTextColor(android.R.color.white)
+                    .cancelable(true)
+                    .transparentTarget(false)
+            )
+            .listener(object : com.getkeepsafe.taptargetview.TapTargetSequence.Listener {
+                override fun onSequenceFinish() {
+                    getSharedPreferences("app_preferences", MODE_PRIVATE).edit().putBoolean("settings_tour_shown", true).apply()
+                }
+                override fun onSequenceStep(lastTarget: com.getkeepsafe.taptargetview.TapTarget?, targetClicked: Boolean) {}
+                override fun onSequenceCanceled(lastTarget: com.getkeepsafe.taptargetview.TapTarget?) {
+                    getSharedPreferences("app_preferences", MODE_PRIVATE).edit().putBoolean("settings_tour_shown", true).apply()
+                }
+            })
+            .start()
     }
     
     private fun handleAccountClick() {
@@ -394,7 +461,7 @@ class SettingsActivity : BaseActivity() {
         
         // Terminal Log Toggle
         val appPrefs = getSharedPreferences("reality_prefs", MODE_PRIVATE)
-        val isTerminalLogEnabled = appPrefs.getBoolean("show_terminal_log", true) // Default ON
+        val isTerminalLogEnabled = appPrefs.getBoolean("show_terminal_log", false) // Default OFF
         binding.switchTerminalLog.isChecked = isTerminalLogEnabled
     }
     
