@@ -146,6 +146,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
 
     implementation(libs.gson)
+    implementation("com.getkeepsafe.taptargetview:taptargetview:1.13.3")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

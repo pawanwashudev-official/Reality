@@ -66,6 +66,12 @@ class StatisticsActivity : BaseActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Usage Statistics"
         
+        // Request Usage Access if not granted
+        if (!com.neubofy.reality.utils.UsageUtils.hasUsageStatsPermission(this)) {
+            android.widget.Toast.makeText(this, "Usage Access Required", android.widget.Toast.LENGTH_LONG).show()
+            startActivity(android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        }
+
         setupRecyclerView()
         loadStatistics()
     }

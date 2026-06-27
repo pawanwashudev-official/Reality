@@ -1107,7 +1107,7 @@ class MainActivity : BaseActivity() {
     
     private fun updateTerminalLogVisibility() {
         val appPrefs = getSharedPreferences("reality_prefs", MODE_PRIVATE)
-        val showTerminalLog = appPrefs.getBoolean("show_terminal_log", true) // Default ON
+        val showTerminalLog = appPrefs.getBoolean("show_terminal_log", false) // Default OFF
         
         // Find the terminal log card parent (it's inside ScrollView > LinearLayout)
         // The terminal card is at the bottom of the layout

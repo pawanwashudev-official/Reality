@@ -55,7 +55,10 @@
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -102,6 +105,67 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Permission Manager Settings -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_permission_manager"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
+                app:cardCornerRadius="16dp"
+                app:strokeColor="?attr/colorPrimaryContainer"
+                app:strokeWidth="1dp"
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/baseline_security_24"
+                        app:tint="?attr/colorOnSurface"/>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Permission Manager"
+                            android:textColor="?attr/colorPrimary"
+                            android:fontFamily="monospace"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                                 />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Manage App Permissions"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/baseline_arrow_forward_24"
+                        app:tint="?attr/colorOnSurfaceVariant" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Language -->
             <TextView
                 android:layout_width="wrap_content"
@@ -121,7 +185,10 @@
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -181,7 +248,10 @@
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp"
-                android:visibility="visible">
+                android:visibility="visible"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -249,7 +319,10 @@
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -323,7 +396,10 @@
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                android:layout_marginBottom="12dp">
+                android:layout_marginBottom="12dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -381,7 +457,10 @@
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -450,7 +529,10 @@
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -507,7 +589,10 @@
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
                 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -568,7 +653,10 @@
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginBottom="24dp"
-                android:visibility="gone">
+                android:visibility="gone"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
                 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -636,7 +724,10 @@
                 app:cardElevation="0dp"
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorError"
-                app:strokeWidth="1dp">
+                app:strokeWidth="1dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -696,7 +787,10 @@
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 android:layout_marginTop="24dp"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -763,7 +857,10 @@
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -821,7 +918,10 @@
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -878,7 +978,10 @@
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -936,7 +1039,10 @@
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -984,63 +1090,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Permission Manager Settings -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_permission_manager"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardBackgroundColor="@android:color/transparent"
-                app:cardElevation="0dp"
-                app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorPrimaryContainer"
-                app:strokeWidth="1dp"
-                android:layout_marginBottom="24dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical">
-
-                    <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:src="@drawable/baseline_security_24"
-                        app:tint="?attr/colorOnSurface"/>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Permission Manager"
-                            android:textColor="?attr/colorPrimary"
-                            android:fontFamily="monospace"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                                 />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Manage App Permissions"
-                            android:textColor="?attr/colorOnSurfaceVariant"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/baseline_arrow_forward_24"
-                        app:tint="?attr/colorOnSurfaceVariant" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
             <!-- Developer Options -->
             <TextView
@@ -1061,7 +1110,10 @@
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="match_parent"

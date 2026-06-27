@@ -79,6 +79,15 @@ class SmartSleepActivity : BaseActivity() {
         setupRecyclerView()
         setupUI()
         
+        // Check Alarm Permission
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val alarmManager = getSystemService(android.content.Context.ALARM_SERVICE) as android.app.AlarmManager
+            if (!alarmManager.canScheduleExactAlarms()) {
+                android.widget.Toast.makeText(this, "Exact Alarm Permission Required", android.widget.Toast.LENGTH_LONG).show()
+                startActivity(android.content.Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
+            }
+        }
+
         checkHealthPermissionsFlow()
     }
 
