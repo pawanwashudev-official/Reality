@@ -41,13 +41,13 @@ class RealityProActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContentView(R.layout.activity_reality_pro)
+
         findViewById<android.view.View>(R.id.btn_view_pro_members)?.setOnClickListener {
             val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://reality.neubofy.in/promembers"))
             startActivity(intent)
         }
-
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_reality_pro)
 
         btnStep1Signin = findViewById(R.id.btn_step1_signin)
         cardStep2 = findViewById(R.id.card_step2)

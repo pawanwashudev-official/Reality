@@ -39,6 +39,11 @@ class AppGroupsActivity : BaseActivity() {
         binding.viewPager.setCurrentItem(tabIndex, false)
     }
 
+    override fun onResume() {
+        super.onResume()
+        com.neubofy.reality.utils.PermissionHelper.checkAndPromptForCore(this)
+    }
+
     inner class ViewPagerAdapter(activity: AppCompatActivity) : FragmentStateAdapter(activity) {
         override fun getItemCount(): Int = 3
         override fun createFragment(position: Int): Fragment {

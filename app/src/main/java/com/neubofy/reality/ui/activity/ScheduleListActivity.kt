@@ -704,6 +704,7 @@ class ScheduleListActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        com.neubofy.reality.utils.PermissionHelper.checkAndPromptForCore(this)
         loadSchedules()
     }
 

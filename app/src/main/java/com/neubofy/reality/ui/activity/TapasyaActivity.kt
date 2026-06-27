@@ -837,6 +837,7 @@ class TapasyaActivity : BaseActivity() {
     
     override fun onResume() {
         super.onResume()
+        com.neubofy.reality.utils.PermissionHelper.checkAndPromptForCore(this)
         loadSessionsForSelectedDay()
     }
 }
