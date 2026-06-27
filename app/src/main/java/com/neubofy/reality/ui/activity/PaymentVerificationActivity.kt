@@ -50,14 +50,19 @@ class PaymentVerificationActivity : BaseActivity() {
             val response = data.getStringExtra("response")
             if (response != null && (response.contains("Status=SUCCESS", ignoreCase = true) || response.contains("status=success", ignoreCase = true) || response.contains("txnRef"))) {
                 // Payment successful! Instantly verify.
-                val featureManager = FeatureManager(this)
-                featureManager.setRealityProStartTime(System.currentTimeMillis())
-                featureManager.setRealityProVerified(true)
-                Toast.makeText(this, "Payment successful! Reality Pro instantly activated.", Toast.LENGTH_LONG).show()
-                val intent = Intent(this, MainActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                startActivity(intent)
-                finish()
+                lifecycleScope.launch {
+                    val internetTime = com.neubofy.reality.utils.InternetTime.getTime()
+                    withContext(Dispatchers.Main) {
+                        val featureManager = FeatureManager(this@PaymentVerificationActivity)
+                        featureManager.setRealityProStartTime(internetTime)
+                        featureManager.setRealityProVerified(true, internetTime)
+                        Toast.makeText(this@PaymentVerificationActivity, "Payment successful! Reality Pro instantly activated.", Toast.LENGTH_LONG).show()
+                        val intent = Intent(this@PaymentVerificationActivity, MainActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        startActivity(intent)
+                        finish()
+                    }
+                }
             } else {
                 Toast.makeText(this, "Payment failed or cancelled.", Toast.LENGTH_SHORT).show()
             }
@@ -192,12 +197,17 @@ class PaymentVerificationActivity : BaseActivity() {
                             val code = jsonResponse.optString("verificationCode", "")
 
                             if (status.equals("SUCCESS", ignoreCase = true) && code.isNotEmpty()) {
-                                val featureManager = FeatureManager(this@PaymentVerificationActivity)
-                                featureManager.setRealityProStartTime(System.currentTimeMillis())
-                                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@PaymentVerificationActivity, "reality_pro_prefs")
-                                prefs.edit().putString("pro_saved_verification_code_for_$userId", code).apply()
-                                Toast.makeText(this@PaymentVerificationActivity, "Request Submitted Successfully!", Toast.LENGTH_LONG).show()
-                                finish()
+                                lifecycleScope.launch {
+                                    val internetTime = com.neubofy.reality.utils.InternetTime.getTime()
+                                    withContext(Dispatchers.Main) {
+                                        val featureManager = FeatureManager(this@PaymentVerificationActivity)
+                                        featureManager.setRealityProStartTime(internetTime)
+                                        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@PaymentVerificationActivity, "reality_pro_prefs")
+                                        prefs.edit().putString("pro_saved_verification_code_for_$userId", code).apply()
+                                        Toast.makeText(this@PaymentVerificationActivity, "Request Submitted Successfully!", Toast.LENGTH_LONG).show()
+                                        finish()
+                                    }
+                                }
                             } else {
                                 val errorMsg = jsonResponse.optString("error", "Unknown error")
                                 Toast.makeText(this@PaymentVerificationActivity, "Submission failed: $errorMsg", Toast.LENGTH_LONG).show()

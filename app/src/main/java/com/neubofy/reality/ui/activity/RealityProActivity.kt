@@ -73,11 +73,19 @@ class RealityProActivity : BaseActivity() {
                     Toast.makeText(this, "Trial has expired. Please purchase Pro to continue.", Toast.LENGTH_LONG).show()
                 }
             } else {
-                featureManager.activateTrial()
-                Toast.makeText(this, "3-Day Trial Activated! Enjoy Pro features.", Toast.LENGTH_LONG).show()
-                featureManager.setRealityProEnabled(true)
-                startActivity(Intent(this, MainActivity::class.java))
-                finish()
+                val btn = it as? com.google.android.material.button.MaterialButton
+                btn?.isEnabled = false
+                btn?.text = "Activating..."
+                lifecycleScope.launch {
+                    val internetTime = com.neubofy.reality.utils.InternetTime.getTime()
+                    withContext(Dispatchers.Main) {
+                        featureManager.activateTrial(internetTime)
+                        Toast.makeText(this@RealityProActivity, "3-Day Trial Activated! Enjoy Pro features.", Toast.LENGTH_LONG).show()
+                        featureManager.setRealityProEnabled(true)
+                        startActivity(Intent(this@RealityProActivity, MainActivity::class.java))
+                        finish()
+                    }
+                }
             }
         }
 
@@ -221,42 +229,29 @@ class RealityProActivity : BaseActivity() {
 
         val dateFormat = java.text.SimpleDateFormat("MMM dd, yyyy HH:mm", java.util.Locale.getDefault())
 
-        // Trial Plan Logic
+        // UI Elements
         val btnTrialSignin = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_trial_signin)
         val btnTrialActivation = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_trial_activation)
         val llTrialDates = findViewById<android.widget.LinearLayout>(R.id.ll_trial_dates)
         val tvTrialStart = findViewById<android.widget.TextView>(R.id.tv_trial_start_date)
         val tvTrialExpiry = findViewById<android.widget.TextView>(R.id.tv_trial_expiry_date)
 
+        val cardPaidPlanActive = findViewById<android.view.View>(R.id.card_paid_plan_active)
+        val tvPaidPlanHeader = findViewById<android.widget.TextView>(R.id.tv_paid_plan_header)
+        val tvPaidStart = findViewById<android.widget.TextView>(R.id.tv_paid_start_date)
+        val tvPaidExpiry = findViewById<android.widget.TextView>(R.id.tv_paid_expiry_date)
+        val tvYearlySubscriptionTitle = findViewById<android.widget.TextView>(R.id.tv_or_yearly_subscription)
+        val cardStep1Paid = findViewById<android.view.View>(R.id.card_step1_paid)
+        val cardStep2 = findViewById<android.view.View>(R.id.card_step2)
+        val cardStep3 = findViewById<android.view.View>(R.id.card_step3)
+
+        // Trial Sign In Logic
         if (isSignedIn && userId != null) {
             btnTrialSignin.visibility = android.view.View.GONE
             btnTrialActivation.visibility = android.view.View.VISIBLE
-
-            if (featureManager.isTrialActive() || featureManager.hasUsedTrial()) {
-                llTrialDates?.visibility = android.view.View.VISIBLE
-                val start = featureManager.getTrialStartTime()
-                val end = featureManager.getTrialEndTime()
-                tvTrialStart?.text = "Started: " + if (start > 0) dateFormat.format(java.util.Date(start)) else "Unknown"
-                tvTrialExpiry?.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
-            } else {
-                llTrialDates?.visibility = android.view.View.GONE
-            }
-
-            if (featureManager.isTrialActive()) {
-                btnTrialActivation.text = "Trial Active"
-                btnTrialActivation.isEnabled = false
-            } else if (featureManager.hasUsedTrial()) {
-                btnTrialActivation.text = "Trial Credit Used"
-                btnTrialActivation.isEnabled = false
-            } else {
-                btnTrialActivation.text = "Start 3-Day Trial"
-                btnTrialActivation.isEnabled = true
-            }
         } else {
             btnTrialSignin.visibility = android.view.View.VISIBLE
             btnTrialActivation.visibility = android.view.View.GONE
-            llTrialDates?.visibility = android.view.View.GONE
-
             btnTrialSignin.setOnClickListener {
                 if (GoogleAuthManager.getClientId(this) == null || GoogleAuthManager.getClientSecret(this) == null) {
                     showCustomKeyDialog()
@@ -266,57 +261,77 @@ class RealityProActivity : BaseActivity() {
             }
         }
 
-        // Paid Plan Logic
-        val llPaidDates = findViewById<android.widget.LinearLayout>(R.id.ll_paid_dates)
-        val tvPaidStart = findViewById<android.widget.TextView>(R.id.tv_paid_start_date)
-        val tvPaidExpiry = findViewById<android.widget.TextView>(R.id.tv_paid_expiry_date)
-        val tvOrYearly = findViewById<android.widget.TextView>(R.id.tv_or_yearly_subscription)
-        val cardStep1Paid = findViewById<android.view.View>(R.id.card_step1_paid)
-        val cardStep2 = findViewById<android.view.View>(R.id.card_step2)
-        val cardStep3 = findViewById<android.view.View>(R.id.card_step3)
+        // --- Mutually Exclusive Visibility Logic ---
 
-        // Hide paid plan options entirely if trial hasn't been used yet or is active
-        if (!featureManager.hasUsedTrial() && !featureManager.isTrialActive()) {
-            tvOrYearly?.visibility = android.view.View.VISIBLE
-            // User requested that paid plan card directly doesn't show instead bottom of trial card option.
-            // In settings we handled that. In Pro page we also want to hide it until trial expires.
+        if (featureManager.isTrialActive()) {
+            // TRIAL IS ACTIVE: Show trial active UI, hide/lock paid plan completely
+            llTrialDates?.visibility = android.view.View.VISIBLE
+            val start = featureManager.getTrialStartTime()
+            val end = featureManager.getTrialEndTime()
+            tvTrialStart?.text = "Started: " + if (start > 0) dateFormat.format(java.util.Date(start)) else "Unknown"
+            tvTrialExpiry?.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
+
+            btnTrialActivation.text = "Trial Active"
+            btnTrialActivation.isEnabled = false
+
+            // Paid plan becomes locked
+            cardPaidPlanActive?.visibility = android.view.View.VISIBLE
+            tvPaidPlanHeader?.text = "Paid Plan Locked (Trial Active)"
+            findViewById<android.view.View>(R.id.ll_paid_dates)?.visibility = android.view.View.GONE
+            tvYearlySubscriptionTitle?.visibility = android.view.View.GONE
             cardStep1Paid?.visibility = android.view.View.GONE
             cardStep2?.visibility = android.view.View.GONE
             cardStep3?.visibility = android.view.View.GONE
-            llPaidDates?.visibility = android.view.View.GONE
 
-            // Make text clickable to expand the paid plan options manually
-            tvOrYearly?.setOnClickListener {
-                tvOrYearly.visibility = android.view.View.GONE
-                cardStep1Paid?.visibility = android.view.View.VISIBLE
-                cardStep2?.visibility = android.view.View.VISIBLE
-                cardStep3?.visibility = android.view.View.VISIBLE
-            }
-        } else if (featureManager.isTrialActive()) {
-            tvOrYearly?.visibility = android.view.View.GONE
-            cardStep1Paid?.visibility = android.view.View.GONE
-            cardStep2?.visibility = android.view.View.GONE
-            cardStep3?.visibility = android.view.View.GONE
-            llPaidDates?.visibility = android.view.View.GONE
         } else if (featureManager.isRealityProVerified()) {
-            llPaidDates?.visibility = android.view.View.VISIBLE
+            // PAID PLAN IS ACTIVE: Show paid plan active UI, hide/lock trial completely
+            llTrialDates?.visibility = android.view.View.GONE
+            if (isSignedIn && userId != null) {
+                btnTrialActivation.text = "Trial Locked (Paid Plan Active)"
+                btnTrialActivation.isEnabled = false
+            }
+
+            cardPaidPlanActive?.visibility = android.view.View.VISIBLE
+            tvPaidPlanHeader?.text = "Paid Plan Active"
+            findViewById<android.view.View>(R.id.ll_paid_dates)?.visibility = android.view.View.VISIBLE
             val start = featureManager.getRealityProStartTime()
             val end = featureManager.getRealityProEndTime()
             tvPaidStart?.text = "Activated: " + if (start > 0) dateFormat.format(java.util.Date(start)) else "Unknown"
             tvPaidExpiry?.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
 
-            tvOrYearly?.visibility = android.view.View.GONE
+            tvYearlySubscriptionTitle?.visibility = android.view.View.GONE
             cardStep1Paid?.visibility = android.view.View.GONE
             cardStep2?.visibility = android.view.View.GONE
             cardStep3?.visibility = android.view.View.GONE
+
         } else {
-            llPaidDates?.visibility = android.view.View.GONE
-            tvOrYearly?.visibility = android.view.View.VISIBLE
+            // NEITHER ACTIVE: Both are available to purchase/start
+            cardPaidPlanActive?.visibility = android.view.View.GONE
+            tvYearlySubscriptionTitle?.visibility = android.view.View.VISIBLE
             cardStep1Paid?.visibility = android.view.View.VISIBLE
             cardStep2?.visibility = android.view.View.VISIBLE
             cardStep3?.visibility = android.view.View.VISIBLE
 
-            // Step 1: Identity
+            if (featureManager.hasUsedTrial()) {
+                llTrialDates?.visibility = android.view.View.VISIBLE
+                val start = featureManager.getTrialStartTime()
+                val end = featureManager.getTrialEndTime()
+                tvTrialStart?.text = "Started: " + if (start > 0) dateFormat.format(java.util.Date(start)) else "Unknown"
+                tvTrialExpiry?.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
+
+                if (isSignedIn && userId != null) {
+                    btnTrialActivation.text = "Trial Credit Used"
+                    btnTrialActivation.isEnabled = false
+                }
+            } else {
+                llTrialDates?.visibility = android.view.View.GONE
+                if (isSignedIn && userId != null) {
+                    btnTrialActivation.text = "Start 3-Day Trial"
+                    btnTrialActivation.isEnabled = true
+                }
+            }
+
+            // Process Paid Plan Sign In & Purchase Steps
             if (isSignedIn && userId != null) {
                 btnStep1Signin.isEnabled = false
                 btnStep1Signin.text = "Signed In"
@@ -329,7 +344,6 @@ class RealityProActivity : BaseActivity() {
                 btnPayUpi.isEnabled = false
             }
 
-            // Step 2: Payment
             var savedCode: String? = null
             if (userId != null) {
                 val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
@@ -353,7 +367,6 @@ class RealityProActivity : BaseActivity() {
                 btnVerify.isEnabled = false
             }
 
-            // Step 3: Verification
             if (savedCode != null) {
                 btnVerify.isEnabled = true
                 btnVerify.text = "Verify Status"
@@ -424,17 +437,21 @@ class RealityProActivity : BaseActivity() {
                     withContext(Dispatchers.Main) {
                         if (responseStr.contains("SUCCESS", ignoreCase = true)) {
                             // Activation Successful
-                            val featureManager = FeatureManager(this@RealityProActivity)
-                            // Lock in start time in case it wasn't locked in payment step
-                            featureManager.setRealityProStartTime(System.currentTimeMillis())
-                            featureManager.setRealityProVerified(true)
-                            Toast.makeText(this@RealityProActivity, "Reality Pro Activated!", Toast.LENGTH_LONG).show()
+                            lifecycleScope.launch {
+                                val internetTime = com.neubofy.reality.utils.InternetTime.getTime()
+                                withContext(Dispatchers.Main) {
+                                    val featureManager = FeatureManager(this@RealityProActivity)
+                                    featureManager.setRealityProStartTime(internetTime)
+                                    featureManager.setRealityProVerified(true, internetTime)
+                                    Toast.makeText(this@RealityProActivity, "Reality Pro Activated!", Toast.LENGTH_LONG).show()
 
-                            // Go Home
-                            val intent = Intent(this@RealityProActivity, MainActivity::class.java)
-                            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                            startActivity(intent)
-                            finish()
+                                    // Go Home
+                                    val intent = Intent(this@RealityProActivity, MainActivity::class.java)
+                                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                                    startActivity(intent)
+                                    finish()
+                                }
+                            }
                         } else {
                             Toast.makeText(this@RealityProActivity, "We haven't verified your payment yet. Please check back later.", Toast.LENGTH_LONG).show()
                             resetVerifyButton()

@@ -91,12 +91,12 @@ class FeatureManager(private val context: Context) {
         return isValid
     }
 
-    fun setRealityProVerified(verified: Boolean) {
+    fun setRealityProVerified(verified: Boolean, currentTimeMs: Long = System.currentTimeMillis()) {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
         val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
         if (verified) {
             val oneYearMs = 365L * 24 * 60 * 60 * 1000
-            val verifiedUntil = System.currentTimeMillis() + oneYearMs
+            val verifiedUntil = currentTimeMs + oneYearMs
             prefs.edit().putLong("feature_reality_pro_verified_until_$userId", verifiedUntil).apply()
         } else {
             prefs.edit().remove("feature_reality_pro_verified_until_$userId").apply()
@@ -175,11 +175,11 @@ class FeatureManager(private val context: Context) {
         return false
     }
 
-    fun activateTrial() {
+    fun activateTrial(currentTimeMs: Long = System.currentTimeMillis()) {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
         val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
         val trialDurationMs = 3L * 24 * 60 * 60 * 1000
-        val currentTime = System.currentTimeMillis()
+        val currentTime = currentTimeMs
         val trialEndTime = currentTime + trialDurationMs
 
         // 1. Save local
