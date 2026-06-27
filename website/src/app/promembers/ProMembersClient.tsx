@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Shield, User, Calendar, Sparkles, ChevronLeft, ChevronRight, Search, SlidersHorizontal } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface ProMember {
   userId: string;
@@ -12,16 +12,27 @@ interface ProMember {
 
 interface ProMembersClientProps {
   initialMembers: ProMember[];
-  currentPage: number;
-  totalPages: number;
 }
 
-export default function ProMembersClient({ initialMembers, currentPage, totalPages }: ProMembersClientProps) {
+export default function ProMembersClient({ initialMembers }: ProMembersClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
 
-  // Filter and sort the *current chunk* of data on the client.
+  const pageParam = searchParams.get('page');
+  const [currentPage, setCurrentPage] = useState(pageParam ? parseInt(pageParam, 10) : 1);
+  const pageSize = 50;
+
+  // Sync state when URL changes externally (e.g. back button)
+  useEffect(() => {
+    const page = searchParams.get('page');
+    if (page) {
+      setCurrentPage(parseInt(page, 10));
+    }
+  }, [searchParams]);
+
+  // Filter and sort the full dataset on the client.
   const processedMembers = useMemo(() => {
     let result = [...initialMembers];
 
@@ -49,7 +60,29 @@ export default function ProMembersClient({ initialMembers, currentPage, totalPag
     return result;
   }, [initialMembers, searchQuery, sortOrder]);
 
+  const isMounted = useRef(false);
+  // Reset to page 1 when search or sort changes
+  useEffect(() => {
+    if (!isMounted.current) {
+      isMounted.current = true;
+      return;
+    }
+    setCurrentPage(1);
+    const params = new URLSearchParams(window.location.search);
+    params.set('page', '1');
+    router.replace(`?${params.toString()}`);
+  }, [searchQuery, sortOrder, router]);
+
+  const totalPages = Math.ceil(processedMembers.length / pageSize);
+
+  // Calculate sliced members for current page
+  const paginatedMembers = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return processedMembers.slice(startIndex, startIndex + pageSize);
+  }, [processedMembers, currentPage, pageSize]);
+
   const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
     // Preserve existing search params if any
     const params = new URLSearchParams(window.location.search);
     params.set('page', newPage.toString());
@@ -102,19 +135,19 @@ export default function ProMembersClient({ initialMembers, currentPage, totalPag
               <Shield className="mx-auto text-gray-600 mb-4" size={48} />
               <h3 className="text-xl font-bold text-gray-400">No members found</h3>
               <p className="text-gray-500 mt-2">
-                {searchQuery ? `No matches found for "${searchQuery}" on this page.` : 'Could not retrieve the member list at this time.'}
+                {searchQuery ? `No matches found for "${searchQuery}".` : 'Could not retrieve the member list at this time.'}
               </p>
             </div>
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {processedMembers.map((member, index) => (
-                  <MemberCard key={`${member.userId}-${index}`} member={member} />
+                {paginatedMembers.map((member, index) => (
+                  <MemberCard key={`${member.userId}-${index}`} member={member} searchQuery={searchQuery} />
                 ))}
               </div>
 
               {/* Pagination */}
-              {totalPages > 1 && !searchQuery && ( // Hide pagination while actively searching within the chunk
+              {totalPages > 1 && (
                 <div className="mt-12 flex justify-center items-center gap-4">
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
@@ -153,7 +186,7 @@ export default function ProMembersClient({ initialMembers, currentPage, totalPag
   );
 }
 
-function MemberCard({ member }: { member: ProMember }) {
+function MemberCard({ member, searchQuery }: { member: ProMember, searchQuery: string }) {
   // Format the date if it's a valid string
   let displayDate = member.dateJoined;
   try {
@@ -169,7 +202,15 @@ function MemberCard({ member }: { member: ProMember }) {
     // Keep original string if parsing fails
   }
 
-  const displayId = member.userId;
+
+  let displayId = member.userId;
+  // If the user hasn't typed the exact ID, hide the middle
+  if (searchQuery.trim().toLowerCase() !== member.userId.toLowerCase() && member.userId.length > 8) {
+     const start = member.userId.substring(0, 4);
+     const end = member.userId.substring(member.userId.length - 4);
+     displayId = `${start}****${end}`;
+  }
+
 
   return (
     <div className="group relative bg-neural-card border border-gray-800 p-6 rounded-2xl hover:border-yellow-500/50 transition-all duration-300 shadow-lg hover:shadow-yellow-500/10 overflow-hidden">

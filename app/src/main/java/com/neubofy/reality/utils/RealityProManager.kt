@@ -17,7 +17,7 @@ object RealityProManager {
      */
     fun checkVerification(activity: Activity): Boolean {
         val featureManager = FeatureManager(activity)
-        if (!featureManager.isRealityProVerified()) {
+        if (!featureManager.isRealityProVerified() && !featureManager.isTrialActive()) {
             val intent = Intent(activity, RealityProActivity::class.java)
             activity.startActivity(intent)
             activity.finish()
@@ -30,7 +30,9 @@ object RealityProManager {
         val featureManager = FeatureManager(activity)
         val isEnabled = featureManager.isRealityProEnabled()
         val isVerified = featureManager.isRealityProVerified()
-        if (!isEnabled || !isVerified) {
+        val isTrialActive = featureManager.isTrialActive()
+
+        if (!((isEnabled && isVerified) || isTrialActive)) {
             val intent = Intent(activity, RealityProActivity::class.java)
             activity.startActivity(intent)
             activity.finish()

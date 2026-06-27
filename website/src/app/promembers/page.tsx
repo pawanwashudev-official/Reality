@@ -1,9 +1,9 @@
 import React from 'react';
 import { Crown, Database, Heart } from 'lucide-react';
+import { Suspense } from 'react';
 import ProMembersClient from './ProMembersClient';
 
-// Force dynamic rendering to allow search params but utilize caching
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 interface ProMember {
   userId: string;
@@ -14,11 +14,9 @@ interface ProMember {
 interface MembersResponse {
   members: ProMember[];
   total: number;
-  page: number;
-  pageSize: number;
 }
 
-async function getProMembers(page: number, pageSize: number): Promise<MembersResponse | null> {
+async function getProMembers(): Promise<MembersResponse | null> {
   const dbUrl = process.env.Pro_Members_DB_URL;
   if (!dbUrl) {
     console.error("Pro_Members_DB_URL environment variable is not defined.");
@@ -26,37 +24,63 @@ async function getProMembers(page: number, pageSize: number): Promise<MembersRes
   }
 
   try {
-    const res = await fetch(`${dbUrl}?page=${page}&pageSize=${pageSize}`, {
-      // Use Next.js caching to revalidate the data every 60 seconds.
-      // This fulfills the latency and caching requirements, keeping the page incredibly fast.
+    let res = await fetch(dbUrl, {
+      method: 'GET',
+      redirect: 'manual',
       next: { revalidate: 60 }
     });
+
+    if (res.status === 302 || res.status === 303 || res.status === 307 || res.status === 308) {
+      const redirectUrl = res.headers.get('location');
+      if (redirectUrl) {
+        res = await fetch(redirectUrl, {
+          method: 'GET',
+          next: { revalidate: 60 }
+        });
+      }
+    } else if (!res.ok) {
+      // Fallback to default follow behavior if manual redirect failed to catch it
+      res = await fetch(dbUrl, {
+        method: 'GET',
+        next: { revalidate: 60 }
+      });
+    }
 
     if (!res.ok) {
       console.error(`Failed to fetch pro members: ${res.status} ${res.statusText}`);
       return null;
     }
 
-    return await res.json();
+    const data = await res.json();
+
+    let members: ProMember[] = [];
+    if (Array.isArray(data)) {
+      members = data;
+    } else if (data && typeof data === 'object') {
+      if (Array.isArray(data.members)) {
+        members = data.members;
+      } else if (Array.isArray(data.data)) {
+        members = data.data;
+      } else {
+        // Just in case it's an object with array somewhere else, or the data itself is the object
+        members = [];
+      }
+    }
+
+    return {
+      members,
+      total: members.length
+    };
   } catch (error) {
     console.error("Error fetching pro members:", error);
     return null;
   }
 }
 
-export default async function ProMembersPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
-  const pageParam = searchParams.page;
-  const currentPage = typeof pageParam === 'string' ? parseInt(pageParam, 10) : 1;
-  const pageSize = 50;
-
-  const data = await getProMembers(currentPage, pageSize);
+export default async function ProMembersPage() {
+  const data = await getProMembers();
   const members = data?.members || [];
   const total = data?.total || 0;
-  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div className="min-h-screen bg-neural-bg font-outfit text-gray-100 selection:bg-neural-cyan selection:text-black">
@@ -89,8 +113,11 @@ export default async function ProMembersPage({
             </div>
             <div>
               <h3 className="text-white font-bold mb-1 tracking-tight">Our Heartfelt Thanks</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
+              <p className="text-sm text-gray-400 leading-relaxed mb-2">
                 These are the people who contributed to Reality. Thanks to them, we are able to maintain this open-source project and provide proper updates and patches on a regular basis.
+              </p>
+              <p className="text-xs text-gray-500 font-mono leading-relaxed bg-black/30 p-3 rounded-lg border border-gray-800/50">
+                <strong className="text-gray-400">Privacy Notice:</strong> We do not collect or store your name, email, or any personal details. The identifiers shown below are generated hashed User IDs used strictly for anonymous Pro verification.
               </p>
             </div>
           </div>
@@ -98,11 +125,11 @@ export default async function ProMembersPage({
       </section>
 
       {/* Interactive Client Component for Search, Sort, and Grid Display */}
-      <ProMembersClient
-        initialMembers={members}
-        currentPage={currentPage}
-        totalPages={totalPages}
-      />
+      <Suspense fallback={<div>Loading members...</div>}>
+        <ProMembersClient
+          initialMembers={members}
+        />
+      </Suspense>
     </div>
   );
 }

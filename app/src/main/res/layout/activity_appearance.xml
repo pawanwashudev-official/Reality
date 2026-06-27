@@ -104,7 +104,47 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+
+            <!-- UI PRESETS -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="24dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Quick Presets"
+                    android:textColor="?attr/colorPrimary"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp"/>
+                <com.google.android.material.chip.ChipGroup
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true">
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/preset_cinematic"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Cinematic (Default)"
+                        style="@style/Widget.MaterialComponents.Chip.Action"/>
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/preset_minimalist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Minimalist"
+                        style="@style/Widget.MaterialComponents.Chip.Action"/>
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/preset_cyberpunk"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Cyberpunk"
+                        style="@style/Widget.MaterialComponents.Chip.Action"/>
+                </com.google.android.material.chip.ChipGroup>
+            </LinearLayout>
+
             <!-- MAIN CATEGORY TABS -->
+
             <com.google.android.material.tabs.TabLayout
                 android:id="@+id/tab_main_categories"
                 android:layout_width="match_parent"

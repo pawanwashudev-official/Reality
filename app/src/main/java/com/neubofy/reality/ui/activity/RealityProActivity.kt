@@ -41,6 +41,11 @@ class RealityProActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
+        findViewById<android.view.View>(R.id.btn_view_pro_members)?.setOnClickListener {
+            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://reality.neubofy.in/promembers"))
+            startActivity(intent)
+        }
+
         enableEdgeToEdge()
         setContentView(R.layout.activity_reality_pro)
 
@@ -50,6 +55,32 @@ class RealityProActivity : BaseActivity() {
         cardStep3 = findViewById(R.id.card_step3)
         btnVerify = findViewById(R.id.btn_verify)
         btnCancel = findViewById(R.id.btn_cancel)
+
+        findViewById<android.view.View>(R.id.btn_trial_activation)?.setOnClickListener {
+            val email = GoogleAuthManager.getUserEmail(this)
+            if (email == null) {
+                Toast.makeText(this, "Please sign in first (Step 1) to start trial", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val featureManager = FeatureManager(this)
+            if (featureManager.hasUsedTrial()) {
+                if (featureManager.isTrialActive()) {
+                    Toast.makeText(this, "Your trial is already active!", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this, MainActivity::class.java))
+                    finish()
+                } else {
+                    Toast.makeText(this, "Trial has expired. Please purchase Pro to continue.", Toast.LENGTH_LONG).show()
+                }
+            } else {
+                featureManager.activateTrial()
+                Toast.makeText(this, "3-Day Trial Activated! Enjoy Pro features.", Toast.LENGTH_LONG).show()
+                featureManager.setRealityProEnabled(true)
+                startActivity(Intent(this, MainActivity::class.java))
+                finish()
+            }
+        }
+
 
         btnStep1Signin.setOnClickListener {
             showKeySelectionDialog()

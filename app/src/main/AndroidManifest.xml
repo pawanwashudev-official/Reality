@@ -274,12 +274,7 @@
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
             
-        <activity
-            android:name=".ui.activity.UserManualActivity"
-            android:exported="false"
-            android:theme="@style/Theme.Reality"
-            android:screenOrientation="portrait"
-            android:label="User Manual" />
+
 
         <activity
             android:name=".ui.activity.SmartSleepActivity"

@@ -514,11 +514,7 @@ class MainActivity : BaseActivity() {
                         startActivity(Intent(this, BackupRestoreActivity::class.java))
                         true
                     }
-                    2 -> {
-                        // User Manual (Replaces Rules Dialog)
-                        startActivity(Intent(this, UserManualActivity::class.java))
-                        true
-                    }
+
                     3 -> {
                         startActivity(Intent(this, AboutActivity::class.java))
                         true
@@ -1009,22 +1005,7 @@ class MainActivity : BaseActivity() {
              }
         }
         
-        // 6. All permissions granted! Check if we should suggest the manual
-        val prefs = getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
-        if (!prefs.getBoolean("manual_suggested", false)) {
-            MaterialAlertDialogBuilder(this)
-                .setTitle("🎉 Setup Complete!")
-                .setMessage("You've granted all necessary permissions. To get the most out of Reality, we highly recommend reading the User Manual.")
-                .setPositiveButton("Read Manual") { _, _ ->
-                     prefs.edit().putBoolean("manual_suggested", true).apply()
-                     startActivity(Intent(this, UserManualActivity::class.java))
-                }
-                .setNegativeButton("Later") { _, _ ->
-                     prefs.edit().putBoolean("manual_suggested", true).apply()
-                }
-                .setCancelable(false)
-                .show()
-        }
+
     }
 
     private fun isAccessibilityServiceEnabled(service: Class<out AccessibilityService>): Boolean {

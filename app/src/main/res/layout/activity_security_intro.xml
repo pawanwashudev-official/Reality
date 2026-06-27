@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_gravity="center"
-    android:background="@color/md_theme_background"
+    android:background="?attr/colorSurface"
     android:gravity="center"
     android:orientation="vertical"
     android:padding="24dp">
@@ -22,7 +22,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         android:gravity="center"
-        android:text="Neural Engine Security Core"
+        android:text="Welcome to Reality"
         android:textColor="@color/md_theme_primary"
         android:textSize="28sp"
         android:textStyle="bold" />
@@ -34,7 +34,7 @@
         android:alpha="0.9"
         android:gravity="center"
         android:lineSpacingExtra="4dp"
-        android:text="Reality is designed with a zero-compromise approach to your privacy and security."
+        android:text="Reality is designed with a zero-compromise approach to your privacy and security. The app is 100% open source, entirely offline, and stores everything securely on your device."
         android:textColor="@color/md_theme_onBackground"
         android:textSize="16sp" />
 
@@ -110,7 +110,7 @@
         android:gravity="center"
         android:textSize="12sp"
         android:textColor="@color/md_theme_onSurfaceVariant"
-        android:text="Disclaimer: Reality uses Accessibility Services exclusively to enforce blocking. No personal data is ever collected or transmitted." />
+        android:text="Disclaimer: Reality requires several system permissions to enforce focus modes. Since 99.99% of our code is open source, you can verify that no personal data is collected or sent to remote servers." />
 
     <Button
         android:id="@+id/btnGetStarted"
