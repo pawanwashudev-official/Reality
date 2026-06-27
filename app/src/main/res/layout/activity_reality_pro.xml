@@ -215,10 +215,22 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="License Terms: Your Reality Pro license is valid for 1 year from the date of activation. If you uninstall the app or clear its data, your access will be lost locally. However, if you sign back in with the same Google Account on this device, your access will be restored until the year ends."
+                        android:textSize="12sp"
+                        android:lineSpacingMultiplier="1.2"
+                        android:textColor="?attr/colorError"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginBottom="8dp"/>
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Step 3: Verify Pro Access"
+
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:textColor="?attr/colorOnSurface"

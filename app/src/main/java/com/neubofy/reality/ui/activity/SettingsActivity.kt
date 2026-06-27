@@ -208,7 +208,7 @@ class SettingsActivity : BaseActivity() {
 
         // Set listeners
         switchRealityPro.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked && !featureManager.isRealityProVerified()) {
+            if (isChecked && !featureManager.isRealityProVerified() && !featureManager.isTrialActive()) {
                 switchRealityPro.isChecked = false
                 val intent = Intent(this, RealityProActivity::class.java)
                 startActivity(intent)
@@ -218,7 +218,7 @@ class SettingsActivity : BaseActivity() {
             }
         }
         switchAi.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked && !featureManager.isRealityProVerified()) {
+            if (isChecked && !featureManager.isRealityProVerified() && !featureManager.isTrialActive()) {
                 switchAi.isChecked = false
                 val intent = Intent(this, RealityProActivity::class.java)
                 startActivity(intent)
@@ -228,7 +228,7 @@ class SettingsActivity : BaseActivity() {
             }
         }
         switchTapasya.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked && !featureManager.isRealityProVerified()) {
+            if (isChecked && !featureManager.isRealityProVerified() && !featureManager.isTrialActive()) {
                 switchTapasya.isChecked = false
                 val intent = Intent(this, RealityProActivity::class.java)
                 startActivity(intent)

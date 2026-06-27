@@ -15,14 +15,32 @@ class FeatureManager(private val context: Context) {
     fun isRealityProVerified(): Boolean {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return false
         val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
-        return prefs.getBoolean("feature_reality_pro_verified_$userId", false)
-    }
 
+        // Check for 1-year timestamp
+        val verifiedUntil = prefs.getLong("feature_reality_pro_verified_until_$userId", 0L)
+
+        // Backwards compatibility for old boolean verified users (grace period)
+        val legacyVerified = prefs.getBoolean("feature_reality_pro_verified_$userId", false)
+        if (legacyVerified) {
+            // Migrate them to 1 year from now
+            setRealityProVerified(true)
+            prefs.edit().remove("feature_reality_pro_verified_$userId").apply()
+            return true
+        }
+
+        return System.currentTimeMillis() < verifiedUntil
+    }
 
     fun setRealityProVerified(verified: Boolean) {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
         val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
-        prefs.edit().putBoolean("feature_reality_pro_verified_$userId", verified).apply()
+        if (verified) {
+            val oneYearMs = 365L * 24 * 60 * 60 * 1000
+            val verifiedUntil = System.currentTimeMillis() + oneYearMs
+            prefs.edit().putLong("feature_reality_pro_verified_until_$userId", verifiedUntil).apply()
+        } else {
+            prefs.edit().remove("feature_reality_pro_verified_until_$userId").apply()
+        }
     }
 
     private fun getDeviceUniqueId(): String {

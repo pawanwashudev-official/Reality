@@ -75,6 +75,7 @@ class RealityProActivity : BaseActivity() {
             } else {
                 featureManager.activateTrial()
                 Toast.makeText(this, "3-Day Trial Activated! Enjoy Pro features.", Toast.LENGTH_LONG).show()
+                featureManager.setRealityProEnabled(true)
                 startActivity(Intent(this, MainActivity::class.java))
                 finish()
             }
