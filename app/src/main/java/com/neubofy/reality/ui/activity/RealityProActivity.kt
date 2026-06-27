@@ -204,7 +204,39 @@ class RealityProActivity : BaseActivity() {
         val isSignedIn = GoogleAuthManager.isSignedIn(this) && email.isNotEmpty()
         val userId = if (isSignedIn) MD5Utils.getUserIdFromEmail(email) else null
 
-        // Step 1: Identity
+        // Trial Plan Logic
+        val btnTrialSignin = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_trial_signin)
+        val btnTrialActivation = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_trial_activation)
+
+        if (isSignedIn && userId != null) {
+            btnTrialSignin.visibility = android.view.View.GONE
+            btnTrialActivation.visibility = android.view.View.VISIBLE
+
+            val featureManager = FeatureManager(this)
+            if (featureManager.isTrialActive()) {
+                btnTrialActivation.text = "Trial Active"
+                btnTrialActivation.isEnabled = false
+            } else if (featureManager.hasUsedTrial()) {
+                btnTrialActivation.text = "Trial Credit Used"
+                btnTrialActivation.isEnabled = false
+            } else {
+                btnTrialActivation.text = "Start 3-Day Trial"
+                btnTrialActivation.isEnabled = true
+            }
+        } else {
+            btnTrialSignin.visibility = android.view.View.VISIBLE
+            btnTrialActivation.visibility = android.view.View.GONE
+
+            btnTrialSignin.setOnClickListener {
+                if (GoogleAuthManager.getClientId(this) == null || GoogleAuthManager.getClientSecret(this) == null) {
+                    showCustomKeyDialog()
+                } else {
+                    performSignIn()
+                }
+            }
+        }
+
+        // Paid Plan - Step 1: Identity
         if (isSignedIn && userId != null) {
             btnStep1Signin.isEnabled = false
             btnStep1Signin.text = "Signed In"

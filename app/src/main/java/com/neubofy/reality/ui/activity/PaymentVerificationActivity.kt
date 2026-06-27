@@ -51,6 +51,7 @@ class PaymentVerificationActivity : BaseActivity() {
             if (response != null && (response.contains("Status=SUCCESS", ignoreCase = true) || response.contains("status=success", ignoreCase = true) || response.contains("txnRef"))) {
                 // Payment successful! Instantly verify.
                 val featureManager = FeatureManager(this)
+                featureManager.setRealityProStartTime(System.currentTimeMillis())
                 featureManager.setRealityProVerified(true)
                 Toast.makeText(this, "Payment successful! Reality Pro instantly activated.", Toast.LENGTH_LONG).show()
                 val intent = Intent(this, MainActivity::class.java)
@@ -191,6 +192,8 @@ class PaymentVerificationActivity : BaseActivity() {
                             val code = jsonResponse.optString("verificationCode", "")
 
                             if (status.equals("SUCCESS", ignoreCase = true) && code.isNotEmpty()) {
+                                val featureManager = FeatureManager(this@PaymentVerificationActivity)
+                                featureManager.setRealityProStartTime(System.currentTimeMillis())
                                 val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@PaymentVerificationActivity, "reality_pro_prefs")
                                 prefs.edit().putString("pro_saved_verification_code_for_$userId", code).apply()
                                 Toast.makeText(this@PaymentVerificationActivity, "Request Submitted Successfully!", Toast.LENGTH_LONG).show()

@@ -7,7 +7,7 @@ This document provides a comprehensive overview of the Reality app to ensure any
 ## 🚀 1. The Vision: "Intelligent Life OS"
 Reality is moving from a "basic utility" to a "military-grade productivity operating system."
 - **Professionalism:** Every UI component must feel premium, using glassmorphism, fluid animations, and high-quality typography (Outfit font).
-- **Business Model:** 100% Open Source code. Anyone can build the APK. However, we charge a one-time payment for the "Official Optimized APK" to support maintenance.
+- **Business Model:** 100% Open Source code. Anyone can build the APK. However, we charge a yearly subscription for the "Official Optimized APK" to support maintenance.
 - **Support:** support@neubofy.in
 - **Web Presence:** reality.neubofy.in
 

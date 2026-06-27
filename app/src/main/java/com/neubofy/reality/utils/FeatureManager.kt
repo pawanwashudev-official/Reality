@@ -12,6 +12,58 @@ class FeatureManager(private val context: Context) {
     fun isRealityProEnabled(): Boolean = prefs.getBoolean("feature_reality_pro", false)
     fun setRealityProEnabled(enabled: Boolean) = prefs.edit().putBoolean("feature_reality_pro", enabled).apply()
 
+    fun getTrialStartTime(): Long {
+        val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return 0L
+        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        return prefs.getLong("trial_start_time_$userId", 0L)
+    }
+
+    fun getTrialEndTime(): Long {
+        val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return 0L
+        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+
+        var trialEndTime = prefs.getLong("trial_end_time_$userId", 0L)
+        if (trialEndTime == 0L) {
+            try {
+                val extFile = getExternalTrialFile()
+                if (extFile != null && extFile.exists()) {
+                    val content = extFile.readText()
+                    val lines = content.split("\n")
+                    for (line in lines) {
+                        val parts = line.split("=")
+                        if (parts.size == 2 && (parts[0] == userId || parts[0] == getDeviceUniqueId())) {
+                            trialEndTime = parts[1].toLong()
+                            prefs.edit().putLong("trial_end_time_$userId", trialEndTime).apply()
+                            break
+                        }
+                    }
+                }
+            } catch (e: Exception) {}
+        }
+        return trialEndTime
+    }
+
+    fun getRealityProStartTime(): Long {
+        val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return 0L
+        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        return prefs.getLong("feature_reality_pro_start_time_$userId", 0L)
+    }
+
+    fun setRealityProStartTime(timeMs: Long) {
+        val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
+        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        val currentStart = prefs.getLong("feature_reality_pro_start_time_$userId", 0L)
+        if (currentStart == 0L) {
+            prefs.edit().putLong("feature_reality_pro_start_time_$userId", timeMs).apply()
+        }
+    }
+
+    fun getRealityProEndTime(): Long {
+        val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return 0L
+        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        return prefs.getLong("feature_reality_pro_verified_until_$userId", 0L)
+    }
+
     fun isRealityProVerified(): Boolean {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return false
         val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
@@ -118,10 +170,16 @@ class FeatureManager(private val context: Context) {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
         val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
         val trialDurationMs = 3L * 24 * 60 * 60 * 1000
-        val trialEndTime = System.currentTimeMillis() + trialDurationMs
+        val currentTime = System.currentTimeMillis()
+        val trialEndTime = currentTime + trialDurationMs
 
         // 1. Save local
-        prefs.edit().putLong("trial_end_time_$userId", trialEndTime).apply()
+        val editor = prefs.edit()
+        editor.putLong("trial_end_time_$userId", trialEndTime)
+        if (prefs.getLong("trial_start_time_$userId", 0L) == 0L) {
+            editor.putLong("trial_start_time_$userId", currentTime)
+        }
+        editor.apply()
 
         // 2. Save external to survive data clear
         try {
