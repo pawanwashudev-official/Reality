@@ -1,7 +1,7 @@
-name: Build and Deploy to Firebase
+name: Build Pre-Release APK
 
 on:
-  workflow_dispatch: # Keeping your manual trigger!
+  workflow_dispatch:
 
 jobs:
   build:
@@ -59,19 +59,21 @@ jobs:
       - name: Build Release APK
         run: ./gradlew assembleRelease
 
-      - name: Find APK Path
-        id: find_apk
+      - name: Create Pre-Release & Upload APK
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Using your specific build_v4 path
           APK_PATH=$(find app/build_v4/outputs/apk/release -name "*.apk" | head -n 1)
           echo "Found APK at $APK_PATH"
-          # Save the path to an output variable so the Firebase step can use it
-          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
-
-      - name: Upload to Firebase App Distribution
-        uses: wzieba/Firebase-Distribution-Github-Action@v1
-        with:
-          appId: ${{ secrets.FIREBASE_APP_ID }}
-          serviceCredentialsFileContent: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
-          file: ${{ steps.find_apk.outputs.apk_path }}
-          releaseNotes: "Automated early access release v${{ env.VERSION_NAME }} for Pro members."
+          
+          # Check if the specific version release tag already exists
+          if gh release view "v$VERSION_NAME" >/dev/null 2>&1; then
+            echo "Release v$VERSION_NAME already exists. Adding new unique APK asset..."
+            gh release upload "v$VERSION_NAME" "$APK_PATH"
+          else
+            echo "Release v$VERSION_NAME does not exist. Creating a brand new Pre-Release..."
+            gh release create "v$VERSION_NAME" "$APK_PATH" \
+              --title "Pre-Release v$VERSION_NAME" \
+              --notes "Automated background build via GitHub Actions." \
+              --prerelease
+          fi
