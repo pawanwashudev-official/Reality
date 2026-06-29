@@ -1,7 +1,7 @@
-name: Build Release APK
+name: Build and Deploy to Firebase
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Keeping your manual trigger!
 
 jobs:
   build:
@@ -59,10 +59,19 @@ jobs:
       - name: Build Release APK
         run: ./gradlew assembleRelease
 
-      - name: Create Release & Upload APK
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Find APK Path
+        id: find_apk
         run: |
+          # Using your specific build_v4 path
           APK_PATH=$(find app/build_v4/outputs/apk/release -name "*.apk" | head -n 1)
           echo "Found APK at $APK_PATH"
-          gh release upload "v$VERSION_NAME" "$APK_PATH" --clobber || gh release create "v$VERSION_NAME" "$APK_PATH" --title "Release v$VERSION_NAME" --notes "Automated release via GitHub Actions."
+          # Save the path to an output variable so the Firebase step can use it
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+
+      - name: Upload to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+          file: ${{ steps.find_apk.outputs.apk_path }}
+          releaseNotes: "Automated early access release v${{ env.VERSION_NAME }} for Pro members."
