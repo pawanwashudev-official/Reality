@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { X, Upload, Download, Share2, Crown, User, ShieldCheck } from 'lucide-react';
 import { toPng, toBlob } from 'html-to-image';
+import { QRCodeSVG as QRCode } from 'qrcode.react';
 
 interface ProMember {
   userId: string;
@@ -323,18 +324,20 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
                     </div>
 
                     {isPro ? (
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500/30 to-yellow-900/10 border border-yellow-500/50 flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.3)]">
-                        <Crown className="text-yellow-400" size={24} />
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500/30 to-yellow-900/10 border border-yellow-500/50 flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.3)] overflow-hidden p-1">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/Realitylogo.png" alt="Reality App" className="w-full h-full object-contain" />
                       </div>
                     ) : (
-                      <div className="w-12 h-12 rounded-xl bg-neural-cyan/10 border border-neural-cyan/30 flex items-center justify-center">
-                        <ShieldCheck className="text-neural-cyan" size={24} />
+                      <div className="w-12 h-12 rounded-xl bg-neural-cyan/10 border border-neural-cyan/30 flex items-center justify-center overflow-hidden p-1">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/Realitylogo.png" alt="Reality App" className="w-full h-full object-contain" />
                       </div>
                     )}
                   </div>
 
-                  {/* Middle Row: Photo and Details */}
-                  <div className="flex items-center gap-5 flex-1">
+                  {/* Middle Row: Photo, Details, and QR Code */}
+                  <div className="flex items-center gap-4 flex-1">
                     {/* Photo */}
                     <div className={`w-24 h-24 rounded-xl flex items-center justify-center border-2 overflow-hidden shrink-0 relative ${
                         isPro
@@ -352,7 +355,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
                     </div>
 
                     {/* Details */}
-                    <div className="flex flex-col min-w-0 flex-1">
+                    <div className="flex flex-col min-w-0 flex-1 px-1">
                       <p className="text-[9px] text-gray-500 font-mono uppercase tracking-widest mb-0.5">Cardholder</p>
                       <h4 className={`text-xl font-bold mb-2 font-outfit uppercase tracking-wide truncate ${isPro ? 'text-yellow-50' : 'text-white'}`}>
                         {userName || (isPro ? "VERIFIED PRO" : "STANDARD USER")}
@@ -383,21 +386,31 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
                         </div>
                       )}
                     </div>
+
+                    {/* QR Code */}
+                    <div className="shrink-0 flex flex-col items-center justify-center">
+                       <div className="p-1.5 bg-white rounded-lg shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                         <QRCode value="https://reality.neubofy.in" size={64} level="H" includeMargin={false} />
+                       </div>
+                    </div>
                   </div>
 
                   {/* Footer Row */}
                   <div className={`mt-auto pt-3 border-t flex justify-between items-end ${isPro ? 'border-yellow-500/20' : 'border-white/10'}`}>
-                     <div>
-                        <p className={`text-[9px] max-w-[200px] leading-relaxed uppercase tracking-wide ${isPro ? 'text-yellow-500/80 font-mono' : 'text-gray-500 font-mono'}`}>
+                     <div className="flex items-center gap-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/neubofylogo.png" alt="Neubofy" className="w-8 h-8 object-contain" />
+                        <div>
+                           <p className={`text-[10px] font-bold uppercase tracking-widest ${isPro ? 'text-yellow-200' : 'text-gray-300'}`}>Pawan Washudev</p>
+                           <p className={`text-[7px] font-mono uppercase tracking-widest ${isPro ? 'text-yellow-500/60' : 'text-gray-500'}`}>Founder & Developer, Neubofy</p>
+                        </div>
+                     </div>
+                     <div className="text-right flex flex-col items-end max-w-[170px]">
+                        <p className={`text-[7px] text-right leading-relaxed uppercase tracking-wide ${isPro ? 'text-yellow-500/80 font-mono' : 'text-gray-500 font-mono'}`}>
                           {isPro
                             ? "This certifies the holder as an active contributor to the Reality ecosystem."
                             : "I use Reality to maintain a disciplined lifestyle. Proud to be part of Neubofy."}
                         </p>
-                     </div>
-                     <div className="text-right flex flex-col items-end">
-                        {/* Simulated signature */}
-                        <div className={`text-xl -mb-1 opacity-90 ${isPro ? 'text-yellow-200' : 'text-gray-300'}`} style={{ fontFamily: 'Brush Script MT, cursive, serif' }}>Pawan Washudev</div>
-                        <p className={`text-[7px] font-mono uppercase tracking-widest ${isPro ? 'text-yellow-500/60' : 'text-gray-600'}`}>Authorized Signatory</p>
                      </div>
                   </div>
                 </div>
