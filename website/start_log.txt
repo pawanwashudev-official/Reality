@@ -1,0 +1,16 @@
+
+> website@1.0.6 dev
+> next dev
+
+ ⚠ Port 3000 is in use, trying 3001 instead.
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3001
+
+ ✓ Starting...
+ ✓ Ready in 1828ms
+ ○ Compiling /promembers ...
+ ✓ Compiled /promembers in 6.6s (636 modules)
+Pro_Members_DB_URL environment variable is not defined.
+ ✓ Compiled in 929ms (300 modules)
+ GET /promembers 200 in 7553ms
+Pro_Members_DB_URL environment variable is not defined.

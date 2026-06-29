@@ -357,17 +357,17 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
                     {/* Details */}
                     <div className="flex flex-col min-w-0 flex-1 px-1">
                       <p className="text-[9px] text-gray-500 font-mono uppercase tracking-widest mb-0.5">Cardholder</p>
-                      <h4 className={`text-xl font-bold mb-2 font-outfit uppercase tracking-wide truncate ${isPro ? 'text-yellow-50' : 'text-white'}`}>
+                      <h4 className={`text-xl font-bold mb-2 font-outfit uppercase tracking-wide break-words leading-tight ${isPro ? 'text-yellow-50' : 'text-white'}`}>
                         {userName || (isPro ? "VERIFIED PRO" : "STANDARD USER")}
                       </h4>
 
                       {isPro ? (
                         <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-                           <div>
+                           <div className="col-span-2 sm:col-span-1">
                              <p className="text-[8px] text-yellow-500/60 font-mono uppercase tracking-widest">User ID</p>
-                             <p className="text-[10px] text-yellow-100 font-mono truncate bg-black/40 px-1 rounded inline-block border border-yellow-500/20">{verifiedMember?.userId || userId || "PENDING"}</p>
+                             <p className="text-[10px] text-yellow-100 font-mono break-all bg-black/40 px-1 rounded inline-block border border-yellow-500/20">{verifiedMember?.userId || userId || "PENDING"}</p>
                            </div>
-                           <div>
+                           <div className="col-span-2 sm:col-span-1">
                              <p className="text-[8px] text-yellow-500/60 font-mono uppercase tracking-widest">Member Since</p>
                              <p className="text-[10px] text-yellow-100 font-mono">{verifiedMember?.dateJoined ? new Date(verifiedMember.dateJoined).toLocaleDateString() : 'N/A'}</p>
                            </div>
