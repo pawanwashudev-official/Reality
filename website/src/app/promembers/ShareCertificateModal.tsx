@@ -21,6 +21,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
   const [isPro, setIsPro] = useState<boolean | null>(null);
   const [userId, setUserId] = useState('');
   const [verifyError, setVerifyError] = useState('');
+  const [verifiedMember, setVerifiedMember] = useState<ProMember | null>(null);
 
   const [userName, setUserName] = useState('');
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
@@ -46,6 +47,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
     const found = members.find(m => m.userId.toLowerCase() === userId.trim().toLowerCase());
     if (found) {
       setVerifyError('');
+      setVerifiedMember(found);
       setStep(2);
     } else {
       setVerifyError('User ID not found. Please check and try again.');
@@ -101,6 +103,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
     setIsPro(null);
     setUserId('');
     setVerifyError('');
+    setVerifiedMember(null);
     setUserName('');
     setUserPhoto(null);
     onClose();
@@ -225,6 +228,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
                     placeholder="Enter your name"
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
+                    maxLength={22}
                     className="w-full px-4 py-3 bg-black/50 border border-gray-700 rounded-xl text-white focus:outline-none focus:border-neural-cyan"
                   />
                 </div>
@@ -276,18 +280,22 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
               {/* Member Card Preview Container */}
               <div
                 ref={cardRef}
-                className={`w-full max-w-[400px] aspect-[1.6/1] p-1 rounded-2xl relative overflow-hidden flex flex-col ${
+                className={`w-full max-w-[420px] aspect-[1.6/1] rounded-2xl relative overflow-hidden flex flex-col shadow-2xl ${
                   isPro
-                  ? 'bg-gradient-to-br from-yellow-600 via-gray-900 to-black'
-                  : 'bg-gradient-to-br from-neural-cyan via-gray-900 to-black'
+                  ? 'bg-gradient-to-br from-[#1a1500] via-[#0a0a0a] to-[#05050A] border-[0.5px] border-yellow-900/50 shadow-[0_20px_50px_rgba(234,179,8,0.2)]'
+                  : 'bg-gradient-to-br from-[#001a1f] via-[#0a0a0a] to-[#05050A] border-[0.5px] border-cyan-900/50'
                 }`}
                 style={{ backgroundColor: '#05050A' }}
               >
-                <div className="absolute inset-0 bg-[#05050A] m-[2px] rounded-2xl z-0"></div>
 
                 {/* Member Card Background Pattern */}
-                <div className="absolute inset-0 opacity-[0.03] z-0" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-                <div className="absolute inset-0 opacity-20 z-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-white to-transparent"></div>
+                <div className={`absolute inset-0 opacity-[0.04] z-0 ${isPro ? 'bg-[url("https://www.transparenttextures.com/patterns/carbon-fibre.png")]' : ''}`} style={!isPro ? { backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '20px 20px' } : {}}></div>
+                <div className={`absolute inset-0 opacity-30 z-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] ${isPro ? 'from-yellow-500/20' : 'from-cyan-500/20'} to-transparent`}></div>
+
+                {/* 3D Inner Shadow overlay for physical feel (mostly on Pro) */}
+                {isPro && (
+                  <div className="absolute inset-0 rounded-2xl border-[1px] border-yellow-500/20 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)] pointer-events-none z-20"></div>
+                )}
 
                 {/* Member Card Content */}
                 <div className="relative z-10 flex flex-col h-full p-6">
@@ -295,18 +303,31 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
                   {/* Header Row */}
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                         <span className="font-outfit font-black text-2xl tracking-widest text-white drop-shadow-lg">NEUBOFY</span>
-                         <span className="px-2 py-0.5 bg-white/10 rounded text-[10px] font-mono text-gray-300 border border-white/20">MEMBERSHIP CARD</span>
-                      </div>
-                      <span className="text-xs text-gray-400 font-mono mt-1">reality.neubofy.in</span>
+                       {/* Enhanced REALITY app name rendering */}
+                       {isPro ? (
+                         <div className="flex items-center gap-2 mb-1">
+                           <span className="font-outfit font-black text-3xl tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-500 to-yellow-700 drop-shadow-lg">
+                             REALITY
+                           </span>
+                           <span className="px-2 py-0.5 bg-yellow-500/20 rounded text-[9px] font-bold text-yellow-400 border border-yellow-500/30 uppercase tracking-widest shadow-[0_0_10px_rgba(234,179,8,0.2)]">PRO</span>
+                         </div>
+                       ) : (
+                         <div className="flex items-center gap-2 mb-1">
+                           <span className="font-outfit font-black text-2xl tracking-tight text-white drop-shadow-md">
+                             REALITY
+                           </span>
+                           <span className="px-2 py-0.5 bg-white/10 rounded text-[9px] font-mono text-gray-300 border border-white/20 uppercase tracking-widest">MEMBERSHIP</span>
+                         </div>
+                       )}
+                      <span className="text-[10px] text-gray-400 font-mono tracking-widest">NEUBOFY.IN</span>
                     </div>
+
                     {isPro ? (
-                      <div className="w-12 h-12 rounded-lg bg-yellow-500/20 border border-yellow-500/40 flex items-center justify-center">
-                        <Crown className="text-yellow-500" size={24} />
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500/30 to-yellow-900/10 border border-yellow-500/50 flex items-center justify-center shadow-[0_0_15px_rgba(234,179,8,0.3)]">
+                        <Crown className="text-yellow-400" size={24} />
                       </div>
                     ) : (
-                      <div className="w-12 h-12 rounded-lg bg-neural-cyan/20 border border-neural-cyan/40 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-xl bg-neural-cyan/10 border border-neural-cyan/30 flex items-center justify-center">
                         <ShieldCheck className="text-neural-cyan" size={24} />
                       </div>
                     )}
@@ -315,43 +336,68 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
                   {/* Middle Row: Photo and Details */}
                   <div className="flex items-center gap-5 flex-1">
                     {/* Photo */}
-                    <div className={`w-24 h-24 rounded-xl flex items-center justify-center border-2 overflow-hidden shadow-2xl shrink-0 ${isPro ? 'border-yellow-500/50 bg-black/50' : 'border-neural-cyan/50 bg-black/50'}`}>
+                    <div className={`w-24 h-24 rounded-xl flex items-center justify-center border-2 overflow-hidden shrink-0 relative ${
+                        isPro
+                        ? 'border-yellow-500/50 bg-black/80 shadow-[0_0_20px_rgba(0,0,0,0.8)]'
+                        : 'border-neural-cyan/30 bg-black/50 shadow-lg'
+                    }`}>
                       {userPhoto ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={userPhoto} alt="User" className="w-full h-full object-cover" />
                       ) : (
-                        <User size={40} className="text-gray-500" />
+                        <User size={40} className={isPro ? "text-yellow-500/50" : "text-gray-600"} />
                       )}
+                      {/* Subtle glare overlay on photo */}
+                      {isPro && <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none"></div>}
                     </div>
 
                     {/* Details */}
-                    <div className="flex flex-col">
-                      <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest mb-1">Cardholder Name</p>
-                      <h4 className="text-xl font-bold text-white mb-3 font-outfit uppercase tracking-wide truncate max-w-[200px]">
-                        {userName || "OFFICIAL MEMBER"}
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <p className="text-[9px] text-gray-500 font-mono uppercase tracking-widest mb-0.5">Cardholder</p>
+                      <h4 className={`text-xl font-bold mb-2 font-outfit uppercase tracking-wide truncate ${isPro ? 'text-yellow-50' : 'text-white'}`}>
+                        {userName || (isPro ? "VERIFIED PRO" : "STANDARD USER")}
                       </h4>
 
-                      <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest mb-1">Status / App</p>
                       {isPro ? (
-                        <p className="text-sm text-yellow-400 font-bold tracking-wide">Elite Pro • Reality</p>
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                           <div>
+                             <p className="text-[8px] text-yellow-500/60 font-mono uppercase tracking-widest">User ID</p>
+                             <p className="text-[10px] text-yellow-100 font-mono truncate bg-black/40 px-1 rounded inline-block border border-yellow-500/20">{verifiedMember?.userId || userId || "PENDING"}</p>
+                           </div>
+                           <div>
+                             <p className="text-[8px] text-yellow-500/60 font-mono uppercase tracking-widest">Member Since</p>
+                             <p className="text-[10px] text-yellow-100 font-mono">{verifiedMember?.dateJoined ? new Date(verifiedMember.dateJoined).toLocaleDateString() : 'N/A'}</p>
+                           </div>
+                           <div className="col-span-2 mt-1">
+                              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-yellow-400 uppercase tracking-widest bg-yellow-500/10 px-1.5 py-0.5 rounded border border-yellow-500/20">
+                                <ShieldCheck size={10} /> Verified Elite
+                              </span>
+                           </div>
+                        </div>
                       ) : (
-                        <p className="text-sm text-neural-cyan font-bold tracking-wide">User • Reality</p>
+                        <div>
+                          <p className="text-[9px] text-gray-500 font-mono uppercase tracking-widest mb-0.5">Status</p>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-400 uppercase tracking-widest bg-gray-800/50 px-2 py-0.5 rounded border border-gray-700">
+                             Unverified User
+                          </span>
+                        </div>
                       )}
                     </div>
                   </div>
 
                   {/* Footer Row */}
-                  <div className="mt-auto pt-4 border-t border-white/10 flex justify-between items-end">
+                  <div className={`mt-auto pt-3 border-t flex justify-between items-end ${isPro ? 'border-yellow-500/20' : 'border-white/10'}`}>
                      <div>
-                        <p className={`text-[11px] max-w-[220px] leading-tight ${isPro ? 'text-yellow-100/70' : 'text-gray-400'}`}>
+                        <p className={`text-[9px] max-w-[200px] leading-relaxed uppercase tracking-wide ${isPro ? 'text-yellow-500/80 font-mono' : 'text-gray-500 font-mono'}`}>
                           {isPro
-                            ? "Officially verified Elite Member. Thank you for supporting Neubofy."
-                            : "I use Reality and it is really good! Proud to be part of Neubofy."}
+                            ? "This certifies the holder as an active contributor to the Reality ecosystem."
+                            : "I use Reality to maintain a disciplined lifestyle. Proud to be part of Neubofy."}
                         </p>
                      </div>
                      <div className="text-right flex flex-col items-end">
-                        <div className="font-outfit text-white text-sm italic opacity-80 mb-0.5">P. Washudev</div>
-                        <p className="text-[8px] text-gray-500 font-mono uppercase">Authorized Signatory</p>
+                        {/* Simulated signature */}
+                        <div className={`text-xl -mb-1 opacity-90 ${isPro ? 'text-yellow-200' : 'text-gray-300'}`} style={{ fontFamily: 'Brush Script MT, cursive, serif' }}>Pawan Washudev</div>
+                        <p className={`text-[7px] font-mono uppercase tracking-widest ${isPro ? 'text-yellow-500/60' : 'text-gray-600'}`}>Authorized Signatory</p>
                      </div>
                   </div>
                 </div>
