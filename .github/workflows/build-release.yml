@@ -66,10 +66,17 @@ jobs:
           APK_PATH=$(find app/build_v4/outputs/apk/release -name "*.apk" | head -n 1)
           echo "Found APK at $APK_PATH"
           
-          # Check if the specific version release tag already exists
-          if gh release view "v$VERSION_NAME" >/dev/null 2>&1; then
-            echo "Release v$VERSION_NAME already exists. Adding new unique APK asset..."
+          # Check if the release exists and extract whether it is a prerelease
+          IS_PRERELEASE=$(gh release view "v$VERSION_NAME" --json isPrerelease --jq .isPrerelease 2>/dev/null || echo "not_found")
+          
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            echo "Pre-release v$VERSION_NAME already exists. Adding new unique APK asset..."
             gh release upload "v$VERSION_NAME" "$APK_PATH"
+          elif [ "$IS_PRERELEASE" = "false" ]; then
+            echo "ERROR: v$VERSION_NAME exists but it is a STABLE release!"
+            echo "To protect your normal users, we will not upload this early access build here."
+            echo "Please bump your versionName in build.gradle.kts to create a new pre-release."
+            exit 1
           else
             echo "Release v$VERSION_NAME does not exist. Creating a brand new Pre-Release..."
             gh release create "v$VERSION_NAME" "$APK_PATH" \
