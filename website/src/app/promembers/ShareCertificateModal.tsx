@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
-import { X, Upload, Download, Share2, Crown, User, ShieldCheck } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Upload, Download, Share2, Crown, User, ShieldCheck, Loader2 } from 'lucide-react';
 import { toPng, toBlob } from 'html-to-image';
 import { QRCodeSVG as QRCode } from 'qrcode.react';
 
@@ -26,8 +26,36 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
 
   const [userName, setUserName] = useState('');
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
+  const [cardImage, setCardImage] = useState<string | null>(null);
+  const [isGeneratingCard, setIsGeneratingCard] = useState(false);
 
   const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (step === 3 && cardRef.current) {
+      setIsGeneratingCard(true);
+      // Generate image twice to ensure fonts/images are fully loaded in canvas
+      toPng(cardRef.current, { cacheBust: true, pixelRatio: 2 })
+        .then(() => {
+          if (cardRef.current) {
+            return toPng(cardRef.current, { cacheBust: true, pixelRatio: 2 });
+          }
+          return null;
+        })
+        .then((dataUrl) => {
+          if (dataUrl) {
+            setCardImage(dataUrl);
+          }
+          setIsGeneratingCard(false);
+        })
+        .catch((err) => {
+          console.error('Failed to pre-generate image', err);
+          setIsGeneratingCard(false);
+        });
+    } else if (step !== 3) {
+      setCardImage(null);
+    }
+  }, [step, isPro, verifiedMember, userName, userPhoto, userId]);
 
   if (!isOpen) return null;
 
@@ -67,9 +95,9 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
   };
 
   const downloadImage = async () => {
-    if (!cardRef.current) return;
+    if (!cardImage && !cardRef.current) return;
     try {
-      const dataUrl = await toPng(cardRef.current, { cacheBust: true, pixelRatio: 2 });
+      const dataUrl = cardImage || await toPng(cardRef.current!, { cacheBust: true, pixelRatio: 2 });
       const link = document.createElement('a');
       link.download = `reality-certificate-${userName || 'member'}.png`;
       link.href = dataUrl;
@@ -80,9 +108,15 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
   };
 
   const shareImage = async () => {
-    if (!cardRef.current) return;
+    if (!cardImage && !cardRef.current) return;
     try {
-      const blob = await toBlob(cardRef.current, { cacheBust: true, pixelRatio: 2 });
+      let blob: Blob | null = null;
+      if (cardImage) {
+         const res = await fetch(cardImage);
+         blob = await res.blob();
+      } else {
+         blob = await toBlob(cardRef.current!, { cacheBust: true, pixelRatio: 2 });
+      }
       if (blob && navigator.share) {
         const file = new File([blob], 'reality-certificate.png', { type: 'image/png' });
         await navigator.share({
@@ -278,10 +312,26 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
                 </p>
               </div>
 
-              {/* Member Card Preview Container */}
+              {/* Image Output Container */}
+              <div className="w-full max-w-[500px] aspect-[1.586/1] rounded-2xl relative overflow-hidden shadow-2xl flex items-center justify-center bg-black/50 border border-gray-800">
+                {isGeneratingCard ? (
+                  <div className="flex flex-col items-center gap-3 text-gray-400">
+                    <Loader2 className="animate-spin text-neural-cyan" size={32} />
+                    <span className="text-sm font-mono">Generating Card...</span>
+                  </div>
+                ) : cardImage ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={cardImage} alt="Member Card" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-red-400 text-sm">Failed to generate image.</div>
+                )}
+              </div>
+
+              {/* Hidden HTML Template for Generation */}
+              <div style={{ position: 'absolute', left: '-9999px', top: 0, overflow: 'hidden' }}>
               <div
                 ref={cardRef}
-                className={`w-full max-w-[500px] aspect-[1.586/1] rounded-2xl relative overflow-hidden flex flex-col shadow-2xl ${
+                className={`w-[800px] h-[504px] rounded-2xl relative overflow-hidden flex flex-col shadow-2xl ${
                   isPro
                   ? 'bg-gradient-to-br from-[#1a1500] via-[#0a0a0a] to-[#05050A] border-[0.5px] border-yellow-900/50 shadow-[0_20px_50px_rgba(234,179,8,0.2)]'
                   : 'bg-gradient-to-br from-[#001a1f] via-[#0a0a0a] to-[#05050A] border-[0.5px] border-cyan-900/50'
@@ -410,9 +460,10 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
                   </div>
                 </div>
               </div>
+              </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 w-full mt-8">
+              <div className="flex gap-4 w-full mt-8 relative z-20">
                 <button
                   onClick={() => setStep(2)}
                   className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
