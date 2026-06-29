@@ -17,7 +17,7 @@ interface ShareCertificateModalProps {
 }
 
 export default function ShareCertificateModal({ isOpen, onClose, members }: ShareCertificateModalProps) {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(-1);
   const [isPro, setIsPro] = useState<boolean | null>(null);
   const [userId, setUserId] = useState('');
   const [verifyError, setVerifyError] = useState('');
@@ -97,7 +97,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
   };
 
   const resetAndClose = () => {
-    setStep(0);
+    setStep(-1);
     setIsPro(null);
     setUserId('');
     setVerifyError('');
@@ -114,7 +114,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
         <div className="flex justify-between items-center p-4 border-b border-gray-800 bg-neural-card/30">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Share2 className="text-neural-cyan" size={20} />
-            Share Certificate
+            Share Member Card
           </h2>
           <button onClick={resetAndClose} className="p-2 text-gray-400 hover:text-white transition-colors">
             <X size={20} />
@@ -123,6 +123,36 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
 
         {/* Content */}
         <div className="p-6 overflow-y-auto">
+          {step === -1 && (
+            <div className="py-4 space-y-6">
+              <div className="bg-gradient-to-r from-neural-cyan/10 to-blue-500/5 border border-neural-cyan/30 rounded-xl p-6 text-left">
+                <h3 className="text-xl font-bold text-white mb-4">A Heartfelt Thank You from Neubofy ❤️</h3>
+                <p className="text-gray-300 text-sm leading-relaxed mb-4">
+                  Thank you for supporting us and motivating us to build such an incredible product. Because normal crowdfunding can&apos;t sustain us and support enough to maintain everything for free, we added a small Pro barrier.
+                </p>
+                <p className="text-gray-300 text-sm leading-relaxed mb-4">
+                  With Reality Pro, you get access to advanced features like true agentic AI, unlimited local-first sleep tracking, seamless cloud backups, and much more—all while keeping the core app 99.9% open-source and deeply private.
+                </p>
+                <div className="mt-6 pt-6 border-t border-gray-800 flex items-center justify-between">
+                   <div>
+                     <p className="text-white font-bold font-outfit text-lg">Pawan Washudev</p>
+                     <p className="text-xs text-gray-400">Founder & Developer, Neubofy</p>
+                   </div>
+                   <div className="text-right">
+                     <p className="text-xs text-neural-cyan">Telegram: @pawanwashudev</p>
+                     <p className="text-xs text-gray-400">Email: founder@neubofy.in</p>
+                   </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setStep(0)}
+                className="w-full px-6 py-4 bg-neural-cyan text-black font-bold rounded-xl hover:bg-cyan-400 transition-all flex items-center justify-center gap-2"
+              >
+                Generate My Member Card
+              </button>
+            </div>
+          )}
+
           {step === 0 && (
             <div className="text-center py-8">
               <h3 className="text-2xl font-bold text-white mb-6">Are you a Reality Pro member?</h3>
@@ -185,7 +215,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
 
           {step === 2 && (
             <div className="py-4 space-y-6">
-              <h3 className="text-xl font-bold text-white text-center">Customize Your Certificate</h3>
+              <h3 className="text-xl font-bold text-white text-center">Customize Your Member Card</h3>
 
               <div className="space-y-4">
                 <div>
@@ -228,7 +258,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
                   onClick={() => setStep(3)}
                   className="flex-1 px-4 py-3 bg-neural-cyan text-black font-bold rounded-xl hover:bg-cyan-400 transition-all"
                 >
-                  Generate Certificate
+                  Generate Member Card
                 </button>
               </div>
             </div>
@@ -237,68 +267,92 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
           {step === 3 && (
             <div className="py-4 flex flex-col items-center">
 
-              {/* Certificate Preview Container */}
+              <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-center">
+                <p className="text-sm text-yellow-200 font-medium">
+                  🎁 <strong>Reward:</strong> Share this card on social media! If it gets good reach, send a screenshot to the developer on Telegram <span className="text-white font-mono">@pawanwashudev</span>. You may win a 1-month to 1-year free Pro subscription and early access to unreleased versions of the app!
+                </p>
+              </div>
+
+              {/* Member Card Preview Container */}
               <div
                 ref={cardRef}
-                className={`w-full max-w-[350px] aspect-[4/5] p-1 rounded-2xl relative overflow-hidden flex flex-col ${
+                className={`w-full max-w-[400px] aspect-[1.6/1] p-1 rounded-2xl relative overflow-hidden flex flex-col ${
                   isPro
-                  ? 'bg-gradient-to-br from-yellow-500 via-gray-900 to-black'
+                  ? 'bg-gradient-to-br from-yellow-600 via-gray-900 to-black'
                   : 'bg-gradient-to-br from-neural-cyan via-gray-900 to-black'
                 }`}
                 style={{ backgroundColor: '#05050A' }}
               >
                 <div className="absolute inset-0 bg-[#05050A] m-[2px] rounded-2xl z-0"></div>
 
-                {/* Certificate Background Pattern */}
-                <div className="absolute inset-0 opacity-10 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white to-transparent"></div>
+                {/* Member Card Background Pattern */}
+                <div className="absolute inset-0 opacity-[0.03] z-0" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+                <div className="absolute inset-0 opacity-20 z-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-white to-transparent"></div>
 
-                {/* Certificate Content */}
-                <div className="relative z-10 flex flex-col h-full p-6 text-center">
+                {/* Member Card Content */}
+                <div className="relative z-10 flex flex-col h-full p-6">
 
-                  {/* Header */}
-                  <div className="flex justify-center items-center gap-2 mb-6">
-                    <span className="font-outfit font-black text-2xl tracking-widest text-white">REALITY</span>
-                    <span className="text-xs text-gray-500 font-mono">by Neubofy</span>
+                  {/* Header Row */}
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                         <span className="font-outfit font-black text-2xl tracking-widest text-white drop-shadow-lg">NEUBOFY</span>
+                         <span className="px-2 py-0.5 bg-white/10 rounded text-[10px] font-mono text-gray-300 border border-white/20">MEMBERSHIP CARD</span>
+                      </div>
+                      <span className="text-xs text-gray-400 font-mono mt-1">reality.neubofy.in</span>
+                    </div>
+                    {isPro ? (
+                      <div className="w-12 h-12 rounded-lg bg-yellow-500/20 border border-yellow-500/40 flex items-center justify-center">
+                        <Crown className="text-yellow-500" size={24} />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-neural-cyan/20 border border-neural-cyan/40 flex items-center justify-center">
+                        <ShieldCheck className="text-neural-cyan" size={24} />
+                      </div>
+                    )}
                   </div>
 
-                  {/* Photo / Avatar */}
-                  <div className="flex-1 flex flex-col items-center justify-center">
-                    <div className={`w-28 h-28 rounded-full mb-4 flex items-center justify-center border-4 overflow-hidden ${isPro ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-neural-cyan/50 bg-neural-cyan/10'}`}>
+                  {/* Middle Row: Photo and Details */}
+                  <div className="flex items-center gap-5 flex-1">
+                    {/* Photo */}
+                    <div className={`w-24 h-24 rounded-xl flex items-center justify-center border-2 overflow-hidden shadow-2xl shrink-0 ${isPro ? 'border-yellow-500/50 bg-black/50' : 'border-neural-cyan/50 bg-black/50'}`}>
                       {userPhoto ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={userPhoto} alt="User" className="w-full h-full object-cover" />
                       ) : (
-                        <User size={48} className={isPro ? 'text-yellow-500' : 'text-neural-cyan'} />
+                        <User size={40} className="text-gray-500" />
                       )}
                     </div>
 
-                    {/* Name */}
-                    {userName && (
-                      <h4 className="text-2xl font-bold text-white mb-2 font-outfit">{userName}</h4>
-                    )}
+                    {/* Details */}
+                    <div className="flex flex-col">
+                      <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest mb-1">Cardholder Name</p>
+                      <h4 className="text-xl font-bold text-white mb-3 font-outfit uppercase tracking-wide truncate max-w-[200px]">
+                        {userName || "OFFICIAL MEMBER"}
+                      </h4>
 
-                    {/* Status Badge */}
-                    {isPro ? (
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full text-yellow-500 text-xs font-bold uppercase tracking-wider mb-4">
-                        <Crown size={14} /> Elite Member
-                      </div>
-                    ) : (
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-neural-cyan/20 border border-neural-cyan/30 rounded-full text-neural-cyan text-xs font-bold uppercase tracking-wider mb-4">
-                        <ShieldCheck size={14} /> Official Member
-                      </div>
-                    )}
-
-                    {/* Description */}
-                    <p className={`text-sm ${isPro ? 'text-yellow-200/80' : 'text-gray-300'} font-medium px-4 leading-relaxed`}>
-                      {isPro
-                        ? "Reality Pro Subscriber. Officially verified as an Elite Member of Neubofy."
-                        : "I use the Reality app and it is really good! Proud to be a part of Neubofy."}
-                    </p>
+                      <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest mb-1">Status / App</p>
+                      {isPro ? (
+                        <p className="text-sm text-yellow-400 font-bold tracking-wide">Elite Pro • Reality</p>
+                      ) : (
+                        <p className="text-sm text-neural-cyan font-bold tracking-wide">User • Reality</p>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Footer */}
-                  <div className="pt-6 border-t border-gray-800/50 mt-auto">
-                    <p className="text-xs text-gray-500 font-mono">reality.neubofy.in</p>
+                  {/* Footer Row */}
+                  <div className="mt-auto pt-4 border-t border-white/10 flex justify-between items-end">
+                     <div>
+                        <p className={`text-[11px] max-w-[220px] leading-tight ${isPro ? 'text-yellow-100/70' : 'text-gray-400'}`}>
+                          {isPro
+                            ? "Officially verified Elite Member. Thank you for supporting Neubofy."
+                            : "I use Reality and it is really good! Proud to be part of Neubofy."}
+                        </p>
+                     </div>
+                     <div className="text-right flex flex-col items-end">
+                        <div className="font-outfit text-white text-sm italic opacity-80 mb-0.5">P. Washudev</div>
+                        <p className="text-[8px] text-gray-500 font-mono uppercase">Authorized Signatory</p>
+                     </div>
                   </div>
                 </div>
               </div>

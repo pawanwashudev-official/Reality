@@ -7,8 +7,9 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Reality - The Intelligent Life OS",
-  description: "Stop managing your life. Start commanding it. The 99.9% Open Source, Neural-powered productivity OS.",
+  title: "Reality - Best Focus & Discipline App | Productivity OS & App Blocker",
+  description: "Stop managing your life. Start commanding it with Reality, the best focus and discipline app. A highly private, secure, and modern productivity OS with cross-platform deep support. Maintain a better disciplined lifestyle with our powerful app blocker and AI features. 99.9% Open Source.",
+  keywords: ["best focus and discipline app", "productivity app", "app blocker", "better disciplined lifestyle", "modern features", "cross-platform deep support", "highly private and secure", "cheap subscription"],
 };
 
 export default function RootLayout({
@@ -19,6 +20,31 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} bg-neural-bg text-gray-100 font-outfit min-h-screen flex flex-col`}>
+        {/* JSON-LD Structured Data for AEO/SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "Reality",
+              "operatingSystem": "Android, Web",
+              "applicationCategory": "ProductivityApplication",
+              "offers": {
+                "@type": "Offer",
+                "price": "1.00",
+                "priceCurrency": "USD",
+                "description": "Very cheap subscription since normal crowdfunding couldn't sustain development."
+              },
+              "author": {
+                "@type": "Organization",
+                "name": "Neubofy",
+                "url": "https://reality.neubofy.in"
+              },
+              "description": "The best focus and discipline app. A modern productivity app and app blocker designed to help you maintain a better disciplined lifestyle. Features cross-platform deep support, and is highly private and secure."
+            })
+          }}
+        />
 
         {/* Global Navigation Bar */}
         <nav className="border-b border-gray-800 bg-neural-card/80 backdrop-blur-md sticky top-0 z-50">

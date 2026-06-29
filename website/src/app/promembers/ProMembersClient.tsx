@@ -102,7 +102,7 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
           <div className="absolute inset-0 bg-neural-cyan/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-0"></div>
           <Share2 className="text-neural-cyan relative z-10" size={24} />
           <span className="text-lg font-bold text-white relative z-10 font-outfit tracking-wide group-hover:text-neural-cyan transition-colors">
-            Share Your Reality Journey on Social Media
+            Get Member Card & Share on Social Media
           </span>
           <Sparkles className="absolute top-2 right-2 text-neural-cyan/50 opacity-0 group-hover:opacity-100 transition-opacity z-10" size={16} />
         </button>
