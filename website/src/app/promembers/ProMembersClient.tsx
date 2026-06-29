@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Shield, User, Calendar, Sparkles, ChevronLeft, ChevronRight, Search, SlidersHorizontal } from 'lucide-react';
+import { Shield, User, Calendar, Sparkles, ChevronLeft, ChevronRight, Search, SlidersHorizontal, Share2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import ShareCertificateModal from './ShareCertificateModal';
 
 interface ProMember {
   userId: string;
@@ -19,6 +20,7 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const pageParam = searchParams.get('page');
   const [currentPage, setCurrentPage] = useState(pageParam ? parseInt(pageParam, 10) : 1);
@@ -91,6 +93,21 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
 
   return (
     <>
+      {/* Call to Action: Share */}
+      <section className="py-8 border-b border-gray-800 bg-neural-bg relative z-20 flex justify-center">
+        <button
+          onClick={() => setIsShareModalOpen(true)}
+          className="group relative px-8 py-4 bg-gradient-to-r from-neural-cyan/20 to-blue-500/10 border border-neural-cyan/50 rounded-2xl overflow-hidden hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(0,229,255,0.15)] hover:shadow-[0_0_30px_rgba(0,229,255,0.3)] flex items-center gap-3"
+        >
+          <div className="absolute inset-0 bg-neural-cyan/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-0"></div>
+          <Share2 className="text-neural-cyan relative z-10" size={24} />
+          <span className="text-lg font-bold text-white relative z-10 font-outfit tracking-wide group-hover:text-neural-cyan transition-colors">
+            Share Your Reality Journey on Social Media
+          </span>
+          <Sparkles className="absolute top-2 right-2 text-neural-cyan/50 opacity-0 group-hover:opacity-100 transition-opacity z-10" size={16} />
+        </button>
+      </section>
+
       {/* Control Bar: Search and Sort */}
       <section className="py-6 border-b border-gray-800 bg-neural-card/30 relative z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -182,6 +199,12 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
           )}
         </div>
       </section>
+
+      <ShareCertificateModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        members={initialMembers}
+      />
     </>
   );
 }

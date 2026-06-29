@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "html-to-image": "^1.11.13",
     "lucide-react": "^1.18.0",
     "next": "^14.2.35",
     "qrcode.react": "^4.2.0",
