@@ -22,7 +22,9 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
   const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
+
   const pageParam = searchParams.get('page');
+  const verifyParam = searchParams.get('verify');
   const [currentPage, setCurrentPage] = useState(pageParam ? parseInt(pageParam, 10) : 1);
   const pageSize = 50;
 
@@ -32,7 +34,14 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
     if (page) {
       setCurrentPage(parseInt(page, 10));
     }
+
+    const verify = searchParams.get('verify');
+    if (verify) {
+      setSearchQuery(verify);
+      setIsShareModalOpen(true);
+    }
   }, [searchParams]);
+
 
   // Filter and sort the full dataset on the client.
   const processedMembers = useMemo(() => {
