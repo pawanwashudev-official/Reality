@@ -224,7 +224,7 @@
             
         <activity
             android:name=".ui.activity.PopupAIChatActivity"
-            android:exported="false"
+            android:exported="true"
             android:theme="@style/Theme.Reality.TransparentDialog"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize"

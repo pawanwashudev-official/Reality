@@ -12,6 +12,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.slider.Slider
+import kotlin.math.roundToInt
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.neubofy.reality.BuildConfig
@@ -37,6 +39,8 @@ class RealityProActivity : BaseActivity() {
     private lateinit var cardStep3: MaterialCardView
     private lateinit var btnVerify: MaterialButton
     private lateinit var btnCancel: MaterialButton
+    private lateinit var sliderDuration: Slider
+    private var selectedMonths = 12
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)
@@ -55,6 +59,11 @@ class RealityProActivity : BaseActivity() {
         cardStep3 = findViewById(R.id.card_step3)
         btnVerify = findViewById(R.id.btn_verify)
         btnCancel = findViewById(R.id.btn_cancel)
+        sliderDuration = findViewById(R.id.slider_duration)
+        sliderDuration.addOnChangeListener { _, value, _ ->
+            selectedMonths = value.toInt()
+            updateUpiButtonText()
+        }
 
         findViewById<android.view.View>(R.id.btn_trial_activation)?.setOnClickListener {
             val email = GoogleAuthManager.getUserEmail(this)
@@ -110,6 +119,13 @@ class RealityProActivity : BaseActivity() {
         }
     }
 
+
+
+    private fun updateUpiButtonText() {
+        if (!GoogleAuthManager.isSignedIn(this)) return
+        val price = ((99.0 / 12.0) * selectedMonths).roundToInt()
+        btnPayUpi.text = "UPI (₹$price)"
+    }
 
     private fun showKeySelectionDialog() {
         MaterialAlertDialogBuilder(this)
@@ -357,7 +373,7 @@ class RealityProActivity : BaseActivity() {
                 } else {
                     if (isSignedIn) {
                         btnPayUpi.isEnabled = true
-                        btnPayUpi.text = "UPI (₹99)"
+                        updateUpiButtonText()
                     }
                     cardStep3.alpha = 0.5f
                     btnVerify.isEnabled = false
@@ -376,6 +392,7 @@ class RealityProActivity : BaseActivity() {
 
     private fun showUpiPaymentDialog() {
         val intent = Intent(this, PaymentVerificationActivity::class.java)
+        intent.putExtra("months", selectedMonths)
         startActivity(intent)
     }
 
