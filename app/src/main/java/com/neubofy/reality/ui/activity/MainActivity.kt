@@ -472,9 +472,8 @@ class MainActivity : BaseActivity() {
             if (featureManager.isRealityProEnabled()) {
                 popup.menu.add(0, 7, 2, "☁️ Backup & Restore")
             }
-            popup.menu.add(0, 2, 3, "📖 User Manual")
-            popup.menu.add(0, 3, 4, "📱 About Reality")
-            popup.menu.add(0, 8, 5, "⏰ Sleep & Alarm")
+            popup.menu.add(0, 3, 3, "📱 About Reality")
+            popup.menu.add(0, 8, 4, "⏰ Sleep & Alarm")
             popup.menu.add(0, 1, 6, "🌐 Reality Website")
             
             popup.setOnMenuItemClickListener { item ->
