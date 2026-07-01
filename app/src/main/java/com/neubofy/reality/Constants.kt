@@ -34,7 +34,7 @@ class Constants {
         val packages: ArrayList<String>,
         val isProceedHidden: Boolean = false,
         var repeatDays: List<Int> = listOf(1,2,3,4,5,6,7),
-        var isReminderEnabled: Boolean = true,
+        var isReminderEnabled: Boolean = false,
         // New fields for state tracking
         var lastDismissedDate: Long = 0L,
         var isDndEnabled: Boolean = false

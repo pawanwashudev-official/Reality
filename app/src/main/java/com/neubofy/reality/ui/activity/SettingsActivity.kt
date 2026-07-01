@@ -316,12 +316,24 @@ class SettingsActivity : BaseActivity() {
             }
         }
         switchReminder.setOnCheckedChangeListener { _, isChecked ->
-            featureManager.setReminderEnabled(isChecked)
-            updateUI()
+            if (isChecked && !featureManager.isRealityProVerified() && !featureManager.isTrialActive()) {
+                switchReminder.isChecked = false
+                val intent = Intent(this, RealityProActivity::class.java)
+                startActivity(intent)
+            } else {
+                featureManager.setReminderEnabled(isChecked)
+                updateUI()
+            }
         }
         switchHealth.setOnCheckedChangeListener { _, isChecked ->
-            featureManager.setHealthConnectEnabled(isChecked)
-            updateUI()
+            if (isChecked && !featureManager.isRealityProVerified() && !featureManager.isTrialActive()) {
+                switchHealth.isChecked = false
+                val intent = Intent(this, RealityProActivity::class.java)
+                startActivity(intent)
+            } else {
+                featureManager.setHealthConnectEnabled(isChecked)
+                updateUI()
+            }
         }
 
 
