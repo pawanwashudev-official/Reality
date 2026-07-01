@@ -60,6 +60,7 @@ object ToolRegistry {
         ToolMeta("action_add_task", "Add Task", "Create new Google Task"),
         ToolMeta("action_complete_task", "Complete Task", "Mark a task as done"),
         ToolMeta("action_add_reminder", "Add Reminder", "Set custom reminder"),
+        ToolMeta("action_set_alarm", "Set Alarm", "Set a wakeup alarm"),
         ToolMeta("action_start_focus", "Start Focus", "Begin Focus Mode session"),
         ToolMeta("action_start_tapasya", "Start Tapasya", "Begin Tapasya focus session"),
         ToolMeta("action_add_missed_tapasya", "Add Missed Tapasya", "Record a missed Tapasya session (Reason required)"),
@@ -298,6 +299,16 @@ object ToolRegistry {
                 ),
                 required = listOf("title", "hour")
             )
+            "action_set_alarm" -> createSchema(
+                "action_set_alarm",
+                "Set a new wakeup alarm. Ask for time if not specified.",
+                mapOf(
+                    "title" to "Optional: alarm title",
+                    "hour" to "Required: hour (0-23)",
+                    "minute" to "Optional: minute (0-59, default: 0)"
+                ),
+                required = listOf("hour")
+            )
             "action_start_focus" -> createSchema(
                 "action_start_focus",
                 "Start Focus Mode to block distracting apps.",
@@ -436,6 +447,7 @@ object ToolRegistry {
             "action_add_task", "add_task" -> "action_add_task"
             "action_complete_task", "complete_task" -> "action_complete_task"
             "action_add_reminder", "add_reminder" -> "action_add_reminder"
+            "action_set_alarm", "set_alarm" -> "action_set_alarm"
             "action_start_focus", "start_focus" -> "action_start_focus"
             "action_start_tapasya", "start_tapasya" -> "action_start_tapasya"
             "action_add_missed_tapasya", "add_missed_tapasya" -> "action_add_missed_tapasya"

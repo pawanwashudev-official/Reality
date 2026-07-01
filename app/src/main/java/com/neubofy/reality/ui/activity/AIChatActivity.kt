@@ -47,7 +47,6 @@ open class AIChatActivity : BaseActivity() {
     private var currentSessionId: Long? = null
     
     // State
-    private var isProMode = false
     private var hasTriggeredVoiceAuto = false
     private var isGenerating = false
     private var currentGenerationJob: Job? = null
@@ -79,12 +78,6 @@ open class AIChatActivity : BaseActivity() {
         refreshModels()
         loadSessions()
         
-        // Check for Pro Mode intent (e.g. from Widget)
-        if (intent.getStringExtra("extra_mode") == "pro") {
-            isProMode = true
-            val colorPrimary = MaterialColors.getColor(this, com.google.android.material.R.attr.colorPrimary, android.graphics.Color.BLUE)
-            binding.btnMode.imageTintList = ColorStateList.valueOf(colorPrimary)
-        }
     }
     
     override fun onResume() {
@@ -196,21 +189,6 @@ open class AIChatActivity : BaseActivity() {
             }
         }
 
-        // Mode Toggle (Single Button)
-        binding.btnMode.setOnClickListener {
-            isProMode = !isProMode
-            val context = this
-            val colorOnSurfaceVariant = MaterialColors.getColor(context, com.google.android.material.R.attr.colorOnSurfaceVariant, android.graphics.Color.GRAY)
-            val colorPrimary = MaterialColors.getColor(context, com.google.android.material.R.attr.colorPrimary, android.graphics.Color.BLUE)
-
-            if (isProMode) {
-                binding.btnMode.imageTintList = ColorStateList.valueOf(colorPrimary)
-                Toast.makeText(this, "Pro Mode Activated (Agentic Tools)", Toast.LENGTH_SHORT).show()
-            } else {
-                binding.btnMode.imageTintList = ColorStateList.valueOf(colorOnSurfaceVariant)
-                Toast.makeText(this, "Normal Mode Activated", Toast.LENGTH_SHORT).show()
-            }
-        }
     }
     
     private fun updateSendButtonState(generating: Boolean) {
@@ -265,14 +243,9 @@ open class AIChatActivity : BaseActivity() {
                      }
                      "Gemini streaming not yet supported."
                 } else {
-                     if (isProMode) {
-                         // Pro Mode: Still uses the agent loop (not streaming yet)
-                         withContext(Dispatchers.Main) { binding.tvThinking.text = "Reality is working..." }
-                         runAgentLoop(history, apiKey, model, provider)
-                     } else {
-                         // Standard Mode: NEW STREAMING PATH
-                         processStreamingChat(history, apiKey, model, provider)
-                     }
+                     // Pro Mode / Agentic Loop
+                     withContext(Dispatchers.Main) { binding.tvThinking.text = "Reality is working..." }
+                     runAgentLoop(history, apiKey, model, provider)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -284,12 +257,9 @@ open class AIChatActivity : BaseActivity() {
             withContext(Dispatchers.Main) {
                 binding.tvThinking.visibility = View.GONE
                 
-                // For PRO MODE or GEMINI: Add message after complete (not streaming)
-                if (isProMode || provider == "Gemini") {
-                    adapter.addMessage(ChatMessage(response, false, true))
-                    binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
-                }
-                // For STREAMING: Message already added/updated in processStreamingChat
+                // For Agentic Loop or GEMINI: Add message after complete (not streaming)
+                adapter.addMessage(ChatMessage(response, false, true))
+                binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
                 
                 saveBotMessage(response)
                 
