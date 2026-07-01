@@ -95,9 +95,6 @@ class Constants {
         // App Info Protection (Force Stop / Uninstall page)
         var isAppInfoProtectionEnabled: Boolean = false,
         
-        // Anti-Time Cheat
-        var isTimeCheatProtectionEnabled: Boolean = true,
-        
         // Lock Emergency Access
         var isEmergencyLocked: Boolean = true,
         

@@ -1,11 +1,15 @@
 package com.neubofy.reality.ui.activity
 
 import android.content.Context
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.Gravity
 import android.view.WindowManager
 import android.view.View
 import android.content.Intent
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 import com.neubofy.reality.R
 
 /**
@@ -18,6 +22,13 @@ class PopupAIChatActivity : AIChatActivity() {
         super.onCreate(savedInstanceState)
         if (!com.neubofy.reality.utils.RealityProManager.checkVerification(this)) return
         
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Microphone permission is required for AI Chat.", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, PermissionManagerActivity::class.java))
+            finish()
+            return
+        }
+
         // Configure window for popup style
         window.setLayout(
             WindowManager.LayoutParams.MATCH_PARENT, 

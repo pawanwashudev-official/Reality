@@ -12,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
-import com.google.android.material.slider.Slider
 import kotlin.math.roundToInt
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
@@ -39,7 +38,7 @@ class RealityProActivity : BaseActivity() {
     private lateinit var cardStep3: MaterialCardView
     private lateinit var btnVerify: MaterialButton
     private lateinit var btnCancel: MaterialButton
-    private lateinit var sliderDuration: Slider
+    private lateinit var spinnerDuration: android.widget.AutoCompleteTextView
     private var selectedMonths = 12
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,9 +58,14 @@ class RealityProActivity : BaseActivity() {
         cardStep3 = findViewById(R.id.card_step3)
         btnVerify = findViewById(R.id.btn_verify)
         btnCancel = findViewById(R.id.btn_cancel)
-        sliderDuration = findViewById(R.id.slider_duration)
-        sliderDuration.addOnChangeListener { _, value, _ ->
-            selectedMonths = value.toInt()
+        spinnerDuration = findViewById(R.id.spinner_duration)
+
+        val monthsOptions = (1..36).map { "$it Months" }.toTypedArray()
+        val adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, monthsOptions)
+        spinnerDuration.setAdapter(adapter)
+
+        spinnerDuration.setOnItemClickListener { _, _, position, _ ->
+            selectedMonths = position + 1
             updateUpiButtonText()
         }
 

@@ -66,10 +66,10 @@ class SmartSleepActivity : BaseActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        if (!com.neubofy.reality.utils.RealityProManager.checkVerification(this)) return
         ThemeManager.applyTheme(this)
         ThemeManager.applyAccentTheme(this)
+        super.onCreate(savedInstanceState)
+        if (!com.neubofy.reality.utils.RealityProManager.checkVerification(this)) return
         
         enableEdgeToEdge()
         binding = ActivitySmartSleepBinding.inflate(layoutInflater)
