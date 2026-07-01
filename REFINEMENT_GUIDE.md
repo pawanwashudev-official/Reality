@@ -11,6 +11,7 @@ This document serves as the "source of truth" for any coding agent or developer 
 ## 2. Branding & Official Information
 - **Official Website:** [reality.neubofy.in](https://reality.neubofy.in)
 - **Support Email:** support@neubofy.in
+- **WhatsApp:** @pawanwashudev
 - **Parent Entity:** Neubofy
 
 ## 3. UI/UX Refinement Goals (The "Significant Change")
