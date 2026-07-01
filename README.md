@@ -22,6 +22,8 @@
 
 <p>While advanced features (like Neural Protocol, Gamification, and Google Workspace Sync) require a yearly Reality Pro subscription to support ongoing maintenance, the app remains 100% open source. You can always build the APK yourself from the source code.</p>
 
+<p><strong>Reality Pro Access Warning:</strong> To prevent abuse from users trying to bypass the app blocker via ADB or uninstallations, Reality Pro incorporates strict licensing rules. <strong>If you clear the app data or uninstall the app completely, your Pro access will be locally voided.</strong> However, you will NOT lose your subscription permanently—if you simply log out and log back in with the exact same Google Account you used to purchase it, your access will be fully restored. This helps us maintain an ultra-low subscription cost while preventing malicious bypassing.</p>
+
 [**🌐 Official Website**](https://reality.neubofy.in) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
 
 </div>
