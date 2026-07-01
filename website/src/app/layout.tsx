@@ -75,7 +75,7 @@ export default function RootLayout({
 
         <footer className="bg-neural-card/50 py-12 border-t border-gray-800 mt-20 relative z-10">
             <div className="max-w-4xl mx-auto px-6 text-center">
-                <div className="flex flex-wrap justify-center gap-6 mb-6 font-mono text-sm">
+                <div className="flex flex-wrap justify-center gap-6 mb-8 font-mono text-sm">
                     <Link href="/" className="text-gray-400 hover:text-neural-cyan transition-colors">Home</Link>
                     <Link href="/tapashya" className="text-gray-400 hover:text-neural-cyan transition-colors">Tapasya Web Sync</Link>
                     <Link href="/promembers" className="text-gray-400 hover:text-yellow-500 transition-colors">Pro Members</Link>
@@ -83,6 +83,25 @@ export default function RootLayout({
                     <Link href="/privacypolicy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</Link>
                     <Link href="/termsofservice" className="text-gray-400 hover:text-white transition-colors">Terms of Service</Link>
                 </div>
+
+                <div className="mb-8 border-t border-gray-800/50 pt-8 max-w-2xl mx-auto">
+                    <p className="text-white font-medium mb-4">Need instant support? Contact us directly:</p>
+                    <div className="flex flex-wrap justify-center gap-4 text-sm font-mono">
+                        <a href="mailto:founder@neubofy.in" className="flex items-center gap-2 bg-gray-900/50 px-4 py-2 rounded-full border border-gray-800 hover:border-neural-cyan hover:text-neural-cyan transition-all text-gray-300">
+                            Founder Email
+                        </a>
+                        <a href="mailto:support@neubofy.in" className="flex items-center gap-2 bg-gray-900/50 px-4 py-2 rounded-full border border-gray-800 hover:border-neural-cyan hover:text-neural-cyan transition-all text-gray-300">
+                            Support Email
+                        </a>
+                        <a href="https://wa.me/pawanwashudev" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-gray-900/50 px-4 py-2 rounded-full border border-gray-800 hover:border-green-500 hover:text-green-500 transition-all text-gray-300">
+                            WhatsApp
+                        </a>
+                        <a href="https://t.me/pawanwashudev" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-gray-900/50 px-4 py-2 rounded-full border border-gray-800 hover:border-blue-400 hover:text-blue-400 transition-all text-gray-300">
+                            Telegram
+                        </a>
+                    </div>
+                </div>
+
                 <p className="text-gray-600 text-sm font-mono">&copy; {new Date().getFullYear()} Neubofy. All rights reserved.</p>
             </div>
         </footer>
