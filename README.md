@@ -96,6 +96,7 @@ Reality does not use a basic chatbot. It features a fully Agentic System operati
 
 ### Pro Feature Setup
 1. **Activate Reality Pro**: Go to Settings -> Reality Pro. Sign in with Google and submit a UPI payment (or use instant UPI activation on the same device).
+   * **License Terms & Strict Mode Synergy**: Your Reality Pro license is valid for the duration you purchase. If you uninstall the app or clear its data (bypassing Strict Mode), **your Pro access will be permanently lost and you will need to buy it again**. However, if you legitimately log out and log back in with the same Google Account, your access will be restored. This ensures we can maintain low subscription costs while heavily discouraging bypass attempts.
 2. **Google Workspace Sync**: Go to your Profile page and sign in with Google to grant Calendar, Drive, and Tasks permissions. This allows Reality to log your plans and fetch tasks automatically.
 3. **AI Models**: Navigate to Settings -> AI Settings to enter your API keys (e.g., Groq, OpenAI) and select the models you want to use for the AI Chat and the Nightly Protocol.
 
