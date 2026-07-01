@@ -19,6 +19,7 @@ class AboutActivity : BaseActivity() {
         const val GITHUB_PROFILE = "https://github.com/pawanwashudev-official"
         const val GITHUB_REPO = "https://github.com/pawanwashudev-official/Reality"
         const val TELEGRAM = "https://t.me/pawanwashudev"
+        const val WHATSAPP = "https://wa.me/pawanwashudev"
         const val ARRATAI = "https://arratai.com/@pawanwashudev"
         const val INSTAGRAM = "https://instagram.com/pawan_washudev"
         const val EMAIL = "founder@neubofy.in"
@@ -56,6 +57,9 @@ class AboutActivity : BaseActivity() {
 
         // Telegram
         binding.btnTelegram.setOnClickListener { openUrl(TELEGRAM) }
+
+        // WhatsApp
+        binding.btnWhatsapp.setOnClickListener { openUrl(WHATSAPP) }
 
         // Neubofy Telegram
         // binding.btnNeubofyTelegram.setOnClickListener { openUrl(NEUBOFY_TELEGRAM) }

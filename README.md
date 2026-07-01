@@ -884,6 +884,8 @@ Parsing:        GSON, JSoup, Markwon
 
 - **GitHub**: https://github.com/pawanwashudev-official/Reality
 - **Website**: https://reality.neubofy.in
+- **Email**: founder@neubofy.in
+- **Telegram / WhatsApp**: @pawanwashudev
 - **Issues**: Report bugs on GitHub
 - **Contributing**: PRs welcome for features/improvements
 

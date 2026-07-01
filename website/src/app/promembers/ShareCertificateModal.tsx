@@ -178,6 +178,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
                    </div>
                    <div className="text-right">
                      <p className="text-xs text-neural-cyan">Telegram: @pawanwashudev</p>
+                     <p className="text-xs text-neural-cyan">WhatsApp: @pawanwashudev</p>
                      <p className="text-xs text-gray-400">Email: founder@neubofy.in</p>
                    </div>
                 </div>
@@ -308,7 +309,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
 
               <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-center">
                 <p className="text-sm text-yellow-200 font-medium">
-                  🎁 <strong>Reward:</strong> Share this card on social media! If it gets good reach, send a screenshot to the developer on Telegram <span className="text-white font-mono">@pawanwashudev</span>. You may win a 1-month to 1-year free Pro subscription and early access to unreleased versions of the app!
+                  🎁 <strong>Reward:</strong> Share this card on social media! If it gets good reach, send a screenshot to the developer on Telegram or WhatsApp <span className="text-white font-mono">@pawanwashudev</span>. You may win a 1-month to 1-year free Pro subscription and early access to unreleased versions of the app!
                 </p>
               </div>
 

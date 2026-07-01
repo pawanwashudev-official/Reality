@@ -488,7 +488,7 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Having difficulties or need help? Reach out directly via Email or Telegram."
+                            android:text="Having difficulties or need help? Reach out directly via Email, Telegram, or WhatsApp."
                             android:textColor="?attr/colorOnSurfaceVariant"
                             android:textSize="12sp"
                             android:layout_marginBottom="16dp"/>
@@ -513,6 +513,31 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Email Support"
+                                android:textSize="16sp"
+                                android:textColor="?attr/colorOnSurface"
+                                android:layout_marginStart="16dp"/>
+                        </LinearLayout>
+
+                        <!-- WhatsApp -->
+                        <LinearLayout
+                            android:id="@+id/btn_whatsapp"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?selectableItemBackground"
+                            android:padding="16dp">
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_chat_24"
+                                app:tint="?attr/colorOnSurface"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="WhatsApp Support"
                                 android:textSize="16sp"
                                 android:textColor="?attr/colorOnSurface"
                                 android:layout_marginStart="16dp"/>
