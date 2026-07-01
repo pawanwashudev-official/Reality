@@ -4,7 +4,7 @@
     android:targetCellWidth="1"
     android:targetCellHeight="1"
     android:updatePeriodMillis="1800000"
-    android:previewImage="@drawable/widget_background"
+    android:previewImage="@drawable/baseline_schedule_24"
     android:initialLayout="@layout/widget_plan"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen">

@@ -3,7 +3,7 @@
     android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/rounded_background_widget"
+    android:background="#33000000"
     android:gravity="center"
     android:orientation="vertical"
     android:padding="8dp">
@@ -11,7 +11,7 @@
     <ImageView
         android:layout_width="32dp"
         android:layout_height="32dp"
-        android:src="@drawable/ic_robot_face"
+        android:src="@drawable/baseline_auto_awesome_24"
         android:contentDescription="AI Chat"
         android:tint="#FFFFFF"/>
 

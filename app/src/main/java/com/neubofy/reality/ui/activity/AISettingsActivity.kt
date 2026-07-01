@@ -79,7 +79,7 @@ class AISettingsActivity : BaseActivity() {
                     }
                     nightlyModelsAdapter.removeModel(model)
                     Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show()
-                    updateNightlyModelDisplay() // Refresh to show empty state if needed
+                    lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { updateNightlyModelDisplayAsync() } // Refresh to show empty state if needed
                 }
             }
         )
@@ -120,7 +120,7 @@ class AISettingsActivity : BaseActivity() {
             val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
             prefs.edit().putString("user_introduction", intro).apply()
             Toast.makeText(this, "Personalization saved!", Toast.LENGTH_SHORT).show()
-            updateIntroductionDisplay()
+            loadUserIntroductionAsync()
         }
         
         // Edit introduction
@@ -135,7 +135,7 @@ class AISettingsActivity : BaseActivity() {
             val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
             prefs.edit().remove("user_introduction").apply()
             binding.etUserIntroduction.text?.clear()
-            updateIntroductionDisplay()
+            loadUserIntroductionAsync()
             Toast.makeText(this, "Personalization deleted", Toast.LENGTH_SHORT).show()
         }
         
@@ -461,7 +461,7 @@ class AISettingsActivity : BaseActivity() {
                 cached.add(fullModelName)
                 prefs.edit().putStringSet("cached_models", cached).apply()
             }
-            loadChatModels()
+            lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { loadChatModelsAsync() }
             Toast.makeText(this, "Chat model added!", Toast.LENGTH_SHORT).show()
         } else if (addingForSection == "NIGHTLY") {
             // Add to cached nightly models
@@ -474,7 +474,7 @@ class AISettingsActivity : BaseActivity() {
                 prefs.edit().putString("nightly_model", fullModelName).apply()
             }
             
-            updateNightlyModelDisplay()
+            lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { updateNightlyModelDisplayAsync() }
             Toast.makeText(this, "Nightly model added!", Toast.LENGTH_SHORT).show()
         } else if (addingForSection == "IMAGE") {
             // Add to cached image models
@@ -486,7 +486,7 @@ class AISettingsActivity : BaseActivity() {
             if (prefs.getString("image_model", "").isNullOrEmpty()) {
                 prefs.edit().putString("image_model", fullModelName).apply()
             }
-            loadImageModels()
+            lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { loadImageModelsAsync() }
             Toast.makeText(this, "Image model added!", Toast.LENGTH_SHORT).show()
         } else if (addingForSection == "SEARCH") {
             // Add to cached search engines
@@ -498,28 +498,38 @@ class AISettingsActivity : BaseActivity() {
             if (prefs.getString("search_engine", "").isNullOrEmpty()) {
                 prefs.edit().putString("search_engine", fullModelName).apply()
             }
-            loadSearchEngines()
+            lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { loadSearchEnginesAsync() }
             Toast.makeText(this, "Search engine added!", Toast.LENGTH_SHORT).show()
         }
     }
 
 
     private fun loadData() {
-        loadChatModels()
-        updateNightlyModelDisplay()
-        loadImageModels()
-        loadSearchEngines()
-        loadUserIntroduction()
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val chatModelsTask = launch { loadChatModelsAsync() }
+            val nightlyTask = launch { updateNightlyModelDisplayAsync() }
+            val imageTask = launch { loadImageModelsAsync() }
+            val searchTask = launch { loadSearchEnginesAsync() }
+            val introTask = launch { loadUserIntroductionAsync() }
+
+            chatModelsTask.join()
+            nightlyTask.join()
+            imageTask.join()
+            searchTask.join()
+            introTask.join()
+        }
     }
 
-    private fun loadSearchEngines() {
+    private fun loadSearchEnginesAsync() {
         val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
         val cached = prefs.getStringSet("cached_search_engines", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         val current = prefs.getString("search_engine", "") ?: ""
-        searchEnginesAdapter.updateData(cached.toList().sorted(), current)
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+            searchEnginesAdapter.updateData(cached.toList().sorted(), current)
+        }
     }
 
-    private fun loadImageModels() {
+    private fun loadImageModelsAsync() {
         val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
         val cached = prefs.getStringSet("cached_image_models", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         
@@ -531,22 +541,27 @@ class AISettingsActivity : BaseActivity() {
         }
         
         val current = prefs.getString("image_model", pollinationsPreset)
-        imageModelsAdapter.updateData(cached.toList().sorted(), current ?: pollinationsPreset)
         
         // Ensure default is set in prefs if missing
         if (!prefs.contains("image_model")) {
             prefs.edit().putString("image_model", pollinationsPreset).apply()
         }
+
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+            imageModelsAdapter.updateData(cached.toList().sorted(), current ?: pollinationsPreset)
+        }
     }
 
-    private fun loadChatModels() {
+    private fun loadChatModelsAsync() {
         val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
         val model = prefs.getString("model", "")
         val cachedModels = prefs.getStringSet("cached_models", emptySet())?.sorted() ?: emptyList()
-        chatModelsAdapter.updateData(cachedModels, model ?: "")
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+            chatModelsAdapter.updateData(cachedModels, model ?: "")
+        }
     }
 
-    private fun updateNightlyModelDisplay() {
+    private fun updateNightlyModelDisplayAsync() {
         val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
         var cachedModels = prefs.getStringSet("cached_nightly_models", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         
@@ -569,39 +584,40 @@ class AISettingsActivity : BaseActivity() {
 
         val currentModel = prefs.getString("nightly_model", "")
         
-        if (cachedModels.isEmpty()) {
-            binding.tvNightlyEmpty.visibility = View.VISIBLE
-            binding.recyclerNightlyModels.visibility = View.GONE
-        } else {
-            binding.tvNightlyEmpty.visibility = View.GONE
-            binding.recyclerNightlyModels.visibility = View.VISIBLE
-            nightlyModelsAdapter.updateData(cachedModels.toList().sorted(), currentModel ?: "")
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+            if (cachedModels.isEmpty()) {
+                binding.tvNightlyEmpty.visibility = android.view.View.VISIBLE
+                binding.recyclerNightlyModels.visibility = android.view.View.GONE
+            } else {
+                binding.tvNightlyEmpty.visibility = android.view.View.GONE
+                binding.recyclerNightlyModels.visibility = android.view.View.VISIBLE
+                nightlyModelsAdapter.updateData(cachedModels.toList().sorted(), currentModel ?: "")
+            }
         }
     }
 
-    private fun loadUserIntroduction() {
-        updateIntroductionDisplay()
-    }
-    
-    private fun updateIntroductionDisplay() {
+    private fun loadUserIntroductionAsync() {
         val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
         val intro = prefs.getString("user_introduction", null)
         
-        if (intro.isNullOrEmpty()) {
-            // No saved intro - show form
-            binding.cardSavedIntroduction.visibility = View.GONE
-            binding.layoutIntroductionForm.visibility = View.VISIBLE
-            binding.btnEditIntroduction.visibility = View.GONE
-            binding.etUserIntroduction.text?.clear()
-        } else {
-            // Has saved intro - show saved display
-            binding.cardSavedIntroduction.visibility = View.VISIBLE
-            binding.layoutIntroductionForm.visibility = View.GONE
-            binding.btnEditIntroduction.visibility = View.VISIBLE
-            binding.tvSavedIntroduction.text = intro
-            binding.etUserIntroduction.setText(intro)
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+            if (intro.isNullOrEmpty()) {
+                // No saved intro - show form
+                binding.cardSavedIntroduction.visibility = android.view.View.GONE
+                binding.layoutIntroductionForm.visibility = android.view.View.VISIBLE
+                binding.btnEditIntroduction.visibility = android.view.View.GONE
+                binding.etUserIntroduction.text?.clear()
+            } else {
+                // Has saved intro - show saved display
+                binding.cardSavedIntroduction.visibility = android.view.View.VISIBLE
+                binding.layoutIntroductionForm.visibility = android.view.View.GONE
+                binding.btnEditIntroduction.visibility = android.view.View.VISIBLE
+                binding.tvSavedIntroduction.text = intro
+                binding.etUserIntroduction.setText(intro)
+            }
         }
     }
+
 
     private fun fetchOpenAIModels(apiKey: String): List<String> {
         return simpleGetRequest("https://api.openai.com/v1/models", apiKey)

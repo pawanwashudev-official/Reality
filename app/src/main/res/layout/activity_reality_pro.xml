@@ -304,6 +304,26 @@
                         android:textColor="?attr/colorOnSurface"
                         android:layout_marginBottom="16dp"/>
 
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Select Subscription Duration (Months)"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface"
+                        android:layout_marginBottom="8dp"/>
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/slider_duration"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="1.0"
+                        android:valueTo="36.0"
+                        android:stepSize="1.0"
+                        android:value="12.0"
+                        android:layout_marginBottom="16dp"/>
+
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_pay_upi"
                         android:layout_width="match_parent"
@@ -355,7 +375,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="License Terms: Your Reality Pro license is valid for 1 year from the date of activation. If you uninstall the app or clear its data, your access will be lost locally. However, if you sign back in with the same Google Account on this device, your access will be restored until the year ends."
+                        android:text="License Terms: Your Reality Pro license is valid for the duration you selected. If you clear app data or uninstall the app to bypass restrictions, your Pro access will be PERMANENTLY LOST and you will need to purchase it again. If you legitimately logout and log back in, access is restored. This allows us to keep subscription costs extremely low."
                         android:textSize="12sp"
                         android:lineSpacingMultiplier="1.2"
                         android:textColor="?attr/colorError"

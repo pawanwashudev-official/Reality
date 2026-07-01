@@ -91,11 +91,11 @@ class FeatureManager(private val context: Context) {
         return isValid
     }
 
-    fun setRealityProVerified(verified: Boolean, currentTimeMs: Long = System.currentTimeMillis()) {
+    fun setRealityProVerified(verified: Boolean, currentTimeMs: Long = System.currentTimeMillis(), months: Int = 12) {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
         val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
         if (verified) {
-            val oneYearMs = 365L * 24 * 60 * 60 * 1000
+            val oneYearMs = (365L / 12) * months * 24 * 60 * 60 * 1000
             val verifiedUntil = currentTimeMs + oneYearMs
             prefs.edit().putLong("feature_reality_pro_verified_until_$userId", verifiedUntil).apply()
         } else {

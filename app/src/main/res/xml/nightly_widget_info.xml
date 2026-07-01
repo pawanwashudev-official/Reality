@@ -5,7 +5,7 @@
     android:targetCellWidth="1"
     android:targetCellHeight="1"
     android:updatePeriodMillis="1800000"
-    android:previewImage="@drawable/app_logo"
+    android:previewImage="@drawable/baseline_bedtime_24"
     android:initialLayout="@layout/widget_nightly"
     android:resizeMode="none"
     android:widgetCategory="home_screen">

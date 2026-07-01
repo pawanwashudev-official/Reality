@@ -21,10 +21,14 @@ class PopupAIChatActivity : AIChatActivity() {
         // Configure window for popup style
         window.setLayout(
             WindowManager.LayoutParams.MATCH_PARENT, 
-            (resources.displayMetrics.heightPixels * 0.7).toInt() // 70% height
+            WindowManager.LayoutParams.WRAP_CONTENT
         )
         window.setGravity(Gravity.BOTTOM)
         
+        window.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)
+        window.addFlags(WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH)
+        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+
         setupPopupUI()
     }
     
@@ -35,6 +39,14 @@ class PopupAIChatActivity : AIChatActivity() {
         // Hide menu button in popup mode as drawer might be awkward
         binding.btnMenu.visibility = View.GONE
         
+        // Make the root constraint layout transparent in popup mode so home screen is visible
+        binding.root.getChildAt(0).setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+        // Set backgrounds of bottom container and toolbar to transparent for floating look
+        binding.toolbar.setBackgroundResource(android.R.color.transparent)
+        binding.bottomContainer.setBackgroundResource(android.R.color.transparent)
+        binding.popupHeader.setBackgroundResource(android.R.color.transparent)
+
         binding.btnPopupClose.setOnClickListener {
             finish()
         }

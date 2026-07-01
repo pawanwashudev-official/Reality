@@ -432,6 +432,41 @@ object AgentTools {
                     return "✅ Reminder set for $timeStr: \"$title\""
                 }
                 
+                // SET ALARM
+                "action_set_alarm", "set_alarm" -> {
+                    val title = args.optString("title", "Wake Up")
+                    val hourStr = args.optString("hour", "")
+
+                    if (hourStr.isEmpty()) {
+                        return "What time? Please specify the hour (0-23)."
+                    }
+
+                    val hour = hourStr.toIntOrNull() ?: return "Invalid hour. Please use 0-23."
+                    val minute = args.optString("minute", "0").toIntOrNull() ?: 0
+
+                    val prefs = SavedPreferencesLoader(context)
+                    val alarms = prefs.loadWakeupAlarms().toMutableList()
+
+                    val newAlarm = com.neubofy.reality.data.model.WakeupAlarm(
+                        id = System.currentTimeMillis().toString(),
+                        title = title,
+                        hour = hour,
+                        minute = minute,
+                        isEnabled = true,
+                        repeatDays = emptyList(), // One-time alarm
+                        ringtoneUri = null, // Default
+                        vibrationEnabled = true
+                    )
+
+                    alarms.add(newAlarm)
+                    prefs.saveWakeupAlarms(alarms)
+
+                    com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(context)
+
+                    val timeStr = String.format("%02d:%02d", hour, minute)
+                    return "✅ Alarm set for $timeStr: \"$title\""
+                }
+
                 // START FOCUS MODE
                 "action_start_focus", "start_focus" -> {
                     val durationMins = args.optInt("duration_mins", 25)
