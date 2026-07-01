@@ -501,16 +501,20 @@ class StrictModeActivity : BaseActivity() {
     }
     
     private fun showPasswordSetupDialog() {
-        val input = EditText(this).apply {
+        val input = com.google.android.material.textfield.TextInputEditText(this).apply {
             hint = "Create Password (min 4 characters)"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        val layout = com.google.android.material.textfield.TextInputLayout(this).apply {
             setPadding(48, 32, 48, 32)
+            endIconMode = com.google.android.material.textfield.TextInputLayout.END_ICON_PASSWORD_TOGGLE
+            addView(input)
         }
         
         MaterialAlertDialogBuilder(this)
             .setTitle("Set Password")
             .setMessage("This password will be required to deactivate Strict Mode.")
-            .setView(input)
+            .setView(layout)
             .setPositiveButton("Activate") { _, _ ->
                 val password = input.text.toString()
                 if (password.length >= 4) {
@@ -553,15 +557,14 @@ class StrictModeActivity : BaseActivity() {
             }
             Constants.StrictModeData.MODE_PASSWORD -> {
                 // Check if forgot password cooldown is active
-                if (strictData.forgotPasswordTimerEndTime > System.currentTimeMillis()) {
+                if (strictData.forgotPasswordTimerEndTime > 0) {
                     val remaining = strictData.forgotPasswordTimerEndTime - System.currentTimeMillis()
-                    val hours = TimeUnit.MILLISECONDS.toHours(remaining)
-                    val mins = TimeUnit.MILLISECONDS.toMinutes(remaining) % 60
-                    
                     if (remaining <= 0) {
                         // Cooldown finished
                         deactivateStrictMode()
                     } else {
+                        val hours = TimeUnit.MILLISECONDS.toHours(remaining)
+                        val mins = TimeUnit.MILLISECONDS.toMinutes(remaining) % 60
                         Toast.makeText(this, "Forgot password cooldown: ${hours}h ${mins}m remaining", Toast.LENGTH_SHORT).show()
                     }
                 } else {
@@ -581,18 +584,22 @@ class StrictModeActivity : BaseActivity() {
     }
     
     private fun showPasswordVerifyDialog() {
-        val input = EditText(this).apply {
+        val input = com.google.android.material.textfield.TextInputEditText(this).apply {
             hint = "Enter Password"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        val layout = com.google.android.material.textfield.TextInputLayout(this).apply {
             setPadding(48, 32, 48, 32)
+            endIconMode = com.google.android.material.textfield.TextInputLayout.END_ICON_PASSWORD_TOGGLE
+            addView(input)
         }
         
         MaterialAlertDialogBuilder(this)
             .setTitle("Enter Password")
-            .setView(input)
+            .setView(layout)
             .setPositiveButton("Unlock") { _, _ ->
                 val password = input.text.toString()
-                if (hashPassword(password) == strictData.passwordHash) {
+                if (com.neubofy.reality.utils.SecurityUtils.verifyPassword(password, strictData.passwordHash)) {
                     deactivateStrictMode()
                 } else {
                     Toast.makeText(this, "Incorrect Password", Toast.LENGTH_SHORT).show()
