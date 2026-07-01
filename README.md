@@ -42,6 +42,51 @@
 
 ---
 
+## 🌟 CORE FEATURES
+
+### 1. 🛡️ Unbypassable App Blocking & Strict Mode
+**What it is:** A military-grade app blocking system that enforces digital boundaries.
+**How it works:** It uses an `AccessibilityService` combined with a `DevicePolicyManager` (Device Admin) to monitor the active window and instantly intercept target apps before they can fully load.
+**Why it's the best:** Normal app blockers can be uninstalled, force-stopped, or disabled in settings. Reality intercepts and prevents access to the system settings pages (via O(1) page detection) and blocks uninstall attempts via ADB or standard package manager.
+**Strict Mode Protection:** Strict Mode (`StrictModeActivity.kt`) makes the block practically impossible to bypass. It offers three friction modes:
+- *Timer Mode:* Locked until a specific timer ends. No exceptions.
+- *Password Mode:* Requires a randomly generated or custom password to disable.
+- *Forgot Password Cooldown:* If the password is forgotten, it enforces a mandatory 24-hour waiting period before deactivation is allowed.
+
+### 2. 🤖 Neural Protocol (Autonomous AI Agent)
+**What it is:** An autonomous AI Agent that manages your day, integrated directly into your workflow. It's not a standard chatbot; it's a proactive life manager.
+**How it works:** Reality uses a local Model Context Protocol (MCP) architecture. The AI tool discovery and execution are handled locally (`AgentTools.kt`, `ToolRegistry.kt`).
+- **The Ritual (`NightlyAIHelper.kt`):** A nightly 4-phase review and planning ritual that analyzes your day's app usage, steps, and focus sessions, then uses the AI to draft tomorrow's plan and syncs it to Google Tasks/Calendar.
+**Data Handling & Privacy:** Everything runs entirely on-device using your personal OpenAI API key (or a free default tier). No data is sent to our servers. Your reflection data and AI contexts are stored in an encrypted local Room database.
+**Why it's the best:** It bridges the gap between passive tracking and active coaching, making the AI act like a strict personal assistant that knows exactly what apps you used and how you spent your time.
+
+### 3. ⚡ Neural Focus (Tapashya)
+**What it is:** A "Pomodoro on steroids" deep work session tracker.
+**How it works:** Users start a Tapashya session (`TapasyaActivity.kt`). The system enforces focus by engaging strict app blocking during the session.
+**Why it's unique:** It is not just a stopwatch. It deeply integrates with Google Calendar to automatically block time. Furthermore, it features **Cross-Platform QR Sync**: You can start a session on the Next.js web app (Neural Focus Web), and sync the offline session data back to your phone by simply scanning a QR code (`QRScannerActivity.kt`).
+
+### 4. 💬 Inbuilt AI Assistant (Ask Reality)
+**What it is:** A Siri-like, floating AI overlay that permits simultaneous interaction with the home screen or other apps.
+**How it works:** It acts as an execution engine using the MCP architecture, meaning it can autonomously read your tasks, control app blocks, modify your schedule, or record completed Tapashya sessions (`PopupAIChatActivity.kt`, `AIChatActivity.kt`).
+**Data Handling:** Uses a sliding-window `ConversationMemoryManager` with token counting and auto-summarization to maintain context efficiently. Persistent facts can be saved via a `save_memory` tool. Currently supports OpenAI models via API keys.
+**Why it's different:** It has actual agency over your device's productivity state. Instead of just answering questions, you can tell it to "Block Instagram for 2 hours" and it will autonomously configure the App Blocker.
+
+### 5. ⏰ Reminder System
+**What it is:** An intelligent local notification and interruption system.
+**How it works:** Integrated with Android's `AlarmManager` and `WorkManager` (`ReminderOverlayManager.kt`), it pops up full-screen, non-dismissible (without interaction) overlays.
+**Use Case:** It reminds you of your scheduled focus blocks, nightly reflections, or custom tasks, ensuring that passive notifications aren't simply swiped away.
+
+### 6. 🛌 Sleep & Alarm System
+**What it is:** A comprehensive wake-up and sleep enforcement system, designed to break the "snooze" habit.
+**How it works:** The Wakeup Alarm (`WakeupAlarmRingingActivity.kt`) requires the user to solve in-place math problems directly on the ringing screen to dismiss it. The auto-snooze timeout is extremely short (90 seconds).
+**Why it's unique:** Unlike a standard alarm, if you fail to dismiss it in time, it logs a failure. The math difficulty scales dynamically based on wake time. It completely bypasses the standard "swipe to turn off" mechanic, forcing cognitive engagement to stop the ringing.
+
+### 7. 📊 Health Dashboard
+**What it is:** A local health metrics visualization interface.
+**Why it's unique:** It doesn't just show steps or sleep data; it correlates your health data (via Android Health Connect) with your productivity XP, focus sessions, and AI feedback. The AI analyzes your physical activity against your screen time to provide holistic daily coaching.
+
+---
+
 ## 🏆 COMPLETE FEATURE MATRIX
 
 ### 1. **FOCUS & APP BLOCKING** 🚫

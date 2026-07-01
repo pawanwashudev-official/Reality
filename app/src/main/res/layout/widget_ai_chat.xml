@@ -3,17 +3,19 @@
     android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#33000000"
+    android:background="@drawable/widget_background"
     android:gravity="center"
     android:orientation="vertical"
     android:padding="8dp">
 
     <ImageView
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:src="@drawable/baseline_auto_awesome_24"
-        android:contentDescription="AI Chat"
-        android:tint="#FFFFFF"/>
+        android:contentDescription="Ask Reality"
+        android:background="@drawable/circle_background_dark"
+        android:padding="10dp"
+        android:tint="#00E5FF"/>
 
     <TextView
         android:layout_width="wrap_content"
@@ -22,6 +24,11 @@
         android:textColor="#FFFFFF"
         android:textSize="12sp"
         android:layout_marginTop="4dp"
-        android:textStyle="bold"/>
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:shadowColor="#000000"
+        android:shadowDx="1"
+        android:shadowDy="1"
+        android:shadowRadius="2" />
 
 </LinearLayout>

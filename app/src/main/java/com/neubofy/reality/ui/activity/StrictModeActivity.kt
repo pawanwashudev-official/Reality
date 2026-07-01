@@ -200,6 +200,10 @@ class StrictModeActivity : BaseActivity() {
                         binding.tvTimerRemaining.visibility = View.VISIBLE
                         binding.btnForgotPassword.visibility = View.GONE
                         startForgotPasswordCountdown()
+                    } else if (strictData.forgotPasswordTimerEndTime > 0 && strictData.forgotPasswordTimerEndTime <= System.currentTimeMillis()) {
+                        // Cooldown finished, unlock automatically
+                        deactivateStrictMode()
+                        return // Exit function as UI will be updated by deactivateStrictMode
                     } else {
                         binding.tvStatusDesc.text = "Enter password to deactivate"
                         binding.tvTimerRemaining.visibility = View.GONE
@@ -564,6 +568,8 @@ class StrictModeActivity : BaseActivity() {
                     } else {
                         Toast.makeText(this, "Forgot password cooldown: ${hours}h ${mins}m remaining", Toast.LENGTH_SHORT).show()
                     }
+                } else if (strictData.forgotPasswordTimerEndTime > 0 && strictData.forgotPasswordTimerEndTime <= System.currentTimeMillis()) {
+                    deactivateStrictMode()
                 } else {
                     showPasswordVerifyDialog()
                 }
