@@ -48,6 +48,7 @@ class HealthDashboardActivity : BaseActivity() {
         ThemeManager.applyTheme(this)
         ThemeManager.applyAccentTheme(this)
         super.onCreate(savedInstanceState)
+        if (!com.neubofy.reality.utils.RealityProManager.checkVerification(this)) return
         binding = ActivityHealthDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
 

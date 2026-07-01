@@ -38,7 +38,7 @@ object SettingsBox {
     // === STRICT MODE FLAGS ===
     @Volatile var isAccessibilityProtectionEnabled = false
     // NOTE: isAppInfoProtectionEnabled REMOVED - feature disabled
-    @Volatile var isTimeCheatProtectionEnabled = false
+    // NOTE: isTimeCheatProtectionEnabled REMOVED - feature disabled
     @Volatile var isAntiUninstallEnabled = false
     
     // === DATA CLASSES ===
@@ -107,7 +107,6 @@ object SettingsBox {
             
             // Update protection flags
             isAccessibilityProtectionEnabled = strictData.isEnabled && strictData.isAccessibilityProtectionEnabled
-            isTimeCheatProtectionEnabled = strictData.isEnabled && strictData.isTimeCheatProtectionEnabled
             isAntiUninstallEnabled = strictData.isEnabled && strictData.isAntiUninstallEnabled
             
             val newBox = mutableMapOf<String, MutableList<BlockedPageConfig>>()
@@ -152,23 +151,6 @@ object SettingsBox {
                 requiresContentCheck = hasKeywords,  // Only check if user added keywords
                 contentKeywords = learnedPages.accessibilityKeywords,
                 blockReason = "Accessibility Protection"
-            )
-            box.getOrPut(config.getKey()) { mutableListOf() }.add(config)
-        }
-        
-        // === TIME SETTINGS PAGE ===
-        if (learnedPages.timeSettingsPageClass.isNotEmpty() && isTimeCheatProtectionEnabled) {
-            val className = learnedPages.timeSettingsPageClass.substringAfterLast(".")
-            val packageName = learnedPages.timeSettingsPagePackage.ifEmpty { defaultPackage }
-            
-            val hasKeywords = learnedPages.timeSettingsKeywords.isNotEmpty()
-            val config = BlockedPageConfig(
-                pageType = Constants.PageType.TIME_SETTINGS,
-                packageName = packageName,
-                className = className,
-                requiresContentCheck = hasKeywords,
-                contentKeywords = learnedPages.timeSettingsKeywords,
-                blockReason = "Time Settings Protection"
             )
             box.getOrPut(config.getKey()) { mutableListOf() }.add(config)
         }
@@ -232,7 +214,7 @@ object SettingsBox {
         return when (pageType) {
             Constants.PageType.ACCESSIBILITY -> isAccessibilityProtectionEnabled
             Constants.PageType.APP_INFO -> false // App Info protection DISABLED
-            Constants.PageType.TIME_SETTINGS -> isTimeCheatProtectionEnabled
+            Constants.PageType.TIME_SETTINGS -> false // Time Settings protection DISABLED
             Constants.PageType.DEVICE_ADMIN -> isAntiUninstallEnabled
             Constants.PageType.DEVELOPER_OPTIONS -> false // Disabled with App Info
         }
@@ -380,7 +362,7 @@ object SettingsBox {
     fun isAnyProtectionActive(): Boolean {
         return isAccessibilityProtectionEnabled || 
                // App Info protection DISABLED
-               isTimeCheatProtectionEnabled || 
+               // Time Settings protection DISABLED
                isAntiUninstallEnabled
     }
     

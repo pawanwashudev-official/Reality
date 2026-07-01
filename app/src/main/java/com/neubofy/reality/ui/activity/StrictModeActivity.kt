@@ -60,7 +60,9 @@ class StrictModeActivity : BaseActivity() {
         
         loadSettings()
         attachListeners()
-        updateUIState()
+        lifecycleScope.launch(Dispatchers.Main) {
+            updateUIState()
+        }
     }
 
     private fun setupToolbar() {
@@ -77,7 +79,9 @@ class StrictModeActivity : BaseActivity() {
         learnedPages = prefsLoader.getLearnedSettingsPages()
         updateAntiUninstallSwitch()
         updateLearningStatus()
-        updateUIState()
+        lifecycleScope.launch(Dispatchers.Main) {
+            updateUIState()
+        }
     }
     
     override fun onDestroy() {
@@ -97,7 +101,6 @@ class StrictModeActivity : BaseActivity() {
         binding.switchCalendarLock.isChecked = strictData.isCalendarLocked
         binding.switchNightlyLimitLock.isChecked = strictData.isNightlyLimitLocked
         binding.switchGamificationLock.isChecked = strictData.isGamificationLocked
-        binding.switchAntiTimeCheat.isChecked = strictData.isTimeCheatProtectionEnabled
         binding.switchAccessibilityProtection.isChecked = strictData.isAccessibilityProtectionEnabled
         binding.switchAntiUninstall.isChecked = strictData.isAntiUninstallEnabled
         
@@ -105,24 +108,6 @@ class StrictModeActivity : BaseActivity() {
     }
     
     private fun updateLearningStatus() {
-        // Time Page Status
-        if (learnedPages.timeSettingsPageClass.isNotEmpty()) {
-            binding.tvTimeCheatStatus.text = "✓ Page: ${learnedPages.timeSettingsPageClass.substringAfterLast(".")}"
-            binding.tvTimeCheatStatus.setTextColor(getColor(android.R.color.holo_green_dark))
-            
-            // Show keywords if any
-            if (learnedPages.timeSettingsKeywords.isNotEmpty()) {
-                binding.tvTimeKeywordsStatus.text = "🔑 ${learnedPages.timeSettingsKeywords.joinToString(", ")}"
-                binding.tvTimeKeywordsStatus.visibility = android.view.View.VISIBLE
-            } else {
-                binding.tvTimeKeywordsStatus.visibility = android.view.View.GONE
-            }
-        } else {
-            binding.tvTimeCheatStatus.text = "⚠️ Tap to learn page"
-            binding.tvTimeCheatStatus.setTextColor(getColor(android.R.color.holo_orange_dark))
-            binding.tvTimeKeywordsStatus.visibility = android.view.View.GONE
-        }
-        
         // Accessibility Page Status
         if (learnedPages.accessibilityPageClass.isNotEmpty()) {
             binding.tvAccessibilityStatus.text = "✓ Page: ${learnedPages.accessibilityPageClass.substringAfterLast(".")}"
@@ -169,7 +154,7 @@ class StrictModeActivity : BaseActivity() {
         }
     }
     
-    private fun updateUIState() {
+    private suspend fun updateUIState() {
         countdownTimer?.cancel()
         
         if (strictData.isEnabled) {
@@ -194,8 +179,9 @@ class StrictModeActivity : BaseActivity() {
                     startTimerCountdown()
                 }
                 Constants.StrictModeData.MODE_PASSWORD -> {
+                    val currentTime = com.neubofy.reality.utils.InternetTime.getTime()
                     // Check if forgot password timer is active
-                    if (strictData.forgotPasswordTimerEndTime > System.currentTimeMillis()) {
+                    if (strictData.forgotPasswordTimerEndTime > currentTime) {
                         binding.tvStatusDesc.text = "Forgot password cooldown active"
                         binding.tvTimerRemaining.visibility = View.VISIBLE
                         binding.btnForgotPassword.visibility = View.GONE
@@ -255,7 +241,6 @@ class StrictModeActivity : BaseActivity() {
         binding.switchCalendarLock.isEnabled = true
         binding.switchNightlyLimitLock.isEnabled = true
         binding.switchGamificationLock.isEnabled = true
-        binding.switchAntiTimeCheat.isEnabled = true
         binding.switchAntiUninstall.isEnabled = true
     }
     
@@ -276,7 +261,6 @@ class StrictModeActivity : BaseActivity() {
             binding.switchGamificationLock to { v: Boolean -> strictData.isGamificationLocked = v },
             
             // Page blocking
-            binding.switchAntiTimeCheat to { v: Boolean -> strictData.isTimeCheatProtectionEnabled = v },
             binding.switchAccessibilityProtection to { v: Boolean -> strictData.isAccessibilityProtectionEnabled = v },
             binding.switchAntiUninstall to { v: Boolean -> strictData.isAntiUninstallEnabled = v }
         )
@@ -293,7 +277,6 @@ class StrictModeActivity : BaseActivity() {
                     // Trying to turn ON - check if learning is required but not done
                     val missingLearnData = when (switchView) {
                         // Page protection switches - require learned page class
-                        binding.switchAntiTimeCheat -> learnedPages.timeSettingsPageClass.isEmpty()
                         binding.switchAccessibilityProtection -> learnedPages.accessibilityPageClass.isEmpty()
                         binding.switchAntiUninstall -> learnedPages.deviceAdminPageClass.isEmpty()
                         else -> false
@@ -306,7 +289,6 @@ class StrictModeActivity : BaseActivity() {
                         
                         // Auto-open learning dialog
                         when (switchView) {
-                            binding.switchAntiTimeCheat -> showLearnTimeSettingsDialog()
                             binding.switchAccessibilityProtection -> showLearnAccessibilityDialog()
                             binding.switchAntiUninstall -> showLearnAdminDialog()
                         }
@@ -326,25 +308,6 @@ class StrictModeActivity : BaseActivity() {
         // Grayscale Switch REMOVED - feature requires ADB
         
         // Learning status tap - show manage dialog (only if Strict Mode OFF)
-        binding.tvTimeCheatStatus.setOnClickListener {
-            if (strictData.isEnabled) {
-                Toast.makeText(this, "Cannot modify learning while Strict Mode is active!", Toast.LENGTH_SHORT).show()
-            } else {
-                showLearningManageDialog(
-                    Constants.PageType.TIME_SETTINGS,
-                    learnedPages.timeSettingsPageClass,
-                    { showLearnTimeSettingsDialog() },
-                    { 
-                        learnedPages.timeSettingsPageClass = ""
-                        prefsLoader.saveLearnedSettingsPages(learnedPages)
-                        binding.switchAntiTimeCheat.isChecked = false
-                        strictData.isTimeCheatProtectionEnabled = false
-                        saveSettings()
-                        updateLearningStatus()
-                    }
-                )
-            }
-        }
         binding.tvAccessibilityStatus.setOnClickListener {
             if (strictData.isEnabled) {
                 Toast.makeText(this, "Cannot modify learning while Strict Mode is active!", Toast.LENGTH_SHORT).show()
@@ -457,7 +420,9 @@ class StrictModeActivity : BaseActivity() {
         strictData.timerEndTime = 0
         strictData.passwordHash = ""
         saveSettings()
-        updateUIState()
+        lifecycleScope.launch(Dispatchers.Main) {
+            updateUIState()
+        }
         Toast.makeText(this, "Strict Mode Activated!", Toast.LENGTH_SHORT).show()
     }
     
@@ -488,13 +453,15 @@ class StrictModeActivity : BaseActivity() {
                 
                 val durationMs = (days * 24L * 60L * 60L * 1000L) + (hours * 60L * 60L * 1000L)
                 
-                strictData.modeType = Constants.StrictModeData.MODE_TIMER
-                strictData.timerEndTime = System.currentTimeMillis() + durationMs
-                strictData.isEnabled = true
-                strictData.passwordHash = ""
-                saveSettings()
-                updateUIState()
-                Toast.makeText(this, "Strict Mode Activated for ${days}d ${hours}h!", Toast.LENGTH_SHORT).show()
+                lifecycleScope.launch(Dispatchers.Main) {
+                    strictData.modeType = Constants.StrictModeData.MODE_TIMER
+                    strictData.timerEndTime = com.neubofy.reality.utils.InternetTime.getTime() + durationMs
+                    strictData.isEnabled = true
+                    strictData.passwordHash = ""
+                    saveSettings()
+                    updateUIState()
+                    Toast.makeText(this@StrictModeActivity, "Strict Mode Activated for ${days}d ${hours}h!", Toast.LENGTH_SHORT).show()
+                }
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -524,7 +491,9 @@ class StrictModeActivity : BaseActivity() {
                     strictData.timerEndTime = 0
                     strictData.forgotPasswordTimerEndTime = 0
                     saveSettings()
-                    updateUIState()
+                    lifecycleScope.launch(Dispatchers.Main) {
+                        updateUIState()
+                    }
                     Toast.makeText(this, "Strict Mode Activated with Password!", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this, "Password must be at least 4 characters", Toast.LENGTH_SHORT).show()
@@ -537,38 +506,42 @@ class StrictModeActivity : BaseActivity() {
     // ============== DEACTIVATION FLOW ==============
     
     private fun handleDeactivation() {
-        when (strictData.modeType) {
-            Constants.StrictModeData.MODE_NONE -> {
-                // Instant deactivation
-                showDeactivationConfirmation {
-                    deactivateStrictMode()
+        lifecycleScope.launch(Dispatchers.Main) {
+            when (strictData.modeType) {
+                Constants.StrictModeData.MODE_NONE -> {
+                    // Instant deactivation
+                    showDeactivationConfirmation {
+                        deactivateStrictMode()
+                    }
                 }
-            }
-            Constants.StrictModeData.MODE_TIMER -> {
-                // Check if timer expired
-                if (System.currentTimeMillis() >= strictData.timerEndTime) {
-                    deactivateStrictMode()
-                } else {
-                    val remaining = strictData.timerEndTime - System.currentTimeMillis()
-                    val hours = TimeUnit.MILLISECONDS.toHours(remaining)
-                    val mins = TimeUnit.MILLISECONDS.toMinutes(remaining) % 60
-                    Toast.makeText(this, "Timer still active: ${hours}h ${mins}m remaining", Toast.LENGTH_SHORT).show()
-                }
-            }
-            Constants.StrictModeData.MODE_PASSWORD -> {
-                // Check if forgot password cooldown is active
-                if (strictData.forgotPasswordTimerEndTime > 0) {
-                    val remaining = strictData.forgotPasswordTimerEndTime - System.currentTimeMillis()
-                    if (remaining <= 0) {
-                        // Cooldown finished
+                Constants.StrictModeData.MODE_TIMER -> {
+                    // Check if timer expired
+                    val currentTime = com.neubofy.reality.utils.InternetTime.getTime()
+                    if (currentTime >= strictData.timerEndTime) {
                         deactivateStrictMode()
                     } else {
+                        val remaining = strictData.timerEndTime - currentTime
                         val hours = TimeUnit.MILLISECONDS.toHours(remaining)
                         val mins = TimeUnit.MILLISECONDS.toMinutes(remaining) % 60
-                        Toast.makeText(this, "Forgot password cooldown: ${hours}h ${mins}m remaining", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@StrictModeActivity, "Timer still active: ${hours}h ${mins}m remaining", Toast.LENGTH_SHORT).show()
                     }
-                } else {
-                    showPasswordVerifyDialog()
+                }
+                Constants.StrictModeData.MODE_PASSWORD -> {
+                    // Check if forgot password cooldown is active
+                    val currentTime = com.neubofy.reality.utils.InternetTime.getTime()
+                    if (strictData.forgotPasswordTimerEndTime > 0) {
+                        val remaining = strictData.forgotPasswordTimerEndTime - currentTime
+                        if (remaining <= 0) {
+                            // Cooldown finished
+                            deactivateStrictMode()
+                        } else {
+                            val hours = TimeUnit.MILLISECONDS.toHours(remaining)
+                            val mins = TimeUnit.MILLISECONDS.toMinutes(remaining) % 60
+                            Toast.makeText(this@StrictModeActivity, "Forgot password cooldown: ${hours}h ${mins}m remaining", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        showPasswordVerifyDialog()
+                    }
                 }
             }
         }
@@ -614,10 +587,12 @@ class StrictModeActivity : BaseActivity() {
             .setTitle("Forgot Password?")
             .setMessage("This will start a 24-hour waiting period. After 24 hours, Strict Mode will be automatically deactivated.\n\nAre you sure?")
             .setPositiveButton("Start 24hr Wait") { _, _ ->
-                strictData.forgotPasswordTimerEndTime = System.currentTimeMillis() + FORGOT_PASSWORD_WAIT_MS
-                saveSettings()
-                updateUIState()
-                Toast.makeText(this, "24-hour cooldown started", Toast.LENGTH_SHORT).show()
+                lifecycleScope.launch(Dispatchers.Main) {
+                    strictData.forgotPasswordTimerEndTime = com.neubofy.reality.utils.InternetTime.getTime() + FORGOT_PASSWORD_WAIT_MS
+                    saveSettings()
+                    updateUIState()
+                    Toast.makeText(this@StrictModeActivity, "24-hour cooldown started", Toast.LENGTH_SHORT).show()
+                }
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -629,16 +604,19 @@ class StrictModeActivity : BaseActivity() {
         strictData.forgotPasswordTimerEndTime = 0
         // Keep passwordHash for next activation if user wants
         saveSettings()
-        updateUIState()
+        lifecycleScope.launch(Dispatchers.Main) {
+            updateUIState()
+        }
         Toast.makeText(this, "Strict Mode Deactivated", Toast.LENGTH_SHORT).show()
     }
     
     // ============== TIMER COUNTDOWN ==============
     
-    private fun startTimerCountdown() {
+    private suspend fun startTimerCountdown() {
         countdownTimer?.cancel()
         
-        val remaining = strictData.timerEndTime - System.currentTimeMillis()
+        val currentTime = com.neubofy.reality.utils.InternetTime.getTime()
+        var remaining = strictData.timerEndTime - currentTime
         if (remaining <= 0) {
             deactivateStrictMode()
             return
@@ -664,10 +642,11 @@ class StrictModeActivity : BaseActivity() {
         }.start()
     }
     
-    private fun startForgotPasswordCountdown() {
+    private suspend fun startForgotPasswordCountdown() {
         countdownTimer?.cancel()
         
-        val remaining = strictData.forgotPasswordTimerEndTime - System.currentTimeMillis()
+        val currentTime = com.neubofy.reality.utils.InternetTime.getTime()
+        var remaining = strictData.forgotPasswordTimerEndTime - currentTime
         if (remaining <= 0) {
             deactivateStrictMode()
             return
@@ -796,15 +775,6 @@ class StrictModeActivity : BaseActivity() {
         )
     }
     
-    private fun showLearnTimeSettingsDialog() {
-        showLearnPageDialog(
-            pageType = Constants.PageType.TIME_SETTINGS,
-            title = "Learn Time Settings Page",
-            description = "Let us learn your device's Date & Time settings page to prevent time cheating.",
-            settingsAction = android.provider.Settings.ACTION_DATE_SETTINGS
-        )
-    }
-    
     // showLearnAppInfoDialog REMOVED - App Info protection disabled
     
     private fun showLearningManageDialog(
@@ -821,7 +791,6 @@ class StrictModeActivity : BaseActivity() {
         
         // Check if toggle is ON - delete not allowed
         val isToggleOn = when (pageType) {
-            Constants.PageType.TIME_SETTINGS -> strictData.isTimeCheatProtectionEnabled
             Constants.PageType.ACCESSIBILITY -> strictData.isAccessibilityProtectionEnabled
             Constants.PageType.APP_INFO -> false // App Info REMOVED
             Constants.PageType.DEVICE_ADMIN -> strictData.isAntiUninstallEnabled
@@ -830,7 +799,6 @@ class StrictModeActivity : BaseActivity() {
         
         // Get current keywords
         val currentKeywords = when (pageType) {
-            Constants.PageType.TIME_SETTINGS -> learnedPages.timeSettingsKeywords
             Constants.PageType.ACCESSIBILITY -> learnedPages.accessibilityKeywords
             Constants.PageType.DEVICE_ADMIN -> learnedPages.deviceAdminKeywords
             else -> mutableListOf()

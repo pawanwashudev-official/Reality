@@ -69,6 +69,7 @@ class SmartSleepActivity : BaseActivity() {
         ThemeManager.applyTheme(this)
         ThemeManager.applyAccentTheme(this)
         super.onCreate(savedInstanceState)
+        if (!com.neubofy.reality.utils.RealityProManager.checkVerification(this)) return
         
         enableEdgeToEdge()
         binding = ActivitySmartSleepBinding.inflate(layoutInflater)

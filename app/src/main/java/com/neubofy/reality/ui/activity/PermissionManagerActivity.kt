@@ -167,7 +167,21 @@ class PermissionManagerActivity : BaseActivity() {
 
         // Conditional Permissions based on Feature Manager
 
-        // 7. Health Connect (If Enabled)
+        // 7. AI Voice Chat (If Enabled)
+        if (featureManager.isAiEnabled()) {
+            val granted = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+            addPermissionCard(
+                title = "Microphone",
+                desc = "Required for AI voice interactions.",
+                iconRes = R.drawable.baseline_mic_24,
+                isGranted = granted,
+                onClick = {
+                    if (!granted) permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            )
+        }
+
+        // 8. Health Connect (If Enabled)
         if (featureManager.isHealthConnectEnabled()) {
             addPermissionCard(
                 title = "Health Connect",
@@ -182,7 +196,7 @@ class PermissionManagerActivity : BaseActivity() {
             )
         }
 
-        // 8. Exact Alarm (If Reminders/Alarms Enabled)
+        // 9. Exact Alarm (If Reminders/Alarms Enabled)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && featureManager.isReminderEnabled()) {
             val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
             addPermissionCard(
@@ -197,7 +211,7 @@ class PermissionManagerActivity : BaseActivity() {
             )
         }
 
-        // 9. Calendar (Pro/Workspace)
+        // 10. Calendar (Pro/Workspace)
         if (featureManager.isRealityProEnabled()) {
             val granted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
             addPermissionCard(
