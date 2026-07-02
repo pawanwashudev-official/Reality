@@ -46,51 +46,69 @@ object UpdateManager {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val response = fetchGitHubRelease(isBeta)
-                if (response != null) {
-                    val latestVersion = response.getString("tag_name").replace("v", "")
-                    val assetsArray = response.getJSONArray("assets")
-
+                val releases = fetchGitHubReleases()
+                if (releases != null) {
+                    var bestRelease: JSONObject? = null
                     var bestApkUrl = ""
                     var maxTimestamp = 0L
+                    var bestVersion = ""
+                    var bestNotes = ""
 
-                    // Regex to extract timestamp from Reality-v1.0.7-123456789-release.apk
                     val regex = Regex(".*-(\\d{13,})-.*\\.apk")
 
-                    for (i in 0 until assetsArray.length()) {
-                        val asset = assetsArray.getJSONObject(i)
-                        val name = asset.getString("name")
-                        if (name.endsWith(".apk")) {
-                            val match = regex.find(name)
-                            if (match != null) {
-                                val timestamp = match.groupValues[1].toLongOrNull() ?: 0L
-                                if (timestamp > maxTimestamp) {
-                                    maxTimestamp = timestamp
-                                    bestApkUrl = asset.getString("browser_download_url")
-                                }
-                            } else {
-                                // Fallback if filename doesn't match the new convention
-                                if (bestApkUrl.isEmpty()) {
-                                    bestApkUrl = asset.getString("browser_download_url")
+                    for (r in 0 until releases.length()) {
+                        val release = releases.getJSONObject(r)
+                        val isPrerelease = release.getBoolean("prerelease")
+
+                        if (isPrerelease == isBeta) {
+                            val assetsArray = release.getJSONArray("assets")
+                            val version = release.getString("tag_name").replace("v", "")
+
+                            for (i in 0 until assetsArray.length()) {
+                                val asset = assetsArray.getJSONObject(i)
+                                val name = asset.getString("name")
+                                if (name.endsWith(".apk")) {
+                                    val match = regex.find(name)
+                                    if (match != null) {
+                                        val timestamp = match.groupValues[1].toLongOrNull() ?: 0L
+                                        if (timestamp > maxTimestamp) {
+                                            maxTimestamp = timestamp
+                                            bestApkUrl = asset.getString("browser_download_url")
+                                            bestRelease = release
+                                            bestVersion = version
+                                            bestNotes = release.getString("body")
+                                        }
+                                    } else {
+                                        // Fallback: if no timestamp but it's the first matching release we see (which is newest by date)
+                                        if (bestApkUrl.isEmpty() && bestRelease == null) {
+                                            bestApkUrl = asset.getString("browser_download_url")
+                                            bestRelease = release
+                                            bestVersion = version
+                                            bestNotes = release.getString("body")
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
 
-                    val releaseNotes = response.getString("body")
+                    if (bestRelease != null) {
+                        val isEligible = (maxTimestamp > 0 && maxTimestamp > BuildConfig.BUILD_TIMESTAMP) ||
+                                         (maxTimestamp == 0L && isNewerVersion(bestVersion, BuildConfig.VERSION_NAME))
 
-                    // Compare remote timestamp with local BUILD_TIMESTAMP
-                    val isEligible = maxTimestamp > BuildConfig.BUILD_TIMESTAMP || isNewerVersion(latestVersion, BuildConfig.VERSION_NAME)
-
-                    if (isEligible && bestApkUrl.isNotEmpty()) {
-                        withContext(Dispatchers.Main) {
-                            showUpdateDialog(context, latestVersion, bestApkUrl, releaseNotes)
+                        if (isEligible && bestApkUrl.isNotEmpty()) {
+                            withContext(Dispatchers.Main) {
+                                showUpdateDialog(context, bestVersion, bestApkUrl, bestNotes)
+                            }
+                        } else {
+                            if (!silent) withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
                         }
                     } else {
                         if (!silent) withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
                     }
+                } else {
+                    if (!silent) withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
                 }
-                // Save last check time even if no update found
                 prefs.edit().putLong(KEY_LAST_CHECK_TIME, now).apply()
             } catch (e: Exception) {
                 Log.e(TAG, "Update check failed", e)
@@ -99,7 +117,7 @@ object UpdateManager {
         }
     }
 
-    private fun fetchGitHubRelease(isBeta: Boolean): JSONObject? {
+    private fun fetchGitHubReleases(): JSONArray? {
         return try {
             val url = URL(GITHUB_API_URL)
             val connection = url.openConnection() as HttpURLConnection
@@ -108,16 +126,7 @@ object UpdateManager {
             connection.readTimeout = 10000
             
             val content = connection.inputStream.bufferedReader().use { it.readText() }
-            val releasesArray = JSONArray(content)
-
-            for (i in 0 until releasesArray.length()) {
-                val release = releasesArray.getJSONObject(i)
-                val isPrerelease = release.getBoolean("prerelease")
-                if (isPrerelease == isBeta) {
-                    return release
-                }
-            }
-            null
+            JSONArray(content)
         } catch (e: Exception) {
             null
         }
