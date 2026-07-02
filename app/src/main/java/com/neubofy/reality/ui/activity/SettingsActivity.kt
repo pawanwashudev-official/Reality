@@ -245,11 +245,11 @@ class SettingsActivity : BaseActivity() {
             )
             .listener(object : com.getkeepsafe.taptargetview.TapTargetSequence.Listener {
                 override fun onSequenceFinish() {
-                    getSharedPreferences("app_preferences", MODE_PRIVATE).edit().putBoolean("settings_tour_shown", true).apply()
+                    getSharedPreferences("app_preferences", android.content.Context.MODE_PRIVATE).edit().putBoolean("settings_tour_shown", true).apply()
                 }
                 override fun onSequenceStep(lastTarget: com.getkeepsafe.taptargetview.TapTarget?, targetClicked: Boolean) {}
                 override fun onSequenceCanceled(lastTarget: com.getkeepsafe.taptargetview.TapTarget?) {
-                    getSharedPreferences("app_preferences", MODE_PRIVATE).edit().putBoolean("settings_tour_shown", true).apply()
+                    getSharedPreferences("app_preferences", android.content.Context.MODE_PRIVATE).edit().putBoolean("settings_tour_shown", true).apply()
                 }
             })
             .start()
@@ -344,6 +344,12 @@ class SettingsActivity : BaseActivity() {
     }
 
     private fun updateUI() {
+        val cardEncryption = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_data_encryption)
+        cardEncryption?.setOnClickListener {
+            val intent = android.content.Intent(this, EncryptionSetupActivity::class.java)
+            startActivity(intent)
+        }
+
         // Features State
         val featureManager = com.neubofy.reality.utils.FeatureManager(this)
 
@@ -369,6 +375,20 @@ class SettingsActivity : BaseActivity() {
         binding.cardAiSettings.visibility = if (featureManager.isAiEnabled()) android.view.View.VISIBLE else android.view.View.GONE
         binding.cardTapasyaSettings.visibility = if (featureManager.isTapasyaEnabled()) android.view.View.VISIBLE else android.view.View.GONE
         binding.cardSettingsReminders.visibility = if (featureManager.isReminderEnabled()) android.view.View.VISIBLE else android.view.View.GONE
+
+        // Encryption Status
+        val encPrefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_encryption_prefs")
+        val hasEncryption = encPrefs.contains("backup_password")
+        val tvEncryptionStatus = findViewById<android.widget.TextView>(R.id.tv_encryption_status)
+        if (tvEncryptionStatus != null) {
+            if (hasEncryption) {
+                tvEncryptionStatus.text = "Active (Custom Password)"
+                tvEncryptionStatus.setTextColor(androidx.core.content.ContextCompat.getColor(this, android.R.color.holo_green_light))
+            } else {
+                tvEncryptionStatus.text = "Default Encryption"
+                tvEncryptionStatus.setTextColor(androidx.core.content.ContextCompat.getColor(this, android.R.color.darker_gray))
+            }
+        }
 
         // Account Status
         if (com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)) {

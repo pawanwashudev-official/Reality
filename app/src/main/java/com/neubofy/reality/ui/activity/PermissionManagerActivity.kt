@@ -224,6 +224,18 @@ class PermissionManagerActivity : BaseActivity() {
                 }
             )
         }
+
+        // 11. Camera
+        val cameraGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        addPermissionCard(
+            title = "Camera",
+            desc = "Required to scan QR codes for Tapasya import.",
+            iconRes = R.drawable.baseline_qr_code_24,
+            isGranted = cameraGranted,
+            onClick = {
+                if (!cameraGranted) permissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        )
     }
 
     private fun addPermissionCard(title: String, desc: String, iconRes: Int, isGranted: Boolean, onClick: () -> Unit) {

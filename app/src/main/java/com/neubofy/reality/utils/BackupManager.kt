@@ -194,7 +194,10 @@ object BackupManager {
                     onProgress(progress, "Exported ${category.displayName}")
                 }
 
-                rootJson.put("categories", categoriesJson)
+                // Encrypt categories before adding to root
+                val plainCategories = categoriesJson.toString()
+                val encryptedCategories = BackupEncryption.encrypt(context, plainCategories)
+                rootJson.put("encryptedCategories", encryptedCategories)
 
                 onProgress(0.75f, "Uploading to Google Drive...")
 
@@ -249,6 +252,7 @@ object BackupManager {
      * @param onProgress Callback for progress updates
      */
     suspend fun restoreBackup(
+        password: String? = null,
         context: Context,
         categories: Set<BackupCategory>? = null, // null = restore all available
         onProgress: (Float, String) -> Unit = { _, _ -> }
@@ -290,7 +294,19 @@ object BackupManager {
                     return@withContext BackupResult(false, "Backup is from a newer app version. Please update the app.")
                 }
 
-                val categoriesJson = rootJson.getJSONObject("categories")
+                val encryptedCategories = rootJson.optString("encryptedCategories", "")
+                val categoriesJsonStr = if (encryptedCategories.isNotEmpty()) {
+                    val decrypted = BackupEncryption.decrypt(context, encryptedCategories, password)
+                    if (decrypted.startsWith("ENC:")) {
+                        return@withContext BackupResult(false, "Decryption failed. Incorrect password?")
+                    }
+                    decrypted
+                } else {
+                    // Fallback for old unencrypted backups (if any existed, but earlier logic put it in 'categories' object)
+                    rootJson.optJSONObject("categories")?.toString() ?: "{}"
+                }
+
+                val categoriesJson = JSONObject(categoriesJsonStr)
 
                 // Determine which categories to restore
                 val availableCategories = mutableSetOf<BackupCategory>()

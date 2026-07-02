@@ -272,17 +272,23 @@ class BackupRestoreActivity : BaseActivity() {
         MaterialAlertDialogBuilder(this)
             .setTitle("⚠️ Restore from Backup?")
             .setMessage("The following categories will be restored, overwriting current data:\n\n$catNames\n\nThis cannot be undone. Continue?")
-            .setPositiveButton("Restore") { _, _ -> performRestore(categories) }
+            .setPositiveButton("Restore") { _, _ ->
+                // We should prompt for password first if it exists, but we don't know yet.
+                // BackupRestoreActivity starts performRestore directly.
+                // We will prompt if decryption fails
+                performRestore(categories)
+            }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    private fun performRestore(categories: Set<BackupManager.BackupCategory>) {
+    private fun performRestore(categories: Set<BackupManager.BackupCategory>, password: String? = null) {
         setOperationInProgress(true, "Downloading backup...")
 
         lifecycleScope.launch {
             try {
                 val result = BackupManager.restoreBackup(
+                    password,
                     this@BackupRestoreActivity,
                     categories
                 ) { progress, status ->
@@ -301,6 +307,8 @@ class BackupRestoreActivity : BaseActivity() {
                             .setPositiveButton("OK") { _, _ -> finish() }
                             .setCancelable(false)
                             .show()
+                    } else if (result.message.contains("Decryption failed") || result.message.contains("Incorrect password")) {
+                        promptForPassword(categories)
                     } else if (result.message.startsWith("NEED_PERMISSION:")) {
                         Toast.makeText(this@BackupRestoreActivity, "Please grant Google Drive access", Toast.LENGTH_LONG).show()
                     } else {
@@ -337,5 +345,26 @@ class BackupRestoreActivity : BaseActivity() {
             bytes < 1024 * 1024 -> "${bytes / 1024} KB"
             else -> String.format("%.1f MB", bytes / (1024.0 * 1024.0))
         }
+    }
+
+    private fun promptForPassword(categories: Set<BackupManager.BackupCategory>) {
+        val input = android.widget.EditText(this)
+        input.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        input.hint = "Backup Password"
+
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Enter Backup Password")
+            .setMessage("This backup requires a password to decrypt.")
+            .setView(input)
+            .setPositiveButton("Restore") { _, _ ->
+                val pwd = input.text.toString()
+                if (pwd.isNotEmpty()) {
+                    performRestore(categories, pwd)
+                } else {
+                    android.widget.Toast.makeText(this, "Password required", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 }

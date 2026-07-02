@@ -558,6 +558,11 @@
             android:exported="false" />
         <service android:name=".services.WakeupAlarmService" android:foregroundServiceType="mediaPlayback" />
 
+            <activity
+            android:name=".ui.activity.EncryptionSetupActivity"
+            android:screenOrientation="portrait"
+            android:exported="false"
+            android:theme="@style/Theme.Reality" />
     </application>
 
 </manifest>
