@@ -1,41 +1,23 @@
 export default {
   async fetch(request, env) {
-    // 1. Handle CORS for standard web traffic safety
+    // 1. Handle CORS (allows the app to talk to the worker)
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type", 
+          "Access-Control-Allow-Headers": "Content-Type",
         },
       });
-    }
-
-    // 2. SPAM PROTECTION: Strict IP Rate Limiting (10 requests per day)
-    // Stops anyone from brute-forcing or spamming your endpoint
-    const clientIP = request.headers.get("cf-connecting-ip") || "unknown";
-    const todayKey = `limit:${clientIP}:${new Date().toISOString().split('T')[0]}`;
-    
-    if (env.LIMIT_STORE) {
-      const currentCount = parseInt(await env.LIMIT_STORE.get(todayKey) || "0", 10);
-      if (currentCount >= 10) {
-        return new Response(JSON.stringify({ error: "Daily request limit exceeded." }), { 
-          status: 429, headers: { "Content-Type": "application/json" } 
-        });
-      }
-      await env.LIMIT_STORE.put(todayKey, (currentCount + 1).toString(), { expirationTtl: 90000 });
     }
 
     const url = new URL(request.url);
 
     try {
-      // ---------------------------------------------------------
-      // ROUTE 1: GOOGLE OAUTH LOGIN (The App Auth Manager)
-      // ---------------------------------------------------------
+      // ROUTE: GOOGLE OAUTH TOKEN EXCHANGE
       if (url.pathname === "/oauth/token" && request.method === "POST") {
         const incomingData = await request.json(); 
         
-        // Cloudflare talks to Google securely, hiding your Secret
         const googleResponse = await fetch("https://oauth2.googleapis.com/token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -55,20 +37,17 @@ export default {
         });
       }
 
-      // ---------------------------------------------------------
-      // ROUTE 2: SUBSCRIPTION VERIFICATION (The Google Apps Script)
-      // ---------------------------------------------------------
+      // ROUTE: SUBSCRIPTION VERIFICATION/SUBMISSION
       const targetUrl = env.NEW_REALITY_LICENSE_URL;
-      if (!targetUrl) return new Response("Backend URL missing.", { status: 500 });
       
-      // Handles the verifyCode (GET) request
+      // Handles verification (GET)
       if (request.method === "GET") {
         const backendResponse = await fetch(`${targetUrl}${url.search}`, { method: "GET" });
         const responseData = await backendResponse.text();
         return new Response(responseData, { status: backendResponse.status, headers: { "Access-Control-Allow-Origin": "*" } });
       }
 
-      // Handles the payment submission (POST) request
+      // Handles subscription submission (POST)
       if (request.method === "POST") {
         const incomingData = await request.json();
         const backendResponse = await fetch(targetUrl, {
