@@ -1,6 +1,5 @@
 export default {
   async fetch(request, env) {
-    // 1. Handle CORS (allows the app to talk to the worker)
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
