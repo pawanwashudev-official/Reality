@@ -2,8 +2,6 @@ name: Deploy Worker
 
 on:
   push:
-    branches:
-      - main
     paths:
       - 'cloudflare/**'  # Only triggers if you change files in the cloudflare folder
   workflow_dispatch:     # This enables the "Run workflow" button for manual deployment
