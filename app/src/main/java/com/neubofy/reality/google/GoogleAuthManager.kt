@@ -108,7 +108,8 @@ object GoogleAuthManager {
         } else if (workerUrl.isNotBlank()) {
              val scopeStr = scopes.joinToString(" ")
              val encodedScopeStr = java.net.URLEncoder.encode(scopeStr, "UTF-8").replace("+", "%20")
-             return "$workerUrl/oauth/auth?scope=$encodedScopeStr&redirect_uri=${java.net.URLEncoder.encode("http://127.0.0.1:8080/Callback", "UTF-8")}"
+             val cleanWorkerUrl = workerUrl.removeSuffix("/")
+             return "$cleanWorkerUrl/oauth/auth?scope=$encodedScopeStr&redirect_uri=${java.net.URLEncoder.encode("http://127.0.0.1:8080/Callback", "UTF-8")}"
         }
         return null
     }
@@ -188,7 +189,8 @@ object GoogleAuthManager {
                     accessToken = tokenResponse.accessToken
                     refreshToken = tokenResponse.refreshToken
                 } else {
-                     val url = URL("$workerUrl/oauth/token")
+                     val cleanWorkerUrl = workerUrl.removeSuffix("/")
+                     val url = URL("$cleanWorkerUrl/oauth/token")
                      val conn = url.openConnection() as HttpURLConnection
                      conn.requestMethod = "POST"
                      conn.setRequestProperty("Content-Type", "application/json")
@@ -314,7 +316,8 @@ object GoogleAuthManager {
             builder.setTokenServerUrl(com.google.api.client.http.GenericUrl("https://oauth2.googleapis.com/token"))
             builder.setClientAuthentication(ClientParametersAuthentication(clientId, clientSecret))
         } else {
-            builder.setTokenServerUrl(com.google.api.client.http.GenericUrl("$workerUrl/oauth/token"))
+            val cleanWorkerUrl = workerUrl.removeSuffix("/")
+            builder.setTokenServerUrl(com.google.api.client.http.GenericUrl("$cleanWorkerUrl/oauth/token"))
             // Provide a dummy client authentication to satisfy the Java client requirement. The worker doesn't need them.
             builder.setClientAuthentication(ClientParametersAuthentication("dummy_id", "dummy_secret"))
         }

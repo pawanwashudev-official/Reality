@@ -410,7 +410,8 @@ class RealityProActivity : BaseActivity() {
             Toast.makeText(this, "Worker URL not configured in build.", Toast.LENGTH_SHORT).show()
             return
         }
-        val baseUrl = "$workerUrl/license"
+        val cleanWorkerUrl = workerUrl.removeSuffix("/")
+        val baseUrl = "$cleanWorkerUrl/license"
 
         findViewById<MaterialButton>(R.id.btn_verify).isEnabled = false
         findViewById<MaterialButton>(R.id.btn_verify).text = "Verifying..."
