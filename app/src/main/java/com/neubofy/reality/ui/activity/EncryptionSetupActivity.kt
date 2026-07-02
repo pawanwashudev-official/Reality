@@ -18,7 +18,7 @@ class EncryptionSetupActivity : AppCompatActivity() {
         val etConfirmPassword = findViewById<TextInputEditText>(R.id.et_confirm_password)
         val btnSave = findViewById<Button>(R.id.btn_save_encryption)
         val btnClear = findViewById<Button>(R.id.btn_clear_encryption)
-        val prefs = getSharedPreferences("reality_encryption_prefs", Context.MODE_PRIVATE)
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_encryption_prefs")
 
         btnSave.setOnClickListener {
             val password = etPassword.text.toString()

@@ -59,7 +59,7 @@ class SetupPasswordModeFragment : Fragment() {
     private fun setupPasswordMode() {
         val editor =
             activity?.getSharedPreferences("anti_uninstall", Context.MODE_PRIVATE)?.edit()
-        editor?.apply() {
+        editor?.apply {
             putBoolean("is_anti_uninstall_on", true)
             putString("password", binding.password.text.toString())
             putInt("mode", Constants.ANTI_UNINSTALL_PASSWORD_MODE)

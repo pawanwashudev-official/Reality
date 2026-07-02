@@ -245,11 +245,11 @@ class SettingsActivity : BaseActivity() {
             )
             .listener(object : com.getkeepsafe.taptargetview.TapTargetSequence.Listener {
                 override fun onSequenceFinish() {
-                    getSharedPreferences("app_preferences", MODE_PRIVATE).edit().putBoolean("settings_tour_shown", true).apply()
+                    getSharedPreferences("app_preferences", android.content.Context.MODE_PRIVATE).edit().putBoolean("settings_tour_shown", true).apply()
                 }
                 override fun onSequenceStep(lastTarget: com.getkeepsafe.taptargetview.TapTarget?, targetClicked: Boolean) {}
                 override fun onSequenceCanceled(lastTarget: com.getkeepsafe.taptargetview.TapTarget?) {
-                    getSharedPreferences("app_preferences", MODE_PRIVATE).edit().putBoolean("settings_tour_shown", true).apply()
+                    getSharedPreferences("app_preferences", android.content.Context.MODE_PRIVATE).edit().putBoolean("settings_tour_shown", true).apply()
                 }
             })
             .start()
@@ -377,20 +377,20 @@ class SettingsActivity : BaseActivity() {
         binding.cardSettingsReminders.visibility = if (featureManager.isReminderEnabled()) android.view.View.VISIBLE else android.view.View.GONE
 
         // Encryption Status
-        val encPrefs = getSharedPreferences("reality_encryption_prefs", MODE_PRIVATE)
+        val encPrefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_encryption_prefs")
         val hasEncryption = encPrefs.contains("backup_password")
         val tvEncryptionStatus = findViewById<android.widget.TextView>(R.id.tv_encryption_status)
         if (tvEncryptionStatus != null) {
             if (hasEncryption) {
                 tvEncryptionStatus.text = "Active (Custom Password)"
-                tvEncryptionStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_light))
+                tvEncryptionStatus.setTextColor(androidx.core.content.ContextCompat.getColor(this, android.R.color.holo_green_light))
             } else {
                 tvEncryptionStatus.text = "Default Encryption"
-                tvEncryptionStatus.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+                tvEncryptionStatus.setTextColor(androidx.core.content.ContextCompat.getColor(this, android.R.color.darker_gray))
             }
         }
 
-        // Encryption Status
+        // Account Status
         if (com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)) {
             val name = com.neubofy.reality.google.GoogleAuthManager.getUserName(this)
             val email = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(this)
