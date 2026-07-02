@@ -107,7 +107,8 @@ object GoogleAuthManager {
             .build()
         } else if (workerUrl.isNotBlank()) {
              val scopeStr = scopes.joinToString(" ")
-             return "$workerUrl/oauth/auth?scope=${java.net.URLEncoder.encode(scopeStr, "UTF-8")}&redirect_uri=${java.net.URLEncoder.encode("http://127.0.0.1:8080/Callback", "UTF-8")}"
+             val encodedScopeStr = java.net.URLEncoder.encode(scopeStr, "UTF-8").replace("+", "%20")
+             return "$workerUrl/oauth/auth?scope=$encodedScopeStr&redirect_uri=${java.net.URLEncoder.encode("http://127.0.0.1:8080/Callback", "UTF-8")}"
         }
         return null
     }

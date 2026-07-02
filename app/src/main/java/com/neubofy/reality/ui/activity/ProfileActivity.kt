@@ -129,14 +129,7 @@ class ProfileActivity : BaseActivity() {
             .setTitle("Sign In Option")
             .setMessage("Use your own Google Cloud credentials or use Developer Default keys.")
             .setPositiveButton("Default Key") { _, _ ->
-                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                    .setTitle("Default Keys")
-                    .setMessage("Using Developer Default Keys is completely safe. The developer cannot access your data remotely and it is not stored on our servers.")
-                    .setPositiveButton("Continue") { _, _ ->
-                        executeSignIn()
-                    }
-                    .setNegativeButton("Cancel", null)
-                    .show()
+                executeSignIn()
             }
             .setNeutralButton("Own Key") { _, _ ->
                 showCustomKeyDialog()

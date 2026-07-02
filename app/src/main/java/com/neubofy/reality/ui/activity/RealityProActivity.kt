@@ -32,7 +32,7 @@ import java.net.URL
 
 class RealityProActivity : BaseActivity() {
 
-    private lateinit var btnStep1Signin: MaterialButton
+    private lateinit var btnUnifiedSignin: MaterialButton
     private lateinit var cardStep2: MaterialCardView
     private lateinit var btnPayUpi: MaterialButton
     private lateinit var cardStep3: MaterialCardView
@@ -52,7 +52,7 @@ class RealityProActivity : BaseActivity() {
             startActivity(intent)
         }
 
-        btnStep1Signin = findViewById(R.id.btn_step1_signin)
+        btnUnifiedSignin = findViewById(R.id.btn_unified_signin)
         cardStep2 = findViewById(R.id.card_step2)
         btnPayUpi = findViewById(R.id.btn_pay_upi)
         cardStep3 = findViewById(R.id.card_step3)
@@ -103,7 +103,7 @@ class RealityProActivity : BaseActivity() {
         }
 
 
-        btnStep1Signin.setOnClickListener {
+        btnUnifiedSignin.setOnClickListener {
             showKeySelectionDialog()
         }
 
@@ -136,14 +136,7 @@ class RealityProActivity : BaseActivity() {
             .setTitle("Sign In Option")
             .setMessage("Use your own Google Cloud credentials or use Developer Default keys.")
             .setPositiveButton("Default Key") { _, _ ->
-                MaterialAlertDialogBuilder(this)
-                    .setTitle("Default Keys")
-                    .setMessage("Using Developer Default Keys is completely safe. The developer cannot access your data remotely and it is not stored on our servers.")
-                    .setPositiveButton("Continue") { _, _ ->
-                        performSignIn()
-                    }
-                    .setNegativeButton("Cancel", null)
-                    .show()
+                performSignIn()
             }
             .setNeutralButton("Own Key") { _, _ ->
                 showCustomKeyDialog()
@@ -250,7 +243,6 @@ class RealityProActivity : BaseActivity() {
         val dateFormat = java.text.SimpleDateFormat("MMM dd, yyyy HH:mm", java.util.Locale.getDefault())
 
         // UI Elements
-        val btnTrialSignin = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_trial_signin)
         val btnTrialActivation = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_trial_activation)
         val llTrialDates = findViewById<android.widget.LinearLayout>(R.id.ll_trial_dates)
         val tvTrialStart = findViewById<android.widget.TextView>(R.id.tv_trial_start_date)
@@ -265,20 +257,15 @@ class RealityProActivity : BaseActivity() {
         val cardStep2 = findViewById<android.view.View>(R.id.card_step2)
         val cardStep3 = findViewById<android.view.View>(R.id.card_step3)
 
-        // Trial Sign In Logic
+        // Unified Sign In Logic
         if (isSignedIn && userId != null) {
-            btnTrialSignin.visibility = android.view.View.GONE
+            btnUnifiedSignin.text = "Signed In"
+            btnUnifiedSignin.isEnabled = false
             btnTrialActivation.visibility = android.view.View.VISIBLE
         } else {
-            btnTrialSignin.visibility = android.view.View.VISIBLE
+            btnUnifiedSignin.text = "Sign In with Google"
+            btnUnifiedSignin.isEnabled = true
             btnTrialActivation.visibility = android.view.View.GONE
-            btnTrialSignin.setOnClickListener {
-                if (GoogleAuthManager.getClientId(this) == null || GoogleAuthManager.getClientSecret(this) == null) {
-                    showCustomKeyDialog()
-                } else {
-                    performSignIn()
-                }
-            }
         }
 
         // --- Mutually Exclusive Visibility Logic ---
@@ -353,13 +340,9 @@ class RealityProActivity : BaseActivity() {
 
             // Process Paid Plan Sign In & Purchase Steps
             if (isSignedIn && userId != null) {
-                btnStep1Signin.isEnabled = false
-                btnStep1Signin.text = "Signed In"
                 cardStep2.alpha = 1.0f
                 btnPayUpi.isEnabled = true
             } else {
-                btnStep1Signin.isEnabled = true
-                btnStep1Signin.text = "Sign In with Google"
                 cardStep2.alpha = 0.5f
                 btnPayUpi.isEnabled = false
             }
