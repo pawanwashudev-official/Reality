@@ -1,0 +1,75 @@
+package com.neubofy.reality.utils
+
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import android.util.Base64
+import java.security.KeyStore
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+
+object BackupEncryption {
+    private const val ANDROID_KEYSTORE = "AndroidKeyStore"
+    private const val ALIAS = "RealityBackupEncryptionKey"
+    private const val TRANSFORMATION = "AES/GCM/NoPadding"
+    private const val IV_LENGTH = 12
+    private const val TAG_LENGTH = 128
+
+
+    private fun getSecretKey(): SecretKey {
+        // Derive a consistent key from Google Account ID or package name
+        // For cross-device backups, we shouldn't use AndroidKeyStore directly without user auth
+        // Use a static approach or derive from Android ID if cross-device isn't strictly required
+        // We will hash a constant string to create a 256-bit key for AES
+        val keyMaterial = "com.neubofy.reality.backup.key.v1".toByteArray()
+        val md = java.security.MessageDigest.getInstance("SHA-256")
+        val rawKey = md.digest(keyMaterial)
+        return javax.crypto.spec.SecretKeySpec(rawKey, "AES")
+    }
+
+
+    fun encrypt(data: String): String {
+        try {
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+            cipher.init(Cipher.ENCRYPT_MODE, getSecretKey())
+
+            val iv = cipher.iv
+            val encryptedData = cipher.doFinal(data.toByteArray(Charsets.UTF_8))
+
+            val ivBase64 = Base64.encodeToString(iv, Base64.NO_WRAP)
+            val encryptedDataBase64 = Base64.encodeToString(encryptedData, Base64.NO_WRAP)
+
+            return "ENC:$ivBase64:$encryptedDataBase64"
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Fallback to plain text if encryption fails
+            return data
+        }
+    }
+
+    fun decrypt(encryptedString: String): String {
+        try {
+            if (!encryptedString.startsWith("ENC:")) {
+                return encryptedString // Not encrypted
+            }
+
+            val parts = encryptedString.substring(4).split(":")
+            if (parts.size != 2) return encryptedString
+
+            val iv = Base64.decode(parts[0], Base64.NO_WRAP)
+            val encryptedData = Base64.decode(parts[1], Base64.NO_WRAP)
+
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+            val spec = GCMParameterSpec(TAG_LENGTH, iv)
+            cipher.init(Cipher.DECRYPT_MODE, getSecretKey(), spec)
+
+            val decryptedData = cipher.doFinal(encryptedData)
+            return String(decryptedData, Charsets.UTF_8)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Return original if decryption fails (might be plain text that happened to start with ENC:)
+            return encryptedString
+        }
+    }
+}

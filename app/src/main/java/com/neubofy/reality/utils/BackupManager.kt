@@ -199,7 +199,9 @@ object BackupManager {
                 onProgress(0.75f, "Uploading to Google Drive...")
 
                 // Upload to Drive
-                val jsonBytes = rootJson.toString(2).toByteArray(Charsets.UTF_8)
+                val plainTextJson = rootJson.toString()
+                val encryptedJson = BackupEncryption.encrypt(plainTextJson)
+                val jsonBytes = encryptedJson.toByteArray(Charsets.UTF_8)
                 val inputStream = ByteArrayInputStream(jsonBytes)
 
                 // Get or create backup folder
@@ -278,7 +280,8 @@ object BackupManager {
                 val data = GoogleDriveManager.downloadFile(context, fileId)
                     ?: return@withContext BackupResult(false, "Failed to download backup")
 
-                val jsonString = String(data, Charsets.UTF_8)
+                val rawString = String(data, Charsets.UTF_8)
+                val jsonString = BackupEncryption.decrypt(rawString)
                 val rootJson = JSONObject(jsonString)
 
                 onProgress(0.3f, "Parsing backup data...")
@@ -435,7 +438,8 @@ object BackupManager {
                 // Get metadata from file
                 val data = GoogleDriveManager.downloadFile(context, backupFile.id)
                 if (data != null) {
-                    val jsonString = String(data, Charsets.UTF_8)
+                    val rawString = String(data, Charsets.UTF_8)
+                    val jsonString = BackupEncryption.decrypt(rawString)
                     val rootJson = JSONObject(jsonString)
                     val metadata = rootJson.getJSONObject("metadata")
                     val categoriesList = try {
