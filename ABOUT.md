@@ -31,3 +31,8 @@ Math-based Wakeup Alarms that scale in difficulty, preventing you from oversleep
 
 ---
 *Made with ❤️ for Focus. 99.9% Open Source. No Ads. No Trackers.*
+
+## 🐛 Support & Issues
+Encountered a bug or have a feature request? You can easily report it!
+Use the **"Report an Issue"** button directly within the app (About page) to seamlessly create an issue on our GitHub repository.
+Alternatively, visit [Reality GitHub Issues](https://github.com/pawanwashudev-official/Reality/issues) to submit your feedback.

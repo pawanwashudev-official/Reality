@@ -1065,6 +1065,7 @@ class AppBlockerService : BaseBlockingService() {
         
         // Launch Block Activity
         try {
+            performGlobalAction(GLOBAL_ACTION_HOME) // Force app to background
             val intent = Intent(this, com.neubofy.reality.ui.activity.BlockActivity::class.java).apply {
                  addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION)
                  putExtra("pkg", packageName)
@@ -1073,7 +1074,7 @@ class AppBlockerService : BaseBlockingService() {
             startActivity(intent)
         } catch (e: Exception) {
             // Fallback if activity fails
-            pressHome()
+            performGlobalAction(GLOBAL_ACTION_HOME)
             Toast.makeText(this, reason, Toast.LENGTH_SHORT).show()
         }
         
@@ -1356,6 +1357,9 @@ class AppBlockerService : BaseBlockingService() {
                             startActivity(intent)
                         } catch (e: Exception) {}
                         
+                        // 1.5 Go home to close the app properly
+                        performGlobalAction(GLOBAL_ACTION_HOME)
+
                         // 2. Launch Block Activity Over Everything (Inescapable)
                         val blockIntent = Intent(this@AppBlockerService, com.neubofy.reality.ui.activity.BlockActivity::class.java).apply {
                              addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK) 

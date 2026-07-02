@@ -28,13 +28,13 @@ object UpdateManager {
     private const val KEY_LAST_CHECK_TIME = "last_check_time"
     private const val CHECK_INTERVAL_DAYS = 7L
 
-    private const val GITHUB_API_URL = "https://api.github.com/repos/pawanwashudev-official/Reality/releases/latest"
+    private const val GITHUB_API_URL = "https://api.github.com/repos/pawanwashudev-official/Reality/releases"
 
     /**
      * Check for updates.
      * @param silent If true, only checks if 7 days have passed since last check.
      */
-    fun checkForUpdates(context: Context, silent: Boolean = true, onNoUpdate: (() -> Unit)? = null) {
+    fun checkForUpdates(context: Context, silent: Boolean = true, isBeta: Boolean = false, onNoUpdate: (() -> Unit)? = null) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val lastCheck = prefs.getLong(KEY_LAST_CHECK_TIME, 0L)
         val now = System.currentTimeMillis()
@@ -46,7 +46,7 @@ object UpdateManager {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val response = fetchGitHubRelease()
+                val response = fetchGitHubRelease(isBeta)
                 if (response != null) {
                     val latestVersion = response.getString("tag_name").replace("v", "")
                     val assetsArray = response.getJSONArray("assets")
@@ -99,7 +99,7 @@ object UpdateManager {
         }
     }
 
-    private fun fetchGitHubRelease(): JSONObject? {
+    private fun fetchGitHubRelease(isBeta: Boolean): JSONObject? {
         return try {
             val url = URL(GITHUB_API_URL)
             val connection = url.openConnection() as HttpURLConnection
@@ -108,7 +108,16 @@ object UpdateManager {
             connection.readTimeout = 10000
             
             val content = connection.inputStream.bufferedReader().use { it.readText() }
-            JSONObject(content)
+            val releasesArray = JSONArray(content)
+
+            for (i in 0 until releasesArray.length()) {
+                val release = releasesArray.getJSONObject(i)
+                val isPrerelease = release.getBoolean("prerelease")
+                if (isPrerelease == isBeta) {
+                    return release
+                }
+            }
+            null
         } catch (e: Exception) {
             null
         }
