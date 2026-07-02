@@ -77,22 +77,40 @@ class AutoSetupDialog : BaseDialog() {
 
     private fun showAddEditDialog(config: TaskListConfig?) {
         if (config == null) {
-            // New List: Show Choice Dialog
-            val options = arrayOf("🆕 Create New List", "📂 Select Existing List")
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Add Task List")
-                .setItems(options) { _, which ->
-                    showTaskInputDialog(isCreate = (which == 0), config = null)
+            // New List: Fetch and Show Choice Dialog
+            lifecycleScope.launch {
+                try {
+                    val tvLog = view?.findViewById<android.widget.TextView>(R.id.tv_log)
+
+                    val taskLists = GoogleTasksManager.getTaskLists(requireContext())
+                    if (taskLists.isEmpty()) {
+                        Toast.makeText(requireContext(), "No Task Lists found", Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+
+                    val listNames = taskLists.map { it.title ?: "Untitled List" }.toTypedArray()
+
+                    MaterialAlertDialogBuilder(requireContext())
+                        .setTitle("Select Existing Task List")
+                        .setItems(listNames) { _, which ->
+                            val selectedList = taskLists[which]
+                            showTaskInputDialog(isCreate = false, config = null, prefillName = selectedList.title)
+                        }
+                        .setNegativeButton("Create New Instead") { _, _ ->
+                            showTaskInputDialog(isCreate = true, config = null)
+                        }
+                        .show()
+                } catch (e: Exception) {
+                    Toast.makeText(requireContext(), "Failed to fetch task lists: ${e.message}", Toast.LENGTH_LONG).show()
                 }
-                .setNegativeButton("Cancel", null)
-                .show()
+            }
         } else {
             // Existing List: Show Edit Dialog (Description only)
             showTaskInputDialog(isCreate = false, config = config)
         }
     }
 
-    private fun showTaskInputDialog(isCreate: Boolean, config: TaskListConfig?) {
+    private fun showTaskInputDialog(isCreate: Boolean, config: TaskListConfig?, prefillName: String? = null) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_edit_task_list, null)
         val etName = dialogView.findViewById<TextInputEditText>(R.id.etListName)
         val etDesc = dialogView.findViewById<TextInputEditText>(R.id.etDescription)
@@ -101,6 +119,9 @@ class AutoSetupDialog : BaseDialog() {
             etName.setText(config.displayName)
             etDesc.setText(config.description)
             etName.isEnabled = false // Cannot change name/id of existing list
+        } else if (prefillName != null) {
+            etName.setText(prefillName)
+            etName.isEnabled = false
         }
         
         val title = when {
@@ -169,8 +190,8 @@ class AutoSetupDialog : BaseDialog() {
                     
                     val finalConfig = TaskListConfig(
                         id = config?.id ?: 0,
-                        googleListId = config?.googleListId ?: taskList!!.id,
-                        displayName = config?.displayName ?: taskList!!.title ?: name,
+                        googleListId = config?.googleListId ?: taskList?.id ?: "",
+                        displayName = config?.displayName ?: taskList?.title ?: name,
                         description = desc
                     )
                     

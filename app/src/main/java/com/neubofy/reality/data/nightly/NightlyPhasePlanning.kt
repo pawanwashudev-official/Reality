@@ -1015,7 +1015,11 @@ class NightlyPhasePlanning(
 
             // "Step2_SessionsCount", "Step2_TotalMins"
             rowValues.add(j2.optInt("sessionCount", 0).toString())
-            rowValues.add(j2.optInt("plannedMinutes", 0).toString())
+            rowValues.add(j2.optInt("effectiveMinutes", 0).toString())
+
+            // "Step3_ScreenTime", "Step3_Limit"
+            rowValues.add(j3.optInt("usedMinutes", 0).toString())
+            rowValues.add(j3.optInt("limitMinutes", 0).toString())
 
             // "Q1", "A1", ... "Q6", "A6" (Step 4 Questions, Step 6 Diary answers parsed in step 7)
             val step6Data = loadStepData(NightlySteps.STEP_CREATE_DIARY)
