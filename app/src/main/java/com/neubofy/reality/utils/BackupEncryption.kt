@@ -17,22 +17,29 @@ object BackupEncryption {
     private const val TAG_LENGTH = 128
 
 
-    private fun getSecretKey(): SecretKey {
-        // Derive a consistent key from Google Account ID or package name
-        // For cross-device backups, we shouldn't use AndroidKeyStore directly without user auth
-        // Use a static approach or derive from Android ID if cross-device isn't strictly required
-        // We will hash a constant string to create a 256-bit key for AES
-        val keyMaterial = "com.neubofy.reality.backup.key.v1".toByteArray()
+    fun getSecretKeyFromPassword(password: String?): SecretKey {
+        val keyMaterial = if (password != null) {
+            password.toByteArray()
+        } else {
+            "com.neubofy.reality.backup.key.v1".toByteArray()
+        }
+
         val md = java.security.MessageDigest.getInstance("SHA-256")
         val rawKey = md.digest(keyMaterial)
         return javax.crypto.spec.SecretKeySpec(rawKey, "AES")
     }
 
+    private fun getSecretKey(context: android.content.Context): SecretKey {
+        val prefs = context.getSharedPreferences("reality_encryption_prefs", android.content.Context.MODE_PRIVATE)
+        val password = prefs.getString("backup_password", null)
+        return getSecretKeyFromPassword(password)
+    }
 
-    fun encrypt(data: String): String {
+
+    fun encrypt(context: android.content.Context, data: String): String {
         try {
             val cipher = Cipher.getInstance(TRANSFORMATION)
-            cipher.init(Cipher.ENCRYPT_MODE, getSecretKey())
+            cipher.init(Cipher.ENCRYPT_MODE, getSecretKey(context))
 
             val iv = cipher.iv
             val encryptedData = cipher.doFinal(data.toByteArray(Charsets.UTF_8))
@@ -48,7 +55,7 @@ object BackupEncryption {
         }
     }
 
-    fun decrypt(encryptedString: String): String {
+    fun decrypt(context: android.content.Context, encryptedString: String, overridePassword: String? = null): String {
         try {
             if (!encryptedString.startsWith("ENC:")) {
                 return encryptedString // Not encrypted
@@ -62,7 +69,7 @@ object BackupEncryption {
 
             val cipher = Cipher.getInstance(TRANSFORMATION)
             val spec = GCMParameterSpec(TAG_LENGTH, iv)
-            cipher.init(Cipher.DECRYPT_MODE, getSecretKey(), spec)
+            cipher.init(Cipher.DECRYPT_MODE, if (overridePassword != null) getSecretKeyFromPassword(overridePassword) else getSecretKey(context), spec)
 
             val decryptedData = cipher.doFinal(encryptedData)
             return String(decryptedData, Charsets.UTF_8)

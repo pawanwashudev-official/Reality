@@ -194,14 +194,15 @@ object BackupManager {
                     onProgress(progress, "Exported ${category.displayName}")
                 }
 
-                rootJson.put("categories", categoriesJson)
+                // Encrypt categories before adding to root
+                val plainCategories = categoriesJson.toString()
+                val encryptedCategories = BackupEncryption.encrypt(context, plainCategories)
+                rootJson.put("encryptedCategories", encryptedCategories)
 
                 onProgress(0.75f, "Uploading to Google Drive...")
 
                 // Upload to Drive
-                val plainTextJson = rootJson.toString()
-                val encryptedJson = BackupEncryption.encrypt(plainTextJson)
-                val jsonBytes = encryptedJson.toByteArray(Charsets.UTF_8)
+                val jsonBytes = rootJson.toString(2).toByteArray(Charsets.UTF_8)
                 val inputStream = ByteArrayInputStream(jsonBytes)
 
                 // Get or create backup folder
@@ -251,6 +252,7 @@ object BackupManager {
      * @param onProgress Callback for progress updates
      */
     suspend fun restoreBackup(
+        password: String? = null,
         context: Context,
         categories: Set<BackupCategory>? = null, // null = restore all available
         onProgress: (Float, String) -> Unit = { _, _ -> }
@@ -280,8 +282,7 @@ object BackupManager {
                 val data = GoogleDriveManager.downloadFile(context, fileId)
                     ?: return@withContext BackupResult(false, "Failed to download backup")
 
-                val rawString = String(data, Charsets.UTF_8)
-                val jsonString = BackupEncryption.decrypt(rawString)
+                val jsonString = String(data, Charsets.UTF_8)
                 val rootJson = JSONObject(jsonString)
 
                 onProgress(0.3f, "Parsing backup data...")
@@ -293,7 +294,19 @@ object BackupManager {
                     return@withContext BackupResult(false, "Backup is from a newer app version. Please update the app.")
                 }
 
-                val categoriesJson = rootJson.getJSONObject("categories")
+                val encryptedCategories = rootJson.optString("encryptedCategories", "")
+                val categoriesJsonStr = if (encryptedCategories.isNotEmpty()) {
+                    val decrypted = BackupEncryption.decrypt(context, encryptedCategories, password)
+                    if (decrypted.startsWith("ENC:")) {
+                        return@withContext BackupResult(false, "Decryption failed. Incorrect password?")
+                    }
+                    decrypted
+                } else {
+                    // Fallback for old unencrypted backups (if any existed, but earlier logic put it in 'categories' object)
+                    rootJson.optJSONObject("categories")?.toString() ?: "{}"
+                }
+
+                val categoriesJson = JSONObject(categoriesJsonStr)
 
                 // Determine which categories to restore
                 val availableCategories = mutableSetOf<BackupCategory>()
@@ -438,8 +451,7 @@ object BackupManager {
                 // Get metadata from file
                 val data = GoogleDriveManager.downloadFile(context, backupFile.id)
                 if (data != null) {
-                    val rawString = String(data, Charsets.UTF_8)
-                    val jsonString = BackupEncryption.decrypt(rawString)
+                    val jsonString = String(data, Charsets.UTF_8)
                     val rootJson = JSONObject(jsonString)
                     val metadata = rootJson.getJSONObject("metadata")
                     val categoriesList = try {

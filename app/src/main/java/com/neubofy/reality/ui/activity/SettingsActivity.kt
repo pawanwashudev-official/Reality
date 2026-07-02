@@ -344,6 +344,12 @@ class SettingsActivity : BaseActivity() {
     }
 
     private fun updateUI() {
+        val cardEncryption = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_data_encryption)
+        cardEncryption?.setOnClickListener {
+            val intent = android.content.Intent(this, EncryptionSetupActivity::class.java)
+            startActivity(intent)
+        }
+
         // Features State
         val featureManager = com.neubofy.reality.utils.FeatureManager(this)
 
@@ -370,7 +376,21 @@ class SettingsActivity : BaseActivity() {
         binding.cardTapasyaSettings.visibility = if (featureManager.isTapasyaEnabled()) android.view.View.VISIBLE else android.view.View.GONE
         binding.cardSettingsReminders.visibility = if (featureManager.isReminderEnabled()) android.view.View.VISIBLE else android.view.View.GONE
 
-        // Account Status
+        // Encryption Status
+        val encPrefs = getSharedPreferences("reality_encryption_prefs", MODE_PRIVATE)
+        val hasEncryption = encPrefs.contains("backup_password")
+        val tvEncryptionStatus = findViewById<android.widget.TextView>(R.id.tv_encryption_status)
+        if (tvEncryptionStatus != null) {
+            if (hasEncryption) {
+                tvEncryptionStatus.text = "Active (Custom Password)"
+                tvEncryptionStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_light))
+            } else {
+                tvEncryptionStatus.text = "Default Encryption"
+                tvEncryptionStatus.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+            }
+        }
+
+        // Encryption Status
         if (com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)) {
             val name = com.neubofy.reality.google.GoogleAuthManager.getUserName(this)
             val email = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(this)
