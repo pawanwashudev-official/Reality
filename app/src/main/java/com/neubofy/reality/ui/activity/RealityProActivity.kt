@@ -421,12 +421,13 @@ class RealityProActivity : BaseActivity() {
         }
 
         val userId = MD5Utils.getUserIdFromEmail(email)
-        val baseUrl = BuildConfig.REALITY_LICENSE_URL
+        val workerUrl = BuildConfig.WORKER_URL
 
-        if (baseUrl.isEmpty()) {
-            Toast.makeText(this, "License URL not configured in build.", Toast.LENGTH_SHORT).show()
+        if (workerUrl.isEmpty()) {
+            Toast.makeText(this, "Worker URL not configured in build.", Toast.LENGTH_SHORT).show()
             return
         }
+        val baseUrl = "$workerUrl/license"
 
         findViewById<MaterialButton>(R.id.btn_verify).isEnabled = false
         findViewById<MaterialButton>(R.id.btn_verify).text = "Verifying..."

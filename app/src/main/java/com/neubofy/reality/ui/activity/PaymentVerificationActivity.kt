@@ -151,12 +151,13 @@ class PaymentVerificationActivity : BaseActivity() {
     }
 
     private fun submitPaymentRequest(transactionId: String, customNote: String) {
-        val baseUrl = BuildConfig.REALITY_LICENSE_URL
+        val workerUrl = BuildConfig.WORKER_URL
 
-        if (baseUrl.isEmpty()) {
-            Toast.makeText(this, "License URL not configured in build.", Toast.LENGTH_SHORT).show()
+        if (workerUrl.isEmpty()) {
+            Toast.makeText(this, "Worker URL not configured in build.", Toast.LENGTH_SHORT).show()
             return
         }
+        val baseUrl = "$workerUrl/license"
 
         btnSubmitRequest.isEnabled = false
         btnSubmitRequest.text = "Submitting..."

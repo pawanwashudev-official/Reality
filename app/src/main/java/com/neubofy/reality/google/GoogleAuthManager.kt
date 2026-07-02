@@ -76,38 +76,40 @@ object GoogleAuthManager {
     }
 
     fun getClientId(context: Context): String? {
-        val id = getCustomClientId(context)
-        if (!id.isNullOrBlank()) return id
-        val defaultId = com.neubofy.reality.BuildConfig.DEFAULT_CLIENT_ID
-        return if (defaultId.isNotBlank()) defaultId else null
+        return getCustomClientId(context)
     }
 
     fun getClientSecret(context: Context): String? {
-        val secret = getCustomClientSecret(context)
-        if (!secret.isNullOrBlank()) return secret
-        val defaultSecret = com.neubofy.reality.BuildConfig.DEFAULT_CLIENT_SECRET
-        return if (defaultSecret.isNotBlank()) defaultSecret else null
+        return getCustomClientSecret(context)
     }
+
     fun hasCloudCredentials(context: Context): Boolean {
-        val clientId = getClientId(context)
-        val clientSecret = getClientSecret(context)
-        return !clientId.isNullOrBlank() && !clientSecret.isNullOrBlank()
+        val customHasCredentials = !getClientId(context).isNullOrBlank() && !getClientSecret(context).isNullOrBlank()
+        val workerUrl = com.neubofy.reality.BuildConfig.WORKER_URL
+        return customHasCredentials || workerUrl.isNotBlank()
     }
     
 
 
 
     fun getAuthUrl(context: Context, basicOnly: Boolean = false): String? {
-        val clientId = getClientId(context) ?: return null
         val scopes = if (basicOnly) BASIC_SCOPES else ALL_SCOPES
+        val clientId = getClientId(context)
+        val workerUrl = com.neubofy.reality.BuildConfig.WORKER_URL
 
-        return GoogleAuthorizationCodeRequestUrl(
-            clientId,
-            "http://127.0.0.1:8080/Callback",
-            scopes
-        )
-        .setAccessType("offline")
-        .build()
+        if (!clientId.isNullOrBlank()) {
+            return GoogleAuthorizationCodeRequestUrl(
+                clientId,
+                "http://127.0.0.1:8080/Callback",
+                scopes
+            )
+            .setAccessType("offline")
+            .build()
+        } else if (workerUrl.isNotBlank()) {
+             val scopeStr = scopes.joinToString(" ")
+             return "$workerUrl/oauth/auth?scope=${java.net.URLEncoder.encode(scopeStr, "UTF-8")}&redirect_uri=${java.net.URLEncoder.encode("http://127.0.0.1:8080/Callback", "UTF-8")}"
+        }
+        return null
     }
     
 
@@ -161,24 +163,56 @@ object GoogleAuthManager {
         return withContext(Dispatchers.IO) {
             val clientId = getClientId(context)
             val clientSecret = getClientSecret(context)
+            val workerUrl = com.neubofy.reality.BuildConfig.WORKER_URL
 
             if (clientId.isNullOrBlank() || clientSecret.isNullOrBlank()) {
-                return@withContext false
+                if (workerUrl.isBlank()) {
+                    return@withContext false
+                }
             }
 
             try {
-                val tokenResponse = GoogleAuthorizationCodeTokenRequest(
-                    getHttpTransport(),
-                    getJsonFactory(),
-                    clientId,
-                    clientSecret,
-                    code,
-                    "http://127.0.0.1:8080/Callback"
-                ).execute()
+                val accessToken: String?
+                val refreshToken: String?
 
+                if (!clientId.isNullOrBlank() && !clientSecret.isNullOrBlank()) {
+                    val tokenResponse = GoogleAuthorizationCodeTokenRequest(
+                        getHttpTransport(),
+                        getJsonFactory(),
+                        clientId,
+                        clientSecret,
+                        code,
+                        "http://127.0.0.1:8080/Callback"
+                    ).execute()
+                    accessToken = tokenResponse.accessToken
+                    refreshToken = tokenResponse.refreshToken
+                } else {
+                     val url = URL("$workerUrl/oauth/token")
+                     val conn = url.openConnection() as HttpURLConnection
+                     conn.requestMethod = "POST"
+                     conn.setRequestProperty("Content-Type", "application/json")
+                     conn.doOutput = true
 
-                val accessToken = tokenResponse.accessToken
-                val refreshToken = tokenResponse.refreshToken
+                     val jsonBody = JSONObject()
+                     jsonBody.put("code", code)
+                     jsonBody.put("redirect_uri", "http://127.0.0.1:8080/Callback")
+                     jsonBody.put("grant_type", "authorization_code")
+
+                     java.io.OutputStreamWriter(conn.outputStream).use { writer ->
+                         writer.write(jsonBody.toString())
+                     }
+
+                     if (conn.responseCode == 200) {
+                         val response = conn.inputStream.bufferedReader().use { it.readText() }
+                         val json = JSONObject(response)
+                         accessToken = json.optString("access_token", null)
+                         refreshToken = json.optString("refresh_token", null)
+                     } else {
+                         accessToken = null
+                         refreshToken = null
+                         TerminalLogger.log("GOOGLE AUTH: Token exchange failed with status ${conn.responseCode}")
+                     }
+                }
 
                 if (accessToken != null) {
                     getPrefs(context).edit().apply {
@@ -259,17 +293,32 @@ object GoogleAuthManager {
         val refreshToken = getPrefs(context).getString(KEY_REFRESH_TOKEN, null)
         val clientId = getClientId(context)
         val clientSecret = getClientSecret(context)
+        val workerUrl = com.neubofy.reality.BuildConfig.WORKER_URL
         
-        if (accessToken.isNullOrBlank() || clientId.isNullOrBlank() || clientSecret.isNullOrBlank()) {
+        if (accessToken.isNullOrBlank()) {
+            return null
+        }
+
+        val hasCustomAuth = !clientId.isNullOrBlank() && !clientSecret.isNullOrBlank()
+
+        if (!hasCustomAuth && workerUrl.isBlank()) {
             return null
         }
         
-        return Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
+        val builder = Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
             .setTransport(getHttpTransport())
             .setJsonFactory(getJsonFactory())
-            .setTokenServerUrl(com.google.api.client.http.GenericUrl("https://oauth2.googleapis.com/token"))
-            .setClientAuthentication(ClientParametersAuthentication(clientId, clientSecret))
-            .build()
+
+        if (hasCustomAuth) {
+            builder.setTokenServerUrl(com.google.api.client.http.GenericUrl("https://oauth2.googleapis.com/token"))
+            builder.setClientAuthentication(ClientParametersAuthentication(clientId, clientSecret))
+        } else {
+            builder.setTokenServerUrl(com.google.api.client.http.GenericUrl("$workerUrl/oauth/token"))
+            // Provide a dummy client authentication to satisfy the Java client requirement. The worker doesn't need them.
+            builder.setClientAuthentication(ClientParametersAuthentication("dummy_id", "dummy_secret"))
+        }
+
+        return builder.build()
             .setAccessToken(accessToken)
             .setRefreshToken(refreshToken)
     }
