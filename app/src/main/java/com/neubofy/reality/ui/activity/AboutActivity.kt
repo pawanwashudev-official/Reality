@@ -11,11 +11,22 @@ import com.neubofy.reality.utils.UpdateManager
 import android.view.View
 import android.widget.Toast
 
+import androidx.lifecycle.lifecycleScope
+import io.noties.markwon.Markwon
+import io.noties.markwon.image.ImagesPlugin
+import io.noties.markwon.image.coil.CoilImagesPlugin
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.URL
+
 class AboutActivity : BaseActivity() {
 
     private lateinit var binding: ActivityAboutBinding
 
+
     companion object {
+        const val ABOUT_MD_URL = "https://raw.githubusercontent.com/pawanwashudev-official/Reality/main/ABOUT.md"
         const val GITHUB_PROFILE = "https://github.com/pawanwashudev-official"
         const val GITHUB_REPO = "https://github.com/pawanwashudev-official/Reality"
         const val TELEGRAM = "https://t.me/pawanwashudev"
@@ -112,7 +123,36 @@ class AboutActivity : BaseActivity() {
                 }
             }
         }
+
+        // Load Markdown Content
+        loadAboutContent()
     }
+
+    private fun loadAboutContent() {
+        val prefs = getSharedPreferences("about_cache", android.content.Context.MODE_PRIVATE)
+        val cachedContent = prefs.getString("markdown_content", null)
+
+        val markwon = Markwon.builder(this)
+            // .usePlugin(CoilImagesPlugin.create(this)) // Add this if you want image support
+            .build()
+
+        if (cachedContent != null) {
+            markwon.setMarkdown(binding.tvMarkdownContent, cachedContent)
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val content = URL(ABOUT_MD_URL).readText()
+                withContext(Dispatchers.Main) {
+                    markwon.setMarkdown(binding.tvMarkdownContent, content)
+                    prefs.edit().putString("markdown_content", content).apply()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
 
     private fun openUrl(url: String) {
         try {

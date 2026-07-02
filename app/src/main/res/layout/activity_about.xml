@@ -123,163 +123,20 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Why Reality is Best Card -->
-            <com.google.android.material.card.MaterialCardView
+            <!-- Markdown Content -->
+            <TextView
+                android:id="@+id/tv_markdown_content"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="24dp"
-                app:cardBackgroundColor="@android:color/transparent"
-                app:strokeColor="?attr/colorPrimaryContainer"
-                app:strokeWidth="1dp"
-                android:layout_marginBottom="16dp">
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="14sp"
+                android:layout_marginBottom="24dp"
+                android:padding="8dp"/>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="24dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="16dp">
-                        
-                        <ImageView
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
-                            android:src="@drawable/baseline_auto_awesome_24"
-                            app:tint="?attr/colorPrimary"/>
-                            
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Why Reality is Best"
-                            android:textColor="?attr/colorPrimary"
 
-                            android:textStyle="bold"
-                            android:textSize="18sp"
-                            android:layout_marginStart="12dp"/>
-                    </LinearLayout>
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Unlike other blockers, Reality isn't just about saying NO. It's about saying YES to what matters."
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:textSize="14sp"
-                        android:lineSpacingMultiplier="1.4"
-                        android:layout_marginBottom="16dp"/>
 
-                    <!-- Feature: Smart Blocking -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="12dp">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🛡️" android:textSize="20sp"/>
-                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Strict Mode Protection" android:textColor="?attr/colorPrimary"
-        android:fontFamily="monospace" android:textStyle="bold" android:textSize="14sp"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Unbreakable locks when you need willpower" android:textColor="?attr/colorOnSurfaceVariant" android:textSize="12sp"/>
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <!-- Feature: Calendar Sync -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="12dp">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📅" android:textSize="20sp"/>
-                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Calendar Integration" android:textColor="?attr/colorPrimary"
-         android:textStyle="bold" android:textSize="14sp"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Auto-focus during your meetings and events" android:textColor="?attr/colorOnSurfaceVariant" android:textSize="12sp"/>
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <!-- Feature: Usage Insights -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="12dp">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📊" android:textSize="20sp"/>
-                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Deep Usage Analytics" android:textColor="?attr/colorPrimary"
-        android:fontFamily="monospace" android:textStyle="bold" android:textSize="14sp"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Understand your habits with real data" android:textColor="?attr/colorOnSurfaceVariant" android:textSize="12sp"/>
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <!-- Feature: Smart Reminders -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="12dp">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🔔" android:textSize="20sp"/>
-                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Intelligent Reminders" android:textColor="?attr/colorPrimary"
-         android:textStyle="bold" android:textSize="14sp"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gentle nudges to stay on track" android:textColor="?attr/colorOnSurfaceVariant" android:textSize="12sp"/>
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <!-- Feature: No Ads, Open Source -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💎" android:textSize="20sp"/>
-                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="99.9% Open Source (Pro Optional)" android:textColor="?attr/colorPrimary"
-        android:fontFamily="monospace" android:textStyle="bold" android:textSize="14sp"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="No ads. No tracking." android:textColor="?attr/colorOnSurfaceVariant" android:textSize="12sp"/>
-                        </LinearLayout>
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Philosophy Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="24dp"
-                app:cardBackgroundColor="@android:color/transparent"
-                app:strokeColor="?attr/colorPrimaryContainer"
-                app:strokeWidth="1dp"
-                android:layout_marginBottom="24dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="24dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="OUR PHILOSOPHY"
-                        android:textColor="?attr/colorPrimary"
-                        android:textStyle="bold"
-                        android:textSize="11sp"
-                        android:textAllCaps="true"
-                        android:letterSpacing="0.1"
-                        android:layout_marginBottom="8dp"/>
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="&quot;Technology should serve you, not consume you. Reality isn't just an app—it's a movement towards digital mindfulness. We believe in reclaiming your attention, one focused session at a time.&quot;"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:textSize="15sp"
-
-                        android:lineSpacingMultiplier="1.5"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
             <!-- Support Us Card -->
             <com.google.android.material.card.MaterialCardView
