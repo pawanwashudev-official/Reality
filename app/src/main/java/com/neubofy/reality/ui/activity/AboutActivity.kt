@@ -149,7 +149,10 @@ class AboutActivity : BaseActivity() {
             val context = this
             val layout = LinearLayout(context)
             layout.orientation = LinearLayout.VERTICAL
-            layout.setPadding(50, 40, 50, 10)
+                        val paddingPx = android.util.TypedValue.applyDimension(
+                android.util.TypedValue.COMPLEX_UNIT_DIP, 24f, context.resources.displayMetrics
+            ).toInt()
+            layout.setPadding(paddingPx, paddingPx, paddingPx, paddingPx)
 
             val titleBox = EditText(context)
             titleBox.hint = "Issue Title"

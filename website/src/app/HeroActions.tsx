@@ -3,6 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { Download, X, BookOpen, FileCode, CheckCircle, Package } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
+import rehypeRaw from 'rehype-raw';
+
 
 export default function HeroActions({ latestVersion }: { latestVersion: string }) {
   const [showReadme, setShowReadme] = useState(false);
@@ -96,7 +100,13 @@ export default function HeroActions({ latestVersion }: { latestVersion: string }
             </div>
             <div className="p-6 overflow-y-auto prose prose-invert prose-neural max-w-none">
               {readmeContent ? (
-                <ReactMarkdown>{readmeContent}</ReactMarkdown>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkBreaks]}
+                  rehypePlugins={[rehypeRaw]}
+                  components={{
+                    img: ({node, ...props}) => <img style={{maxWidth: '100%', height: 'auto', borderRadius: '0.5rem', marginTop: '1rem', marginBottom: '1rem'}} {...props} />
+                  }}
+                >{readmeContent}</ReactMarkdown>
               ) : (
                 <div className="flex justify-center py-20 text-neural-cyan animate-pulse">Loading...</div>
               )}
@@ -126,7 +136,7 @@ export default function HeroActions({ latestVersion }: { latestVersion: string }
                     <div className="bg-neural-card border border-neural-cyan/30 p-6 rounded-xl text-center">
                         <h3 className="text-xl font-bold text-white mb-2">Ready to Install</h3>
                         <p className="text-gray-400 mb-6">This APK has been intelligently selected as the latest stable build.</p>
-                        <a href={bestApkUrl} className="inline-flex items-center gap-2 bg-neural-cyan text-black px-8 py-4 rounded-xl font-bold text-lg hover:bg-cyan-400 transition transform hover:scale-105">
+                        <a href={bestApkUrl} download className="inline-flex items-center gap-2 bg-neural-cyan text-black px-8 py-4 rounded-xl font-bold text-lg hover:bg-cyan-400 transition transform hover:scale-105">
                             <Download /> Download APK Now
                         </a>
                     </div>
@@ -135,7 +145,13 @@ export default function HeroActions({ latestVersion }: { latestVersion: string }
                   <div className="bg-black/40 border border-gray-800 p-6 rounded-xl">
                       <h3 className="text-lg font-bold text-white mb-4 border-b border-gray-800 pb-2">Release Notes</h3>
                       <div className="prose prose-invert prose-neural max-w-none">
-                          <ReactMarkdown>{releaseData.body || 'No release notes provided.'}</ReactMarkdown>
+                          <ReactMarkdown
+                              remarkPlugins={[remarkGfm, remarkBreaks]}
+                              rehypePlugins={[rehypeRaw]}
+                              components={{
+                                img: ({node, ...props}) => <img style={{maxWidth: '100%', height: 'auto', borderRadius: '0.5rem'}} {...props} />
+                              }}
+                            >{releaseData.body || 'No release notes provided.'}</ReactMarkdown>
                       </div>
                   </div>
 

@@ -19,8 +19,25 @@ module.exports = {
       },
       boxShadow: {
         'neon': '0 0 15px rgba(0, 229, 255, 0.5)',
-      }
+      },
+      typography: (theme) => ({
+        neural: {
+          css: {
+            '--tw-prose-body': theme('colors.gray[300]'),
+            '--tw-prose-headings': theme('colors.white'),
+            '--tw-prose-links': theme('colors.neural-cyan'),
+            '--tw-prose-bold': theme('colors.white'),
+            '--tw-prose-quotes': theme('colors.neural-purple'),
+            '--tw-prose-code': theme('colors.neural-cyan'),
+            '--tw-prose-hr': theme('colors.gray[800]'),
+            '--tw-prose-th-borders': theme('colors.gray[700]'),
+            '--tw-prose-td-borders': theme('colors.gray[800]'),
+          },
+        },
+      }),
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 }
