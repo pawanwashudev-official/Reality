@@ -1,5 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
+import HeroActions from './HeroActions';
+
 import { Download, Star, Shield, Lock, Brain, Smartphone, Database, HeartPulse, Moon, Zap, CheckCircle, Crosshair, Target, EyeOff, Layout, FileText, SmartphoneCharging, Cpu } from 'lucide-react';
 
 export default async function Home() {
@@ -79,21 +81,7 @@ export default async function Home() {
              </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-            <Link
-              href="https://github.com/pawanwashudev-official/Reality/releases/latest"
-              className="w-full sm:w-auto px-8 py-4 bg-white text-black text-lg font-bold rounded-xl hover:bg-gray-200 transition-colors shadow-lg flex items-center justify-center gap-2"
-            >
-              <Download size={20} />
-              Download APK
-            </Link>
-            <Link
-              href="https://github.com/pawanwashudev-official/Reality"
-              className="w-full sm:w-auto px-8 py-4 bg-neural-card border border-gray-700 text-white text-lg font-bold rounded-xl hover:border-gray-500 transition-colors shadow-lg"
-            >
-              View Source Code
-            </Link>
-          </div>
+          <HeroActions latestVersion={latestVersion} />
 
           <div className="mt-8 flex justify-center">
              <a href='https://reality-digital-wellbeing-and-focus.en.uptodown.com/android' title='Download Reality - The Intelligent Life OS' >
@@ -303,6 +291,43 @@ export default async function Home() {
                          <li>• Customize Cinematic Appearance Theme</li>
                          <li>• Import existing backups</li>
                      </ul>
+                 </div>
+             </div>
+         </div>
+      </section>
+
+
+      {/* Google Cloud Credential Guide Section */}
+      <section className="py-24 bg-neural-bg border-b border-gray-800">
+         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+             <div className="text-center mb-12">
+                <h2 className="text-3xl font-bold text-white mb-4">Own Your Data</h2>
+                <p className="text-gray-400">How to set up your own Google Cloud Credentials for maximum privacy.</p>
+             </div>
+
+             <div className="bg-neural-card p-8 rounded-2xl border border-gray-800 shadow-lg">
+                 <h3 className="text-2xl font-bold text-neural-cyan mb-6">Bring Your Own Cloud (BYOC)</h3>
+                 <p className="text-gray-300 mb-6 leading-relaxed">
+                     Reality is built on a local-first philosophy. Rather than trusting a central server with your Tasks, Calendar, and Drive backups, you can connect your own Google Cloud project. This ensures your data goes straight from your device to your Google account, with zero middlemen.
+                 </p>
+
+                 <div className="space-y-6">
+                     <div className="border-l-2 border-neural-purple pl-6">
+                         <h4 className="text-lg font-bold text-white mb-2">1. Create a Google Cloud Project</h4>
+                         <p className="text-gray-400">Navigate to the Google Cloud Console, create a new project, and enable the Google Calendar API, Google Drive API, and Google Tasks API.</p>
+                     </div>
+                     <div className="border-l-2 border-neural-cyan pl-6">
+                         <h4 className="text-lg font-bold text-white mb-2">2. Configure OAuth Consent</h4>
+                         <p className="text-gray-400">Set up your OAuth consent screen. Add your email as a test user, and add the necessary scopes for Calendar, Drive, and Tasks.</p>
+                     </div>
+                     <div className="border-l-2 border-pink-500 pl-6">
+                         <h4 className="text-lg font-bold text-white mb-2">3. Generate Credentials</h4>
+                         <p className="text-gray-400">Go to Credentials &gt; Create Credentials &gt; OAuth client ID. Choose 'Android' or 'Web application' based on the app's prompt, and copy your Client ID.</p>
+                     </div>
+                     <div className="border-l-2 border-blue-500 pl-6">
+                         <h4 className="text-lg font-bold text-white mb-2">4. Connect in Reality</h4>
+                         <p className="text-gray-400">Open Reality, go to Settings &gt; Integrations &gt; Google Setup. Paste your Client ID and Client Secret, and authenticate. Your personal sync is now active!</p>
+                     </div>
                  </div>
              </div>
          </div>

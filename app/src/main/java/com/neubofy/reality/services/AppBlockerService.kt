@@ -1065,15 +1065,20 @@ class AppBlockerService : BaseBlockingService() {
         
         // Launch Block Activity
         try {
-            val intent = Intent(this, com.neubofy.reality.ui.activity.BlockActivity::class.java).apply {
-                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION)
-                 putExtra("pkg", packageName)
-                 putExtra("reason", reason)
-            }
-            startActivity(intent)
+            performGlobalAction(GLOBAL_ACTION_HOME) // Force app to background
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                val intent = Intent(this, com.neubofy.reality.ui.activity.BlockActivity::class.java).apply {
+                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION)
+                     putExtra("pkg", packageName)
+                     putExtra("reason", reason)
+                }
+                try {
+                    startActivity(intent)
+                } catch(e: Exception) {}
+            }, 300)
         } catch (e: Exception) {
             // Fallback if activity fails
-            pressHome()
+            performGlobalAction(GLOBAL_ACTION_HOME)
             Toast.makeText(this, reason, Toast.LENGTH_SHORT).show()
         }
         
@@ -1356,22 +1361,27 @@ class AppBlockerService : BaseBlockingService() {
                             startActivity(intent)
                         } catch (e: Exception) {}
                         
-                        // 2. Launch Block Activity Over Everything (Inescapable)
-                        val blockIntent = Intent(this@AppBlockerService, com.neubofy.reality.ui.activity.BlockActivity::class.java).apply {
-                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK) 
-                             putExtra("pkg", packageName)
-                             putExtra("reason", "Website Blocked: $blockedItem")
-                        }
-                        
-                        // FIX: UI Interactions on Main Thread
-                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                            try {
-                                startActivity(blockIntent)
-                            } catch (e: Exception) {}
+                        // 1.5 Go home to close the app properly
+                        performGlobalAction(GLOBAL_ACTION_HOME)
+
+                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                            // 2. Launch Block Activity Over Everything (Inescapable)
+                            val blockIntent = Intent(this@AppBlockerService, com.neubofy.reality.ui.activity.BlockActivity::class.java).apply {
+                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                                 putExtra("pkg", packageName)
+                                 putExtra("reason", "Website Blocked: $blockedItem")
+                            }
                             
-                            // 3. Accessibility Back (Just in case)
-                            performGlobalAction(GLOBAL_ACTION_BACK)
-                        }
+                            // FIX: UI Interactions on Main Thread
+                            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                                try {
+                                    startActivity(blockIntent)
+                                } catch (e: Exception) {}
+
+                                // 3. Accessibility Back (Just in case)
+                                performGlobalAction(GLOBAL_ACTION_BACK)
+                            }
+                        }, 300)
                         
                         return
                     }

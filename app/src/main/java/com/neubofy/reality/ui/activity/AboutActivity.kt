@@ -2,7 +2,6 @@ package com.neubofy.reality.ui.activity
 
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.neubofy.reality.ui.base.BaseActivity
@@ -10,6 +9,12 @@ import com.neubofy.reality.databinding.ActivityAboutBinding
 import com.neubofy.reality.utils.UpdateManager
 import android.view.View
 import android.widget.Toast
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.net.Uri
+import java.net.URLEncoder
+
 
 import androidx.lifecycle.lifecycleScope
 import io.noties.markwon.Markwon
@@ -114,14 +119,66 @@ class AboutActivity : BaseActivity() {
             binding.progressUpdate.visibility = View.VISIBLE
             binding.tvUpdateStatus.text = "Checking for updates..."
             
-            UpdateManager.checkForUpdates(this, silent = false) {
+            UpdateManager.checkForUpdates(this, silent = false, isBeta = false, onCheckComplete = {
                 // This callback only runs if NO update is found (silent=false)
                 runOnUiThread {
                     binding.progressUpdate.visibility = View.GONE
-                    binding.tvUpdateStatus.text = "You're on the latest version"
-                    Toast.makeText(this, "Reality is up to date!", Toast.LENGTH_SHORT).show()
+                    binding.tvUpdateStatus.text = "Keep Reality at its best"
+
                 }
-            }
+            })
+        }
+
+
+        // Beta Update Check
+        binding.cardBetaUpdate.setOnClickListener {
+            binding.progressBetaUpdate.visibility = View.VISIBLE
+            binding.tvBetaUpdateStatus.text = "Checking for beta updates..."
+
+            UpdateManager.checkForUpdates(this, silent = false, isBeta = true, onCheckComplete = {
+                runOnUiThread {
+                    binding.progressBetaUpdate.visibility = View.GONE
+                    binding.tvBetaUpdateStatus.text = "Get early access features"
+
+                }
+            })
+        }
+
+        // Raise Issue
+        binding.cardRaiseIssue.setOnClickListener {
+            val context = this
+            val layout = LinearLayout(context)
+            layout.orientation = LinearLayout.VERTICAL
+                        val paddingPx = android.util.TypedValue.applyDimension(
+                android.util.TypedValue.COMPLEX_UNIT_DIP, 24f, context.resources.displayMetrics
+            ).toInt()
+            layout.setPadding(paddingPx, paddingPx, paddingPx, paddingPx)
+
+            val titleBox = EditText(context)
+            titleBox.hint = "Issue Title"
+            layout.addView(titleBox)
+
+            val descBox = EditText(context)
+            descBox.hint = "Issue Description"
+            descBox.minLines = 3
+            layout.addView(descBox)
+
+            MaterialAlertDialogBuilder(context)
+                .setTitle("Report an Issue")
+                .setView(layout)
+                .setPositiveButton("Submit") { _, _ ->
+                    val title = URLEncoder.encode(titleBox.text.toString(), "UTF-8")
+                    val body = URLEncoder.encode(descBox.text.toString(), "UTF-8")
+                    val url = "https://github.com/pawanwashudev-official/Reality/issues/new?title=$title&body=$body"
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    try {
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Could not open browser", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
         }
 
         // Load Markdown Content

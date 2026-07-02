@@ -28,13 +28,13 @@ object UpdateManager {
     private const val KEY_LAST_CHECK_TIME = "last_check_time"
     private const val CHECK_INTERVAL_DAYS = 7L
 
-    private const val GITHUB_API_URL = "https://api.github.com/repos/pawanwashudev-official/Reality/releases/latest"
+    private const val GITHUB_API_URL = "https://api.github.com/repos/pawanwashudev-official/Reality/releases"
 
     /**
      * Check for updates.
      * @param silent If true, only checks if 7 days have passed since last check.
      */
-    fun checkForUpdates(context: Context, silent: Boolean = true, onNoUpdate: (() -> Unit)? = null) {
+    fun checkForUpdates(context: Context, silent: Boolean = true, isBeta: Boolean = false, onCheckComplete: (() -> Unit)? = null) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val lastCheck = prefs.getLong(KEY_LAST_CHECK_TIME, 0L)
         val now = System.currentTimeMillis()
@@ -46,60 +46,79 @@ object UpdateManager {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val response = fetchGitHubRelease()
-                if (response != null) {
-                    val latestVersion = response.getString("tag_name").replace("v", "")
-                    val assetsArray = response.getJSONArray("assets")
-
+                val releases = fetchGitHubReleases()
+                if (releases != null) {
+                    var bestRelease: JSONObject? = null
                     var bestApkUrl = ""
                     var maxTimestamp = 0L
+                    var bestVersion = ""
+                    var bestNotes = ""
 
-                    // Regex to extract timestamp from Reality-v1.0.7-123456789-release.apk
                     val regex = Regex(".*-(\\d{13,})-.*\\.apk")
 
-                    for (i in 0 until assetsArray.length()) {
-                        val asset = assetsArray.getJSONObject(i)
-                        val name = asset.getString("name")
-                        if (name.endsWith(".apk")) {
-                            val match = regex.find(name)
-                            if (match != null) {
-                                val timestamp = match.groupValues[1].toLongOrNull() ?: 0L
-                                if (timestamp > maxTimestamp) {
-                                    maxTimestamp = timestamp
-                                    bestApkUrl = asset.getString("browser_download_url")
-                                }
-                            } else {
-                                // Fallback if filename doesn't match the new convention
-                                if (bestApkUrl.isEmpty()) {
-                                    bestApkUrl = asset.getString("browser_download_url")
+                    for (r in 0 until releases.length()) {
+                        val release = releases.getJSONObject(r)
+                        val isPrerelease = release.getBoolean("prerelease")
+
+                        if (isPrerelease == isBeta) {
+                            val assetsArray = release.getJSONArray("assets")
+                            val version = release.getString("tag_name").replace("v", "")
+
+                            for (i in 0 until assetsArray.length()) {
+                                val asset = assetsArray.getJSONObject(i)
+                                val name = asset.getString("name")
+                                if (name.endsWith(".apk")) {
+                                    val match = regex.find(name)
+                                    if (match != null) {
+                                        val timestamp = match.groupValues[1].toLongOrNull() ?: 0L
+                                        if (timestamp > maxTimestamp) {
+                                            maxTimestamp = timestamp
+                                            bestApkUrl = asset.getString("browser_download_url")
+                                            bestRelease = release
+                                            bestVersion = version
+                                            bestNotes = release.getString("body")
+                                        }
+                                    } else {
+                                        // Fallback: if no timestamp but it's the first matching release we see (which is newest by date)
+                                        if (bestApkUrl.isEmpty() && bestRelease == null) {
+                                            bestApkUrl = asset.getString("browser_download_url")
+                                            bestRelease = release
+                                            bestVersion = version
+                                            bestNotes = release.getString("body")
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
 
-                    val releaseNotes = response.getString("body")
+                    if (bestRelease != null) {
+                        val isEligible = (maxTimestamp > 0 && maxTimestamp > BuildConfig.BUILD_TIMESTAMP) ||
+                                         (maxTimestamp == 0L && isNewerVersion(bestVersion, BuildConfig.VERSION_NAME))
 
-                    // Compare remote timestamp with local BUILD_TIMESTAMP
-                    val isEligible = maxTimestamp > BuildConfig.BUILD_TIMESTAMP || isNewerVersion(latestVersion, BuildConfig.VERSION_NAME)
-
-                    if (isEligible && bestApkUrl.isNotEmpty()) {
-                        withContext(Dispatchers.Main) {
-                            showUpdateDialog(context, latestVersion, bestApkUrl, releaseNotes)
+                        if (isEligible && bestApkUrl.isNotEmpty()) {
+                            withContext(Dispatchers.Main) {
+                                onCheckComplete?.invoke()
+                                showUpdateDialog(context, bestVersion, bestApkUrl, bestNotes)
+                            }
+                        } else {
+                            if (!silent) withContext(Dispatchers.Main) { onCheckComplete?.invoke() }
                         }
                     } else {
-                        if (!silent) withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
+                        if (!silent) withContext(Dispatchers.Main) { onCheckComplete?.invoke() }
                     }
+                } else {
+                    if (!silent) withContext(Dispatchers.Main) { onCheckComplete?.invoke() }
                 }
-                // Save last check time even if no update found
                 prefs.edit().putLong(KEY_LAST_CHECK_TIME, now).apply()
             } catch (e: Exception) {
                 Log.e(TAG, "Update check failed", e)
-                if (!silent) withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
+                if (!silent) withContext(Dispatchers.Main) { onCheckComplete?.invoke() }
             }
         }
     }
 
-    private fun fetchGitHubRelease(): JSONObject? {
+    private fun fetchGitHubReleases(): JSONArray? {
         return try {
             val url = URL(GITHUB_API_URL)
             val connection = url.openConnection() as HttpURLConnection
@@ -108,7 +127,7 @@ object UpdateManager {
             connection.readTimeout = 10000
             
             val content = connection.inputStream.bufferedReader().use { it.readText() }
-            JSONObject(content)
+            JSONArray(content)
         } catch (e: Exception) {
             null
         }
@@ -145,16 +164,23 @@ object UpdateManager {
     }
 
 
-    private fun showUpdateDialog(context: Context, version: String, url: String, notes: String) {
-        // azhon AppUpdate manager handles the professional UI and installation prompt
-        val manager = DownloadManager.Builder(context as android.app.Activity).apply {
-            apkUrl(url)
-            apkName("Reality-v$version.apk")
-            smallIcon(R.mipmap.ic_launcher)
-            apkVersionName(version)
-            apkDescription(notes)
-            // The library automatically handles REQUEST_INSTALL_PACKAGES flow
-        }.build()
-        manager.download()
+private fun showUpdateDialog(context: Context, version: String, url: String, notes: String) {
+        AlertDialog.Builder(context)
+            .setTitle("Update Available")
+            .setMessage("Version $version is available.\n\nRelease Notes:\n$notes\n\nDo you want to update now?")
+            .setPositiveButton("Update") { _, _ ->
+                // azhon AppUpdate manager handles the professional UI and installation prompt
+                val manager = DownloadManager.Builder(context as android.app.Activity).apply {
+                    apkUrl(url)
+                    apkName("Reality-v$version.apk")
+                    smallIcon(R.mipmap.ic_launcher)
+                    apkVersionName(version)
+                    apkDescription(notes)
+                    // The library automatically handles REQUEST_INSTALL_PACKAGES flow
+                }.build()
+                manager.download()
+            }
+            .setNegativeButton("Later", null)
+            .show()
     }
 }
