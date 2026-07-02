@@ -119,14 +119,14 @@ class AboutActivity : BaseActivity() {
             binding.progressUpdate.visibility = View.VISIBLE
             binding.tvUpdateStatus.text = "Checking for updates..."
             
-            UpdateManager.checkForUpdates(this, silent = false) {
+            UpdateManager.checkForUpdates(this, silent = false, isBeta = false, onCheckComplete = {
                 // This callback only runs if NO update is found (silent=false)
                 runOnUiThread {
                     binding.progressUpdate.visibility = View.GONE
-                    binding.tvUpdateStatus.text = "You're on the latest version"
-                    Toast.makeText(this, "Reality is up to date!", Toast.LENGTH_SHORT).show()
+                    binding.tvUpdateStatus.text = "Keep Reality at its best"
+
                 }
-            }
+            })
         }
 
 
@@ -135,13 +135,13 @@ class AboutActivity : BaseActivity() {
             binding.progressBetaUpdate.visibility = View.VISIBLE
             binding.tvBetaUpdateStatus.text = "Checking for beta updates..."
 
-            UpdateManager.checkForUpdates(this, silent = false, isBeta = true) {
+            UpdateManager.checkForUpdates(this, silent = false, isBeta = true, onCheckComplete = {
                 runOnUiThread {
                     binding.progressBetaUpdate.visibility = View.GONE
-                    binding.tvBetaUpdateStatus.text = "You're on the latest beta version"
-                    Toast.makeText(this, "No beta updates found!", Toast.LENGTH_SHORT).show()
+                    binding.tvBetaUpdateStatus.text = "Get early access features"
+
                 }
-            }
+            })
         }
 
         // Raise Issue

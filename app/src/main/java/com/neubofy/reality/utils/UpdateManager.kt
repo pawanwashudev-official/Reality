@@ -34,7 +34,7 @@ object UpdateManager {
      * Check for updates.
      * @param silent If true, only checks if 7 days have passed since last check.
      */
-    fun checkForUpdates(context: Context, silent: Boolean = true, isBeta: Boolean = false, onNoUpdate: (() -> Unit)? = null) {
+    fun checkForUpdates(context: Context, silent: Boolean = true, isBeta: Boolean = false, onCheckComplete: (() -> Unit)? = null) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val lastCheck = prefs.getLong(KEY_LAST_CHECK_TIME, 0L)
         val now = System.currentTimeMillis()
@@ -98,21 +98,22 @@ object UpdateManager {
 
                         if (isEligible && bestApkUrl.isNotEmpty()) {
                             withContext(Dispatchers.Main) {
+                                onCheckComplete?.invoke()
                                 showUpdateDialog(context, bestVersion, bestApkUrl, bestNotes)
                             }
                         } else {
-                            if (!silent) withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
+                            if (!silent) withContext(Dispatchers.Main) { onCheckComplete?.invoke() }
                         }
                     } else {
-                        if (!silent) withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
+                        if (!silent) withContext(Dispatchers.Main) { onCheckComplete?.invoke() }
                     }
                 } else {
-                    if (!silent) withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
+                    if (!silent) withContext(Dispatchers.Main) { onCheckComplete?.invoke() }
                 }
                 prefs.edit().putLong(KEY_LAST_CHECK_TIME, now).apply()
             } catch (e: Exception) {
                 Log.e(TAG, "Update check failed", e)
-                if (!silent) withContext(Dispatchers.Main) { onNoUpdate?.invoke() }
+                if (!silent) withContext(Dispatchers.Main) { onCheckComplete?.invoke() }
             }
         }
     }
@@ -163,16 +164,23 @@ object UpdateManager {
     }
 
 
-    private fun showUpdateDialog(context: Context, version: String, url: String, notes: String) {
-        // azhon AppUpdate manager handles the professional UI and installation prompt
-        val manager = DownloadManager.Builder(context as android.app.Activity).apply {
-            apkUrl(url)
-            apkName("Reality-v$version.apk")
-            smallIcon(R.mipmap.ic_launcher)
-            apkVersionName(version)
-            apkDescription(notes)
-            // The library automatically handles REQUEST_INSTALL_PACKAGES flow
-        }.build()
-        manager.download()
+private fun showUpdateDialog(context: Context, version: String, url: String, notes: String) {
+        AlertDialog.Builder(context)
+            .setTitle("Update Available")
+            .setMessage("Version $version is available.\n\nRelease Notes:\n$notes\n\nDo you want to update now?")
+            .setPositiveButton("Update") { _, _ ->
+                // azhon AppUpdate manager handles the professional UI and installation prompt
+                val manager = DownloadManager.Builder(context as android.app.Activity).apply {
+                    apkUrl(url)
+                    apkName("Reality-v$version.apk")
+                    smallIcon(R.mipmap.ic_launcher)
+                    apkVersionName(version)
+                    apkDescription(notes)
+                    // The library automatically handles REQUEST_INSTALL_PACKAGES flow
+                }.build()
+                manager.download()
+            }
+            .setNegativeButton("Later", null)
+            .show()
     }
 }
