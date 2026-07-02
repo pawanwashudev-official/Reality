@@ -664,7 +664,7 @@
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/baseline_auto_awesome_24"
+                            android:src="@drawable/baseline_table_chart_24"
                             app:tint="#0F9D58"/>
 
                         <TextView

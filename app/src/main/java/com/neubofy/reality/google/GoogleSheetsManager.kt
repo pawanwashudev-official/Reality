@@ -25,6 +25,8 @@ object GoogleSheetsManager {
         "Step1_Tasks",
         "Step2_SessionsCount",
         "Step2_TotalMins",
+        "Step3_ScreenTime",
+        "Step3_Limit",
         "Q1", "A1",
         "Q2", "A2",
         "Q3", "A3",
