@@ -135,12 +135,15 @@ class RealityProActivity : BaseActivity() {
     private fun showKeySelectionDialog() {
         MaterialAlertDialogBuilder(this)
             .setTitle("Sign In Option")
-            .setMessage("Use your own Google Cloud credentials or use Developer Default keys.")
+            .setMessage("Use your own Google Cloud credentials or use Developer Default keys. Login to verify user identity to get user id or full connection.")
             .setPositiveButton("Default Key") { _, _ ->
-                performSignIn()
+                performSignIn(false)
             }
             .setNeutralButton("Own Key") { _, _ ->
                 showCustomKeyDialog()
+            }
+            .setNegativeButton("Full Connect") { _, _ ->
+                performSignIn(true)
             }
             .show()
     }
@@ -179,14 +182,14 @@ class RealityProActivity : BaseActivity() {
                 val clientSecret = etClientSecret.text.toString().trim()
                 GoogleAuthManager.saveCloudCredentials(this, clientId, clientSecret)
                 Toast.makeText(this, "Credentials saved", Toast.LENGTH_SHORT).show()
-                performSignIn()
+                performSignIn(false)
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    private fun performSignIn() {
-        val url = GoogleAuthManager.getAuthUrl(this, basicOnly = true)
+    private fun performSignIn(fullScopes: Boolean = false) {
+        val url = GoogleAuthManager.getAuthUrl(this, basicOnly = !fullScopes)
         if (url != null) {
             val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
             startActivity(intent)
@@ -451,7 +454,7 @@ class RealityProActivity : BaseActivity() {
                                 withContext(Dispatchers.Main) {
                                     val featureManager = FeatureManager(this@RealityProActivity)
                                     featureManager.setRealityProStartTime(internetTime)
-                                    featureManager.setRealityProVerified(true, internetTime)
+                                    featureManager.setRealityProVerified(true, internetTime, selectedMonths)
                                     Toast.makeText(this@RealityProActivity, "Reality Pro Activated!", Toast.LENGTH_LONG).show()
 
                                     // Go Home

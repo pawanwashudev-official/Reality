@@ -909,12 +909,31 @@ class MainActivity : BaseActivity() {
                     binding.tvLevel.text = liveStats.level.toString()
                     
                     // Update study time progress
-                    binding.tvStudyProgress.text = "${totalEffectiveMinutes} / ${totalPlannedMinutes} min"
-                    binding.progressStudyTime.progress = progressPercent
+                    val calendarPermissionGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                        this@MainActivity,
+                        android.Manifest.permission.READ_CALENDAR
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                     
-                    // View Progress button click
-                    binding.btnViewProgress.setOnClickListener {
-                        startActivity(Intent(this@MainActivity, ReflectionDetailActivity::class.java))
+                    if (!calendarPermissionGranted) {
+                        binding.tvStudyProgress.text = "Calendar Sync required"
+                        binding.progressStudyTime.progress = 0
+
+                        binding.btnViewProgress.text = "Grant Calendar Permission"
+                        binding.btnViewProgress.setOnClickListener {
+                            val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            intent.data = android.net.Uri.parse("package:" + packageName)
+                            startActivity(intent)
+                        }
+                    } else {
+                        binding.tvStudyProgress.text = "${totalEffectiveMinutes} / ${totalPlannedMinutes} min"
+                        binding.progressStudyTime.progress = progressPercent
+
+                        binding.btnViewProgress.text = "📊 View Progress Details"
+
+                        // View Progress button click
+                        binding.btnViewProgress.setOnClickListener {
+                            startActivity(Intent(this@MainActivity, ReflectionDetailActivity::class.java))
+                        }
                     }
                 }
             } catch (e: Exception) {

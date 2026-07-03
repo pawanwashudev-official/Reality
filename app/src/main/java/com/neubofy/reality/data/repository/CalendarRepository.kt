@@ -74,13 +74,17 @@ class CalendarRepository(private val context: Context) {
         // Filter: Exclude All Day Events (Holidays, Birthdays, etc.)
         val selection = "${CalendarContract.Instances.ALL_DAY} = 0"
 
-        val cursor: Cursor? = context.contentResolver.query(
-            builder.build(),
-            projection,
-            selection,
-            null,
-            "${CalendarContract.Instances.BEGIN} ASC"
-        )
+        val cursor: Cursor? = try {
+            context.contentResolver.query(
+                builder.build(),
+                projection,
+                selection,
+                null,
+                "${CalendarContract.Instances.BEGIN} ASC"
+            )
+        } catch (e: SecurityException) {
+            null
+        }
 
         cursor?.use {
             val idIndex = it.getColumnIndex(CalendarContract.Instances.EVENT_ID)
@@ -141,31 +145,35 @@ class CalendarRepository(private val context: Context) {
     }
     
     private fun getDefaultCalendarId(): Long {
-        val cursor = context.contentResolver.query(
-            CalendarContract.Calendars.CONTENT_URI,
-            arrayOf(CalendarContract.Calendars._ID),
-            "${CalendarContract.Calendars.IS_PRIMARY} = 1",
-            null,
-            null
-        )
-        
-        cursor?.use {
-            if (it.moveToFirst()) {
-                return it.getLong(0)
+        try {
+            val cursor = context.contentResolver.query(
+                CalendarContract.Calendars.CONTENT_URI,
+                arrayOf(CalendarContract.Calendars._ID),
+                "${CalendarContract.Calendars.IS_PRIMARY} = 1",
+                null,
+                null
+            )
+
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    return it.getLong(0)
+                }
             }
-        }
-        
-        // Fallback: get first available calendar
-        val fallbackCursor = context.contentResolver.query(
-            CalendarContract.Calendars.CONTENT_URI,
-            arrayOf(CalendarContract.Calendars._ID),
-            null, null, null
-        )
-        
-        fallbackCursor?.use {
-            if (it.moveToFirst()) {
-                return it.getLong(0)
+
+            // Fallback: get first available calendar
+            val fallbackCursor = context.contentResolver.query(
+                CalendarContract.Calendars.CONTENT_URI,
+                arrayOf(CalendarContract.Calendars._ID),
+                null, null, null
+            )
+
+            fallbackCursor?.use {
+                if (it.moveToFirst()) {
+                    return it.getLong(0)
+                }
             }
+        } catch (e: SecurityException) {
+            // Ignored
         }
         
         return 1L // Fallback to calendar ID 1

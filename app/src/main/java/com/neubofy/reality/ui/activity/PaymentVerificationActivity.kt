@@ -178,6 +178,7 @@ class PaymentVerificationActivity : BaseActivity() {
                 val jsonBody = JSONObject()
                 jsonBody.put("userId", userId)
                 jsonBody.put("transactionId", transactionId)
+                jsonBody.put("months", selectedMonths)
                 if (customNote.isNotEmpty()) {
                     jsonBody.put("customNote", customNote)
                 }

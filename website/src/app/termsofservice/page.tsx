@@ -24,8 +24,8 @@ export default function TermsOfService() {
               </section>
 
               <section>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Open Source License</h2>
-                <p>Reality is open-source software licensed under the Apache License 2.0. You may use, reproduce, and distribute the software subject to the terms of the Apache License 2.0. The source code is available publicly on GitHub.</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Legal &amp; License</h2>
+                <p>This application is strictly open source for review purposes only. We do not allow anyone to clone this repository, modify the app, or build and distribute their own version. It is strictly prohibited to make your own version of the app or to claim ownership. App stores or individuals are allowed to distribute the exact pre-compiled APK obtained directly from our GitHub release page. Our AI crawlers continuously scan the internet. If unauthorized distribution or cloning is detected, strict legal action will be taken.</p>
               </section>
 
               <section>
