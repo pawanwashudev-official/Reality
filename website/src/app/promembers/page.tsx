@@ -17,11 +17,14 @@ interface MembersResponse {
 }
 
 async function getProMembers(): Promise<MembersResponse | null> {
-  const dbUrl = process.env.Pro_Members_DB_URL;
-  if (!dbUrl) {
+  const baseUrl = process.env.Pro_Members_DB_URL;
+  if (!baseUrl) {
     console.error("Pro_Members_DB_URL environment variable is not defined.");
     return null;
   }
+
+  // Remove trailing slashes and append the endpoint path
+  const dbUrl = baseUrl.replace(/\/+$/, '') + '/api/pro-members';
 
   try {
     let res = await fetch(dbUrl, {
@@ -54,22 +57,26 @@ async function getProMembers(): Promise<MembersResponse | null> {
     const data = await res.json();
 
     let members: ProMember[] = [];
-    if (Array.isArray(data)) {
-      members = data;
-    } else if (data && typeof data === 'object') {
+    let total = 0;
+
+    if (data && typeof data === 'object') {
       if (Array.isArray(data.members)) {
-        members = data.members;
-      } else if (Array.isArray(data.data)) {
-        members = data.data;
+        members = data.members.map((m: any) => ({
+          userId: m.userId,
+          dateJoined: m.date,
+          hasAccess: m.status === 'V'
+        }));
+      }
+      if (typeof data.totalMembers === 'number') {
+        total = data.totalMembers;
       } else {
-        // Just in case it's an object with array somewhere else, or the data itself is the object
-        members = [];
+        total = members.length;
       }
     }
 
     return {
       members,
-      total: members.length
+      total
     };
   } catch (error) {
     console.error("Error fetching pro members:", error);
