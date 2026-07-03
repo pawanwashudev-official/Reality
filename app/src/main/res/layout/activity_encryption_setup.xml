@@ -57,46 +57,91 @@
     </com.google.android.material.card.MaterialCardView>
 
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_username"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_password"
+            android:id="@+id/et_username"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="New Password (min 6 chars)"
-            android:inputType="textPassword"/>
+            android:autofillHints="username"
+            android:enabled="false"/>
     </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
+    <LinearLayout
+        android:id="@+id/ll_setup_mode"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        android:orientation="vertical">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_confirm_password"
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Confirm Password"
-            android:inputType="textPassword"/>
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginBottom="16dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-    <Button
-        android:id="@+id/btn_save_encryption"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="New Password (min 6 chars)"
+                android:autofillHints="password"
+                android:inputType="textPassword"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_confirm_password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Confirm Password"
+                android:inputType="textPassword"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <Button
+            android:id="@+id/btn_save_encryption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save Password"
+            android:layout_marginBottom="12dp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/ll_active_mode"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Save Password"
-        android:layout_marginBottom="12dp"/>
+        android:orientation="vertical"
+        android:visibility="gone">
 
-    <Button
-        android:id="@+id/btn_clear_encryption"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Remove Password (Use Default)"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        android:textColor="@android:color/holo_red_light"/>
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_verify_password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Verify Password to Manage"
+                android:autofillHints="password"
+                android:inputType="textPassword"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <Button
+            android:id="@+id/btn_clear_encryption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Remove Password (Use Default)"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:textColor="@android:color/holo_red_light"/>
+    </LinearLayout>
 
 </LinearLayout>

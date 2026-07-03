@@ -157,7 +157,8 @@ class PaymentVerificationActivity : BaseActivity() {
             Toast.makeText(this, "Worker URL not configured in build.", Toast.LENGTH_SHORT).show()
             return
         }
-        val baseUrl = "$workerUrl/license"
+        val cleanWorkerUrl = workerUrl.removeSuffix("/")
+        val baseUrl = "$cleanWorkerUrl/license"
 
         btnSubmitRequest.isEnabled = false
         btnSubmitRequest.text = "Submitting..."
