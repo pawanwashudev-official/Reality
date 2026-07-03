@@ -479,8 +479,8 @@ class ProfileActivity : BaseActivity() {
                 binding.btnSignInOut.text = "Signed in"
                 binding.btnSignInOut.setIconResource(R.drawable.baseline_logout_24)
             } else {
-                binding.btnSignInOut.text = "Connect All"
-                binding.btnSignInOut.icon = null
+                binding.btnSignInOut.text = "Sign Out"
+                binding.btnSignInOut.setIconResource(R.drawable.baseline_logout_24)
             }
             
             try {
@@ -519,7 +519,7 @@ class ProfileActivity : BaseActivity() {
         } else {
             binding.tvUserName.text = "Not signed in"
             binding.tvUserEmail.text = "Sign in to connect services"
-            binding.btnSignInOut.text = "Login directly"
+            binding.btnSignInOut.text = "Sign In"
             binding.btnSignInOut.setIconResource(R.drawable.baseline_account_circle_24)
             binding.ivProfile.setImageResource(R.drawable.baseline_account_circle_24)
             binding.ivProfile.imageTintList = androidx.core.content.ContextCompat.getColorStateList(this, R.color.md_theme_primary)

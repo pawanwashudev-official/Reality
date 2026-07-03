@@ -135,15 +135,25 @@ class RealityProActivity : BaseActivity() {
     private fun showKeySelectionDialog() {
         MaterialAlertDialogBuilder(this)
             .setTitle("Sign In Option")
-            .setMessage("Use your own Google Cloud credentials or use Developer Default keys. Login to verify user identity to get user id or full connection.")
+            .setMessage("Use your own Google Cloud credentials or use Developer Default keys.")
             .setPositiveButton("Default Key") { _, _ ->
-                performSignIn(false)
+                showScopeSelectionDialog()
             }
             .setNeutralButton("Own Key") { _, _ ->
                 showCustomKeyDialog()
             }
-            .setNegativeButton("Full Connect") { _, _ ->
-                performSignIn(true)
+            .show()
+    }
+
+    private fun showScopeSelectionDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Sign-In Scope")
+            .setMessage("Do you want to sign in only for verifying user identity to get user ID, or sign in with full connections for Google Workspace?")
+            .setPositiveButton("Verify Identity") { _, _ ->
+                performSignIn(fullScopes = false)
+            }
+            .setNegativeButton("Full Connection") { _, _ ->
+                performSignIn(fullScopes = true)
             }
             .show()
     }
@@ -182,7 +192,7 @@ class RealityProActivity : BaseActivity() {
                 val clientSecret = etClientSecret.text.toString().trim()
                 GoogleAuthManager.saveCloudCredentials(this, clientId, clientSecret)
                 Toast.makeText(this, "Credentials saved", Toast.LENGTH_SHORT).show()
-                performSignIn(false)
+                showScopeSelectionDialog()
             }
             .setNegativeButton("Cancel", null)
             .show()
