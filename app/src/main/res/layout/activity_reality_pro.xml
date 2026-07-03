@@ -45,6 +45,14 @@
                 android:fontFamily="monospace"
                 android:layout_marginBottom="24dp"/>
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_unified_signin"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sign In with Google"
+                android:paddingVertical="12dp"
+                android:layout_marginBottom="16dp"/>
 
             <!-- Developer Support Info Card -->
             <com.google.android.material.card.MaterialCardView
@@ -156,15 +164,6 @@
                     </LinearLayout>
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_trial_signin"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Sign In for Trial"
-                        android:paddingVertical="12dp"
-                        android:layout_marginBottom="8dp"/>
-
-                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_trial_activation"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="match_parent"
@@ -266,14 +265,6 @@
                         android:textSize="14sp"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="16dp"/>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_step1_signin"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Sign In with Google"
-                        android:paddingVertical="12dp"/>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

@@ -1021,28 +1021,6 @@ class NightlyPhasePlanning(
             rowValues.add(j3.optInt("usedMinutes", 0).toString())
             rowValues.add(j3.optInt("limitMinutes", 0).toString())
 
-            // "Q1", "A1", ... "Q6", "A6" (Step 4 Questions, Step 6 Diary answers parsed in step 7)
-            val step6Data = loadStepData(NightlySteps.STEP_CREATE_DIARY)
-            val j6Input = extractJson(step6Data).optJSONObject("input") ?: org.json.JSONObject()
-            val questionsCount = j6Input.optInt("questionsCount", 0)
-
-            // To properly extract Q&A, we either rely on j7 which must contain it,
-            // or we extract the "qa" array from step 7 analysis output.
-            // Let's assume step 7 outputs a "qa" array with {"q": "...", "a": "..."}.
-            // If it doesn't, we fallback to N/A. The AI might not be consistently outputting 'qa'.
-            val qaList = j7.optJSONArray("qa")
-            for (i in 0 until 6) {
-                if (qaList != null && i < qaList.length()) {
-                    val qaObj = qaList.optJSONObject(i)
-                    rowValues.add(qaObj?.optString("q", "N/A") ?: "N/A")
-                    rowValues.add(qaObj?.optString("a", "N/A") ?: "N/A")
-                } else {
-                    // Make sure we output exactly the number of empty columns needed to maintain structure.
-                    rowValues.add("")
-                    rowValues.add("")
-                }
-            }
-
             // "Step6_Feedback"
             rowValues.add(j7.optString("feedback", "No feedback"))
 
