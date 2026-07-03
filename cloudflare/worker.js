@@ -46,7 +46,6 @@ export default {
         const encoder = new TextEncoder();
         const secretKeyData = encoder.encode(env.APP_SECRET_PEPPER);
         
-        // Import runtime secret key as a usable WebCrypto HMAC key object
         const cryptoKey = await crypto.subtle.importKey(
           "raw",
           secretKeyData,
@@ -55,10 +54,8 @@ export default {
           ["sign"]
         );
 
-        // 1. Normalize email strictly (ensures inputs generate identical hashes every time)
         const normalizedEmail = email.toLowerCase().trim();
 
-        // 2. Compute the unique deterministic User ID (Fixed length 16 characters)
         const idSignature = await crypto.subtle.sign(
           "HMAC",
           cryptoKey,
@@ -69,7 +66,6 @@ export default {
           .join('');
         const userId = idHashHex.substring(0, 16);
 
-        // 3. Compute the unique deterministic Backup Password (Fixed length 32 characters)
         const pwSignature = await crypto.subtle.sign(
           "HMAC",
           cryptoKey,
@@ -80,7 +76,6 @@ export default {
           .join('');
         const backupPassword = pwHashHex.substring(0, 32);
 
-        // Deliver both entities cleanly to preserve Cloudflare Workers execution limits
         return new Response(
           JSON.stringify({ userId: userId, backupPassword: backupPassword }), 
           { 
@@ -146,39 +141,100 @@ export default {
       }
 
       // ============================================================
-      // ROUTE: SUBSCRIPTION VERIFICATION/SUBMISSION
+      // ROUTE: NATIVE SUBSCRIPTION MANAGEMENT (D1 Drop-in for GAS)
       // ============================================================
       if (url.pathname === "/license") {
-        const targetUrl = env.NEW_REALITY_LICENSE_URL;
-
-        // Handles verification (GET)
+        
+        // Handles verification (GET) - Exactly matches your old GAS doGet()
         if (request.method === "GET") {
-          const backendResponse = await fetch(`${targetUrl}${url.search}`, { method: "GET" });
-          const responseData = await backendResponse.text();
-          return new Response(responseData, { status: backendResponse.status, headers: { "Access-Control-Allow-Origin": "*" } });
+          const userId = url.searchParams.get("userId");
+          const vCodeParam = url.searchParams.get("vCode");
+          const vCode = parseInt(vCodeParam, 10);
+
+          if (!userId || isNaN(vCode) || vCode <= 0) {
+            return new Response("INVALID", { headers: { "Access-Control-Allow-Origin": "*" } });
+          }
+
+          // Fetch matching row from D1 database
+          const row = await env.DB.prepare(
+            "SELECT userId, status FROM licenses WHERE vCode = ?"
+          ).bind(vCode).first();
+
+          if (!row) {
+            return new Response("NOT_FOUND", { headers: { "Access-Control-Allow-Origin": "*" } });
+          }
+
+          if (row.userId === userId && row.status === "V") {
+            return new Response("SUCCESS", { headers: { "Access-Control-Allow-Origin": "*" } });
+          } else {
+            return new Response("INVALID", { headers: { "Access-Control-Allow-Origin": "*" } });
+          }
         }
 
-        // Handles subscription submission (POST)
+        // Handles subscription submission (POST) - Exactly matches your old GAS doPost()
         if (request.method === "POST") {
-          const incomingData = await request.json();
-          const backendResponse = await fetch(targetUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              ...incomingData,
-              client_id: env.GCP_CLIENT_ID,
-              client_secret: env.GCP_CLIENT_SECRET
-            })
-          });
-          const responseData = await backendResponse.text();
-          return new Response(responseData, { status: backendResponse.status, headers: { "Access-Control-Allow-Origin": "*" } });
+          let incomingData = {};
+          try {
+            incomingData = await request.json();
+          } catch (e) {
+            return new Response(JSON.stringify({ status: "ERROR", message: "Invalid JSON payload" }), {
+              status: 400,
+              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+            });
+          }
+
+          const userId = incomingData.userId;
+          const transactionId = incomingData.transactionId;
+          let customNote = incomingData.customNote || "";
+
+          if (!userId || !transactionId) {
+            return new Response(JSON.stringify({ status: "ERROR", message: "Missing fields" }), {
+              status: 400,
+              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+            });
+          }
+
+          if (customNote.length > 200) {
+            customNote = customNote.substring(0, 200);
+          }
+
+          // Insert row or update status to verified if the user records another transaction
+          const info = await env.DB.prepare(`
+            INSERT INTO licenses (date, userId, status, transactionId, customNote) 
+            VALUES (?, ?, 'V', ?, ?)
+            ON CONFLICT(userId) DO UPDATE SET 
+              date = excluded.date,
+              transactionId = excluded.transactionId,
+              customNote = excluded.customNote,
+              status = 'V'
+          `).bind(new Date().toISOString(), userId, transactionId, customNote).run();
+
+          // Get primary key auto-increment ID to replicate sheet row indexing perfectly
+          let verificationCode = info.meta.last_row_id;
+
+          // If entry updated an existing row instead of adding a new index row
+          if (verificationCode === 0 || !verificationCode) {
+            const existingRow = await env.DB.prepare("SELECT vCode FROM licenses WHERE userId = ?").bind(userId).first();
+            verificationCode = existingRow ? existingRow.vCode : 1;
+          }
+
+          return new Response(
+            JSON.stringify({ status: "SUCCESS", verificationCode: verificationCode }),
+            { 
+              status: 200, 
+              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } 
+            }
+          );
         }
       }
 
       return new Response("Not Found", { status: 404 });
 
     } catch (error) {
-      return new Response(JSON.stringify({ error: "Proxy failure", details: error.message }), { status: 500 });
+      return new Response(JSON.stringify({ error: "Proxy failure", details: error.message }), { 
+        status: 500,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
     }
   }
 };
