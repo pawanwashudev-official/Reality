@@ -1,12 +1,16 @@
 name = "realityproxy"
 main = "worker.js"
-compatibility_date = "2026-07-03"
+compatibility_date = "2026-07-02"
 
 # Records every request and console.log in the dashboard
 [observability.logs]
 enabled = true
 invocation_logs = true
 
-# Builds visual timelines showing how long external fetch() calls take
 [observability.traces]
 enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "reality-db"
+database_id = "" # Left blank intentionally; GitHub Action injects this safely
