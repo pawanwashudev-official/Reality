@@ -141,11 +141,31 @@ export default {
       }
 
       // ============================================================
-      // ROUTE: NATIVE SUBSCRIPTION MANAGEMENT (D1 Drop-in for GAS)
+      // ROUTE: WEBSITE PUBLIC PRO MEMBERS LIST
+      // ============================================================
+      if (url.pathname === "/api/pro-members" && request.method === "GET") {
+        // Fetch only safe, shareable details from D1
+        const { results } = await env.DB.prepare(
+          "SELECT userId, date, status FROM licenses ORDER BY vCode DESC"
+        ).all();
+
+        const totalMembers = results.length;
+
+        return new Response(
+          JSON.stringify({ totalMembers, members: results }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+          }
+        );
+      }
+
+      // ============================================================
+      // ROUTE: NATIVE SUBSCRIPTION MANAGEMENT
       // ============================================================
       if (url.pathname === "/license") {
         
-        // Handles verification (GET) - Exactly matches your old GAS doGet()
+        // Handles verification (GET)
         if (request.method === "GET") {
           const userId = url.searchParams.get("userId");
           const vCodeParam = url.searchParams.get("vCode");
@@ -155,7 +175,6 @@ export default {
             return new Response("INVALID", { headers: { "Access-Control-Allow-Origin": "*" } });
           }
 
-          // Fetch matching row from D1 database
           const row = await env.DB.prepare(
             "SELECT userId, status FROM licenses WHERE vCode = ?"
           ).bind(vCode).first();
@@ -164,14 +183,17 @@ export default {
             return new Response("NOT_FOUND", { headers: { "Access-Control-Allow-Origin": "*" } });
           }
 
+          // Strict validation: User only gets "SUCCESS" if status is officially "V"
           if (row.userId === userId && row.status === "V") {
             return new Response("SUCCESS", { headers: { "Access-Control-Allow-Origin": "*" } });
+          } else if (row.userId === userId && row.status === "P") {
+            return new Response("PENDING", { headers: { "Access-Control-Allow-Origin": "*" } });
           } else {
             return new Response("INVALID", { headers: { "Access-Control-Allow-Origin": "*" } });
           }
         }
 
-        // Handles subscription submission (POST) - Exactly matches your old GAS doPost()
+        // Handles subscription submission (POST)
         if (request.method === "POST") {
           let incomingData = {};
           try {
@@ -186,6 +208,9 @@ export default {
           const userId = incomingData.userId;
           const transactionId = incomingData.transactionId;
           let customNote = incomingData.customNote || "";
+          
+          // Capture incoming status ('P' or 'V'). If not provided, default to 'V' for backward compatibility
+          const status = incomingData.status === "P" ? "P" : "V";
 
           if (!userId || !transactionId) {
             return new Response(JSON.stringify({ status: "ERROR", message: "Missing fields" }), {
@@ -198,21 +223,19 @@ export default {
             customNote = customNote.substring(0, 200);
           }
 
-          // Insert row or update status to verified if the user records another transaction
+          // Insert or update. If user exists but is re-submitting, we overwrite with the new form state
           const info = await env.DB.prepare(`
             INSERT INTO licenses (date, userId, status, transactionId, customNote) 
-            VALUES (?, ?, 'V', ?, ?)
+            VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(userId) DO UPDATE SET 
               date = excluded.date,
               transactionId = excluded.transactionId,
               customNote = excluded.customNote,
-              status = 'V'
-          `).bind(new Date().toISOString(), userId, transactionId, customNote).run();
+              status = excluded.status
+          `).bind(new Date().toISOString(), userId, status, transactionId, customNote).run();
 
-          // Get primary key auto-increment ID to replicate sheet row indexing perfectly
           let verificationCode = info.meta.last_row_id;
 
-          // If entry updated an existing row instead of adding a new index row
           if (verificationCode === 0 || !verificationCode) {
             const existingRow = await env.DB.prepare("SELECT vCode FROM licenses WHERE userId = ?").bind(userId).first();
             verificationCode = existingRow ? existingRow.vCode : 1;
