@@ -16,7 +16,7 @@ Reality is moving from a "basic utility" to a "military-grade productivity opera
 ## 📂 2. Core Repository Strategy (CRITICAL)
 To finalize the transition to a professional repo and fix historical issues:
 1. **Clean Slate:** We will delete the entire `.git` history and push as a fresh commit. This removes old basic-app history and ensures contributors are only those working on the current version.
-2. **License Fix:** The repository uses GPL-3.0. The `LICENSE` and `NOTICE` files must be recognized by GitHub (ensure correct naming and header format).
+2. **License Fix:** The repository uses a Custom Proprietary License. The source is open for review only. Cloning, modifying, and building for distribution is strictly prohibited.
 3. **Build Stability:** DO NOT change the core structure of the Android or Next.js app. Changes should be limited to UI refinement and branding.
 
 ---
@@ -62,7 +62,7 @@ Update `strings.xml` in all languages:
 ---
 
 ## 🔒 6. Licensing & Legal
-- **License:** GNU GPL v3.0.
+- **License:** Custom Proprietary License (View only).
 - **Owner:** Pawan Washudev / Neubofy.
 - **Terms:** Commercial sale of the *compiled APK* is permitted as part of the "Pro" support, while the *source* remains open.
 

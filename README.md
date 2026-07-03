@@ -9,7 +9,7 @@
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/pawanwashudev-official/Reality?style=for-the-badge&color=orange)](https://github.com/pawanwashudev-official/Reality/releases)
 [![GitHub All Releases](https://img.shields.io/github/downloads/pawanwashudev-official/Reality/total?style=for-the-badge&color=success)](https://github.com/pawanwashudev-official/Reality/releases)
-[![License](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg?style=for-the-badge)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg?style=for-the-badge)](https://www.android.com)
 [![Privacy](https://img.shields.io/badge/Data-Local%20%2B%20Your%20G--Drive-lock.svg?style=for-the-badge&color=teal)]()
 [![AI](https://img.shields.io/badge/AI-Bring%20Your%20Own%20Key-purple.svg?style=for-the-badge)]()
@@ -18,9 +18,9 @@
 
 > **"Stop managing your life. Start commanding it."**
 
-### 🌟 100% Open Source • No Ads • No Trackers • Any AI (BYO Key)
+### 🌟 100% source-available • No Ads • No Trackers • Any AI (BYO Key)
 
-<p>While advanced features (like Neural Protocol, Gamification, and Google Workspace Sync) require a yearly Reality Pro subscription to support ongoing maintenance, the app remains 100% open source. You can always build the APK yourself from the source code.</p>
+<p>While advanced features (like Neural Protocol, Gamification, and Google Workspace Sync) require a yearly Reality Pro subscription to support ongoing maintenance, the app source code remains 100% available for transparency and review.</p>
 
 [**🌐 Official Website**](https://reality.neubofy.in) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
 
@@ -161,7 +161,7 @@ Parsing:        GSON, JSoup, Markwon
 
 ## 📄 LICENSE & TERMS
 
-- **License**: Open Source (Apache 2.0)
+- **License**: Custom Proprietary License (Source available for review)
 - **Developer**: Pawan Washudev (Neubofy)
 - **Status**: Active Development
 

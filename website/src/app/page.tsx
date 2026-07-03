@@ -77,7 +77,7 @@ export default async function Home() {
              </div>
              <div className="flex items-center gap-2 text-gray-400 bg-neural-card/50 px-4 py-2 rounded-lg border border-gray-800">
                 <Shield size={18} className="text-green-500" />
-                <span className="font-mono text-sm">99.9% Open Source</span>
+                <span className="font-mono text-sm">99.9% Source-Available</span>
              </div>
           </div>
 
@@ -234,7 +234,7 @@ export default async function Home() {
                      <ListItem text="No Backend Servers - Reality has zero infrastructure" />
                      <ListItem text="Local-First Processing - All blocking logic runs on-device" />
                      <ListItem text="Your Drive Only - Backups stored in your personal Google Drive" />
-                     <ListItem text="Open Source Audit - Every line of code publicly visible" />
+                     <ListItem text="Source-Available Audit - Every line of code publicly visible" />
                      <ListItem text="Encrypted Credentials - OAuth tokens stored securely" />
                   </ul>
                </div>

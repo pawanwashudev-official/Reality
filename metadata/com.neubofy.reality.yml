@@ -1,7 +1,7 @@
 Categories:
   - Security
   - Time
-License: GPL-3.0-only
+License: Proprietary
 AuthorName: Pawan Washudev
 AuthorEmail: pawanwashudev@gmail.com
 AuthorWebSite: https://reality.neubofy.in/
@@ -37,7 +37,7 @@ Description: |
   * No account required - we don't know who you are
   * Zero internet permission for core blocking
   * No analytics, no trackers, no ads
-  * 100% open source (GPLv3)
+  * Source open for review (Proprietary License)
   * All data stays on your device
   
   <b>Permissions Transparency:</b>
