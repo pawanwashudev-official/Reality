@@ -125,11 +125,18 @@ class ProfileActivity : BaseActivity() {
     }
     
     private fun performSignIn() {
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "google_connector_prefs")
+        val tasksConnected = prefs.getBoolean(KEY_TASKS_CONNECTED, false)
+        val driveConnected = prefs.getBoolean(KEY_DRIVE_CONNECTED, false)
+        val docsConnected = prefs.getBoolean(KEY_DOCS_CONNECTED, false)
+        val calendarConnected = prefs.getBoolean(KEY_CALENDAR_CONNECTED, false)
+        val isAllConnected = tasksConnected && driveConnected && docsConnected && calendarConnected
+
         com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
             .setTitle("Sign In Option")
-            .setMessage("Use your own Google Cloud credentials or use Developer Default keys.")
-            .setPositiveButton("Default Key") { _, _ ->
-                executeSignIn()
+            .setMessage(if (isAllConnected) "Use your own Google Cloud credentials or use Developer Default keys." else "Use your own Google Cloud credentials or use Developer Default keys. Login to connect with all full scope connections.")
+            .setPositiveButton(if (isAllConnected) "Default Key" else "Connect All") { _, _ ->
+                executeSignIn(basicOnly = false)
             }
             .setNeutralButton("Own Key") { _, _ ->
                 showCustomKeyDialog()
@@ -171,19 +178,19 @@ class ProfileActivity : BaseActivity() {
                 val clientSecret = etClientSecret.text.toString().trim()
                 GoogleAuthManager.saveCloudCredentials(this, clientId, clientSecret)
                 android.widget.Toast.makeText(this, "Credentials saved", android.widget.Toast.LENGTH_SHORT).show()
-                executeSignIn()
+                executeSignIn(basicOnly = false)
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    private fun executeSignIn() {
+    private fun executeSignIn(basicOnly: Boolean = false) {
         if (!GoogleAuthManager.hasCloudCredentials(this)) {
             android.widget.Toast.makeText(this, "Please setup Google Cloud Project first via Settings", android.widget.Toast.LENGTH_LONG).show()
             return
         }
 
-        val url = GoogleAuthManager.getAuthUrl(this)
+        val url = GoogleAuthManager.getAuthUrl(this, basicOnly)
         if (url != null) {
             val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
             startActivity(intent)
@@ -198,7 +205,7 @@ class ProfileActivity : BaseActivity() {
                     if (success) {
                         withContext(Dispatchers.Main) {
                             com.neubofy.reality.utils.SecurePreferences.get(this@ProfileActivity, "reality_features").edit()
-                                .putBoolean("reality_pro_basic_sign_in", false).apply()
+                                .putBoolean("reality_pro_basic_sign_in", basicOnly).apply()
                             TerminalLogger.log("PROFILE: Auto-Signed in successfully")
                             android.widget.Toast.makeText(this@ProfileActivity, "Sign-in successful!", android.widget.Toast.LENGTH_SHORT).show()
                             updateUI()
@@ -240,7 +247,7 @@ class ProfileActivity : BaseActivity() {
                                         withContext(Dispatchers.Main) {
                                             if (manualSuccess) {
                                                 com.neubofy.reality.utils.SecurePreferences.get(this@ProfileActivity, "reality_features").edit()
-                                                    .putBoolean("reality_pro_basic_sign_in", false).apply()
+                                                    .putBoolean("reality_pro_basic_sign_in", basicOnly).apply()
                                                 android.widget.Toast.makeText(this@ProfileActivity, "Sign-in successful!", android.widget.Toast.LENGTH_SHORT).show()
                                                 updateUI()
                                             } else {
@@ -358,6 +365,15 @@ class ProfileActivity : BaseActivity() {
                 Toast.makeText(this, "Please sign in first", Toast.LENGTH_SHORT).show()
                 return
             }
+
+            val isBasicSignIn = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_features")
+                .getBoolean("reality_pro_basic_sign_in", false)
+
+            if (isBasicSignIn) {
+                TerminalLogger.log("PROFILE: $serviceName - Only basic signed in. Connecting full scope...")
+                executeSignIn(basicOnly = false)
+                return
+            }
             
             if (email.isNullOrEmpty()) {
                 TerminalLogger.log("PROFILE: $serviceName - Email is empty! Sign out and sign in again.")
@@ -407,16 +423,15 @@ class ProfileActivity : BaseActivity() {
         val tvUserId = findViewById<android.widget.TextView>(R.id.tv_user_id)
         val btnCopyId = findViewById<android.widget.ImageView>(R.id.btn_copy_id)
 
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "google_connector_prefs")
+        val tasksConnected = prefs.getBoolean(KEY_TASKS_CONNECTED, false)
+        val driveConnected = prefs.getBoolean(KEY_DRIVE_CONNECTED, false)
+        val docsConnected = prefs.getBoolean(KEY_DOCS_CONNECTED, false)
+        val calendarConnected = prefs.getBoolean(KEY_CALENDAR_CONNECTED, false)
+        val isAllConnected = tasksConnected && driveConnected && docsConnected && calendarConnected
+
         val isBasicSignIn = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_features")
             .getBoolean("reality_pro_basic_sign_in", false)
-
-        if (isSignedIn && isBasicSignIn) {
-            } else {
-            }
-
-        if (isSignedIn && !com.neubofy.reality.utils.FeatureManager(this).isRealityProVerified()) {
-        } else {
-        }
 
         val cardSecureIdentity = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_secure_identity)
         if (isSignedIn && email.isNotEmpty()) {
@@ -459,8 +474,14 @@ class ProfileActivity : BaseActivity() {
             
             binding.tvUserName.text = name
             binding.tvUserEmail.text = email
-            binding.btnSignInOut.text = "Sign Out"
-            binding.btnSignInOut.setIconResource(R.drawable.baseline_logout_24)
+
+            if (isAllConnected) {
+                binding.btnSignInOut.text = "Signed in"
+                binding.btnSignInOut.setIconResource(R.drawable.baseline_logout_24)
+            } else {
+                binding.btnSignInOut.text = "Sign Out"
+                binding.btnSignInOut.setIconResource(R.drawable.baseline_logout_24)
+            }
             
             try {
                 if (!photoUrl.isNullOrEmpty()) {
@@ -498,7 +519,7 @@ class ProfileActivity : BaseActivity() {
         } else {
             binding.tvUserName.text = "Not signed in"
             binding.tvUserEmail.text = "Sign in to connect services"
-            binding.btnSignInOut.text = "Login directly"
+            binding.btnSignInOut.text = "Sign In"
             binding.btnSignInOut.setIconResource(R.drawable.baseline_account_circle_24)
             binding.ivProfile.setImageResource(R.drawable.baseline_account_circle_24)
             binding.ivProfile.imageTintList = androidx.core.content.ContextCompat.getColorStateList(this, R.color.md_theme_primary)

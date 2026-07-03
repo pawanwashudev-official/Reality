@@ -78,8 +78,8 @@ class FeatureManager(private val context: Context) {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
         val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
         if (verified) {
-            val oneYearMs = (365L / 12) * months * 24 * 60 * 60 * 1000
-            val verifiedUntil = currentTimeMs + oneYearMs
+            val durationMs = (365L / 12) * months * 24 * 60 * 60 * 1000
+            val verifiedUntil = currentTimeMs + durationMs
             prefs.edit().putLong("feature_reality_pro_verified_until_$userId", verifiedUntil).apply()
         } else {
             prefs.edit().remove("feature_reality_pro_verified_until_$userId").apply()
