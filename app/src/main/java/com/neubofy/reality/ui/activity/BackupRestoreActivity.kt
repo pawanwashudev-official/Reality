@@ -282,15 +282,14 @@ class BackupRestoreActivity : BaseActivity() {
             .show()
     }
 
-    private fun performRestore(categories: Set<BackupManager.BackupCategory>, password: String? = null) {
+    private fun performRestore(categories: Set<BackupManager.BackupCategory>) {
         setOperationInProgress(true, "Downloading backup...")
 
         lifecycleScope.launch {
             try {
                 val result = BackupManager.restoreBackup(
-                    password,
-                    this@BackupRestoreActivity,
-                    categories
+                    context = this@BackupRestoreActivity,
+                    categories = categories
                 ) { progress, status ->
                     runOnUiThread {
                         binding.progressBar.progress = (progress * 100).toInt()
@@ -307,12 +306,8 @@ class BackupRestoreActivity : BaseActivity() {
                             .setPositiveButton("OK") { _, _ -> finish() }
                             .setCancelable(false)
                             .show()
-                    } else if (result.message.contains("Decryption failed") || result.message.contains("Incorrect password")) {
-                        promptForPassword(categories)
-                    } else if (result.message.startsWith("NEED_PERMISSION:")) {
-                        Toast.makeText(this@BackupRestoreActivity, "Please grant Google Drive access", Toast.LENGTH_LONG).show()
                     } else {
-                        Toast.makeText(this@BackupRestoreActivity, "❌ ${result.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@BackupRestoreActivity, "❌ Restore failed: ${result.message}", Toast.LENGTH_LONG).show()
                     }
                 }
             } catch (e: com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException) {
@@ -347,24 +342,4 @@ class BackupRestoreActivity : BaseActivity() {
         }
     }
 
-    private fun promptForPassword(categories: Set<BackupManager.BackupCategory>) {
-        val input = android.widget.EditText(this)
-        input.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-        input.hint = "Backup Password"
-
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-            .setTitle("Enter Backup Password")
-            .setMessage("This backup requires a password to decrypt.")
-            .setView(input)
-            .setPositiveButton("Restore") { _, _ ->
-                val pwd = input.text.toString()
-                if (pwd.isNotEmpty()) {
-                    performRestore(categories, pwd)
-                } else {
-                    android.widget.Toast.makeText(this, "Password required", android.widget.Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
 }

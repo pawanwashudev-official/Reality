@@ -406,44 +406,51 @@ class ProfileActivity : BaseActivity() {
         val email = GoogleAuthManager.getUserEmail(this) ?: ""
         val tvUserId = findViewById<android.widget.TextView>(R.id.tv_user_id)
         val btnCopyId = findViewById<android.widget.ImageView>(R.id.btn_copy_id)
-        val llUserId = findViewById<android.widget.LinearLayout>(R.id.ll_user_id)
 
-        val tvScopeWarning = findViewById<android.widget.TextView>(R.id.tv_scope_warning)
         val isBasicSignIn = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_features")
             .getBoolean("reality_pro_basic_sign_in", false)
 
         if (isSignedIn && isBasicSignIn) {
-            tvScopeWarning?.visibility = View.VISIBLE
-        } else {
-            tvScopeWarning?.visibility = View.GONE
-        }
-
-        val btnGetProAccess = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_get_pro_access)
-        if (isSignedIn && !com.neubofy.reality.utils.FeatureManager(this).isRealityProVerified()) {
-            btnGetProAccess?.visibility = View.VISIBLE
-            btnGetProAccess?.setOnClickListener {
-                startActivity(Intent(this, RealityProActivity::class.java))
+            } else {
             }
+
+        if (isSignedIn && !com.neubofy.reality.utils.FeatureManager(this).isRealityProVerified()) {
         } else {
-            btnGetProAccess?.visibility = View.GONE
         }
 
+        val cardSecureIdentity = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_secure_identity)
         if (isSignedIn && email.isNotEmpty()) {
-            val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(email)
-            tvUserId?.text = userId
-            llUserId?.visibility = View.VISIBLE
+            val userId = com.neubofy.reality.utils.IdentityManager.getUserId(this)
+            val backupKey = com.neubofy.reality.utils.IdentityManager.getBackupPassword(this)
 
-            val copyAction = View.OnClickListener {
-                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val tvBackupKey = findViewById<android.widget.TextView>(R.id.tv_backup_password)
+            val tvUserId = findViewById<android.widget.TextView>(R.id.tv_user_id)
+            val btnCopyId = findViewById<android.widget.ImageView>(R.id.btn_copy_id)
+            val btnCopyBackupKey = findViewById<android.widget.ImageView>(R.id.btn_copy_backup_key)
+
+            tvUserId?.text = userId
+            tvBackupKey?.text = backupKey
+            cardSecureIdentity?.visibility = View.VISIBLE
+
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+
+            val copyIdAction = View.OnClickListener {
                 val clip = android.content.ClipData.newPlainText("Reality User ID", userId)
                 clipboard.setPrimaryClip(clip)
-                Toast.makeText(this, "Copied ID: $userId", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Copied User ID", Toast.LENGTH_SHORT).show()
             }
-            tvUserId?.setOnClickListener(copyAction)
-            btnCopyId?.setOnClickListener(copyAction)
+            tvUserId?.setOnClickListener(copyIdAction)
+            btnCopyId?.setOnClickListener(copyIdAction)
+
+            val copyBackupKeyAction = View.OnClickListener {
+                val clip = android.content.ClipData.newPlainText("Reality Backup Key", backupKey)
+                clipboard.setPrimaryClip(clip)
+                Toast.makeText(this, "Copied Backup Key", Toast.LENGTH_SHORT).show()
+            }
+            tvBackupKey?.setOnClickListener(copyBackupKeyAction)
+            btnCopyBackupKey?.setOnClickListener(copyBackupKeyAction)
         } else {
-            tvUserId?.text = "Not logged in"
-            llUserId?.visibility = View.GONE
+            cardSecureIdentity?.visibility = View.GONE
         }
 
         if (isSignedIn) {

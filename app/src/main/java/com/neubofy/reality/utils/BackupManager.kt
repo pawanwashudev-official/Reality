@@ -105,6 +105,8 @@ object BackupManager {
         categories: Set<BackupCategory> = BackupCategory.entries.toSet(),
         onProgress: (Float, String) -> Unit = { _, _ -> }
     ): BackupResult {
+        com.neubofy.reality.utils.IdentityManager.refreshIdentity(context.applicationContext)
+
         return withContext(Dispatchers.IO) {
             try {
                 // Check sign-in
@@ -252,11 +254,12 @@ object BackupManager {
      * @param onProgress Callback for progress updates
      */
     suspend fun restoreBackup(
-        password: String? = null,
         context: Context,
-        categories: Set<BackupCategory>? = null, // null = restore all available
+        categories: Set<BackupCategory>? = null,
         onProgress: (Float, String) -> Unit = { _, _ -> }
     ): BackupResult {
+        com.neubofy.reality.utils.IdentityManager.refreshIdentity(context.applicationContext)
+
         return withContext(Dispatchers.IO) {
             try {
                 if (!GoogleAuthManager.isSignedIn(context)) {
@@ -296,7 +299,7 @@ object BackupManager {
 
                 val encryptedCategories = rootJson.optString("encryptedCategories", "")
                 val categoriesJsonStr = if (encryptedCategories.isNotEmpty()) {
-                    val decrypted = BackupEncryption.decrypt(context, encryptedCategories, password)
+                    val decrypted = BackupEncryption.decrypt(context, encryptedCategories)
                     if (decrypted.startsWith("ENC:")) {
                         return@withContext BackupResult(false, "Decryption failed. Incorrect password?")
                     }

@@ -14,44 +14,27 @@ class FeatureManager(private val context: Context) {
 
     fun getTrialStartTime(): Long {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return 0L
-        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
         return prefs.getLong("trial_start_time_$userId", 0L)
     }
 
     fun getTrialEndTime(): Long {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return 0L
-        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
 
         var trialEndTime = prefs.getLong("trial_end_time_$userId", 0L)
-        if (trialEndTime == 0L) {
-            try {
-                val extFile = getExternalTrialFile()
-                if (extFile != null && extFile.exists()) {
-                    val content = extFile.readText()
-                    val lines = content.split("\n")
-                    for (line in lines) {
-                        val parts = line.split("=")
-                        if (parts.size == 2 && (parts[0] == userId || parts[0] == getDeviceUniqueId())) {
-                            trialEndTime = parts[1].toLong()
-                            prefs.edit().putLong("trial_end_time_$userId", trialEndTime).apply()
-                            break
-                        }
-                    }
-                }
-            } catch (e: Exception) {}
-        }
         return trialEndTime
     }
 
     fun getRealityProStartTime(): Long {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return 0L
-        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
         return prefs.getLong("feature_reality_pro_start_time_$userId", 0L)
     }
 
     fun setRealityProStartTime(timeMs: Long) {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
-        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
         val currentStart = prefs.getLong("feature_reality_pro_start_time_$userId", 0L)
         if (currentStart == 0L) {
             prefs.edit().putLong("feature_reality_pro_start_time_$userId", timeMs).apply()
@@ -60,13 +43,13 @@ class FeatureManager(private val context: Context) {
 
     fun getRealityProEndTime(): Long {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return 0L
-        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
         return prefs.getLong("feature_reality_pro_verified_until_$userId", 0L)
     }
 
     fun isRealityProVerified(): Boolean {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return false
-        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
 
         // Check for 1-year timestamp
         val verifiedUntil = prefs.getLong("feature_reality_pro_verified_until_$userId", 0L)
@@ -93,7 +76,7 @@ class FeatureManager(private val context: Context) {
 
     fun setRealityProVerified(verified: Boolean, currentTimeMs: Long = System.currentTimeMillis(), months: Int = 12) {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
-        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
         if (verified) {
             val oneYearMs = (365L / 12) * months * 24 * 60 * 60 * 1000
             val verifiedUntil = currentTimeMs + oneYearMs
@@ -108,76 +91,31 @@ class FeatureManager(private val context: Context) {
         return android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ANDROID_ID) ?: "unknown"
     }
 
-    private fun getExternalTrialFile(): java.io.File? {
-        try {
-            // Store a hidden file in the public Documents or Downloads directory
-            // This survives app uninstall and data clearing.
-            val dir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS)
-            if (!dir.exists()) dir.mkdirs()
-            val file = java.io.File(dir, ".reality_engine_sys_config")
-            return file
-        } catch (e: Exception) {
-            return null
-        }
-    }
 
     fun isTrialActive(): Boolean {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return false
-        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
 
         // 1. Check local secure prefs
         var trialEndTime = prefs.getLong("trial_end_time_$userId", 0L)
 
-        // 2. Fallback to external file if data was cleared
-        if (trialEndTime == 0L) {
-            try {
-                val extFile = getExternalTrialFile()
-                if (extFile != null && extFile.exists()) {
-                    val content = extFile.readText()
-                    // Format: userId:endTime,deviceId:endTime
-                    val lines = content.split("\n")
-                    for (line in lines) {
-                        val parts = line.split("=")
-                        if (parts.size == 2 && (parts[0] == userId || parts[0] == getDeviceUniqueId())) {
-                            trialEndTime = parts[1].toLong()
-                            // Restore to local prefs
-                            prefs.edit().putLong("trial_end_time_$userId", trialEndTime).apply()
-                            break
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                // Ignore IO errors
-            }
-        }
 
         return trialEndTime > 0L && System.currentTimeMillis() < trialEndTime
     }
 
     fun hasUsedTrial(): Boolean {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return false
-        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
 
         // Check local
         if (prefs.contains("trial_end_time_$userId")) return true
-
-        // Check external to prevent bypass via data clear
-        try {
-            val extFile = getExternalTrialFile()
-            if (extFile != null && extFile.exists()) {
-                val content = extFile.readText()
-                if (content.contains(userId) || content.contains(getDeviceUniqueId())) {
-                    return true
-                }
-            }
-        } catch (e: Exception) {}
 
         return false
     }
 
     fun activateTrial(currentTimeMs: Long = System.currentTimeMillis()) {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
-        val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(userEmail)
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
         val trialDurationMs = 3L * 24 * 60 * 60 * 1000
         val currentTime = currentTimeMs
         val trialEndTime = currentTime + trialDurationMs
@@ -190,17 +128,6 @@ class FeatureManager(private val context: Context) {
         }
         editor.apply()
 
-        // 2. Save external to survive data clear
-        try {
-            val extFile = getExternalTrialFile()
-            if (extFile != null) {
-                val deviceId = getDeviceUniqueId()
-                extFile.appendText("$userId=$trialEndTime\n")
-                extFile.appendText("$deviceId=$trialEndTime\n")
-            }
-        } catch (e: Exception) {
-            // Ignore
-        }
     }
 
 

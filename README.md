@@ -165,3 +165,11 @@ Parsing:        GSON, JSoup, Markwon
 - **Developer**: Pawan Washudev (Neubofy)
 - **Status**: Active Development
 
+
+
+
+### Secure Identity & Encryption
+Instead of relying on legacy client-side identifiers (like MD5) or manual user password management for backups, Reality employs a **Just-In-Time (JIT) secure edge architecture**:
+- Both the unique `userId` and automated `backupPassword` keys are generated deterministically on our Cloudflare Worker edge nodes.
+- This is achieved via server-side HMAC-SHA256 calculations using an isolated secret pepper environment string, eliminating all local cryptographic vulnerabilities and client-side exploits.
+- These keys are injected directly into Android's EncryptedSharedPreferences upon Google Login or critical lifecycle events, providing frictionless background encryption without exposing sensitive configuration files.

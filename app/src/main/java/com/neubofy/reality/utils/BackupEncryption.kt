@@ -30,8 +30,7 @@ object BackupEncryption {
     }
 
     private fun getSecretKey(context: android.content.Context): SecretKey {
-        val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, "reality_encryption_prefs")
-        val password = prefs.getString("backup_password", null)
+        val password = com.neubofy.reality.utils.IdentityManager.getBackupPassword(context)
         return getSecretKeyFromPassword(password)
     }
 
