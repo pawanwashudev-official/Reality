@@ -429,7 +429,10 @@ class ProfileActivity : BaseActivity() {
         }
 
         if (isSignedIn && email.isNotEmpty()) {
-            val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(email)
+            val userId = com.neubofy.reality.utils.IdentityManager.getUserId(this)
+            val backupKey = com.neubofy.reality.utils.IdentityManager.getBackupPassword(this)
+            val tvBackupKey = findViewById<android.widget.TextView>(R.id.tv_backup_password)
+            tvBackupKey?.text = backupKey
             tvUserId?.text = userId
             llUserId?.visibility = View.VISIBLE
 

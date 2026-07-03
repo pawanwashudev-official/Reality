@@ -20,10 +20,11 @@ import com.neubofy.reality.R
 import com.neubofy.reality.google.GoogleAuthManager
 import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.utils.FeatureManager
-import com.neubofy.reality.utils.MD5Utils
+import com.neubofy.reality.utils.IdentityManager
 import com.neubofy.reality.utils.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.OutputStreamWriter
@@ -217,13 +218,14 @@ class RealityProActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityProActivity.applicationContext) }
         updateStateUI()
     }
 
     private fun updateStateUI() {
         val email = GoogleAuthManager.getUserEmail(this) ?: ""
         val isSignedIn = GoogleAuthManager.isSignedIn(this) && email.isNotEmpty()
-        val userId = if (isSignedIn) MD5Utils.getUserIdFromEmail(email) else null
+        val userId = if (isSignedIn) IdentityManager.getUserId(this) else null
 
         val featureManager = FeatureManager(this)
         if (userId != null) {
@@ -385,7 +387,7 @@ class RealityProActivity : BaseActivity() {
 
     private fun showVerifyDialog() {
         val email = GoogleAuthManager.getUserEmail(this) ?: return
-        val userId = MD5Utils.getUserIdFromEmail(email)
+        val userId = IdentityManager.getUserId(this)
         val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
         val savedCode = prefs.getString("pro_saved_verification_code_for_$userId", null)
 
@@ -397,13 +399,14 @@ class RealityProActivity : BaseActivity() {
     }
 
     private fun verifyCode(vCode: String) {
+        GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityProActivity.applicationContext) }
         val email = GoogleAuthManager.getUserEmail(this) ?: ""
         if (email.isEmpty()) {
             Toast.makeText(this, "Please sign in with Google in the Profile page first.", Toast.LENGTH_LONG).show()
             return
         }
 
-        val userId = MD5Utils.getUserIdFromEmail(email)
+        val userId = IdentityManager.getUserId(this)
         val workerUrl = BuildConfig.WORKER_URL
 
         if (workerUrl.isEmpty()) {

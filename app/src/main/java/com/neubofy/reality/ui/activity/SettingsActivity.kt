@@ -345,10 +345,8 @@ class SettingsActivity : BaseActivity() {
 
     private fun updateUI() {
         val cardEncryption = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_data_encryption)
-        cardEncryption?.setOnClickListener {
-            val intent = android.content.Intent(this, EncryptionSetupActivity::class.java)
-            startActivity(intent)
-        }
+        cardEncryption?.visibility = android.view.View.GONE
+
 
         // Features State
         val featureManager = com.neubofy.reality.utils.FeatureManager(this)

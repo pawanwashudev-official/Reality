@@ -100,6 +100,25 @@
             android:textSize="12sp"
             android:textColor="?attr/colorPrimary"/>
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="  |  KEY: "
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:textColor="?attr/colorOnSurfaceVariant"/>
+
+        <TextView
+            android:id="@+id/tv_backup_password"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Not available"
+            android:textIsSelectable="true"
+            android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:textColor="?attr/colorPrimary"/>
+
+
         <ImageView
             android:id="@+id/btn_copy_id"
             android:layout_width="20dp"

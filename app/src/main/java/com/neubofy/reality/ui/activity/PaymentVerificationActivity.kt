@@ -21,11 +21,12 @@ import com.neubofy.reality.R
 import com.neubofy.reality.google.GoogleAuthManager
 import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.utils.FeatureManager
-import com.neubofy.reality.utils.MD5Utils
+import com.neubofy.reality.utils.IdentityManager
 import com.neubofy.reality.utils.QRUtils
 import com.neubofy.reality.utils.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.OutputStreamWriter
@@ -90,7 +91,7 @@ class PaymentVerificationActivity : BaseActivity() {
             finish()
             return
         }
-        userId = MD5Utils.getUserIdFromEmail(email)
+        userId = IdentityManager.getUserId(this)
 
         selectedMonths = intent.getIntExtra("months", 12)
         price = Math.round((99.0 / 12.0) * selectedMonths).toInt()
@@ -151,6 +152,7 @@ class PaymentVerificationActivity : BaseActivity() {
     }
 
     private fun submitPaymentRequest(transactionId: String, customNote: String) {
+        GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@PaymentVerificationActivity.applicationContext) }
         val workerUrl = BuildConfig.WORKER_URL
 
         if (workerUrl.isEmpty()) {

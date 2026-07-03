@@ -229,6 +229,7 @@ object GoogleAuthManager {
                     
                     // Fetch user info
                     fetchAndSaveUserInfo(context, accessToken)
+                    com.neubofy.reality.utils.IdentityManager.refreshIdentity(context.applicationContext)
 
                     return@withContext true
                 }
@@ -288,6 +289,7 @@ object GoogleAuthManager {
         }
 
         com.neubofy.reality.utils.SecurePreferences.get(context, "google_connector_prefs").edit().clear().apply()
+        com.neubofy.reality.utils.IdentityManager.clearIdentity(context)
         TerminalLogger.log("GOOGLE AUTH: Signed out and cleared connections")
     }
     
