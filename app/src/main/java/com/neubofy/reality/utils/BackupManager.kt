@@ -107,6 +107,8 @@ object BackupManager {
     ): BackupResult {
         return withContext(Dispatchers.IO) {
             try {
+                val email = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context)
+                if (email != null) com.neubofy.reality.utils.IdentityManager.refreshIdentity(context, email)
                 // Check sign-in
                 if (!GoogleAuthManager.isSignedIn(context)) {
                     return@withContext BackupResult(false, "Please sign in with Google first")
@@ -252,13 +254,14 @@ object BackupManager {
      * @param onProgress Callback for progress updates
      */
     suspend fun restoreBackup(
-        password: String? = null,
         context: Context,
         categories: Set<BackupCategory>? = null, // null = restore all available
         onProgress: (Float, String) -> Unit = { _, _ -> }
     ): BackupResult {
         return withContext(Dispatchers.IO) {
             try {
+                val email = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context)
+                if (email != null) com.neubofy.reality.utils.IdentityManager.refreshIdentity(context, email)
                 if (!GoogleAuthManager.isSignedIn(context)) {
                     return@withContext BackupResult(false, "Please sign in with Google first")
                 }
@@ -296,7 +299,7 @@ object BackupManager {
 
                 val encryptedCategories = rootJson.optString("encryptedCategories", "")
                 val categoriesJsonStr = if (encryptedCategories.isNotEmpty()) {
-                    val decrypted = BackupEncryption.decrypt(context, encryptedCategories, password)
+                    val decrypted = BackupEncryption.decrypt(context, encryptedCategories)
                     if (decrypted.startsWith("ENC:")) {
                         return@withContext BackupResult(false, "Decryption failed. Incorrect password?")
                     }

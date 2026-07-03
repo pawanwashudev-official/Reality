@@ -278,6 +278,7 @@ object GoogleAuthManager {
     fun getUserPhotoUrl(context: Context): String? = getPrefs(context).getString(KEY_USER_PHOTO_URL, null)
     
     fun signOut(context: Context) {
+        com.neubofy.reality.utils.IdentityManager.clearIdentity(context)
         val clientId = getClientId(context)
         val clientSecret = getClientSecret(context)
 

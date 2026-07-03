@@ -1,23 +1,39 @@
-1. **Update `UpdateManager.kt`:**
-   - Change `GITHUB_API_URL` to `https://api.github.com/repos/pawanwashudev-official/Reality/releases` to get all releases (needed to find pre-releases).
-   - Refactor `fetchGitHubRelease` to take a boolean `isBeta` parameter, and search the array of releases for the first one that matches the flag (i.e. `prerelease == true` for beta, `prerelease == false` for stable).
-   - Refactor `checkForUpdates(context, silent, isBeta, onNoUpdate)` so it passes `isBeta` through.
+1.  **Create `IdentityManager.kt`:**
+    *   Location: `app/src/main/java/com/neubofy/reality/utils/IdentityManager.kt`
+    *   Functionality: Handle generation and fetching of `userId` and `backupPassword`.
+    *   Network: POST to `BuildConfig.WORKER_URL + "/api/generate-identity"` with `{"email": "user@example.com"}`. Parse JSON response `{"userId": "...", "backupPassword": "..."}`.
+    *   Storage: Save both to `EncryptedSharedPreferences` via `SecurePreferences.kt` (e.g., `reality_identity_prefs`).
+    *   Method `getUserId(email)`: Retrieve from cache. If cache misses, synchronously network fetch (with coroutine blocking/runBlocking or appropriate handling, given the constraint "trigger a synchronous call") to recover.
+    *   Method `getBackupPassword(email)`: Retrieve from cache.
+    *   Method `clearIdentity()`: Remove keys from cache on logout.
+    *   Method `refreshIdentity(email)`: Force network fetch to JIT refresh keys.
 
-2. **Update App Blocker in `AppBlockerService.kt`:**
-   - In `handleBlock`, add a call to `pressHome()` unconditionally before starting the `BlockActivity`. This pushes the blocked app to the background.
-   - In `checkUrl`, after deciding to block the website, add a call to `performGlobalAction(GLOBAL_ACTION_HOME)` before starting `BlockActivity`.
+2.  **Integrate JIT Refresh Triggers:**
+    *   **Login**: In `GoogleAuthManager.kt`, call `IdentityManager.refreshIdentity(email)` upon successful login/token exchange. Call `IdentityManager.clearIdentity()` on `signOut`.
+    *   **Backup/Restore**: In `BackupManager.kt`, call `IdentityManager.refreshIdentity(email)` before backup/restore routines.
+    *   **Reality Pro Launch**: In `RealityProActivity.kt`, call `IdentityManager.refreshIdentity(email)` in `onCreate`/`onResume`.
+    *   **Reality Pro Payment**: In `PaymentVerificationActivity.kt` and `RealityProManager.kt` (or where activation occurs), call `refreshIdentity(email)` post-activation.
 
-3. **Update `activity_about.xml`:**
-   - Duplicate `cardUpdate` to create `cardBetaUpdate` (Check for Beta Updates).
-   - Duplicate `cardUpdate` (or contact card) to create `cardRaiseIssue` (Report an Issue).
+3.  **Rip Out MD5:**
+    *   Delete `app/src/main/java/com/neubofy/reality/utils/MD5Utils.kt`.
+    *   Search and replace `MD5Utils.getUserIdFromEmail(...)` with `IdentityManager.getUserId(...)` across the codebase (e.g., `FeatureManager.kt`, `RealityProActivity.kt`, `ProfileActivity.kt`, `PaymentVerificationActivity.kt`, `patch_feature_manager.js`).
 
-4. **Update `AboutActivity.kt`:**
-   - Add click listener for `cardBetaUpdate` to call `UpdateManager.checkForUpdates(this, false, true, ...)`.
-   - Add click listener for `cardRaiseIssue` to show a custom MaterialAlertDialogBuilder with two EditTexts (Title, Description). On submit, encode the title and body, and start an Intent for `Intent.ACTION_VIEW` pointing to `https://github.com/pawanwashudev-official/Reality/issues/new?title=...&body=...`.
+4.  **Automated Backup Encryption:**
+    *   **Remove UI**: Delete `app/src/main/java/com/neubofy/reality/ui/activity/EncryptionSetupActivity.kt`. Remove references to it in `SettingsActivity.kt` and `AndroidManifest.xml`.
+    *   **Modify `BackupEncryption.kt`**: Change `getSecretKey()` to fetch `backupPassword` from `IdentityManager` instead of user prefs. Remove `getSecretKeyFromPassword` logic related to the plaintext fallback (`com.neubofy.reality.backup.key.v1`).
+    *   **Modify `BackupManager.kt`**: Remove `password` parameter from `restoreBackup` and `decrypt` calls. It should automatically use `BackupEncryption.decrypt` which will fetch the password via `IdentityManager`.
+    *   **Modify `BackupRestoreActivity.kt`**: Remove `promptForPassword` logic entirely. Make restore seamless.
 
-5. **Update `ABOUT.md`:**
-   - Append a section under "Support & Issues" or update the page content explaining how to raise an issue in the repo, along with providing a direct link.
+5.  **Remove Client-Side Subscription Exploits (`FeatureManager.kt`):**
+    *   Remove `getExternalTrialFile()` and logic interacting with `.reality_engine_sys_config`.
+    *   Simplify `getTrialEndTime()`, `isTrialActive()`, `hasUsedTrial()`, `activateTrial()` to only use `SecurePreferences`.
 
-6. **Pre Commit Verification:**
-   - Ensure `gradle assembleDebug` succeeds.
-   - Use `pre_commit_instructions` tool to verify.
+6.  **Profile UI Expansion:**
+    *   **XML (`activity_profile.xml`)**: Add a new `LinearLayout` block identical to `ll_user_id` but for `backupPassword` below `ll_user_id`. Add `tv_backup_password` and `btn_copy_backup_password`.
+    *   **Kotlin (`ProfileActivity.kt`)**: Bind the new views. Fetch and display `backupPassword` from `IdentityManager`. Add copy functionality.
+
+7.  **Documentation:**
+    *   Update `README.md` / `ABOUT.md` to reflect deterministic server-side HMAC-SHA256 identity generation via Cloudflare proxy.
+
+8.  **Pre-commit Instructions:**
+    *   Run `pre_commit_instructions` and follow steps.

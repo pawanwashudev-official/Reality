@@ -20,7 +20,7 @@ import com.neubofy.reality.R
 import com.neubofy.reality.google.GoogleAuthManager
 import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.utils.FeatureManager
-import com.neubofy.reality.utils.MD5Utils
+
 import com.neubofy.reality.utils.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,6 +46,8 @@ class RealityProActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_reality_pro)
+        val email = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(this)
+        if (email != null) { kotlinx.coroutines.GlobalScope.launch { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityProActivity, email) } }
 
         findViewById<android.view.View>(R.id.btn_view_pro_members)?.setOnClickListener {
             val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://reality.neubofy.in/promembers"))
@@ -223,7 +225,7 @@ class RealityProActivity : BaseActivity() {
     private fun updateStateUI() {
         val email = GoogleAuthManager.getUserEmail(this) ?: ""
         val isSignedIn = GoogleAuthManager.isSignedIn(this) && email.isNotEmpty()
-        val userId = if (isSignedIn) MD5Utils.getUserIdFromEmail(email) else null
+        val userId = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getUserId(this, email) else null
 
         val featureManager = FeatureManager(this)
         if (userId != null) {
@@ -385,7 +387,7 @@ class RealityProActivity : BaseActivity() {
 
     private fun showVerifyDialog() {
         val email = GoogleAuthManager.getUserEmail(this) ?: return
-        val userId = MD5Utils.getUserIdFromEmail(email)
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(this, email)
         val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
         val savedCode = prefs.getString("pro_saved_verification_code_for_$userId", null)
 
@@ -403,7 +405,7 @@ class RealityProActivity : BaseActivity() {
             return
         }
 
-        val userId = MD5Utils.getUserIdFromEmail(email)
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(this, email)
         val workerUrl = BuildConfig.WORKER_URL
 
         if (workerUrl.isEmpty()) {

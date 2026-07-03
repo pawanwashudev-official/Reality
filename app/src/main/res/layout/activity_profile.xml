@@ -58,72 +58,6 @@
         app:layout_constraintStart_toStartOf="@id/tv_title"/>
 
 
-    <!-- Get Pro Access Button -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_get_pro_access"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Get Pro Access"
-        android:visibility="gone"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/tv_subtitle"
-        app:layout_constraintStart_toStartOf="@id/tv_title"/>
-
-    <!-- User ID Section -->
-    <LinearLayout
-        android:id="@+id/ll_user_id"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/glass_card_bg"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="6dp"
-        app:layout_constraintTop_toBottomOf="@id/btn_get_pro_access"
-        app:layout_constraintStart_toStartOf="@id/tv_title">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="ID: "
-            android:textStyle="bold"
-            android:textSize="12sp"
-            android:textColor="?attr/colorOnSurfaceVariant"/>
-
-        <TextView
-            android:id="@+id/tv_user_id"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Not logged in"
-            android:fontFamily="monospace"
-            android:textSize="12sp"
-            android:textColor="?attr/colorPrimary"/>
-
-        <ImageView
-            android:id="@+id/btn_copy_id"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginStart="8dp"
-            android:padding="2dp"
-            android:src="@drawable/baseline_content_copy_24"
-            app:tint="?attr/colorOnSurfaceVariant"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Copy User ID"/>
-    </LinearLayout>
-        
-    <TextView
-        android:id="@+id/tv_scope_warning"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Note: If you signed in from the Reality Pro page, you only gave email access. To use Google Workspace features (Docs, Drive, Tasks), please Sign Out and Sign In here again."
-        android:textColor="#D32F2F"
-        android:textSize="12sp"
-        android:visibility="gone"
-        android:layout_marginTop="8dp"
-        android:layout_marginHorizontal="16dp"
-        app:layout_constraintTop_toBottomOf="@id/ll_user_id"
-        app:layout_constraintStart_toStartOf="parent"/>
 
     <!-- Content ScrollView -->
     <ScrollView
@@ -132,7 +66,7 @@
         android:layout_marginTop="16dp"
         android:clipToPadding="false"
         android:paddingBottom="16dp"
-        app:layout_constraintTop_toBottomOf="@id/tv_scope_warning"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -142,6 +76,121 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
+
+
+            <!-- Scope Warning Text -->
+            <TextView
+                android:id="@+id/tv_scope_warning"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="We have requested additional scopes for Reality Calendar to integrate correctly."
+                android:textColor="?attr/colorPrimary"
+                android:textSize="12sp"
+                android:visibility="gone"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- Identity Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_identity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:background="@drawable/glass_card_bg">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Identity Credentials"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="12dp"
+                        android:textColor="?attr/colorOnSurface"/>
+
+                    <!-- User ID -->
+                    <LinearLayout
+                        android:id="@+id/ll_user_id"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="ID: "
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:textColor="?attr/colorOnSurfaceVariant"/>
+
+                        <TextView
+                            android:id="@+id/tv_user_id"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Not logged in"
+                            android:fontFamily="monospace"
+                            android:textSize="14sp"
+                            android:layout_marginStart="4dp"
+                            android:textColor="?attr/colorPrimary"/>
+
+                        <ImageView
+                            android:id="@+id/btn_copy_id"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:padding="4dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@drawable/baseline_content_copy_24"
+                            app:tint="?attr/colorPrimary"/>
+                    </LinearLayout>
+
+                    <!-- Backup Password -->
+                    <LinearLayout
+                        android:id="@+id/ll_backup_password"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Key: "
+                            android:textStyle="bold"
+                            android:textSize="14sp"
+                            android:textColor="?attr/colorOnSurfaceVariant"/>
+
+                        <TextView
+                            android:id="@+id/tv_backup_password"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Not logged in"
+                            android:fontFamily="monospace"
+                            android:textSize="14sp"
+                            android:layout_marginStart="4dp"
+                            android:textColor="?attr/colorPrimary"/>
+
+                        <ImageView
+                            android:id="@+id/btn_copy_backup_password"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:padding="4dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@drawable/baseline_content_copy_24"
+                            app:tint="?attr/colorPrimary"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Profile Card -->
             <com.google.android.material.card.MaterialCardView

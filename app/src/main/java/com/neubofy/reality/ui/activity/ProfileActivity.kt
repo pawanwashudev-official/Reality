@@ -405,6 +405,9 @@ class ProfileActivity : BaseActivity() {
         // Handle User ID logic
         val email = GoogleAuthManager.getUserEmail(this) ?: ""
         val tvUserId = findViewById<android.widget.TextView>(R.id.tv_user_id)
+        val tvBackupPassword = findViewById<android.widget.TextView>(R.id.tv_backup_password)
+        val btnCopyBackupPassword = findViewById<android.widget.ImageView>(R.id.btn_copy_backup_password)
+        val llBackupPassword = findViewById<android.widget.LinearLayout>(R.id.ll_backup_password)
         val btnCopyId = findViewById<android.widget.ImageView>(R.id.btn_copy_id)
         val llUserId = findViewById<android.widget.LinearLayout>(R.id.ll_user_id)
 
@@ -418,20 +421,15 @@ class ProfileActivity : BaseActivity() {
             tvScopeWarning?.visibility = View.GONE
         }
 
-        val btnGetProAccess = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_get_pro_access)
-        if (isSignedIn && !com.neubofy.reality.utils.FeatureManager(this).isRealityProVerified()) {
-            btnGetProAccess?.visibility = View.VISIBLE
-            btnGetProAccess?.setOnClickListener {
-                startActivity(Intent(this, RealityProActivity::class.java))
-            }
-        } else {
-            btnGetProAccess?.visibility = View.GONE
-        }
+
 
         if (isSignedIn && email.isNotEmpty()) {
-            val userId = com.neubofy.reality.utils.MD5Utils.getUserIdFromEmail(email)
+            val userId = com.neubofy.reality.utils.IdentityManager.getUserId(this, email)
+            val backupPassword = com.neubofy.reality.utils.IdentityManager.getBackupPassword(this, email)
             tvUserId?.text = userId
             llUserId?.visibility = View.VISIBLE
+            tvBackupPassword?.text = backupPassword
+            llBackupPassword?.visibility = View.VISIBLE
 
             val copyAction = View.OnClickListener {
                 val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
@@ -441,9 +439,20 @@ class ProfileActivity : BaseActivity() {
             }
             tvUserId?.setOnClickListener(copyAction)
             btnCopyId?.setOnClickListener(copyAction)
+
+            val copyBackupAction = View.OnClickListener {
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("Reality Backup Password", backupPassword)
+                clipboard.setPrimaryClip(clip)
+                android.widget.Toast.makeText(this, "Copied Backup Password", android.widget.Toast.LENGTH_SHORT).show()
+            }
+            tvBackupPassword?.setOnClickListener(copyBackupAction)
+            btnCopyBackupPassword?.setOnClickListener(copyBackupAction)
         } else {
             tvUserId?.text = "Not logged in"
             llUserId?.visibility = View.GONE
+            tvBackupPassword?.text = "Not logged in"
+            llBackupPassword?.visibility = View.GONE
         }
 
         if (isSignedIn) {

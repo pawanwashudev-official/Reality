@@ -21,7 +21,7 @@ import com.neubofy.reality.R
 import com.neubofy.reality.google.GoogleAuthManager
 import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.utils.FeatureManager
-import com.neubofy.reality.utils.MD5Utils
+
 import com.neubofy.reality.utils.QRUtils
 import com.neubofy.reality.utils.ThemeManager
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +58,8 @@ class PaymentVerificationActivity : BaseActivity() {
                         val featureManager = FeatureManager(this@PaymentVerificationActivity)
                         featureManager.setRealityProStartTime(internetTime)
                         featureManager.setRealityProVerified(true, internetTime, selectedMonths)
+                        val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(this@PaymentVerificationActivity)
+                        if (userEmail != null) { kotlinx.coroutines.GlobalScope.launch { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@PaymentVerificationActivity, userEmail) } }
                         Toast.makeText(this@PaymentVerificationActivity, "Payment successful! Reality Pro instantly activated.", Toast.LENGTH_LONG).show()
                         val intent = Intent(this@PaymentVerificationActivity, MainActivity::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -90,7 +92,7 @@ class PaymentVerificationActivity : BaseActivity() {
             finish()
             return
         }
-        userId = MD5Utils.getUserIdFromEmail(email)
+        userId = com.neubofy.reality.utils.IdentityManager.getUserId(this, email)
 
         selectedMonths = intent.getIntExtra("months", 12)
         price = Math.round((99.0 / 12.0) * selectedMonths).toInt()

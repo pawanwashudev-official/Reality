@@ -17,24 +17,15 @@ object BackupEncryption {
     private const val TAG_LENGTH = 128
 
 
-    fun getSecretKeyFromPassword(password: String?): SecretKey {
-        val keyMaterial = if (password != null) {
-            password.toByteArray()
-        } else {
-            "com.neubofy.reality.backup.key.v1".toByteArray()
-        }
+    private fun getSecretKey(context: android.content.Context): SecretKey {
+        val email = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: ""
+        val password = com.neubofy.reality.utils.IdentityManager.getBackupPassword(context, email)
 
+        val keyMaterial = password.toByteArray()
         val md = java.security.MessageDigest.getInstance("SHA-256")
         val rawKey = md.digest(keyMaterial)
         return javax.crypto.spec.SecretKeySpec(rawKey, "AES")
     }
-
-    private fun getSecretKey(context: android.content.Context): SecretKey {
-        val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, "reality_encryption_prefs")
-        val password = prefs.getString("backup_password", null)
-        return getSecretKeyFromPassword(password)
-    }
-
 
     fun encrypt(context: android.content.Context, data: String): String {
         try {
@@ -50,16 +41,13 @@ object BackupEncryption {
             return "ENC:$ivBase64:$encryptedDataBase64"
         } catch (e: Exception) {
             e.printStackTrace()
-            // Fallback to plain text if encryption fails
             return data
         }
     }
 
-    fun decrypt(context: android.content.Context, encryptedString: String, overridePassword: String? = null): String {
+    fun decrypt(context: android.content.Context, encryptedString: String): String {
         try {
-            if (!encryptedString.startsWith("ENC:")) {
-                return encryptedString // Not encrypted
-            }
+            if (!encryptedString.startsWith("ENC:")) return encryptedString
 
             val parts = encryptedString.substring(4).split(":")
             if (parts.size != 2) return encryptedString
@@ -69,13 +57,12 @@ object BackupEncryption {
 
             val cipher = Cipher.getInstance(TRANSFORMATION)
             val spec = GCMParameterSpec(TAG_LENGTH, iv)
-            cipher.init(Cipher.DECRYPT_MODE, if (overridePassword != null) getSecretKeyFromPassword(overridePassword) else getSecretKey(context), spec)
+            cipher.init(Cipher.DECRYPT_MODE, getSecretKey(context), spec)
 
             val decryptedData = cipher.doFinal(encryptedData)
             return String(decryptedData, Charsets.UTF_8)
         } catch (e: Exception) {
             e.printStackTrace()
-            // Return original if decryption fails (might be plain text that happened to start with ENC:)
             return encryptedString
         }
     }
