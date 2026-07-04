@@ -40,6 +40,7 @@ object GoogleAuthManager {
     private const val KEY_USER_NAME = "user_display_name"
     private const val KEY_USER_PHOTO_URL = "user_photo_url"
     private const val KEY_IS_SIGNED_IN = "is_signed_in"
+    private const val KEY_ID_TOKEN = "id_token"
     
     val ALL_SCOPES = listOf(
         CalendarScopes.CALENDAR,
@@ -175,6 +176,7 @@ object GoogleAuthManager {
 
             try {
                 val accessToken: String?
+                val idToken: String?
                 val refreshToken: String?
 
                 if (!clientId.isNullOrBlank() && !clientSecret.isNullOrBlank()) {
@@ -188,6 +190,7 @@ object GoogleAuthManager {
                     ).execute()
                     accessToken = tokenResponse.accessToken
                     refreshToken = tokenResponse.refreshToken
+                    idToken = tokenResponse.idToken
                 } else {
                      val cleanWorkerUrl = workerUrl.removeSuffix("/")
                      val url = URL("$cleanWorkerUrl/oauth/token")
@@ -210,9 +213,11 @@ object GoogleAuthManager {
                          val json = JSONObject(response)
                          accessToken = json.optString("access_token", null)
                          refreshToken = json.optString("refresh_token", null)
+                         idToken = json.optString("id_token", null)
                      } else {
                          accessToken = null
                          refreshToken = null
+                         idToken = null
                          TerminalLogger.log("GOOGLE AUTH: Token exchange failed with status ${conn.responseCode}")
                      }
                 }
@@ -220,6 +225,9 @@ object GoogleAuthManager {
                 if (accessToken != null) {
                     getPrefs(context).edit().apply {
                         putString(KEY_ACCESS_TOKEN, accessToken)
+                        if (idToken != null) {
+                            putString(KEY_ID_TOKEN, idToken)
+                        }
                         if (refreshToken != null) {
                             putString(KEY_REFRESH_TOKEN, refreshToken)
                         }
@@ -277,6 +285,7 @@ object GoogleAuthManager {
     fun getUserEmail(context: Context): String? = getPrefs(context).getString(KEY_USER_EMAIL, null)
     fun getUserName(context: Context): String? = getPrefs(context).getString(KEY_USER_NAME, null)
     fun getUserPhotoUrl(context: Context): String? = getPrefs(context).getString(KEY_USER_PHOTO_URL, null)
+    fun getIdToken(context: Context): String? = getPrefs(context).getString(KEY_ID_TOKEN, null)
     
     fun signOut(context: Context) {
         val clientId = getClientId(context)

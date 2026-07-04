@@ -16,6 +16,50 @@ import java.time.format.DateTimeFormatter
  * AI helper for generating personalized nightly reflection questions.
  */
 object NightlyAIHelper {
+
+    private suspend fun callWorker(context: Context, prompt: String): String = withContext(Dispatchers.IO) {
+        val workerUrl = com.neubofy.reality.BuildConfig.WORKER_URL.removeSuffix("/") + "/ai"
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
+        val password = com.neubofy.reality.utils.IdentityManager.getBackupPassword(context)
+
+        val jsonBody = JSONObject().apply {
+            put("model", "gpt oss 20 b")
+            val messagesArray = JSONArray().apply {
+                put(JSONObject().apply {
+                    put("role", "user")
+                    put("content", prompt)
+                })
+            }
+            put("messages", messagesArray)
+            put("userId", userId)
+            put("password", password)
+        }
+
+        val conn = java.net.URL(workerUrl).openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Content-Type", "application/json")
+        conn.connectTimeout = 45000
+        conn.readTimeout = 45000
+        conn.doOutput = true
+
+        java.io.OutputStreamWriter(conn.outputStream).use { it.write(jsonBody.toString()) }
+
+        if (conn.responseCode == 200) {
+            val responseStr = conn.inputStream.bufferedReader().use { it.readText() }
+            val json = JSONObject(responseStr)
+            val choices = json.optJSONArray("choices")
+            if (choices != null && choices.length() > 0) {
+                return@withContext choices.getJSONObject(0).optJSONObject("message")?.optString("content", "") ?: ""
+            }
+            val result = json.optString("result", "")
+            if (result.isNotEmpty()) return@withContext result
+
+            return@withContext responseStr
+        } else {
+            throw Exception("AI Worker failed with code: ${conn.responseCode}")
+        }
+    }
+
     
     /**
      * Generate personalized reflection questions based on user's day.
@@ -48,14 +92,7 @@ object NightlyAIHelper {
         val prompt = buildPrompt(context, userIntroduction, daySummary, healthData, previousReport)
         TerminalLogger.log("Nightly AI: Prompt built, calling $provider API...")
         
-        val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, prompt)
-            "Gemini" -> callGemini(apiKey, modelName, prompt)
-            "Groq" -> callGroq(apiKey, modelName, prompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, prompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt)
-            else -> throw IllegalStateException("Unsupported provider: $provider")
-        }
+        val response = callWorker(context, prompt)
         
         TerminalLogger.log("Nightly AI: Response received, parsing questions...")
         parseQuestions(response)
@@ -218,14 +255,7 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
             
         TerminalLogger.log("Nightly AI: Plan prompt built, calling $provider API...")
         
-        val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, systemPrompt)
-            "Gemini" -> callGemini(apiKey, modelName, systemPrompt)
-            "Groq" -> callGroq(apiKey, modelName, systemPrompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, systemPrompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, systemPrompt)
-            else -> throw IllegalStateException("Unsupported provider: $provider")
-        }
+        val response = callWorker(context, systemPrompt)
         
         response
     }
@@ -276,14 +306,7 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
             
         TerminalLogger.log("Nightly AI: Task Cleanup prompt built, calling $provider API...")
         
-        val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, systemPrompt)
-            "Gemini" -> callGemini(apiKey, modelName, systemPrompt)
-            "Groq" -> callGroq(apiKey, modelName, systemPrompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, systemPrompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt = systemPrompt)
-            else -> throw IllegalStateException("Unsupported provider: $provider")
-        }
+        val response = callWorker(context, systemPrompt)
         
         response
     }
@@ -624,14 +647,7 @@ OUTPUT FORMAT:
         
         val prompt = buildAnalysisPrompt(context, userIntroduction, diaryContent)
         
-        val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, prompt)
-            "Gemini" -> callGemini(apiKey, modelName, prompt)
-            "Groq" -> callGroq(apiKey, modelName, prompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, prompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt)
-            else -> throw IllegalStateException("Unsupported provider: $provider")
-        }
+        val response = callWorker(context, prompt)
         
         parseAnalysisResponse(response)
     }
@@ -745,14 +761,7 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         
         val prompt = buildPlanPrompt(context, userIntro, summary)
         
-        val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, prompt)
-            "Gemini" -> callGemini(apiKey, modelName, prompt)
-            "Groq" -> callGroq(apiKey, modelName, prompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, prompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt)
-            else -> throw IllegalStateException("Unsupported provider: $provider")
-        }
+        val response = callWorker(context, prompt)
         
         // Return raw response (Markdown expected)
         response.trim()
@@ -846,14 +855,7 @@ Include exactly the questions asked and the user's answers extracted strictly fr
             buildReportPrompt(context, userIntro, summary, xpStats, reflectionContent, planContent)
         }
         
-        val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, prompt)
-            "Gemini" -> callGemini(apiKey, modelName, prompt)
-            "Groq" -> callGroq(apiKey, modelName, prompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, prompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt)
-            else -> throw IllegalStateException("Unsupported provider: $provider")
-        }
+        val response = callWorker(context, prompt)
         
         response.trim()
     }

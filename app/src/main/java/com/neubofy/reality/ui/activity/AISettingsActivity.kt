@@ -30,6 +30,8 @@ class AISettingsActivity : BaseActivity() {
         ThemeManager.applyTheme(this)
         ThemeManager.applyAccentTheme(this)
         super.onCreate(savedInstanceState)
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
+        prefs.edit().putString("model", "chatgpt x Neubofy model name gpt oss 20 b").putString("nightly_model", "chatgpt x Neubofy model name gpt oss 20 b").apply()
         binding = ActivityAiSettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -46,15 +48,11 @@ class AISettingsActivity : BaseActivity() {
 
 
         // Chat Models - Add button
-        binding.btnAddChatModel.setOnClickListener {
-            showAddModelForm("CHAT")
-        }
+
 
         // Nightly Model - Add button
         // Nightly Model - Add button
-        binding.btnAddNightlyModel.setOnClickListener {
-            showAddModelForm("NIGHTLY")
-        }
+
 
         // Nightly Models Adapter
         nightlyModelsAdapter = com.neubofy.reality.ui.adapter.SavedModelsAdapter(
@@ -83,7 +81,7 @@ class AISettingsActivity : BaseActivity() {
                 }
             }
         )
-        binding.recyclerNightlyModels.adapter = nightlyModelsAdapter
+
         binding.recyclerNightlyModels.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
 
 
@@ -107,7 +105,7 @@ class AISettingsActivity : BaseActivity() {
                 }
             }
         )
-        binding.recyclerChatModels.adapter = chatModelsAdapter
+
         binding.recyclerChatModels.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
 
         // User Introduction Save

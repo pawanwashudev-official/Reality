@@ -208,24 +208,9 @@ open class AIChatActivity : BaseActivity() {
         
         handleSessionInit(text)
 
-        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
-        val savedModelString = prefs.getString("model", "OpenAI: gpt-3.5-turbo") ?: "OpenAI: gpt-3.5-turbo"
-        
-        val (provider, model) = if (savedModelString.contains(": ")) {
-            val split = savedModelString.split(": ", limit = 2)
-            split[0] to split[1]
-        } else {
-            (prefs.getString("provider", "OpenAI") ?: "OpenAI") to savedModelString
-        }
-        
-        val apiKey = prefs.getString("api_key_$provider", "") ?: ""
-
-        if (apiKey.isEmpty()) {
-            val err = "Missing API Key for $provider. Please configure in Settings."
-            adapter.addMessage(ChatMessage(err, false))
-            saveBotMessage(err)
-            return
-        }
+        val provider = "Neubofy"
+        val model = "gpt oss 20 b"
+        val apiKey = com.neubofy.reality.utils.IdentityManager.getBackupPassword(this)
         
         binding.tvThinking.visibility = View.VISIBLE
         binding.tvThinking.text = "Reality is thinking..." // Reset text
@@ -343,7 +328,7 @@ open class AIChatActivity : BaseActivity() {
             conn.connectTimeout = 30000
             conn.readTimeout = 120000 // Longer read timeout for streaming
             conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Authorization", "Bearer $apiKey")
+            // Removed Bearer Auth
             conn.setRequestProperty("Accept", "text/event-stream") // SSE header
             if (provider == "OpenRouter") {
                  conn.setRequestProperty("HTTP-Referer", "https://neubofy.com")
@@ -471,6 +456,7 @@ open class AIChatActivity : BaseActivity() {
 
     // --- Agentic Chat (Pro Mode - Iterative Loop) ---
     private suspend fun runAgentLoop(history: List<ChatMessage>, apiKey: String, model: String, provider: String): String {
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(this@AIChatActivity)
         return withContext(Dispatchers.IO) {
             val maxTurns = 10
             var turnCount = 0
@@ -530,12 +516,9 @@ open class AIChatActivity : BaseActivity() {
                     put("tool_choice", "auto")
                 }
                 
-                val apiUrl = when(provider) {
-                    "OpenAI" -> "https://api.openai.com/v1/chat/completions"
-                    "Groq" -> "https://api.groq.com/openai/v1/chat/completions"
-                    "OpenRouter" -> "https://openrouter.ai/api/v1/chat/completions"
-                    else -> "https://api.openai.com/v1/chat/completions"
-                }
+                val apiUrl = com.neubofy.reality.BuildConfig.WORKER_URL.removeSuffix("/") + "/ai"
+                jsonBody.put("userId", userId)
+                jsonBody.put("password", apiKey)
                 
                 // Execute Request
                 val conn = java.net.URL(apiUrl).openConnection() as java.net.HttpURLConnection
@@ -543,7 +526,7 @@ open class AIChatActivity : BaseActivity() {
                 conn.connectTimeout = 45000 
                 conn.readTimeout = 45000
                 conn.setRequestProperty("Content-Type", "application/json")
-                conn.setRequestProperty("Authorization", "Bearer $apiKey")
+                // Using custom auth in body
                 if (provider == "OpenRouter") {
                      conn.setRequestProperty("HTTP-Referer", "https://neubofy.com")
                      conn.setRequestProperty("X-Title", "Reality App")

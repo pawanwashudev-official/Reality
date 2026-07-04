@@ -1,3 +1,19 @@
+
+    async function verifyAuth(userId, providedPassword, env) {
+        if (!userId || !providedPassword || !env.APP_SECRET_PEPPER) return false;
+        try {
+            const encoder = new TextEncoder();
+            const cryptoKey = await crypto.subtle.importKey(
+              "raw", encoder.encode(env.APP_SECRET_PEPPER),
+              { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+            );
+            const pwSignature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(userId));
+            const pwHashHex = Array.from(new Uint8Array(pwSignature)).map(b => b.toString(16).padStart(2, '0')).join('');
+            const expectedPassword = pwHashHex.substring(0, 32);
+            return providedPassword === expectedPassword;
+        } catch(e) { return false; }
+    }
+
 export default {
   async fetch(request, env) {
     // Handle CORS preflight requests universally
@@ -28,12 +44,25 @@ export default {
           });
         }
 
-        const email = incomingData.email;
-        if (!email || typeof email !== "string") {
-          return new Response(JSON.stringify({ error: "Email string is required" }), {
+        const idToken = incomingData.idToken;
+        if (!idToken || typeof idToken !== "string") {
+          return new Response(JSON.stringify({ error: "idToken string is required" }), {
             status: 400,
             headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
           });
+        }
+
+        let email = "";
+        try {
+            const tokenInfoRes = await fetch("https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken);
+            if (!tokenInfoRes.ok) throw new Error("Invalid token");
+            const tokenInfo = await tokenInfoRes.json();
+            email = tokenInfo.email;
+            if (!email) throw new Error("No email in token");
+        } catch(e) {
+            return new Response(JSON.stringify({ error: "Invalid idToken" }), {
+                status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+            });
         }
 
         if (!env.APP_SECRET_PEPPER) {
@@ -168,25 +197,27 @@ export default {
         // Handles verification (GET)
         if (request.method === "GET") {
           const userId = url.searchParams.get("userId");
-          const vCodeParam = url.searchParams.get("vCode");
-          const vCode = parseInt(vCodeParam, 10);
+          const password = url.searchParams.get("password");
 
-          if (!userId || isNaN(vCode) || vCode <= 0) {
+          if (!userId || !password) {
             return new Response("INVALID", { headers: { "Access-Control-Allow-Origin": "*" } });
           }
 
+          if (!(await verifyAuth(userId, password, env))) {
+             return new Response("UNAUTHORIZED", { status: 401, headers: { "Access-Control-Allow-Origin": "*" } });
+          }
+
           const row = await env.DB.prepare(
-            "SELECT userId, status FROM licenses WHERE vCode = ?"
-          ).bind(vCode).first();
+            "SELECT userId, status, expiryDate FROM `Reality Elite members management` WHERE userId = ?"
+          ).bind(userId).first();
 
           if (!row) {
             return new Response("NOT_FOUND", { headers: { "Access-Control-Allow-Origin": "*" } });
           }
 
-          // Strict validation: User only gets "SUCCESS" if status is officially "V"
-          if (row.userId === userId && row.status === "V") {
-            return new Response("SUCCESS", { headers: { "Access-Control-Allow-Origin": "*" } });
-          } else if (row.userId === userId && row.status === "P") {
+          if (row.status === "V") {
+            return new Response("SUCCESS:" + row.expiryDate, { headers: { "Access-Control-Allow-Origin": "*" } });
+          } else if (row.status === "P") {
             return new Response("PENDING", { headers: { "Access-Control-Allow-Origin": "*" } });
           } else {
             return new Response("INVALID", { headers: { "Access-Control-Allow-Origin": "*" } });
@@ -206,43 +237,42 @@ export default {
           }
 
           const userId = incomingData.userId;
+          const password = incomingData.password;
           const transactionId = incomingData.transactionId;
-          let customNote = incomingData.customNote || "";
-          
-          // Capture incoming status ('P' or 'V'). If not provided, default to 'V' for backward compatibility
           const status = incomingData.status === "P" ? "P" : "V";
+          const durationDays = incomingData.durationDays || 365;
 
-          if (!userId || !transactionId) {
-            return new Response(JSON.stringify({ status: "ERROR", message: "Missing fields" }), {
-              status: 400,
-              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+          if (!userId || !password) {
+            return new Response(JSON.stringify({ status: "ERROR", message: "Missing auth fields" }), {
+              status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
             });
           }
 
-          if (customNote.length > 200) {
-            customNote = customNote.substring(0, 200);
+          if (!(await verifyAuth(userId, password, env))) {
+             return new Response(JSON.stringify({ status: "ERROR", message: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           }
 
-          // Insert or update. If user exists but is re-submitting, we overwrite with the new form state
-          const info = await env.DB.prepare(`
-            INSERT INTO licenses (date, userId, status, transactionId, customNote) 
+          const currentDate = new Date().toISOString();
+          let expiryDate = null;
+
+          if (status === "V") {
+              const d = new Date();
+              d.setDate(d.getDate() + durationDays);
+              expiryDate = d.toISOString().split('T')[0] + "-" + durationDays;
+          }
+
+          await env.DB.prepare(`
+            INSERT INTO \`Reality Elite members management\` (userId, date, status, transactionId, expiryDate)
             VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(userId) DO UPDATE SET 
               date = excluded.date,
+              status = excluded.status,
               transactionId = excluded.transactionId,
-              customNote = excluded.customNote,
-              status = excluded.status
-          `).bind(new Date().toISOString(), userId, status, transactionId, customNote).run();
-
-          let verificationCode = info.meta.last_row_id;
-
-          if (verificationCode === 0 || !verificationCode) {
-            const existingRow = await env.DB.prepare("SELECT vCode FROM licenses WHERE userId = ?").bind(userId).first();
-            verificationCode = existingRow ? existingRow.vCode : 1;
-          }
+              expiryDate = excluded.expiryDate
+          `).bind(userId, currentDate, status, transactionId || "", expiryDate || "").run();
 
           return new Response(
-            JSON.stringify({ status: "SUCCESS", verificationCode: verificationCode }),
+            JSON.stringify({ status: "SUCCESS" }),
             { 
               status: 200, 
               headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } 

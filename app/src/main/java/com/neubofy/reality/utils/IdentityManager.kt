@@ -50,8 +50,8 @@ object IdentityManager {
 
     private suspend fun generateAndCacheIdentity(context: Context) {
         withContext(Dispatchers.IO) {
-            val email = GoogleAuthManager.getUserEmail(context)
-            if (email.isNullOrBlank()) {
+            val idToken = GoogleAuthManager.getIdToken(context)
+            if (idToken.isNullOrBlank()) {
                 return@withContext
             }
 
@@ -66,7 +66,7 @@ object IdentityManager {
                 conn.doOutput = true
 
                 val jsonInputString = JSONObject().apply {
-                    put("email", email)
+                    put("idToken", idToken)
                 }.toString()
 
                 conn.outputStream.use { os ->

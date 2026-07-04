@@ -178,7 +178,9 @@ class PaymentVerificationActivity : BaseActivity() {
                 val jsonBody = JSONObject()
                 jsonBody.put("userId", userId)
                 jsonBody.put("transactionId", transactionId)
-                jsonBody.put("months", selectedMonths)
+                val password = IdentityManager.getBackupPassword(this@PaymentVerificationActivity)
+                jsonBody.put("password", password)
+                jsonBody.put("durationDays", selectedMonths * 30)
                 if (customNote.isNotEmpty()) {
                     jsonBody.put("customNote", customNote)
                 }
@@ -213,8 +215,7 @@ class PaymentVerificationActivity : BaseActivity() {
                                     withContext(Dispatchers.Main) {
                                         val featureManager = FeatureManager(this@PaymentVerificationActivity)
                                         featureManager.setRealityProStartTime(internetTime)
-                                        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@PaymentVerificationActivity, "reality_pro_prefs")
-                                        prefs.edit().putString("pro_saved_verification_code_for_$userId", code).apply()
+                                        // removed vCode save
                                         Toast.makeText(this@PaymentVerificationActivity, "Request Submitted Successfully!", Toast.LENGTH_LONG).show()
                                         finish()
                                     }

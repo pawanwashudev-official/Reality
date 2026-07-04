@@ -2,7 +2,7 @@ package com.neubofy.reality.utils
 
 import android.app.Activity
 import android.content.Intent
-import com.neubofy.reality.ui.activity.RealityProActivity
+import com.neubofy.reality.ui.activity.RealityEliteActivity
 
 object RealityProManager {
     /**
@@ -21,7 +21,7 @@ object RealityProManager {
         val isTrialActive = featureManager.isTrialActive()
 
         if (!(isVerified || isTrialActive)) {
-            val intent = Intent(activity, RealityProActivity::class.java)
+            val intent = Intent(activity, RealityEliteActivity::class.java)
             activity.startActivity(intent)
             activity.finish()
             return false
@@ -36,7 +36,7 @@ object RealityProManager {
         val isTrialActive = featureManager.isTrialActive()
 
         if (!(isEnabled && (isVerified || isTrialActive))) {
-            val intent = Intent(activity, RealityProActivity::class.java)
+            val intent = Intent(activity, RealityEliteActivity::class.java)
             activity.startActivity(intent)
             activity.finish()
             return false
