@@ -52,20 +52,7 @@ class PaymentVerificationActivity : BaseActivity() {
         if (data != null) {
             val response = data.getStringExtra("response")
             if (response != null && (response.contains("Status=SUCCESS", ignoreCase = true) || response.contains("status=success", ignoreCase = true) || response.contains("txnRef"))) {
-                // Payment successful! Instantly verify.
-                lifecycleScope.launch {
-                    val internetTime = com.neubofy.reality.utils.InternetTime.getTime()
-                    withContext(Dispatchers.Main) {
-                        val featureManager = FeatureManager(this@PaymentVerificationActivity)
-                        featureManager.setRealityProStartTime(internetTime)
-                        featureManager.setRealityProVerified(true, internetTime, selectedMonths)
-                        Toast.makeText(this@PaymentVerificationActivity, "Payment successful! Reality Pro instantly activated.", Toast.LENGTH_LONG).show()
-                        val intent = Intent(this@PaymentVerificationActivity, MainActivity::class.java)
-                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                        startActivity(intent)
-                        finish()
-                    }
-                }
+                Toast.makeText(this@PaymentVerificationActivity, "Payment successful! Please submit your transaction ID below.", Toast.LENGTH_LONG).show()
             } else {
                 Toast.makeText(this, "Payment failed or cancelled.", Toast.LENGTH_SHORT).show()
             }
@@ -106,7 +93,7 @@ class PaymentVerificationActivity : BaseActivity() {
         btnSubmitRequest = findViewById(R.id.btn_submit_request)
 
         btnUpiDeeplink.setOnClickListener {
-            val uri = android.net.Uri.parse("upi://pay?pa=neubofy@pnb&pn=Reality&am=$price&cu=INR")
+            val uri = android.net.Uri.parse("upi://pay?pa=neubofy@pnb&pn=Reality&am=$price&cu=INR&tn=$userId")
             val intent = Intent(Intent.ACTION_VIEW, uri)
             try {
                 upiPaymentLauncher.launch(intent)
@@ -124,7 +111,7 @@ class PaymentVerificationActivity : BaseActivity() {
 
         btnScanQr.setOnClickListener {
             if (ivQrCode.visibility == View.GONE) {
-                val bitmap = QRUtils.generateQRCode("upi://pay?pa=neubofy@pnb&pn=Reality&am=$price&cu=INR", 512)
+                val bitmap = QRUtils.generateQRCode("upi://pay?pa=neubofy@pnb&pn=Reality&am=$price&cu=INR&tn=$userId", 512)
                 ivQrCode.setImageBitmap(bitmap)
                 ivQrCode.visibility = View.VISIBLE
                 btnScanQr.text = "Hide QR Code"

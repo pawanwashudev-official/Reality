@@ -27,7 +27,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Instant Verification via UPI App"
+                android:text="Quick Payment via UPI App"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="?attr/colorPrimary"
@@ -36,7 +36,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="If you pay directly using the 'Pay via UPI App' button on this device, your Reality Pro access will be instantly verified without waiting."
+                android:text="Pay directly using the 'Pay via UPI App' button on this device, then submit the Transaction ID below."
                 android:textSize="14sp"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginBottom="16dp" />
@@ -45,7 +45,7 @@
                 android:id="@+id/btn_upi_deeplink"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Pay via UPI App (Instant)"
+                android:text="Pay via UPI App"
                 android:layout_marginBottom="24dp"/>
 
             <View

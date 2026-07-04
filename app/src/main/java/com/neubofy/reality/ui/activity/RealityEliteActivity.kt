@@ -359,23 +359,34 @@ class RealityEliteActivity : BaseActivity() {
                 }
             }
 
-            // Process Paid Plan Sign In & Purchase Steps
-            if (isSignedIn && userId != null) {
-                cardStep2.alpha = 1.0f
-                btnPayUpi.isEnabled = true
+
+
+            if (userId != null && userId != "Unknown" && userId.isNotEmpty()) {
+                val hasRegistered = btnRegister.text.toString().equals("Registered", ignoreCase = true)
+
+                if (hasRegistered) {
+                    cardStep2.alpha = 1.0f
+                    btnPayUpi.isEnabled = true
+                    updateUpiButtonText()
+                } else {
+                    cardStep2.alpha = 0.5f
+                    btnPayUpi.isEnabled = false
+                }
+
+                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
+                val hasSubmitted = prefs.getString("pro_saved_verification_code_for_$userId", null) != null
+                if (hasSubmitted) {
+                    btnPayUpi.isEnabled = false
+                    btnPayUpi.text = "Submitted"
+                    cardStep3.alpha = 1.0f
+                    btnVerify.isEnabled = true
+                } else {
+                    cardStep3.alpha = 0.5f
+                    btnVerify.isEnabled = false
+                }
             } else {
                 cardStep2.alpha = 0.5f
                 btnPayUpi.isEnabled = false
-            }
-
-            if (userId != null) {
-                if (isSignedIn) {
-                    btnPayUpi.isEnabled = true
-                    updateUpiButtonText()
-                }
-                cardStep3.alpha = 1.0f
-                btnVerify.isEnabled = true
-            } else {
                 cardStep3.alpha = 0.5f
                 btnVerify.isEnabled = false
             }
@@ -449,6 +460,10 @@ class RealityEliteActivity : BaseActivity() {
                             if (status.equals("SUCCESS", ignoreCase = true) || status.equals("REGISTERED", ignoreCase = true)) {
                                 Toast.makeText(this@RealityEliteActivity, "Successfully registered!", Toast.LENGTH_SHORT).show()
                                 btnRegister.text = "Registered"
+                                btnRegister.isEnabled = false
+                                cardStep2.alpha = 1.0f
+                                btnPayUpi.isEnabled = true
+                                updateUpiButtonText()
                             } else {
                                 Toast.makeText(this@RealityEliteActivity, "Registration failed or already exists.", Toast.LENGTH_SHORT).show()
                                 btnRegister.isEnabled = true
