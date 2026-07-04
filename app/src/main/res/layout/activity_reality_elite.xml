@@ -15,6 +15,7 @@
         app:layout_constraintTop_toTopOf="parent"/>
 
     <ScrollView
+        android:id="@+id/scroll_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true"
@@ -38,7 +39,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Reality Pro Activation"
+                android:text="Reality Elite Member Activation"
                 android:textSize="24sp"
                 android:textStyle="bold"
                 android:textColor="?attr/colorPrimary"
@@ -92,7 +93,7 @@
                         android:id="@+id/btn_view_pro_members"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="View Active Pro Members ↗"
+                        android:text="View Active Elite Members ↗"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="?attr/colorSecondary"
@@ -105,74 +106,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Trial Plan Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_trial_plan_pro"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant"
-                app:cardBackgroundColor="?attr/colorSurfaceVariant">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Trial Plan"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
-                        android:layout_marginBottom="8dp"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Not sure yet? Activate a 3-day full access trial. No card required. Sign in is required to verify your identity."
-                        android:textSize="14sp"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:layout_marginBottom="16dp"/>
-
-                    <LinearLayout
-                        android:id="@+id/ll_trial_dates"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:visibility="gone"
-                        android:layout_marginBottom="16dp">
-
-                        <TextView
-                            android:id="@+id/tv_trial_start_date"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Started: -"
-                            android:textColor="?attr/colorOnSurfaceVariant"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/tv_trial_expiry_date"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Expires: -"
-                            android:textColor="?attr/colorError"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_trial_activation"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Start 3-Day Trial"
-                        android:visibility="gone"
-                        android:paddingVertical="12dp"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
             <!-- Paid Plan Section -->
             <TextView
@@ -231,6 +165,16 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="License Terms: Your Reality Elite Member license is valid for the duration you selected. If you legitimately logout and log back in, access is restored."
+                        android:textSize="12sp"
+                        android:lineSpacingMultiplier="1.2"
+                        android:textColor="?attr/colorError"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginBottom="8dp"/>
+
             <!-- Paid Plan Identity Card -->
 
             <com.google.android.material.card.MaterialCardView
@@ -261,10 +205,16 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Sign in is required to verify your identity with Google and link your Pro license."
+                        android:text="Sign in is required to verify your identity with Google and link your Elite Member license."
                         android:textSize="14sp"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="16dp"/>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_register"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Register Identity"
+                        android:paddingVertical="12dp"/>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -367,20 +317,11 @@
                     android:padding="16dp">
 
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="License Terms: Your Reality Pro license is valid for the duration you selected. If you clear app data or uninstall the app to bypass restrictions, your Pro access will be PERMANENTLY LOST and you will need to purchase it again. If you legitimately logout and log back in, access is restored. This allows us to keep subscription costs extremely low."
-                        android:textSize="12sp"
-                        android:lineSpacingMultiplier="1.2"
-                        android:textColor="?attr/colorError"
-                        android:layout_marginTop="16dp"
-                        android:layout_marginBottom="8dp"/>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Step 3: Verify Pro Access"
+                        android:text="Step 3: Verify Elite Member Access"
 
                         android:textSize="18sp"
                         android:textStyle="bold"
@@ -390,7 +331,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="After submitting payment, verify your status to unlock Pro features."
+                        android:text="After submitting payment, verify your status to unlock Elite Member features."
                         android:textSize="14sp"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="16dp"/>
@@ -405,6 +346,69 @@
 
 
 
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Experience our Elite member features for 3 days without any stake Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_trial_plan_pro"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="?attr/colorSurfaceVariant">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Experience our Elite member features for 3 days without any stake"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface"
+                        android:layout_marginBottom="8dp"/>
+
+
+
+                    <LinearLayout
+                        android:id="@+id/ll_trial_dates"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone"
+                        android:layout_marginBottom="16dp">
+
+                        <TextView
+                            android:id="@+id/tv_trial_start_date"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Started: -"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tv_trial_expiry_date"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Expires: -"
+                            android:textColor="?attr/colorError"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_trial_activation"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Start 3-Day Trial"
+                        android:visibility="gone"
+                        android:paddingVertical="12dp"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

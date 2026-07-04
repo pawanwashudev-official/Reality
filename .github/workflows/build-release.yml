@@ -2,6 +2,14 @@ name: Build Pre-Release APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'app/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle/**'
 
 jobs:
   build:

@@ -52,20 +52,7 @@ class PaymentVerificationActivity : BaseActivity() {
         if (data != null) {
             val response = data.getStringExtra("response")
             if (response != null && (response.contains("Status=SUCCESS", ignoreCase = true) || response.contains("status=success", ignoreCase = true) || response.contains("txnRef"))) {
-                // Payment successful! Instantly verify.
-                lifecycleScope.launch {
-                    val internetTime = com.neubofy.reality.utils.InternetTime.getTime()
-                    withContext(Dispatchers.Main) {
-                        val featureManager = FeatureManager(this@PaymentVerificationActivity)
-                        featureManager.setRealityProStartTime(internetTime)
-                        featureManager.setRealityProVerified(true, internetTime, selectedMonths)
-                        Toast.makeText(this@PaymentVerificationActivity, "Payment successful! Reality Pro instantly activated.", Toast.LENGTH_LONG).show()
-                        val intent = Intent(this@PaymentVerificationActivity, MainActivity::class.java)
-                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                        startActivity(intent)
-                        finish()
-                    }
-                }
+                Toast.makeText(this@PaymentVerificationActivity, "Payment successful! Please submit your transaction ID below.", Toast.LENGTH_LONG).show()
             } else {
                 Toast.makeText(this, "Payment failed or cancelled.", Toast.LENGTH_SHORT).show()
             }
@@ -85,13 +72,13 @@ class PaymentVerificationActivity : BaseActivity() {
         toolbar.title = "Payment Verification"
         toolbar.setNavigationOnClickListener { finish() }
 
-        val email = GoogleAuthManager.getUserEmail(this)
-        if (email == null) {
+        val userIdCheck = IdentityManager.getUserId(this)
+        if (userIdCheck.isBlank() || userIdCheck == "Unknown") {
             Toast.makeText(this, "Please sign in first.", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
-        userId = IdentityManager.getUserId(this)
+        userId = userIdCheck
 
         selectedMonths = intent.getIntExtra("months", 12)
         price = Math.round((99.0 / 12.0) * selectedMonths).toInt()
@@ -106,7 +93,7 @@ class PaymentVerificationActivity : BaseActivity() {
         btnSubmitRequest = findViewById(R.id.btn_submit_request)
 
         btnUpiDeeplink.setOnClickListener {
-            val uri = android.net.Uri.parse("upi://pay?pa=neubofy@pnb&pn=Reality&am=$price&cu=INR")
+            val uri = android.net.Uri.parse("upi://pay?pa=neubofy@pnb&pn=Reality&am=$price&cu=INR&tn=$userId")
             val intent = Intent(Intent.ACTION_VIEW, uri)
             try {
                 upiPaymentLauncher.launch(intent)
@@ -124,7 +111,7 @@ class PaymentVerificationActivity : BaseActivity() {
 
         btnScanQr.setOnClickListener {
             if (ivQrCode.visibility == View.GONE) {
-                val bitmap = QRUtils.generateQRCode("upi://pay?pa=neubofy@pnb&pn=Reality&am=$price&cu=INR", 512)
+                val bitmap = QRUtils.generateQRCode("upi://pay?pa=neubofy@pnb&pn=Reality&am=$price&cu=INR&tn=$userId", 512)
                 ivQrCode.setImageBitmap(bitmap)
                 ivQrCode.visibility = View.VISIBLE
                 btnScanQr.text = "Hide QR Code"
@@ -177,8 +164,10 @@ class PaymentVerificationActivity : BaseActivity() {
 
                 val jsonBody = JSONObject()
                 jsonBody.put("userId", userId)
+                jsonBody.put("password", IdentityManager.getBackupPassword(this@PaymentVerificationActivity))
                 jsonBody.put("transactionId", transactionId)
-                jsonBody.put("months", selectedMonths)
+                jsonBody.put("durationDays", (selectedMonths * 30.416).toInt())
+                jsonBody.put("months", selectedMonths) // keep for backwards compatibility if needed
                 if (customNote.isNotEmpty()) {
                     jsonBody.put("customNote", customNote)
                 }
@@ -216,6 +205,15 @@ class PaymentVerificationActivity : BaseActivity() {
                                         val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@PaymentVerificationActivity, "reality_pro_prefs")
                                         prefs.edit().putString("pro_saved_verification_code_for_$userId", code).apply()
                                         Toast.makeText(this@PaymentVerificationActivity, "Request Submitted Successfully!", Toast.LENGTH_LONG).show()
+                                        finish()
+                                    }
+                                }
+                            } else if (status.equals("ACTIVE_SUBSCRIPTION", ignoreCase = true) || jsonResponse.optString("code") == "ACTIVE_SUBSCRIPTION") {
+                                lifecycleScope.launch {
+                                    withContext(Dispatchers.Main) {
+                                        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@PaymentVerificationActivity, "reality_pro_prefs")
+                                        prefs.edit().putString("pro_saved_verification_code_for_$userId", "ACTIVE").apply()
+                                        Toast.makeText(this@PaymentVerificationActivity, "You already have an active subscription! Please verify it.", Toast.LENGTH_LONG).show()
                                         finish()
                                     }
                                 }
