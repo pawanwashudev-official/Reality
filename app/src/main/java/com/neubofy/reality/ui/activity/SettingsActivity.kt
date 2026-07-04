@@ -282,7 +282,7 @@ class SettingsActivity : BaseActivity() {
         switchRealityPro.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked && !featureManager.isRealityProVerified() && !featureManager.isTrialActive()) {
                 switchRealityPro.isChecked = false
-                val intent = Intent(this, RealityProActivity::class.java)
+                val intent = Intent(this, RealityEliteActivity::class.java)
                 startActivity(intent)
             } else if (!isChecked || featureManager.isRealityProVerified() || featureManager.isTrialActive()) {
                 featureManager.setRealityProEnabled(isChecked)
@@ -294,7 +294,7 @@ class SettingsActivity : BaseActivity() {
         switchAi.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked && !featureManager.isRealityProVerified() && !featureManager.isTrialActive()) {
                 switchAi.isChecked = false
-                val intent = Intent(this, RealityProActivity::class.java)
+                val intent = Intent(this, RealityEliteActivity::class.java)
                 startActivity(intent)
             } else if (!isChecked || featureManager.isRealityProVerified() || featureManager.isTrialActive()) {
                 featureManager.setAiEnabled(isChecked)
@@ -306,7 +306,7 @@ class SettingsActivity : BaseActivity() {
         switchTapasya.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked && !featureManager.isRealityProVerified() && !featureManager.isTrialActive()) {
                 switchTapasya.isChecked = false
-                val intent = Intent(this, RealityProActivity::class.java)
+                val intent = Intent(this, RealityEliteActivity::class.java)
                 startActivity(intent)
             } else if (!isChecked || featureManager.isRealityProVerified() || featureManager.isTrialActive()) {
                 featureManager.setTapasyaEnabled(isChecked)
@@ -318,7 +318,7 @@ class SettingsActivity : BaseActivity() {
         switchReminder.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked && !featureManager.isRealityProVerified() && !featureManager.isTrialActive()) {
                 switchReminder.isChecked = false
-                val intent = Intent(this, RealityProActivity::class.java)
+                val intent = Intent(this, RealityEliteActivity::class.java)
                 startActivity(intent)
             } else {
                 featureManager.setReminderEnabled(isChecked)
@@ -328,7 +328,7 @@ class SettingsActivity : BaseActivity() {
         switchHealth.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked && !featureManager.isRealityProVerified() && !featureManager.isTrialActive()) {
                 switchHealth.isChecked = false
-                val intent = Intent(this, RealityProActivity::class.java)
+                val intent = Intent(this, RealityEliteActivity::class.java)
                 startActivity(intent)
             } else {
                 featureManager.setHealthConnectEnabled(isChecked)
@@ -360,7 +360,7 @@ class SettingsActivity : BaseActivity() {
         if (verificationCard != null) {
             verificationCard.visibility = android.view.View.VISIBLE
             verificationCard.setOnClickListener {
-                val intent = Intent(this, RealityProActivity::class.java)
+                val intent = Intent(this, RealityEliteActivity::class.java)
                 startActivity(intent)
             }
         }

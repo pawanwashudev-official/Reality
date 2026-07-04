@@ -28,9 +28,23 @@ export default {
           });
         }
 
-        const email = incomingData.email;
-        if (!email || typeof email !== "string") {
-          return new Response(JSON.stringify({ error: "Email string is required" }), {
+        const idToken = incomingData.idToken;
+        if (!idToken || typeof idToken !== "string") {
+          return new Response(JSON.stringify({ error: "idToken string is required" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+          });
+        }
+
+        let email = "";
+        try {
+          const googleResp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+          if (!googleResp.ok) throw new Error("Invalid idToken");
+          const googleData = await googleResp.json();
+          email = googleData.email;
+          if (!email) throw new Error("No email in token");
+        } catch (e) {
+          return new Response(JSON.stringify({ error: "Failed to verify idToken", details: e.message }), {
             status: 400,
             headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
           });
@@ -165,27 +179,46 @@ export default {
       // ============================================================
       if (url.pathname === "/license") {
         
-        // Handles verification (GET)
+        // Handles verification (GET) - Step 3
         if (request.method === "GET") {
           const userId = url.searchParams.get("userId");
-          const vCodeParam = url.searchParams.get("vCode");
-          const vCode = parseInt(vCodeParam, 10);
+          const password = url.searchParams.get("password");
 
-          if (!userId || isNaN(vCode) || vCode <= 0) {
+          if (!userId || !password) {
             return new Response("INVALID", { headers: { "Access-Control-Allow-Origin": "*" } });
           }
 
+          const isAuthorized = await this.verifyAuth(userId, password, env.APP_SECRET_PEPPER);
+          if (!isAuthorized) {
+            return new Response("UNAUTHORIZED", { status: 401, headers: { "Access-Control-Allow-Origin": "*" } });
+          }
+
           const row = await env.DB.prepare(
-            "SELECT userId, status FROM licenses WHERE vCode = ?"
-          ).bind(vCode).first();
+            "SELECT userId, status, expiryDate FROM \"Reality Elite members management\" WHERE userId = ?"
+          ).bind(userId).first();
 
           if (!row) {
             return new Response("NOT_FOUND", { headers: { "Access-Control-Allow-Origin": "*" } });
           }
 
-          // Strict validation: User only gets "SUCCESS" if status is officially "V"
           if (row.userId === userId && row.status === "V") {
-            return new Response("SUCCESS", { headers: { "Access-Control-Allow-Origin": "*" } });
+            // Further verify if expiryDate is in the future
+            if (row.expiryDate) {
+              const parts = row.expiryDate.split("-");
+              if (parts.length === 4) {
+                const yyyy = parseInt(parts[0], 10);
+                const mm = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+                const dd = parseInt(parts[2], 10);
+                const expiryDateObj = new Date(Date.UTC(yyyy, mm, dd));
+
+                if (expiryDateObj.getTime() < Date.now()) {
+                   return new Response(JSON.stringify({ status: "EXPIRED" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+                }
+                return new Response(JSON.stringify({ status: "SUCCESS", expiryDate: row.expiryDate }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+              }
+            }
+            // fallback
+            return new Response(JSON.stringify({ status: "SUCCESS" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           } else if (row.userId === userId && row.status === "P") {
             return new Response("PENDING", { headers: { "Access-Control-Allow-Origin": "*" } });
           } else {
@@ -193,7 +226,7 @@ export default {
           }
         }
 
-        // Handles subscription submission (POST)
+        // Handles subscription submission (POST) - Step 1 & 2
         if (request.method === "POST") {
           let incomingData = {};
           try {
@@ -206,43 +239,74 @@ export default {
           }
 
           const userId = incomingData.userId;
-          const transactionId = incomingData.transactionId;
-          let customNote = incomingData.customNote || "";
-          
-          // Capture incoming status ('P' or 'V'). If not provided, default to 'V' for backward compatibility
-          const status = incomingData.status === "P" ? "P" : "V";
+          const password = incomingData.password;
 
-          if (!userId || !transactionId) {
-            return new Response(JSON.stringify({ status: "ERROR", message: "Missing fields" }), {
+          if (!userId || !password) {
+             return new Response(JSON.stringify({ status: "ERROR", message: "Missing auth fields" }), {
               status: 400,
               headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
             });
           }
 
-          if (customNote.length > 200) {
-            customNote = customNote.substring(0, 200);
+          const isAuthorized = await this.verifyAuth(userId, password, env.APP_SECRET_PEPPER);
+          if (!isAuthorized) {
+            return new Response(JSON.stringify({ status: "ERROR", message: "Unauthorized" }), {
+              status: 401,
+              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+            });
           }
 
-          // Insert or update. If user exists but is re-submitting, we overwrite with the new form state
-          const info = await env.DB.prepare(`
-            INSERT INTO licenses (date, userId, status, transactionId, customNote) 
-            VALUES (?, ?, ?, ?, ?)
+          const status = incomingData.status; // 'P' or 'V' (implied via presence of transactionId usually)
+
+          // Step 1: Register
+          if (status === "P") {
+             await env.DB.prepare(`
+              INSERT INTO "Reality Elite members management" (userId, date, status)
+              VALUES (?, ?, ?)
+              ON CONFLICT(userId) DO NOTHING
+            `).bind(userId, new Date().toISOString(), "P").run();
+
+             return new Response(
+              JSON.stringify({ status: "SUCCESS" }),
+              { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+             );
+          }
+
+          // Step 2: Purchase
+          const transactionId = incomingData.transactionId;
+          const durationDays = incomingData.durationDays || 365;
+          let customNote = incomingData.customNote || "";
+
+          if (!transactionId) {
+            return new Response(JSON.stringify({ status: "ERROR", message: "Missing transactionId for purchase" }), {
+              status: 400,
+              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+            });
+          }
+
+          if (customNote.length > 200) customNote = customNote.substring(0, 200);
+
+          const currentUnix = Date.now();
+          const expiryUnix = currentUnix + (durationDays * 86400000);
+          const expiryDateObj = new Date(expiryUnix);
+          const yyyy = expiryDateObj.getUTCFullYear();
+          const mm = String(expiryDateObj.getUTCMonth() + 1).padStart(2, '0');
+          const dd = String(expiryDateObj.getUTCDate()).padStart(2, '0');
+          const expiryDateStr = `${yyyy}-${mm}-${dd}-${durationDays}`;
+
+          await env.DB.prepare(`
+            INSERT INTO "Reality Elite members management" (userId, date, status, transactionId, customNote, expiryDate)
+            VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(userId) DO UPDATE SET 
               date = excluded.date,
               transactionId = excluded.transactionId,
               customNote = excluded.customNote,
+              expiryDate = excluded.expiryDate,
               status = excluded.status
-          `).bind(new Date().toISOString(), userId, status, transactionId, customNote).run();
-
-          let verificationCode = info.meta.last_row_id;
-
-          if (verificationCode === 0 || !verificationCode) {
-            const existingRow = await env.DB.prepare("SELECT vCode FROM licenses WHERE userId = ?").bind(userId).first();
-            verificationCode = existingRow ? existingRow.vCode : 1;
-          }
+          `).bind(userId, new Date().toISOString(), "V", transactionId, customNote, expiryDateStr).run();
 
           return new Response(
-            JSON.stringify({ status: "SUCCESS", verificationCode: verificationCode }),
+            JSON.stringify({ status: "SUCCESS", verificationCode: "REGISTERED" }),
             { 
               status: 200, 
               headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } 
@@ -250,7 +314,6 @@ export default {
           );
         }
       }
-
       return new Response("Not Found", { status: 404 });
 
     } catch (error) {
@@ -259,5 +322,20 @@ export default {
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
       });
     }
+
+  },
+
+  async verifyAuth(userId, providedPassword, secretPepper) {
+    if (!userId || !providedPassword || !secretPepper) return false;
+    const encoder = new TextEncoder();
+    const secretKeyData = encoder.encode(secretPepper);
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw", secretKeyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+    );
+    const pwSignature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(userId));
+    const expectedPassword = Array.from(new Uint8Array(pwSignature))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('').substring(0, 32);
+    return providedPassword === expectedPassword;
   }
 };

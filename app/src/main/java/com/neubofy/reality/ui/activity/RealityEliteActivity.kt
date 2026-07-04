@@ -31,13 +31,14 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 
-class RealityProActivity : BaseActivity() {
+class RealityEliteActivity : BaseActivity() {
 
     private lateinit var btnUnifiedSignin: MaterialButton
     private lateinit var cardStep2: MaterialCardView
     private lateinit var btnPayUpi: MaterialButton
     private lateinit var cardStep3: MaterialCardView
     private lateinit var btnVerify: MaterialButton
+    private lateinit var btnRegister: MaterialButton
     private lateinit var btnCancel: MaterialButton
     private lateinit var spinnerDuration: android.widget.AutoCompleteTextView
     private var selectedMonths = 12
@@ -46,7 +47,7 @@ class RealityProActivity : BaseActivity() {
         ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_reality_pro)
+        setContentView(R.layout.activity_reality_elite)
 
         findViewById<android.view.View>(R.id.btn_view_pro_members)?.setOnClickListener {
             val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://reality.neubofy.in/promembers"))
@@ -57,7 +58,12 @@ class RealityProActivity : BaseActivity() {
         cardStep2 = findViewById(R.id.card_step2)
         btnPayUpi = findViewById(R.id.btn_pay_upi)
         cardStep3 = findViewById(R.id.card_step3)
-        btnVerify = findViewById(R.id.btn_verify)
+                btnVerify = findViewById(R.id.btn_verify)
+        btnRegister = findViewById(R.id.btn_register)
+
+        btnRegister.setOnClickListener {
+            registerIdentity()
+        }
         btnCancel = findViewById(R.id.btn_cancel)
         spinnerDuration = findViewById(R.id.spinner_duration)
 
@@ -94,9 +100,9 @@ class RealityProActivity : BaseActivity() {
                     val internetTime = com.neubofy.reality.utils.InternetTime.getTime()
                     withContext(Dispatchers.Main) {
                         featureManager.activateTrial(internetTime)
-                        Toast.makeText(this@RealityProActivity, "3-Day Trial Activated! Enjoy Pro features.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@RealityEliteActivity, "3-Day Trial Activated! Enjoy Elite Member features.", Toast.LENGTH_LONG).show()
                         featureManager.setRealityProEnabled(true)
-                        startActivity(Intent(this@RealityProActivity, MainActivity::class.java))
+                        startActivity(Intent(this@RealityEliteActivity, MainActivity::class.java))
                         finish()
                     }
                 }
@@ -209,17 +215,17 @@ class RealityProActivity : BaseActivity() {
 
                 var success = false
                 if (autoCode != null) {
-                    success = GoogleAuthManager.exchangeCodeForTokens(this@RealityProActivity, autoCode)
+                    success = GoogleAuthManager.exchangeCodeForTokens(this@RealityEliteActivity, autoCode)
                     if (success) {
                         withContext(Dispatchers.Main) {
-                            com.neubofy.reality.utils.SecurePreferences.get(this@RealityProActivity, "reality_features").edit()
+                            com.neubofy.reality.utils.SecurePreferences.get(this@RealityEliteActivity, "reality_features").edit()
                                 .putBoolean("reality_pro_basic_sign_in", true).apply()
-                            Toast.makeText(this@RealityProActivity, "Sign-in successful!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@RealityEliteActivity, "Sign-in successful!", Toast.LENGTH_SHORT).show()
                             updateStateUI()
                         }
                     } else {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(this@RealityProActivity, "Sign-in failed. Check credentials.", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this@RealityEliteActivity, "Sign-in failed. Check credentials.", Toast.LENGTH_LONG).show()
                         }
                     }
                 }
@@ -231,7 +237,7 @@ class RealityProActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
-        GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityProActivity.applicationContext) }
+        GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityEliteActivity.applicationContext) }
         updateStateUI()
     }
 
@@ -362,32 +368,110 @@ class RealityProActivity : BaseActivity() {
                 btnPayUpi.isEnabled = false
             }
 
-            var savedCode: String? = null
             if (userId != null) {
-                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
-                savedCode = prefs.getString("pro_saved_verification_code_for_$userId", null)
-
-                if (savedCode != null) {
-                    btnPayUpi.isEnabled = false
-                    btnPayUpi.text = "Submitted"
-                    cardStep3.alpha = 1.0f
-                    btnVerify.isEnabled = true
-                } else {
-                    if (isSignedIn) {
-                        btnPayUpi.isEnabled = true
-                        updateUpiButtonText()
-                    }
-                    cardStep3.alpha = 0.5f
-                    btnVerify.isEnabled = false
+                if (isSignedIn) {
+                    btnPayUpi.isEnabled = true
+                    updateUpiButtonText()
                 }
+                cardStep3.alpha = 1.0f
+                btnVerify.isEnabled = true
             } else {
                 cardStep3.alpha = 0.5f
                 btnVerify.isEnabled = false
             }
+        }
+    }
 
-            if (savedCode != null) {
-                btnVerify.isEnabled = true
-                btnVerify.text = "Verify Status"
+
+    private fun registerIdentity() {
+        val email = GoogleAuthManager.getUserEmail(this)
+        if (email.isNullOrEmpty()) {
+            Toast.makeText(this, "Please sign in first.", Toast.LENGTH_SHORT).show()
+            // Highlight the sign in button by scrolling and animation if needed
+            findViewById<android.widget.ScrollView>(R.id.scroll_view)?.smoothScrollTo(0, 0)
+            btnUnifiedSignin.requestFocus()
+            return
+        }
+
+        GlobalScope.launch(Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityEliteActivity.applicationContext) }
+        val userId = IdentityManager.getUserId(this)
+        val password = IdentityManager.getBackupPassword(this)
+
+        val workerUrl = BuildConfig.WORKER_URL
+        if (workerUrl.isEmpty()) return
+
+        btnRegister.isEnabled = false
+        btnRegister.text = "Registering..."
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val url = URL("${workerUrl.removeSuffix("/")}/license")
+                var conn = url.openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.doOutput = true
+                conn.connectTimeout = 10000
+                conn.readTimeout = 10000
+
+                val jsonBody = JSONObject()
+                jsonBody.put("userId", userId)
+                jsonBody.put("password", password)
+                jsonBody.put("status", "P")
+
+                java.io.OutputStreamWriter(conn.outputStream).use { writer ->
+                    writer.write(jsonBody.toString())
+                    writer.flush()
+                }
+
+                var responseCode = conn.responseCode
+                if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
+                    val newUrl = conn.getHeaderField("Location")
+                    conn = URL(newUrl).openConnection() as HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.doOutput = true
+                    conn.connectTimeout = 10000
+                    conn.readTimeout = 10000
+
+                    java.io.OutputStreamWriter(conn.outputStream).use { writer ->
+                        writer.write(jsonBody.toString())
+                        writer.flush()
+                    }
+                    responseCode = conn.responseCode
+                }
+
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val responseStr = conn.inputStream.bufferedReader().use { it.readText() }.trim()
+                    withContext(Dispatchers.Main) {
+                        try {
+                            val jsonResponse = JSONObject(responseStr)
+                            val status = jsonResponse.optString("status", "")
+                            if (status.equals("SUCCESS", ignoreCase = true) || status.equals("REGISTERED", ignoreCase = true)) {
+                                Toast.makeText(this@RealityEliteActivity, "Successfully registered!", Toast.LENGTH_SHORT).show()
+                                btnRegister.text = "Registered"
+                            } else {
+                                Toast.makeText(this@RealityEliteActivity, "Registration failed or already exists.", Toast.LENGTH_SHORT).show()
+                                btnRegister.isEnabled = true
+                                btnRegister.text = "Register Identity"
+                            }
+                        } catch(e: Exception) {
+                            btnRegister.isEnabled = true
+                            btnRegister.text = "Register Identity"
+                        }
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@RealityEliteActivity, "Failed to register. Server Error: $responseCode", Toast.LENGTH_SHORT).show()
+                        btnRegister.isEnabled = true
+                        btnRegister.text = "Register Identity"
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@RealityEliteActivity, "Network Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    btnRegister.isEnabled = true
+                    btnRegister.text = "Register Identity"
+                }
             }
         }
     }
@@ -401,18 +485,11 @@ class RealityProActivity : BaseActivity() {
     private fun showVerifyDialog() {
         val email = GoogleAuthManager.getUserEmail(this) ?: return
         val userId = IdentityManager.getUserId(this)
-        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
-        val savedCode = prefs.getString("pro_saved_verification_code_for_$userId", null)
-
-        if (savedCode != null) {
-            verifyCode(savedCode)
-        } else {
-            Toast.makeText(this, "No verification code found. Please submit payment request first.", Toast.LENGTH_SHORT).show()
-        }
+        verifyCode()
     }
 
-    private fun verifyCode(vCode: String) {
-        GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityProActivity.applicationContext) }
+    private fun verifyCode() {
+        GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityEliteActivity.applicationContext) }
         val email = GoogleAuthManager.getUserEmail(this) ?: ""
         if (email.isEmpty()) {
             Toast.makeText(this, "Please sign in with Google in the Profile page first.", Toast.LENGTH_LONG).show()
@@ -435,7 +512,7 @@ class RealityProActivity : BaseActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 // Construct URL
-                val requestUrl = "$baseUrl?userId=$userId&vCode=$vCode"
+                val requestUrl = "$baseUrl?userId=$userId&password=${IdentityManager.getBackupPassword(this@RealityEliteActivity)}"
                 var url = URL(requestUrl)
                 var conn = url.openConnection() as HttpURLConnection
                 conn.requestMethod = "GET"
@@ -457,37 +534,56 @@ class RealityProActivity : BaseActivity() {
                     val responseStr = conn.inputStream.bufferedReader().use { it.readText() }.trim()
 
                     withContext(Dispatchers.Main) {
-                        if (responseStr.contains("SUCCESS", ignoreCase = true)) {
-                            // Activation Successful
-                            lifecycleScope.launch {
-                                val internetTime = com.neubofy.reality.utils.InternetTime.getTime()
-                                withContext(Dispatchers.Main) {
-                                    val featureManager = FeatureManager(this@RealityProActivity)
-                                    featureManager.setRealityProStartTime(internetTime)
-                                    featureManager.setRealityProVerified(true, internetTime, selectedMonths)
-                                    Toast.makeText(this@RealityProActivity, "Reality Pro Activated!", Toast.LENGTH_LONG).show()
+                        try {
+                            val jsonResponse = JSONObject(responseStr)
+                            val status = jsonResponse.optString("status", "")
+                            if (status.equals("SUCCESS", ignoreCase = true)) {
+                                val expiryDate = jsonResponse.optString("expiryDate", "")
+                                var durationMonths = 12
 
-                                    // Go Home
-                                    val intent = Intent(this@RealityProActivity, MainActivity::class.java)
-                                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                                    startActivity(intent)
-                                    finish()
+                                if (expiryDate.isNotEmpty()) {
+                                    val parts = expiryDate.split("-")
+                                    if (parts.size == 4) {
+                                        val days = parts[3].toIntOrNull() ?: 365
+                                        durationMonths = Math.max(1, Math.round(days / 30.416).toInt())
+                                    }
                                 }
+
+                                lifecycleScope.launch {
+                                    val netTime = com.neubofy.reality.utils.InternetTime.getTime()
+                                    withContext(Dispatchers.Main) {
+                                        val featureManager = FeatureManager(this@RealityEliteActivity)
+                                        featureManager.setRealityProStartTime(netTime)
+                                        featureManager.setRealityProVerified(true, netTime, durationMonths)
+                                        Toast.makeText(this@RealityEliteActivity, "Reality Elite Member Activated!", Toast.LENGTH_LONG).show()
+
+                                        val intent = Intent(this@RealityEliteActivity, MainActivity::class.java)
+                                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                                        startActivity(intent)
+                                        finish()
+                                    }
+                                }
+                            } else if (status.equals("EXPIRED", ignoreCase = true)) {
+                                Toast.makeText(this@RealityEliteActivity, "Your subscription has expired.", Toast.LENGTH_LONG).show()
+                                resetVerifyButton()
+                            } else {
+                                Toast.makeText(this@RealityEliteActivity, "We haven't verified your payment yet. Please check back later.", Toast.LENGTH_LONG).show()
+                                resetVerifyButton()
                             }
-                        } else {
-                            Toast.makeText(this@RealityProActivity, "We haven't verified your payment yet. Please check back later.", Toast.LENGTH_LONG).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(this@RealityEliteActivity, "Invalid server response.", Toast.LENGTH_LONG).show()
                             resetVerifyButton()
                         }
                     }
                 } else {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(this@RealityProActivity, "Server Error: $responseCode", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@RealityEliteActivity, "Server Error: $responseCode", Toast.LENGTH_LONG).show()
                         resetVerifyButton()
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@RealityProActivity, "Network Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@RealityEliteActivity, "Network Error: ${e.message}", Toast.LENGTH_LONG).show()
                     resetVerifyButton()
                 }
             }

@@ -85,13 +85,13 @@ class PaymentVerificationActivity : BaseActivity() {
         toolbar.title = "Payment Verification"
         toolbar.setNavigationOnClickListener { finish() }
 
-        val email = GoogleAuthManager.getUserEmail(this)
-        if (email == null) {
+        val userIdCheck = IdentityManager.getUserId(this)
+        if (userIdCheck.isBlank() || userIdCheck == "Unknown") {
             Toast.makeText(this, "Please sign in first.", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
-        userId = IdentityManager.getUserId(this)
+        userId = userIdCheck
 
         selectedMonths = intent.getIntExtra("months", 12)
         price = Math.round((99.0 / 12.0) * selectedMonths).toInt()
@@ -177,8 +177,10 @@ class PaymentVerificationActivity : BaseActivity() {
 
                 val jsonBody = JSONObject()
                 jsonBody.put("userId", userId)
+                jsonBody.put("password", IdentityManager.getBackupPassword(this@PaymentVerificationActivity))
                 jsonBody.put("transactionId", transactionId)
-                jsonBody.put("months", selectedMonths)
+                jsonBody.put("durationDays", (selectedMonths * 30.416).toInt())
+                jsonBody.put("months", selectedMonths) // keep for backwards compatibility if needed
                 if (customNote.isNotEmpty()) {
                     jsonBody.put("customNote", customNote)
                 }
