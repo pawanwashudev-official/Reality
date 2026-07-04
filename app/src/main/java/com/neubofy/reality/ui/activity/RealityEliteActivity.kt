@@ -465,16 +465,16 @@ class RealityEliteActivity : BaseActivity() {
                                 prefs.edit().putBoolean("is_registered_for_$userId", true).apply()
 
                                 if (status.equals("ALREADY_REGISTERED", ignoreCase = true)) {
-                                    Toast.makeText(this@RealityEliteActivity, "Account retrieved successfully!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this@RealityEliteActivity, "Account retrieved successfully! Checking active status...", Toast.LENGTH_SHORT).show()
+                                    verifyCode(true)
                                 } else {
                                     Toast.makeText(this@RealityEliteActivity, "Successfully registered!", Toast.LENGTH_SHORT).show()
+                                    btnRegister.text = "Registered"
+                                    btnRegister.isEnabled = false
+                                    cardStep2.alpha = 1.0f
+                                    btnPayUpi.isEnabled = true
+                                    updateUpiButtonText()
                                 }
-
-                                btnRegister.text = "Registered"
-                                btnRegister.isEnabled = false
-                                cardStep2.alpha = 1.0f
-                                btnPayUpi.isEnabled = true
-                                updateUpiButtonText()
                             } else {
                                 Toast.makeText(this@RealityEliteActivity, "Registration failed or already exists.", Toast.LENGTH_SHORT).show()
                                 btnRegister.isEnabled = true
@@ -511,14 +511,14 @@ class RealityEliteActivity : BaseActivity() {
     private fun showVerifyDialog() {
         val email = GoogleAuthManager.getUserEmail(this) ?: return
         val userId = IdentityManager.getUserId(this)
-        verifyCode()
+        verifyCode(false)
     }
 
-    private fun verifyCode() {
+    private fun verifyCode(isSilentCheck: Boolean = false) {
         GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityEliteActivity.applicationContext) }
         val email = GoogleAuthManager.getUserEmail(this) ?: ""
         if (email.isEmpty()) {
-            Toast.makeText(this, "Please sign in with Google in the Profile page first.", Toast.LENGTH_LONG).show()
+            if (!isSilentCheck) Toast.makeText(this, "Please sign in with Google in the Profile page first.", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -526,14 +526,18 @@ class RealityEliteActivity : BaseActivity() {
         val workerUrl = BuildConfig.WORKER_URL
 
         if (workerUrl.isEmpty()) {
-            Toast.makeText(this, "Worker URL not configured in build.", Toast.LENGTH_SHORT).show()
+            if (!isSilentCheck) Toast.makeText(this, "Worker URL not configured in build.", Toast.LENGTH_SHORT).show()
             return
         }
         val cleanWorkerUrl = workerUrl.removeSuffix("/")
         val baseUrl = "$cleanWorkerUrl/license"
 
-        findViewById<MaterialButton>(R.id.btn_verify).isEnabled = false
-        findViewById<MaterialButton>(R.id.btn_verify).text = "Verifying..."
+        if (!isSilentCheck) {
+            findViewById<MaterialButton>(R.id.btn_verify).isEnabled = false
+            findViewById<MaterialButton>(R.id.btn_verify).text = "Verifying..."
+        } else {
+            btnRegister.text = "Checking License..."
+        }
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
@@ -581,7 +585,7 @@ class RealityEliteActivity : BaseActivity() {
                                         val featureManager = FeatureManager(this@RealityEliteActivity)
                                         featureManager.setRealityProStartTime(netTime)
                                         featureManager.setRealityProVerified(true, netTime, durationMonths)
-                                        Toast.makeText(this@RealityEliteActivity, "Reality Elite Member Activated!", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(this@RealityEliteActivity, "Active Reality Elite Member License Found and Restored!", Toast.LENGTH_LONG).show()
 
                                         val intent = Intent(this@RealityEliteActivity, MainActivity::class.java)
                                         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -590,27 +594,47 @@ class RealityEliteActivity : BaseActivity() {
                                     }
                                 }
                             } else if (status.equals("EXPIRED", ignoreCase = true)) {
-                                Toast.makeText(this@RealityEliteActivity, "Your subscription has expired.", Toast.LENGTH_LONG).show()
-                                resetVerifyButton()
+                                if (isSilentCheck) {
+                                    btnRegister.text = "Registered"
+                                } else {
+                                    Toast.makeText(this@RealityEliteActivity, "Your subscription has expired.", Toast.LENGTH_LONG).show()
+                                    resetVerifyButton()
+                                }
                             } else {
-                                Toast.makeText(this@RealityEliteActivity, "We haven't verified your payment yet. Please check back later.", Toast.LENGTH_LONG).show()
-                                resetVerifyButton()
+                                if (isSilentCheck) {
+                                    btnRegister.text = "Registered"
+                                } else {
+                                    Toast.makeText(this@RealityEliteActivity, "We haven't verified your payment yet. Please check back later.", Toast.LENGTH_LONG).show()
+                                    resetVerifyButton()
+                                }
                             }
                         } catch (e: Exception) {
-                            Toast.makeText(this@RealityEliteActivity, "Invalid server response.", Toast.LENGTH_LONG).show()
-                            resetVerifyButton()
+                            if (isSilentCheck) {
+                                btnRegister.text = "Registered"
+                            } else {
+                                Toast.makeText(this@RealityEliteActivity, "Invalid server response.", Toast.LENGTH_LONG).show()
+                                resetVerifyButton()
+                            }
                         }
                     }
                 } else {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(this@RealityEliteActivity, "Server Error: $responseCode", Toast.LENGTH_LONG).show()
-                        resetVerifyButton()
+                        if (isSilentCheck) {
+                            btnRegister.text = "Registered"
+                        } else {
+                            Toast.makeText(this@RealityEliteActivity, "Server Error: $responseCode", Toast.LENGTH_LONG).show()
+                            resetVerifyButton()
+                        }
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@RealityEliteActivity, "Network Error: ${e.message}", Toast.LENGTH_LONG).show()
-                    resetVerifyButton()
+                    if (isSilentCheck) {
+                        btnRegister.text = "Registered"
+                    } else {
+                        Toast.makeText(this@RealityEliteActivity, "Network Error: ${e.message}", Toast.LENGTH_LONG).show()
+                        resetVerifyButton()
+                    }
                 }
             }
         }

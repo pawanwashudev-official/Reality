@@ -291,6 +291,11 @@ object GoogleAuthManager {
         val clientId = getClientId(context)
         val clientSecret = getClientSecret(context)
 
+        // Revoke pro access locally before clearing identity
+        val featureManager = com.neubofy.reality.utils.FeatureManager(context)
+        featureManager.setRealityProVerified(false)
+        featureManager.setRealityProEnabled(false)
+
         getPrefs(context).edit().clear().apply()
         // Keep credentials
         if (clientId != null && clientSecret != null) {
