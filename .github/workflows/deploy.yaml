@@ -1,4 +1,4 @@
-name: Deploy Worker
+name: Deploy proxy
 
 on:
   push:
