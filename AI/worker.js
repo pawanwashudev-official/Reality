@@ -1,0 +1,25 @@
+export default {
+  async fetch(request, env) {
+    // Only accept POST requests
+    if (request.method !== "POST") {
+      return new Response(JSON.stringify({ error: "Send a POST request" }), {
+        status: 405,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await request.json();
+
+    // Call GPT-OSS-20B with messages, tools, and optional parameters
+    const response = await env.AI.run("@cf/openai/gpt-oss-20b", {
+      messages: body.messages || [{ role: "user", content: "Hello!" }],
+      tools: body.tools || [],
+      max_tokens: body.max_tokens || 1024,
+      temperature: body.temperature || 0.7,
+    });
+
+    return new Response(JSON.stringify(response), {
+      headers: { "Content-Type": "application/json" },
+    });
+  },
+};
