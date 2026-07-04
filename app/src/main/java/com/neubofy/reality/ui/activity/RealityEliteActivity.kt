@@ -252,7 +252,7 @@ class RealityEliteActivity : BaseActivity() {
             if (endTime > 0 && System.currentTimeMillis() > endTime) {
                 // Subscription has expired, wipe the data so they can purchase again
                 val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
-                prefs.edit().remove("pro_saved_verification_code_for_$userId").apply()
+                prefs.edit().remove("pro_saved_verification_code_for_$userId").remove("is_registered_for_$userId").apply()
                 // Also reset start time so it's a fresh start next time
                 val featuresPrefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_features")
                 featuresPrefs.edit().remove("feature_reality_pro_start_time_$userId").apply()
@@ -362,9 +362,13 @@ class RealityEliteActivity : BaseActivity() {
 
 
             if (userId != null && userId != "Unknown" && userId.isNotEmpty()) {
-                val hasRegistered = btnRegister.text.toString().equals("Registered", ignoreCase = true)
+                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
+                val isRegistered = prefs.getBoolean("is_registered_for_$userId", false) || btnRegister.text.toString().equals("Registered", ignoreCase = true)
 
-                if (hasRegistered) {
+                if (isRegistered) {
+                    btnRegister.text = "Registered"
+                    btnRegister.isEnabled = false
+                    cardStep2.alpha = 1.0f
                     cardStep2.alpha = 1.0f
                     btnPayUpi.isEnabled = true
                     updateUpiButtonText()
@@ -373,7 +377,6 @@ class RealityEliteActivity : BaseActivity() {
                     btnPayUpi.isEnabled = false
                 }
 
-                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
                 val hasSubmitted = prefs.getString("pro_saved_verification_code_for_$userId", null) != null
                 if (hasSubmitted) {
                     btnPayUpi.isEnabled = false
@@ -457,8 +460,16 @@ class RealityEliteActivity : BaseActivity() {
                         try {
                             val jsonResponse = JSONObject(responseStr)
                             val status = jsonResponse.optString("status", "")
-                            if (status.equals("SUCCESS", ignoreCase = true) || status.equals("REGISTERED", ignoreCase = true)) {
-                                Toast.makeText(this@RealityEliteActivity, "Successfully registered!", Toast.LENGTH_SHORT).show()
+                            if (status.equals("SUCCESS", ignoreCase = true) || status.equals("REGISTERED", ignoreCase = true) || status.equals("ALREADY_REGISTERED", ignoreCase = true)) {
+                                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@RealityEliteActivity, "reality_pro_prefs")
+                                prefs.edit().putBoolean("is_registered_for_$userId", true).apply()
+
+                                if (status.equals("ALREADY_REGISTERED", ignoreCase = true)) {
+                                    Toast.makeText(this@RealityEliteActivity, "Account retrieved successfully!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(this@RealityEliteActivity, "Successfully registered!", Toast.LENGTH_SHORT).show()
+                                }
+
                                 btnRegister.text = "Registered"
                                 btnRegister.isEnabled = false
                                 cardStep2.alpha = 1.0f

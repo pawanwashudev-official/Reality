@@ -168,7 +168,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="License Terms: Your Reality Elite Member license is valid for the duration you selected. If you clear app data or uninstall the app to bypass restrictions, your Elite Member access will be PERMANENTLY LOST and you will need to purchase it again. If you legitimately logout and log back in, access is restored. This allows us to keep subscription costs extremely low."
+                        android:text="License Terms: Your Reality Elite Member license is valid for the duration you selected. If you legitimately logout and log back in, access is restored."
                         android:textSize="12sp"
                         android:lineSpacingMultiplier="1.2"
                         android:textColor="?attr/colorError"

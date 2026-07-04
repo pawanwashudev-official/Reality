@@ -258,12 +258,23 @@ export default {
 
           const status = incomingData.status; // 'P' or 'V' (implied via presence of transactionId usually)
 
+          // Check existing
+          const existingRow = await env.DB.prepare(
+            'SELECT status, expiryDate FROM "Reality Elite members management" WHERE userId = ?'
+          ).bind(userId).first();
+
           // Step 1: Register
           if (status === "P") {
-             await env.DB.prepare(`
+            if (existingRow) {
+               return new Response(
+                 JSON.stringify({ status: "ALREADY_REGISTERED" }),
+                 { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+               );
+            }
+
+            await env.DB.prepare(`
               INSERT INTO "Reality Elite members management" (userId, date, status)
               VALUES (?, ?, ?)
-              ON CONFLICT(userId) DO NOTHING
             `).bind(userId, new Date().toISOString(), "P").run();
 
              return new Response(
@@ -273,6 +284,22 @@ export default {
           }
 
           // Step 2: Purchase
+          if (existingRow && existingRow.status === "V" && existingRow.expiryDate) {
+              const parts = existingRow.expiryDate.split("-");
+              if (parts.length === 4) {
+                const yyyy = parseInt(parts[0], 10);
+                const mm = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+                const dd = parseInt(parts[2], 10);
+                const expiryDateObj = new Date(Date.UTC(yyyy, mm, dd));
+                if (expiryDateObj.getTime() > Date.now()) {
+                   return new Response(JSON.stringify({ status: "ACTIVE_SUBSCRIPTION", message: "You already have an active subscription.", code: "ACTIVE_SUBSCRIPTION" }), {
+                      status: 200,
+                      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+                   });
+                }
+              }
+          }
+
           const transactionId = incomingData.transactionId;
           const durationDays = incomingData.durationDays || 365;
           let customNote = incomingData.customNote || "";

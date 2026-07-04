@@ -208,6 +208,15 @@ class PaymentVerificationActivity : BaseActivity() {
                                         finish()
                                     }
                                 }
+                            } else if (status.equals("ACTIVE_SUBSCRIPTION", ignoreCase = true) || jsonResponse.optString("code") == "ACTIVE_SUBSCRIPTION") {
+                                lifecycleScope.launch {
+                                    withContext(Dispatchers.Main) {
+                                        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@PaymentVerificationActivity, "reality_pro_prefs")
+                                        prefs.edit().putString("pro_saved_verification_code_for_$userId", "ACTIVE").apply()
+                                        Toast.makeText(this@PaymentVerificationActivity, "You already have an active subscription! Please verify it.", Toast.LENGTH_LONG).show()
+                                        finish()
+                                    }
+                                }
                             } else {
                                 val errorMsg = jsonResponse.optString("error", "Unknown error")
                                 Toast.makeText(this@PaymentVerificationActivity, "Submission failed: $errorMsg", Toast.LENGTH_LONG).show()
