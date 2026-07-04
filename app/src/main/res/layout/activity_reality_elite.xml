@@ -38,7 +38,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Reality Pro Activation"
+                android:text="Reality Elite Member Activation"
                 android:textSize="24sp"
                 android:textStyle="bold"
                 android:textColor="?attr/colorPrimary"
@@ -82,7 +82,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Reality is 99.9% open source and ad-free. Premium features like Neural Protocol, Gamification, and Google Workspace Sync require ongoing serverless maintenance, API costs, and massive developer time. A yearly subscription sustains the project reliably, unlike inconsistent crowdfunding."
+                        android:text="Reality is 99.9% open source and ad-free. Premium features like Neural Elite Membertocol, Gamification, and Google Workspace Sync require ongoing serverless maintenance, API costs, and massive developer time. A yearly subscription sustains the project reliably, unlike inconsistent crowdfunding."
                         android:textSize="13sp"
                         android:lineSpacingMultiplier="1.2"
                         android:textColor="?attr/colorOnSurfaceVariant"
@@ -92,7 +92,7 @@
                         android:id="@+id/btn_view_pro_members"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="View Active Pro Members ↗"
+                        android:text="View Active Elite Member Members ↗"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="?attr/colorSecondary"
@@ -261,13 +261,26 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Sign in is required to verify your identity with Google and link your Pro license."
+                        android:text="Sign in is required to verify your identity with Google and link your Elite Member license."
                         android:textSize="14sp"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="16dp"/>
 
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_register_elite"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp"
+                        android:text="Register Elite Member"
+                        app:icon="@drawable/baseline_check_circle_24"
+                        app:iconGravity="textStart"
+                        app:cornerRadius="8dp"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
 
             <!-- Step 2 Card -->
             <com.google.android.material.card.MaterialCardView
@@ -370,7 +383,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="License Terms: Your Reality Pro license is valid for the duration you selected. If you clear app data or uninstall the app to bypass restrictions, your Pro access will be PERMANENTLY LOST and you will need to purchase it again. If you legitimately logout and log back in, access is restored. This allows us to keep subscription costs extremely low."
+                        android:text="License Terms: Your Reality Elite Member license is valid for the duration you selected. If you clear app data or uninstall the app to bypass restrictions, your Elite Member access will be PERMANENTLY LOST and you will need to purchase it again. If you legitimately logout and log back in, access is restored. This allows us to keep subscription costs extremely low."
                         android:textSize="12sp"
                         android:lineSpacingMultiplier="1.2"
                         android:textColor="?attr/colorError"
@@ -380,7 +393,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Step 3: Verify Pro Access"
+                        android:text="Step 3: Verify Elite Member Access"
 
                         android:textSize="18sp"
                         android:textStyle="bold"
@@ -390,7 +403,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="After submitting payment, verify your status to unlock Pro features."
+                        android:text="After submitting payment, verify your status to unlock Elite Member features."
                         android:textSize="14sp"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="16dp"/>

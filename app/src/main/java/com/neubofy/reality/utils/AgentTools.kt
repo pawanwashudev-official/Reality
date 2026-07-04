@@ -686,27 +686,21 @@ object AgentTools {
                         if (imageModel.startsWith("Pollinations")) {
                             imageUrl = "https://image.pollinations.ai/prompt/$encodedPrompt?width=1024&height=1024&seed=$seed&nologo=true"
                         } else if (imageModel.startsWith("OpenAI")) {
-                            val providerKey = "OpenAI"
-                            val modelName = imageModel.substringAfter(": ").trim()
-                            val apiKey = aiPrefs.getString("api_key_$providerKey", "") ?: ""
+                            val body = JSONObject().apply {
+                                put("userId", com.neubofy.reality.utils.IdentityManager.getUserId(context))
+                                put("password", com.neubofy.reality.utils.IdentityManager.getBackupPassword(context))
+                                put("prompt", fullPrompt)
+                                put("n", 1)
+                                put("size", "1024x1024")
+                                put("model", "gpt oss 20 b")
+                            }
                             
-                            if (apiKey.isNotEmpty()) {
-                                val body = JSONObject().apply {
-                                    put("prompt", fullPrompt)
-                                    put("n", 1)
-                                    put("size", "1024x1024")
-                                    put("model", if (modelName.contains("dall-e")) modelName else "dall-e-3")
-                                }
-                                
-                                val response = makePostRequest("https://api.openai.com/v1/images/generations", apiKey, body)
-                                if (response != null) {
-                                    val json = JSONObject(response)
-                                    imageUrl = json.getJSONArray("data").getJSONObject(0).getString("url")
-                                } else {
-                                    errorMessage = "OpenAI returned no response. Check your API key or balance."
-                                }
+                            val response = makePostRequest(com.neubofy.reality.BuildConfig.WORKER_URL.removeSuffix("/") + "/api/ai", "na", body)
+                            if (response != null) {
+                                val json = JSONObject(response)
+                                imageUrl = json.optJSONArray("data")?.getJSONObject(0)?.optString("url") ?: json.optString("response")
                             } else {
-                                errorMessage = "OpenAI API Key is missing in settings."
+                                errorMessage = "Worker returned no response."
                             }
                         } else if (imageModel.startsWith("OpenRouter")) {
                             val providerKey = "OpenRouter"

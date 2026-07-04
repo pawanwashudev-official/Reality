@@ -59,7 +59,7 @@ class PaymentVerificationActivity : BaseActivity() {
                         val featureManager = FeatureManager(this@PaymentVerificationActivity)
                         featureManager.setRealityProStartTime(internetTime)
                         featureManager.setRealityProVerified(true, internetTime, selectedMonths)
-                        Toast.makeText(this@PaymentVerificationActivity, "Payment successful! Reality Pro instantly activated.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@PaymentVerificationActivity, "Payment successful! Reality Elite instantly activated.", Toast.LENGTH_LONG).show()
                         val intent = Intent(this@PaymentVerificationActivity, MainActivity::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                         startActivity(intent)
@@ -177,8 +177,10 @@ class PaymentVerificationActivity : BaseActivity() {
 
                 val jsonBody = JSONObject()
                 jsonBody.put("userId", userId)
+                jsonBody.put("password", IdentityManager.getBackupPassword(this@PaymentVerificationActivity))
                 jsonBody.put("transactionId", transactionId)
-                jsonBody.put("months", selectedMonths)
+                jsonBody.put("durationDays", (selectedMonths * 30))
+                jsonBody.put("status", "V")
                 if (customNote.isNotEmpty()) {
                     jsonBody.put("customNote", customNote)
                 }
@@ -213,8 +215,8 @@ class PaymentVerificationActivity : BaseActivity() {
                                     withContext(Dispatchers.Main) {
                                         val featureManager = FeatureManager(this@PaymentVerificationActivity)
                                         featureManager.setRealityProStartTime(internetTime)
-                                        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@PaymentVerificationActivity, "reality_pro_prefs")
-                                        prefs.edit().putString("pro_saved_verification_code_for_$userId", code).apply()
+                                        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@PaymentVerificationActivity, "reality_elite_prefs")
+                                        prefs.edit().putBoolean("elite_paid_for_$userId", true).apply()
                                         Toast.makeText(this@PaymentVerificationActivity, "Request Submitted Successfully!", Toast.LENGTH_LONG).show()
                                         finish()
                                     }

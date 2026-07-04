@@ -100,7 +100,7 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".ui.activity.RealityProActivity"
+            android:name=".ui.activity.RealityEliteActivity"
             android:exported="false"
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />

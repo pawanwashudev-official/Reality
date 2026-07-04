@@ -49,11 +49,11 @@ object NightlyAIHelper {
         TerminalLogger.log("Nightly AI: Prompt built, calling $provider API...")
         
         val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, prompt)
-            "Gemini" -> callGemini(apiKey, modelName, prompt)
-            "Groq" -> callGroq(apiKey, modelName, prompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, prompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt)
+            "OpenAI" -> callOpenAI(context, apiKey, modelName, prompt)
+            "Gemini" -> callGemini(context, apiKey, modelName, prompt)
+            "Groq" -> callGroq(context, apiKey, modelName, prompt)
+            "OpenRouter" -> callOpenRouter(context, apiKey, modelName, prompt)
+            "Perplexity" -> callPerplexity(context, apiKey, modelName, prompt)
             else -> throw IllegalStateException("Unsupported provider: $provider")
         }
         
@@ -219,11 +219,11 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         TerminalLogger.log("Nightly AI: Plan prompt built, calling $provider API...")
         
         val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, systemPrompt)
-            "Gemini" -> callGemini(apiKey, modelName, systemPrompt)
-            "Groq" -> callGroq(apiKey, modelName, systemPrompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, systemPrompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, systemPrompt)
+            "OpenAI" -> callOpenAI(context, apiKey, modelName, systemPrompt)
+            "Gemini" -> callGemini(context, apiKey, modelName, systemPrompt)
+            "Groq" -> callGroq(context, apiKey, modelName, systemPrompt)
+            "OpenRouter" -> callOpenRouter(context, apiKey, modelName, systemPrompt)
+            "Perplexity" -> callPerplexity(context, apiKey, modelName, systemPrompt)
             else -> throw IllegalStateException("Unsupported provider: $provider")
         }
         
@@ -277,11 +277,11 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         TerminalLogger.log("Nightly AI: Task Cleanup prompt built, calling $provider API...")
         
         val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, systemPrompt)
-            "Gemini" -> callGemini(apiKey, modelName, systemPrompt)
-            "Groq" -> callGroq(apiKey, modelName, systemPrompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, systemPrompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt = systemPrompt)
+            "OpenAI" -> callOpenAI(context, apiKey, modelName, systemPrompt)
+            "Gemini" -> callGemini(context, apiKey, modelName, systemPrompt)
+            "Groq" -> callGroq(context, apiKey, modelName, systemPrompt)
+            "OpenRouter" -> callOpenRouter(context, apiKey, modelName, systemPrompt)
+            "Perplexity" -> callPerplexity(context, apiKey, modelName, systemPrompt)
             else -> throw IllegalStateException("Unsupported provider: $provider")
         }
         
@@ -481,17 +481,17 @@ OUTPUT FORMAT:
             .replace("{list_context}", listsContext)
     }
 
-    private fun callOpenAI(apiKey: String, model: String, prompt: String): String {
-        return callOpenAICompatible(
-            "https://api.openai.com/v1/chat/completions",
+    private fun callOpenAI(context: android.content.Context, apiKey: String, model: String, prompt: String): String {
+        return callOpenAICompatible(context,
+            com.neubofy.reality.BuildConfig.WORKER_URL.removeSuffix("/") + "/api/ai",
             apiKey,
             model,
             prompt
         )
     }
     
-    private fun callGroq(apiKey: String, model: String, prompt: String): String {
-        return callOpenAICompatible(
+    private fun callGroq(context: android.content.Context, apiKey: String, model: String, prompt: String): String {
+        return callOpenAICompatible(context,
             "https://api.groq.com/openai/v1/chat/completions",
             apiKey,
             model,
@@ -499,8 +499,8 @@ OUTPUT FORMAT:
         )
     }
     
-    private fun callOpenRouter(apiKey: String, model: String, prompt: String): String {
-        return callOpenAICompatible(
+    private fun callOpenRouter(context: android.content.Context, apiKey: String, model: String, prompt: String): String {
+        return callOpenAICompatible(context,
             "https://openrouter.ai/api/v1/chat/completions",
             apiKey,
             model,
@@ -508,8 +508,8 @@ OUTPUT FORMAT:
         )
     }
     
-    private fun callPerplexity(apiKey: String, model: String, prompt: String): String {
-        return callOpenAICompatible(
+    private fun callPerplexity(context: android.content.Context, apiKey: String, model: String, prompt: String): String {
+        return callOpenAICompatible(context,
             "https://api.perplexity.ai/chat/completions",
             apiKey,
             model,
@@ -517,7 +517,7 @@ OUTPUT FORMAT:
         )
     }
     
-    private fun callOpenAICompatible(endpoint: String, apiKey: String, model: String, prompt: String): String {
+    private fun callOpenAICompatible(context: android.content.Context, endpoint: String, apiKey: String, model: String, prompt: String): String {
         val url = URL(endpoint)
         val conn = url.openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
@@ -554,7 +554,7 @@ OUTPUT FORMAT:
             .getString("content")
     }
     
-    private fun callGemini(apiKey: String, model: String, prompt: String): String {
+    private fun callGemini(context: android.content.Context, apiKey: String, model: String, prompt: String): String {
         val endpoint = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
         val url = URL(endpoint)
         val conn = url.openConnection() as HttpURLConnection
@@ -625,11 +625,11 @@ OUTPUT FORMAT:
         val prompt = buildAnalysisPrompt(context, userIntroduction, diaryContent)
         
         val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, prompt)
-            "Gemini" -> callGemini(apiKey, modelName, prompt)
-            "Groq" -> callGroq(apiKey, modelName, prompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, prompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt)
+            "OpenAI" -> callOpenAI(context, apiKey, modelName, prompt)
+            "Gemini" -> callGemini(context, apiKey, modelName, prompt)
+            "Groq" -> callGroq(context, apiKey, modelName, prompt)
+            "OpenRouter" -> callOpenRouter(context, apiKey, modelName, prompt)
+            "Perplexity" -> callPerplexity(context, apiKey, modelName, prompt)
             else -> throw IllegalStateException("Unsupported provider: $provider")
         }
         
@@ -746,11 +746,11 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         val prompt = buildPlanPrompt(context, userIntro, summary)
         
         val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, prompt)
-            "Gemini" -> callGemini(apiKey, modelName, prompt)
-            "Groq" -> callGroq(apiKey, modelName, prompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, prompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt)
+            "OpenAI" -> callOpenAI(context, apiKey, modelName, prompt)
+            "Gemini" -> callGemini(context, apiKey, modelName, prompt)
+            "Groq" -> callGroq(context, apiKey, modelName, prompt)
+            "OpenRouter" -> callOpenRouter(context, apiKey, modelName, prompt)
+            "Perplexity" -> callPerplexity(context, apiKey, modelName, prompt)
             else -> throw IllegalStateException("Unsupported provider: $provider")
         }
         
@@ -847,11 +847,11 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         }
         
         val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, prompt)
-            "Gemini" -> callGemini(apiKey, modelName, prompt)
-            "Groq" -> callGroq(apiKey, modelName, prompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, prompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt)
+            "OpenAI" -> callOpenAI(context, apiKey, modelName, prompt)
+            "Gemini" -> callGemini(context, apiKey, modelName, prompt)
+            "Groq" -> callGroq(context, apiKey, modelName, prompt)
+            "OpenRouter" -> callOpenRouter(context, apiKey, modelName, prompt)
+            "Perplexity" -> callPerplexity(context, apiKey, modelName, prompt)
             else -> throw IllegalStateException("Unsupported provider: $provider")
         }
         

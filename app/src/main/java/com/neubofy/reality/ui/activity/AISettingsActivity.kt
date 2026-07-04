@@ -16,7 +16,7 @@ import androidx.lifecycle.lifecycleScope
 class AISettingsActivity : BaseActivity() {
 
     private lateinit var binding: ActivityAiSettingsBinding
-    private val providers = listOf("OpenAI", "Gemini", "Groq", "OpenRouter", "Perplexity", "Tavily")
+    private val providers = listOf("gpt oss 20 b")
     private lateinit var chatModelsAdapter: com.neubofy.reality.ui.adapter.SavedModelsAdapter
     private lateinit var nightlyModelsAdapter: com.neubofy.reality.ui.adapter.SavedModelsAdapter
     private lateinit var imageModelsAdapter: com.neubofy.reality.ui.adapter.SavedModelsAdapter

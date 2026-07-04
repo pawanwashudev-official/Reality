@@ -35,6 +35,7 @@ object GoogleAuthManager {
     private const val KEY_CLIENT_ID = "client_id"
     private const val KEY_CLIENT_SECRET = "client_secret"
     private const val KEY_ACCESS_TOKEN = "access_token"
+    private const val KEY_ID_TOKEN = "id_token"
     private const val KEY_REFRESH_TOKEN = "refresh_token"
     private const val KEY_USER_EMAIL = "user_email"
     private const val KEY_USER_NAME = "user_display_name"
@@ -51,7 +52,7 @@ object GoogleAuthManager {
         "profile"
     )
     
-    val BASIC_SCOPES = listOf("email", "profile")
+    val BASIC_SCOPES = listOf("openid", "email", "profile")
 
     private fun getPrefs(context: Context) = 
         com.neubofy.reality.utils.SecurePreferences.get(context, PREF_NAME)
@@ -175,6 +176,7 @@ object GoogleAuthManager {
 
             try {
                 val accessToken: String?
+                val idToken: String?
                 val refreshToken: String?
 
                 if (!clientId.isNullOrBlank() && !clientSecret.isNullOrBlank()) {
@@ -187,6 +189,7 @@ object GoogleAuthManager {
                         "http://127.0.0.1:8080/Callback"
                     ).execute()
                     accessToken = tokenResponse.accessToken
+                    idToken = tokenResponse.idToken
                     refreshToken = tokenResponse.refreshToken
                 } else {
                      val cleanWorkerUrl = workerUrl.removeSuffix("/")
@@ -209,9 +212,11 @@ object GoogleAuthManager {
                          val response = conn.inputStream.bufferedReader().use { it.readText() }
                          val json = JSONObject(response)
                          accessToken = json.optString("access_token", null)
+                         idToken = json.optString("id_token", null)
                          refreshToken = json.optString("refresh_token", null)
                      } else {
                          accessToken = null
+                         idToken = null
                          refreshToken = null
                          TerminalLogger.log("GOOGLE AUTH: Token exchange failed with status ${conn.responseCode}")
                      }
@@ -220,6 +225,9 @@ object GoogleAuthManager {
                 if (accessToken != null) {
                     getPrefs(context).edit().apply {
                         putString(KEY_ACCESS_TOKEN, accessToken)
+                        if (idToken != null) {
+                            putString(KEY_ID_TOKEN, idToken)
+                        }
                         if (refreshToken != null) {
                             putString(KEY_REFRESH_TOKEN, refreshToken)
                         }
@@ -275,6 +283,7 @@ object GoogleAuthManager {
     }
 
     fun getUserEmail(context: Context): String? = getPrefs(context).getString(KEY_USER_EMAIL, null)
+    fun getIdToken(context: Context): String? = getPrefs(context).getString(KEY_ID_TOKEN, null)
     fun getUserName(context: Context): String? = getPrefs(context).getString(KEY_USER_NAME, null)
     fun getUserPhotoUrl(context: Context): String? = getPrefs(context).getString(KEY_USER_PHOTO_URL, null)
     

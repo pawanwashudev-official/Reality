@@ -209,7 +209,7 @@ open class AIChatActivity : BaseActivity() {
         handleSessionInit(text)
 
         val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
-        val savedModelString = prefs.getString("model", "OpenAI: gpt-3.5-turbo") ?: "OpenAI: gpt-3.5-turbo"
+        val savedModelString = "gpt oss 20 b"
         
         val (provider, model) = if (savedModelString.contains(": ")) {
             val split = savedModelString.split(": ", limit = 2)
@@ -287,10 +287,10 @@ open class AIChatActivity : BaseActivity() {
         val TAG = "AIChat"
         
         val url = when(provider) {
-            "OpenAI" -> "https://api.openai.com/v1/chat/completions"
-            "Groq" -> "https://api.groq.com/openai/v1/chat/completions"
-            "OpenRouter" -> "https://openrouter.ai/api/v1/chat/completions"
-            else -> "https://api.openai.com/v1/chat/completions"
+            "OpenAI" -> com.neubofy.reality.BuildConfig.WORKER_URL.removeSuffix("/") + "/api/ai"
+            "Groq" -> com.neubofy.reality.BuildConfig.WORKER_URL.removeSuffix("/") + "/api/ai"
+            "OpenRouter" -> com.neubofy.reality.BuildConfig.WORKER_URL.removeSuffix("/") + "/api/ai"
+            else -> com.neubofy.reality.BuildConfig.WORKER_URL.removeSuffix("/") + "/api/ai"
         }
         
         android.util.Log.d(TAG, "=== STREAMING REQUEST START ===")
@@ -314,7 +314,9 @@ open class AIChatActivity : BaseActivity() {
         
         // Construct Request WITH STREAMING ENABLED
         val jsonBody = JSONObject().apply {
-            put("model", model)
+            put("userId", com.neubofy.reality.utils.IdentityManager.getUserId(this@AIChatActivity))
+            put("password", com.neubofy.reality.utils.IdentityManager.getBackupPassword(this@AIChatActivity))
+            put("model", "gpt oss 20 b")
             put("messages", jsonMessages)
             put("stream", true) // CRITICAL: Enable SSE streaming
         }
@@ -523,7 +525,9 @@ open class AIChatActivity : BaseActivity() {
 
                 // Construct API Request with Dynamic Tools
                 val jsonBody = JSONObject().apply {
-                    put("model", model)
+            put("userId", com.neubofy.reality.utils.IdentityManager.getUserId(this@AIChatActivity))
+            put("password", com.neubofy.reality.utils.IdentityManager.getBackupPassword(this@AIChatActivity))
+            put("model", "gpt oss 20 b")
                     put("messages", messagesJson)
                     // Dynamic schema loading: only send meta-tool + tools AI has asked for
                     put("tools", com.neubofy.reality.utils.ToolRegistry.buildToolsArray(this@AIChatActivity, requestedToolIds.toList()))
@@ -531,10 +535,10 @@ open class AIChatActivity : BaseActivity() {
                 }
                 
                 val apiUrl = when(provider) {
-                    "OpenAI" -> "https://api.openai.com/v1/chat/completions"
-                    "Groq" -> "https://api.groq.com/openai/v1/chat/completions"
-                    "OpenRouter" -> "https://openrouter.ai/api/v1/chat/completions"
-                    else -> "https://api.openai.com/v1/chat/completions"
+                    "OpenAI" -> com.neubofy.reality.BuildConfig.WORKER_URL.removeSuffix("/") + "/api/ai"
+                    "Groq" -> com.neubofy.reality.BuildConfig.WORKER_URL.removeSuffix("/") + "/api/ai"
+                    "OpenRouter" -> com.neubofy.reality.BuildConfig.WORKER_URL.removeSuffix("/") + "/api/ai"
+                    else -> com.neubofy.reality.BuildConfig.WORKER_URL.removeSuffix("/") + "/api/ai"
                 }
                 
                 // Execute Request

@@ -1,3 +1,22 @@
+
+async function verifyAuth(userId, providedPassword, env) {
+  if (!userId || !providedPassword || typeof userId !== "string" || typeof providedPassword !== "string") {
+    return false;
+  }
+  if (!env.APP_SECRET_PEPPER) {
+    return false;
+  }
+  const encoder = new TextEncoder();
+  const secretKeyData = encoder.encode(env.APP_SECRET_PEPPER);
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw", secretKeyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const pwSignature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(userId));
+  const expectedPassword = Array.from(new Uint8Array(pwSignature))
+    .map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
+  return providedPassword === expectedPassword;
+}
+
 export default {
   async fetch(request, env) {
     // Handle CORS preflight requests universally
@@ -28,12 +47,27 @@ export default {
           });
         }
 
-        const email = incomingData.email;
-        if (!email || typeof email !== "string") {
-          return new Response(JSON.stringify({ error: "Email string is required" }), {
+        const idToken = incomingData.idToken;
+        if (!idToken || typeof idToken !== "string") {
+          return new Response(JSON.stringify({ error: "idToken string is required" }), {
             status: 400,
             headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
           });
+        }
+
+        let email = "";
+        try {
+          const googleRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+          if (!googleRes.ok) {
+            return new Response(JSON.stringify({ error: "Invalid Google idToken" }), { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+          }
+          const googleData = await googleRes.json();
+          email = googleData.email;
+          if (!email) {
+            return new Response(JSON.stringify({ error: "Email not found in token" }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+          }
+        } catch (e) {
+          return new Response(JSON.stringify({ error: "Failed to verify token with Google" }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
         }
 
         if (!env.APP_SECRET_PEPPER) {
@@ -47,33 +81,17 @@ export default {
         const secretKeyData = encoder.encode(env.APP_SECRET_PEPPER);
         
         const cryptoKey = await crypto.subtle.importKey(
-          "raw",
-          secretKeyData,
-          { name: "HMAC", hash: "SHA-256" },
-          false,
-          ["sign"]
+          "raw", secretKeyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
         );
 
         const normalizedEmail = email.toLowerCase().trim();
 
-        const idSignature = await crypto.subtle.sign(
-          "HMAC",
-          cryptoKey,
-          encoder.encode(normalizedEmail)
-        );
-        const idHashHex = Array.from(new Uint8Array(idSignature))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
+        const idSignature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(normalizedEmail));
+        const idHashHex = Array.from(new Uint8Array(idSignature)).map(b => b.toString(16).padStart(2, '0')).join('');
         const userId = idHashHex.substring(0, 16);
 
-        const pwSignature = await crypto.subtle.sign(
-          "HMAC",
-          cryptoKey,
-          encoder.encode(userId)
-        );
-        const pwHashHex = Array.from(new Uint8Array(pwSignature))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
+        const pwSignature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(userId));
+        const pwHashHex = Array.from(new Uint8Array(pwSignature)).map(b => b.toString(16).padStart(2, '0')).join('');
         const backupPassword = pwHashHex.substring(0, 32);
 
         return new Response(
@@ -144,9 +162,8 @@ export default {
       // ROUTE: WEBSITE PUBLIC PRO MEMBERS LIST
       // ============================================================
       if (url.pathname === "/api/pro-members" && request.method === "GET") {
-        // Fetch only safe, shareable details from D1
         const { results } = await env.DB.prepare(
-          "SELECT userId, date, status FROM licenses ORDER BY vCode DESC"
+          'SELECT userId, date, status FROM "Reality Elite members management" ORDER BY date DESC'
         ).all();
 
         const totalMembers = results.length;
@@ -164,90 +181,196 @@ export default {
       // ROUTE: NATIVE SUBSCRIPTION MANAGEMENT
       // ============================================================
       if (url.pathname === "/license") {
-        
-        // Handles verification (GET)
         if (request.method === "GET") {
           const userId = url.searchParams.get("userId");
-          const vCodeParam = url.searchParams.get("vCode");
-          const vCode = parseInt(vCodeParam, 10);
+          const password = url.searchParams.get("password");
 
-          if (!userId || isNaN(vCode) || vCode <= 0) {
-            return new Response("INVALID", { headers: { "Access-Control-Allow-Origin": "*" } });
+          if (!userId || !password) {
+            return new Response("INVALID", { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+          }
+
+          const isValid = await verifyAuth(userId, password, env);
+          if (!isValid) {
+            return new Response("UNAUTHORIZED", { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           }
 
           const row = await env.DB.prepare(
-            "SELECT userId, status FROM licenses WHERE vCode = ?"
-          ).bind(vCode).first();
+            'SELECT userId, status, expiryDate FROM "Reality Elite members management" WHERE userId = ?'
+          ).bind(userId).first();
 
           if (!row) {
-            return new Response("NOT_FOUND", { headers: { "Access-Control-Allow-Origin": "*" } });
+            return new Response("NOT_FOUND", { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           }
 
-          // Strict validation: User only gets "SUCCESS" if status is officially "V"
-          if (row.userId === userId && row.status === "V") {
-            return new Response("SUCCESS", { headers: { "Access-Control-Allow-Origin": "*" } });
-          } else if (row.userId === userId && row.status === "P") {
-            return new Response("PENDING", { headers: { "Access-Control-Allow-Origin": "*" } });
+          if (row.status === "V") {
+            return new Response(JSON.stringify({ status: "SUCCESS", expiryDate: row.expiryDate }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+          } else if (row.status === "P") {
+            return new Response(JSON.stringify({ status: "PENDING" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           } else {
-            return new Response("INVALID", { headers: { "Access-Control-Allow-Origin": "*" } });
+            return new Response("INVALID", { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           }
         }
 
-        // Handles subscription submission (POST)
         if (request.method === "POST") {
           let incomingData = {};
           try {
             incomingData = await request.json();
           } catch (e) {
-            return new Response(JSON.stringify({ status: "ERROR", message: "Invalid JSON payload" }), {
-              status: 400,
-              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-            });
+            return new Response(JSON.stringify({ status: "ERROR", message: "Invalid JSON" }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           }
 
           const userId = incomingData.userId;
-          const transactionId = incomingData.transactionId;
-          let customNote = incomingData.customNote || "";
+          const password = incomingData.password;
           
-          // Capture incoming status ('P' or 'V'). If not provided, default to 'V' for backward compatibility
-          const status = incomingData.status === "P" ? "P" : "V";
-
-          if (!userId || !transactionId) {
-            return new Response(JSON.stringify({ status: "ERROR", message: "Missing fields" }), {
-              status: 400,
-              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-            });
+          if (!userId || !password) {
+            return new Response(JSON.stringify({ status: "ERROR", message: "Missing fields" }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           }
 
-          if (customNote.length > 200) {
-            customNote = customNote.substring(0, 200);
+          const isValid = await verifyAuth(userId, password, env);
+          if (!isValid) {
+            return new Response(JSON.stringify({ status: "ERROR", message: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           }
 
-          // Insert or update. If user exists but is re-submitting, we overwrite with the new form state
-          const info = await env.DB.prepare(`
-            INSERT INTO licenses (date, userId, status, transactionId, customNote) 
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(userId) DO UPDATE SET 
-              date = excluded.date,
-              transactionId = excluded.transactionId,
-              customNote = excluded.customNote,
-              status = excluded.status
-          `).bind(new Date().toISOString(), userId, status, transactionId, customNote).run();
+          const status = incomingData.status;
 
-          let verificationCode = info.meta.last_row_id;
-
-          if (verificationCode === 0 || !verificationCode) {
-            const existingRow = await env.DB.prepare("SELECT vCode FROM licenses WHERE userId = ?").bind(userId).first();
-            verificationCode = existingRow ? existingRow.vCode : 1;
+          if (status === "P") {
+            const dateJoined = new Date().toISOString();
+            await env.DB.prepare(`
+              INSERT INTO "Reality Elite members management" (userId, date, status)
+              VALUES (?, ?, ?)
+              ON CONFLICT(userId) DO NOTHING
+            `).bind(userId, dateJoined, "P").run();
+            return new Response(JSON.stringify({ status: "SUCCESS" }), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           }
+          else if (status === "V") {
+            const transactionId = incomingData.transactionId;
+            const durationDays = incomingData.durationDays || 365;
 
-          return new Response(
-            JSON.stringify({ status: "SUCCESS", verificationCode: verificationCode }),
-            { 
-              status: 200, 
-              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } 
+            if (!transactionId) {
+                return new Response(JSON.stringify({ status: "ERROR", message: "Missing transactionId" }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
             }
-          );
+
+            const expDate = new Date();
+            expDate.setDate(expDate.getDate() + durationDays);
+            const expiryDateString = expDate.toISOString().split('T')[0] + `-${durationDays}`;
+
+            await env.DB.prepare(`
+              UPDATE "Reality Elite members management"
+              SET status = 'V', transactionId = ?, expiryDate = ?
+              WHERE userId = ?
+            `).bind(transactionId, expiryDateString, userId).run();
+
+            return new Response(JSON.stringify({ status: "SUCCESS", expiryDate: expiryDateString }), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+          }
+        }
+      }
+
+// ============================================================
+      // ROUTE: AI PROXY WITH RATE LIMIT & SUBSCRIPTION CHECK
+      // ============================================================
+      if (url.pathname === "/api/ai" && request.method === "POST") {
+        let incomingData = {};
+        try {
+          incomingData = await request.json();
+        } catch (e) {
+          return new Response(JSON.stringify({ error: "Invalid JSON payload" }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+
+        const userId = incomingData.userId;
+        const password = incomingData.password;
+
+        if (!userId || !password) {
+          return new Response(JSON.stringify({ error: "Missing auth fields" }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+
+        const isValid = await verifyAuth(userId, password, env);
+        if (!isValid) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+
+        // Sub check
+        const userRow = await env.DB.prepare(
+          'SELECT status, expiryDate, ai_usage FROM "Reality Elite members management" WHERE userId = ?'
+        ).bind(userId).first();
+
+        if (!userRow || userRow.status !== "V") {
+          return new Response(JSON.stringify({ error: "Active Reality Elite subscription required" }), { status: 403, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+
+        if (userRow.expiryDate) {
+            const expiryDateStr = userRow.expiryDate.substring(0, 10);
+            if (new Date(expiryDateStr) < new Date()) {
+                return new Response(JSON.stringify({ error: "Subscription expired" }), { status: 403, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+            }
+        }
+
+        // Rate limit 50/day
+        const todayStr = new Date().toISOString().split('T')[0];
+        let currentUsageStr = userRow.ai_usage || "";
+        let newCount = 1;
+
+        if (currentUsageStr.startsWith(todayStr)) {
+            const parts = currentUsageStr.split('-');
+            const currentCount = parseInt(parts[parts.length - 1], 10);
+            if (currentCount >= 50) {
+                return new Response(JSON.stringify({ error: "Daily limit reached (50/50)" }), { status: 429, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+            }
+            newCount = currentCount + 1;
+        }
+
+        const newUsageStr = `${todayStr}-${newCount}`;
+        await env.DB.prepare(
+            'UPDATE "Reality Elite members management" SET ai_usage = ? WHERE userId = ?'
+        ).bind(newUsageStr, userId).run();
+
+        // Check if there are tool format requests and we need to pass tools to the LLM backend
+        const aiPayload = {
+            model: "gpt oss 20 b",
+            messages: incomingData.messages,
+        };
+        if (incomingData.tools) {
+            aiPayload.tools = incomingData.tools;
+        }
+
+        // Proxy to actual AI URL
+        if (!env.AI_URL) {
+            return new Response(JSON.stringify({ error: "Backend AI URL missing" }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+
+        try {
+            const aiResponse = await fetch(env.AI_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(aiPayload)
+            });
+
+            if (!aiResponse.ok) {
+                return new Response(JSON.stringify({ error: "AI backend error" }), { status: aiResponse.status, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+            }
+
+            const aiData = await aiResponse.json();
+
+            // Structure response logic properly
+            if (aiData.tool_calls) {
+                return new Response(JSON.stringify({ tool_calls: aiData.tool_calls }), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+            }
+
+            if (aiData.response) {
+                return new Response(JSON.stringify({ response: aiData.response }), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+            }
+
+            if (aiData.choices && aiData.choices[0]) {
+                const choice = aiData.choices[0];
+                if (choice.message.tool_calls) {
+                    return new Response(JSON.stringify({ tool_calls: choice.message.tool_calls }), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+                }
+                return new Response(JSON.stringify({ response: choice.message.content }), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+            }
+
+            return new Response(JSON.stringify({ response: "AI responded but format is unknown." }), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+
+        } catch (e) {
+            return new Response(JSON.stringify({ error: "Error contacting AI server" }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
         }
       }
 
