@@ -24,7 +24,7 @@ class ReminderActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (!com.neubofy.reality.utils.RealityProManager.checkVerification(this)) return
+        if (!com.neubofy.reality.utils.RealityEliteManager.checkVerification(this)) return
         binding = ActivityReminderBinding.inflate(layoutInflater)
         setContentView(binding.root)
         

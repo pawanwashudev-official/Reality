@@ -54,7 +54,7 @@ open class AIChatActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
-        if (!com.neubofy.reality.utils.RealityProManager.checkVerification(this)) return
+        if (!com.neubofy.reality.utils.RealityEliteManager.checkVerification(this)) return
         enableEdgeToEdge()
         binding = ActivityAiChatBinding.inflate(layoutInflater)
         setContentView(binding.root)

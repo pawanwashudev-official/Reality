@@ -212,7 +212,7 @@ class PermissionManagerActivity : BaseActivity() {
         }
 
         // 10. Calendar (Pro/Workspace)
-        if (featureManager.isRealityProEnabled()) {
+        if (featureManager.isRealityEliteEnabled()) {
             val granted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
             addPermissionCard(
                 title = "Calendar",

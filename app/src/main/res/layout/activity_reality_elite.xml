@@ -38,7 +38,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Reality Pro Activation"
+                android:text="Reality Elite Member Activation"
                 android:textSize="24sp"
                 android:textStyle="bold"
                 android:textColor="?attr/colorPrimary"
@@ -319,7 +319,40 @@
                             android:text="12 Months" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <com.google.android.material.button.MaterialButton
+
+                        <!-- Step 1: Register -->
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:fontFamily="monospace"
+                            android:text="1. Register as Elite Member"
+                            android:textColor="@color/md_theme_onSurfaceVariant"
+                            android:textSize="14sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRegisterElite"
+                            android:layout_width="match_parent"
+                            android:layout_height="60dp"
+                            android:layout_marginTop="8dp"
+                            android:text="Register"
+                            android:textColor="@color/md_theme_onPrimary"
+                            app:backgroundTint="@color/md_theme_primary"
+                            app:cornerRadius="12dp"
+                            app:icon="@drawable/baseline_auto_awesome_24"
+                            app:iconGravity="textStart"
+                            app:iconTint="@color/md_theme_onPrimary" />
+
+                        <!-- Step 2: Pay -->
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:fontFamily="monospace"
+                            android:text="2. Buy Subscription"
+                            android:textColor="@color/md_theme_onSurfaceVariant"
+                            android:textSize="14sp" />
+<com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_pay_upi"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -370,7 +403,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="License Terms: Your Reality Pro license is valid for the duration you selected. If you clear app data or uninstall the app to bypass restrictions, your Pro access will be PERMANENTLY LOST and you will need to purchase it again. If you legitimately logout and log back in, access is restored. This allows us to keep subscription costs extremely low."
+                        android:text="License Terms: Your Reality Elite Member license is valid for the duration you selected. If you clear app data or uninstall the app to bypass restrictions, your Pro access will be PERMANENTLY LOST and you will need to purchase it again. If you legitimately logout and log back in, access is restored. This allows us to keep subscription costs extremely low."
                         android:textSize="12sp"
                         android:lineSpacingMultiplier="1.2"
                         android:textColor="?attr/colorError"

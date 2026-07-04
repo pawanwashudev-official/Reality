@@ -68,7 +68,7 @@ class TapasyaActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (!com.neubofy.reality.utils.RealityProManager.checkVerification(this)) return
+        if (!com.neubofy.reality.utils.RealityEliteManager.checkVerification(this)) return
 
         enableEdgeToEdge()
         binding = ActivityTapasyaBinding.inflate(layoutInflater)

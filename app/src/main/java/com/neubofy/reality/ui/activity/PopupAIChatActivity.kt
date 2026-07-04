@@ -20,7 +20,7 @@ class PopupAIChatActivity : AIChatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (!com.neubofy.reality.utils.RealityProManager.checkVerification(this)) return
+        if (!com.neubofy.reality.utils.RealityEliteManager.checkVerification(this)) return
         
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(this, "Microphone permission is required for AI Chat.", Toast.LENGTH_SHORT).show()

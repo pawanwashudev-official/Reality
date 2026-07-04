@@ -40,6 +40,7 @@ object GoogleAuthManager {
     private const val KEY_USER_NAME = "user_display_name"
     private const val KEY_USER_PHOTO_URL = "user_photo_url"
     private const val KEY_IS_SIGNED_IN = "is_signed_in"
+    private const val KEY_ID_TOKEN = "id_token"
     
     val ALL_SCOPES = listOf(
         CalendarScopes.CALENDAR,
@@ -188,6 +189,10 @@ object GoogleAuthManager {
                     ).execute()
                     accessToken = tokenResponse.accessToken
                     refreshToken = tokenResponse.refreshToken
+                    val idToken = tokenResponse.idToken
+                    if (idToken != null) {
+                        getPrefs(context).edit().putString(KEY_ID_TOKEN, idToken).apply()
+                    }
                 } else {
                      val cleanWorkerUrl = workerUrl.removeSuffix("/")
                      val url = URL("$cleanWorkerUrl/oauth/token")
@@ -210,6 +215,10 @@ object GoogleAuthManager {
                          val json = JSONObject(response)
                          accessToken = json.optString("access_token", null)
                          refreshToken = json.optString("refresh_token", null)
+                         val idToken = json.optString("id_token", null)
+                         if (idToken != null) {
+                             getPrefs(context).edit().putString(KEY_ID_TOKEN, idToken).apply()
+                         }
                      } else {
                          accessToken = null
                          refreshToken = null
@@ -277,6 +286,7 @@ object GoogleAuthManager {
     fun getUserEmail(context: Context): String? = getPrefs(context).getString(KEY_USER_EMAIL, null)
     fun getUserName(context: Context): String? = getPrefs(context).getString(KEY_USER_NAME, null)
     fun getUserPhotoUrl(context: Context): String? = getPrefs(context).getString(KEY_USER_PHOTO_URL, null)
+    fun getIdToken(context: Context): String? = getPrefs(context).getString(KEY_ID_TOKEN, null)
     
     fun signOut(context: Context) {
         val clientId = getClientId(context)

@@ -177,10 +177,10 @@ class MainActivity : BaseActivity() {
     private fun applyFeatureToggles() {
         val featureManager = com.neubofy.reality.utils.FeatureManager(this)
 
-        val isRealityProEnabled = featureManager.isRealityProEnabled()
+        val isRealityEliteEnabled = featureManager.isRealityEliteEnabled()
 
         // Reality Pro (Gamification + Google Workspace related navigation)
-        binding.cardReflection.visibility = if (isRealityProEnabled) android.view.View.VISIBLE else android.view.View.GONE
+        binding.cardReflection.visibility = if (isRealityEliteEnabled) android.view.View.VISIBLE else android.view.View.GONE
 
         // Reminder
         binding.btnReminders.visibility = if (featureManager.isReminderEnabled()) android.view.View.VISIBLE else android.view.View.GONE
@@ -190,12 +190,12 @@ class MainActivity : BaseActivity() {
 
         // Bottom Navigation
         val menu = binding.bottomNavigation.menu
-        menu.findItem(R.id.nav_tasks)?.isVisible = isRealityProEnabled
-        menu.findItem(R.id.nav_calendar)?.isVisible = isRealityProEnabled
-        menu.findItem(R.id.nav_nightly)?.isVisible = isRealityProEnabled
+        menu.findItem(R.id.nav_tasks)?.isVisible = isRealityEliteEnabled
+        menu.findItem(R.id.nav_calendar)?.isVisible = isRealityEliteEnabled
+        menu.findItem(R.id.nav_nightly)?.isVisible = isRealityEliteEnabled
         menu.findItem(R.id.nav_tapasya)?.isVisible = featureManager.isTapasyaEnabled()
 
-        if (!isRealityProEnabled && !featureManager.isTapasyaEnabled()) {
+        if (!isRealityEliteEnabled && !featureManager.isTapasyaEnabled()) {
             binding.bottomNavigation.visibility = android.view.View.GONE
         } else {
             binding.bottomNavigation.visibility = android.view.View.VISIBLE
@@ -469,7 +469,7 @@ class MainActivity : BaseActivity() {
                 popup.menu.add(0, 5, 0, "❤️ Health Dashboard")
             }
             popup.menu.add(0, 6, 1, "🎨 Appearance")
-            if (featureManager.isRealityProEnabled()) {
+            if (featureManager.isRealityEliteEnabled()) {
                 popup.menu.add(0, 7, 2, "☁️ Backup & Restore")
             }
             popup.menu.add(0, 3, 3, "📱 About Reality")
