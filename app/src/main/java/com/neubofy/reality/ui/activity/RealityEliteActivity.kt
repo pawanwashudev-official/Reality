@@ -571,11 +571,16 @@ class RealityEliteActivity : BaseActivity() {
                                 val expiryDate = jsonResponse.optString("expiryDate", "")
                                 var durationMonths = 12
 
+                                var expiryUnix = 0L
                                 if (expiryDate.isNotEmpty()) {
                                     val parts = expiryDate.split("-")
-                                    if (parts.size == 4) {
+                                    if (parts.size == 2) {
+                                        expiryUnix = parts[0].toLongOrNull() ?: 0L
+                                        durationMonths = parts[1].toIntOrNull() ?: 12
+                                    } else if (parts.size == 4) {
                                         val days = parts[3].toIntOrNull() ?: 365
                                         durationMonths = Math.max(1, Math.round(days / 30.416).toInt())
+                                        // No expiryUnix for legacy, so startTime will default to netTime
                                     }
                                 }
 
@@ -583,8 +588,13 @@ class RealityEliteActivity : BaseActivity() {
                                     val netTime = com.neubofy.reality.utils.InternetTime.getTime()
                                     withContext(Dispatchers.Main) {
                                         val featureManager = FeatureManager(this@RealityEliteActivity)
-                                        featureManager.setRealityProStartTime(netTime)
-                                        featureManager.setRealityProVerified(true, netTime, durationMonths)
+                                        val startTime = if (expiryUnix > 0) {
+                                            expiryUnix - ((365L / 12) * durationMonths.toLong() * 24L * 60L * 60L * 1000L)
+                                        } else {
+                                            netTime
+                                        }
+                                        featureManager.setRealityProStartTime(startTime)
+                                        featureManager.setRealityProVerified(true, startTime, durationMonths)
                                         Toast.makeText(this@RealityEliteActivity, "Active Reality Elite Member License Found and Restored!", Toast.LENGTH_LONG).show()
 
                                         val intent = Intent(this@RealityEliteActivity, MainActivity::class.java)

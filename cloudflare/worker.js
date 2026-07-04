@@ -205,7 +205,13 @@ export default {
             // Further verify if expiryDate is in the future
             if (row.expiryDate) {
               const parts = row.expiryDate.split("-");
-              if (parts.length === 4) {
+              if (parts.length === 2) {
+                const expiryUnix = parseInt(parts[0], 10);
+                if (expiryUnix < Date.now()) {
+                   return new Response(JSON.stringify({ status: "EXPIRED" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+                }
+                return new Response(JSON.stringify({ status: "SUCCESS", expiryDate: row.expiryDate }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+              } else if (parts.length === 4) {
                 const yyyy = parseInt(parts[0], 10);
                 const mm = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
                 const dd = parseInt(parts[2], 10);
@@ -286,7 +292,15 @@ export default {
           // Step 2: Purchase
           if (existingRow && existingRow.status === "V" && existingRow.expiryDate) {
               const parts = existingRow.expiryDate.split("-");
-              if (parts.length === 4) {
+              if (parts.length === 2) {
+                const expiryUnix = parseInt(parts[0], 10);
+                if (expiryUnix > Date.now()) {
+                   return new Response(JSON.stringify({ status: "ACTIVE_SUBSCRIPTION", message: "You already have an active subscription.", code: "ACTIVE_SUBSCRIPTION" }), {
+                      status: 200,
+                      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+                   });
+                }
+              } else if (parts.length === 4) {
                 const yyyy = parseInt(parts[0], 10);
                 const mm = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
                 const dd = parseInt(parts[2], 10);
@@ -301,8 +315,13 @@ export default {
           }
 
           const transactionId = incomingData.transactionId;
-          const durationDays = incomingData.durationDays || 365;
           let customNote = incomingData.customNote || "";
+
+          let months = incomingData.months;
+          if (!months) {
+             const durationDays = incomingData.durationDays || 365;
+             months = Math.max(1, Math.round(durationDays / 30.416));
+          }
 
           if (!transactionId) {
             return new Response(JSON.stringify({ status: "ERROR", message: "Missing transactionId for purchase" }), {
@@ -314,12 +333,11 @@ export default {
           if (customNote.length > 200) customNote = customNote.substring(0, 200);
 
           const currentUnix = Date.now();
-          const expiryUnix = currentUnix + (durationDays * 86400000);
-          const expiryDateObj = new Date(expiryUnix);
-          const yyyy = expiryDateObj.getUTCFullYear();
-          const mm = String(expiryDateObj.getUTCMonth() + 1).padStart(2, '0');
-          const dd = String(expiryDateObj.getUTCDate()).padStart(2, '0');
-          const expiryDateStr = `${yyyy}-${mm}-${dd}-${durationDays}`;
+          // App uses durationMs = (365L / 12) * months * 24 * 60 * 60 * 1000
+          // which is exactly what we should use here (Math.floor simulates integer division of 365/12 = 30)
+          const durationMs = Math.floor(365 / 12) * months * 24 * 60 * 60 * 1000;
+          const expiryUnix = currentUnix + durationMs;
+          const expiryDateStr = `${expiryUnix}-${months}`;
 
           await env.DB.prepare(`
             INSERT INTO "Reality Elite members management" (userId, date, status, transactionId, customNote, expiryDate)
