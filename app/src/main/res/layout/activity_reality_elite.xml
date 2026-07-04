@@ -15,6 +15,7 @@
         app:layout_constraintTop_toTopOf="parent"/>
 
     <ScrollView
+        android:id="@+id/scroll_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true"
@@ -106,73 +107,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <!-- Trial Plan Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_trial_plan_pro"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant"
-                app:cardBackgroundColor="?attr/colorSurfaceVariant">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Trial Plan"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
-                        android:layout_marginBottom="8dp"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Not sure yet? Activate a 3-day full access trial. No card required. Sign in is required to verify your identity."
-                        android:textSize="14sp"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:layout_marginBottom="16dp"/>
-
-                    <LinearLayout
-                        android:id="@+id/ll_trial_dates"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:visibility="gone"
-                        android:layout_marginBottom="16dp">
-
-                        <TextView
-                            android:id="@+id/tv_trial_start_date"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Started: -"
-                            android:textColor="?attr/colorOnSurfaceVariant"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/tv_trial_expiry_date"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Expires: -"
-                            android:textColor="?attr/colorError"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_trial_activation"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Start 3-Day Trial"
-                        android:visibility="gone"
-                        android:paddingVertical="12dp"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
             <!-- Paid Plan Section -->
             <TextView
@@ -416,7 +351,75 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.button.MaterialButton
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_trial_plan_pro"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="?attr/colorSurfaceVariant">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Trial Plan"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Not sure yet? Activate a 3-day full access trial. No card required. Sign in is required to verify your identity."
+                        android:textSize="14sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_marginBottom="16dp"/>
+
+                    <LinearLayout
+                        android:id="@+id/ll_trial_dates"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone"
+                        android:layout_marginBottom="16dp">
+
+                        <TextView
+                            android:id="@+id/tv_trial_start_date"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Started: -"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tv_trial_expiry_date"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Expires: -"
+                            android:textColor="?attr/colorError"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_trial_activation"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Experience Elite features for 3 days without any stake"
+                        android:visibility="gone"
+                        android:paddingVertical="12dp"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+<com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_cancel"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="match_parent"

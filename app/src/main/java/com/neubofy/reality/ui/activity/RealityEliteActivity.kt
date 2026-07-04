@@ -33,6 +33,19 @@ import java.net.URL
 
 class RealityEliteActivity : BaseActivity() {
 
+    private fun requireSignInAndScroll(): Boolean {
+        val isSignedIn = GoogleAuthManager.isSignedIn(this)
+        val userId = IdentityManager.getUserId(this)
+        if (!isSignedIn || userId == "Unknown") {
+            Toast.makeText(this, "Please sign in first to continue.", Toast.LENGTH_SHORT).show()
+            findViewById<android.widget.ScrollView>(R.id.scroll_view)?.smoothScrollTo(0, 0)
+            btnUnifiedSignin.requestFocus()
+            return false
+        }
+        return true
+    }
+
+
     private lateinit var btnUnifiedSignin: MaterialButton
     private lateinit var cardStep2: MaterialCardView
     private lateinit var btnPayUpi: MaterialButton
@@ -112,15 +125,15 @@ class RealityEliteActivity : BaseActivity() {
 
 
         btnRegister.setOnClickListener {
-            registerEliteMember()
+            if(requireSignInAndScroll()) registerEliteMember()
         }
 
         btnPayUpi.setOnClickListener {
-            showUpiPaymentDialog()
+            if(requireSignInAndScroll()) showUpiPaymentDialog()
         }
 
         btnVerify.setOnClickListener {
-            showVerifyDialog()
+            if(requireSignInAndScroll()) showVerifyDialog()
         }
 
         btnCancel.setOnClickListener {
