@@ -1,0 +1,22 @@
+name: Deploy AI Worker
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'AI/**' # Triggers deployment only when files in the AI folder are modified
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@latest
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'AI'
