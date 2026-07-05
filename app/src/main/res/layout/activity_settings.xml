@@ -237,7 +237,7 @@
             </com.google.android.material.card.MaterialCardView>
 
 
-            <!-- Reality Pro Verification -->
+            <!-- Reality Elite Member Verification -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_reality_pro_verification"
                 android:layout_width="match_parent"
@@ -276,7 +276,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Reality Pro Verification"
+                            android:text="Reality Elite Member Verification"
                             android:textColor="?attr/colorPrimary"
                                 android:fontFamily="monospace"
                             android:textSize="16sp"

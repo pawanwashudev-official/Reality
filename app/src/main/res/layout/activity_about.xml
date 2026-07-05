@@ -301,7 +301,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Help keep this app ad-free &amp; open source"
+                        android:text="Help keep this app ad-free &amp; source-available"
                         android:textColor="?attr/colorOnPrimaryContainer"
                         android:textSize="13sp"
                         android:alpha="0.8"
@@ -582,11 +582,11 @@
                 android:src="@drawable/app_logo"
                 android:layout_marginTop="32dp"/>
 
-            <!-- Open Source Section -->
+            <!-- Source-Available Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Open Source"
+                android:text="Source-Available"
                 android:textColor="?attr/colorPrimary"
                 android:textSize="11sp"
                 android:textAllCaps="true"

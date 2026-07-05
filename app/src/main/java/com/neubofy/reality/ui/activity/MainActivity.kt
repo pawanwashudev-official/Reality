@@ -179,7 +179,7 @@ class MainActivity : BaseActivity() {
 
         val isRealityProEnabled = featureManager.isRealityProEnabled()
 
-        // Reality Pro (Gamification + Google Workspace related navigation)
+        // Reality Elite Member (Gamification + Google Workspace related navigation)
         binding.cardReflection.visibility = if (isRealityProEnabled) android.view.View.VISIBLE else android.view.View.GONE
 
         // Reminder

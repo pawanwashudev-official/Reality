@@ -63,8 +63,8 @@ export default function PrivacyPolicy() {
               </section>
 
               <section>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">5. Open Source Transparency</h2>
-                <p>Reality is 100% open-source. Every line of code is publicly available on GitHub for audit. You can compile the application yourself to ensure no hidden data collection mechanisms exist.</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">5. Source-Available Transparency</h2>
+                <p>Reality is 99.9% source-available. Every line of code is publicly available on GitHub for audit. Building custom APKs for distribution and cloning the repository are strictly prohibited; the code is strictly for review only.</p>
               </section>
 
               <section>

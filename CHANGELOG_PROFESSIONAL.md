@@ -15,7 +15,7 @@ This document tracks all professional refinements made to the Reality super app.
 - **Refinement Guide:** Created `REFINEMENT_GUIDE.md` as a developer source of truth.
 
 ### 🛠️ Strategic Alignment
-- Established the "Paid APK / Open Source Code" hybrid model.
+- Established the "Paid APK / Source-Available Code" hybrid model.
 - Verified `strings.xml` consistency for core branding.
 - Documented monetization strategy in `REFINEMENT_GUIDE.md`.
 

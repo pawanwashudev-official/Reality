@@ -6,13 +6,13 @@ import com.neubofy.reality.ui.activity.RealityEliteActivity
 
 object RealityProManager {
     /**
-     * Checks if Reality Pro is enabled. If not, redirects the user to the
-     * Reality Pro activation page and finishes the calling activity.
+     * Checks if Reality Elite Member is enabled. If not, redirects the user to the
+     * Reality Elite Member activation page and finishes the calling activity.
      * @return true if access is allowed, false if blocked
      */
 
     /**
-     * Checks if Reality Pro is verified, ignoring whether it is currently toggled on.
+     * Checks if Reality Elite Member is verified, ignoring whether it is currently toggled on.
      * Used for features like Tapasya that only require verification but not the global toggle.
      */
     fun checkVerification(activity: Activity): Boolean {
