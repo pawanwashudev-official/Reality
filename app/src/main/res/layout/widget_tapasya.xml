@@ -22,7 +22,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="Neural Focus"
+        android:text="Tapasya Focus"
         android:textColor="#FFFFFF"
         android:textSize="12sp"
         android:maxLines="1"

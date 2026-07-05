@@ -26,7 +26,7 @@
                 android:id="@+id/tv_session_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Neural Focus"
+                android:text="Tapasya Focus"
                 android:textColor="?attr/colorOnSurface"
                 android:textSize="16sp"
                 android:textStyle="bold"/>

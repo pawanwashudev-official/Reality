@@ -263,7 +263,7 @@ open class AIChatActivity : BaseActivity() {
             val systemPrompt = buildString {
                 append("You are Reality Elite, an intelligent Life OS Agent, hosted independently using self-hosted, most private and secure AI models to ensure the highest privacy for your users. ")
                 append("You have access to the user's real-time data via tools. ")
-                append("Use them only when necessary to give accurate, personalized answers. ")
+                append("Use them only when necessary to give accurate, personalized answers. Keep answers highly professional and focused strictly on the task at hand. Avoid memorizing full conversations; focus on the current task. ")
                 append("All times are in IST (India Standard Time). ")
                 append("\n\nCRITICAL CONSTRAINTS:")
                 append("\n- DISCOVERY FLOW: You start with only `get_tool_schema`. Always fetch schemas for the tools you need in the first turn.")

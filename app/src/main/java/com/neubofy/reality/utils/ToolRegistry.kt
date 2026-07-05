@@ -101,7 +101,6 @@ object ToolRegistry {
         sb.append("\n1. Initially, you ONLY have the `get_tool_schema(tool_id)` tool.")
         sb.append("\n2. To use ANY tool above, MUST call `get_tool_schema` first.")
         sb.append("\n3. Once you get the schema, it becomes available in the NEXT turn.")
-        sb.append("\n4. CRITICAL: `web_search` is EXPENSIVE. Consolidate ALL information needs into ONE query per request.")
         
         return sb.toString()
     }

@@ -17,7 +17,7 @@
             android:id="@+id/et_session_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Neural Focus"
+            android:text="Tapasya Focus"
             android:inputType="textCapWords"/>
     </com.google.android.material.textfield.TextInputLayout>
 
