@@ -39,8 +39,6 @@ android {
 
         val workerUrl = localProperties.getProperty("WORKER_URL") ?: ""
         buildConfigField("String", "WORKER_URL", "\"$workerUrl\"")
-        val aiUrl = localProperties.getProperty("AI_URL") ?: ""
-        buildConfigField("String", "AI_URL", "\"$aiUrl\"")
 
         val buildTimestamp = System.currentTimeMillis()
         buildConfigField("Long", "BUILD_TIMESTAMP", "${buildTimestamp}L")
