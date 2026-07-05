@@ -450,6 +450,7 @@ object AgentTools {
                     val newAlarm = com.neubofy.reality.data.model.WakeupAlarm(
                         id = System.currentTimeMillis().toString(),
                         title = title,
+                        description = "",
                         hour = hour,
                         minute = minute,
                         isEnabled = true,
@@ -657,6 +658,38 @@ object AgentTools {
 
 
                 // ==================== UTILITY TOOLS ====================
+                "get_readme_content" -> {
+                    try {
+                        val url = java.net.URL("https://raw.githubusercontent.com/pawanwashudev-official/Reality/main/README.md")
+                        val content = url.readText()
+                        JSONObject().apply {
+                            put("success", true)
+                            put("content", content)
+                        }.toString()
+                    } catch (e: Exception) {
+                        JSONObject().apply {
+                            put("success", false)
+                            put("error", e.message)
+                        }.toString()
+                    }
+                }
+
+                "get_about_content" -> {
+                    try {
+                        val url = java.net.URL(com.neubofy.reality.ui.activity.AboutActivity.ABOUT_MD_URL)
+                        val content = url.readText()
+                        JSONObject().apply {
+                            put("success", true)
+                            put("content", content)
+                        }.toString()
+                    } catch (e: Exception) {
+                        JSONObject().apply {
+                            put("success", false)
+                            put("error", e.message)
+                        }.toString()
+                    }
+                }
+
                 "utility_time", "get_current_time" -> {
                     val format = args.optString("format", "full")
                     val istZone = ZoneId.of("Asia/Kolkata")

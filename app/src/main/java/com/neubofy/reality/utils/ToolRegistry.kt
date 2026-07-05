@@ -53,6 +53,8 @@ object ToolRegistry {
         ToolMeta("health", "Health", "Steps, calories, sleep with trends", defaultEnabled = false),
         // Utility Tools
         ToolMeta("utility_time", "Current Time", "Get current date/time in IST"),
+        ToolMeta("get_readme_content", "App README", "Get the content of the app's README.md file"),
+        ToolMeta("get_about_content", "App ABOUT", "Get the content of the app's ABOUT.md file"),
         // Power Tool
         ToolMeta("universal_query", "Smart Data Query", "Advanced cross-source querying with filters"),
         // Action Tools
@@ -259,6 +261,18 @@ object ToolRegistry {
                 )
             )
 
+            "get_readme_content" -> createSchema(
+                "get_readme_content",
+                "Get the full content of the Reality app's README.md file from GitHub. Use this to find general information, features, and setup instructions about the app.",
+                emptyMap()
+            )
+
+            "get_about_content" -> createSchema(
+                "get_about_content",
+                "Get the full content of the Reality app's ABOUT.md file from GitHub. Use this to find detailed information about the app's philosophy, developer, and mission.",
+                emptyMap()
+            )
+
             
             // --- Action Tools ---
             "action_add_task" -> createSchema(
@@ -421,6 +435,8 @@ object ToolRegistry {
             "health", "get_health_stats" -> "health"
             "universal_query", "query_data" -> "universal_query"
             "utility_time", "get_current_time" -> "utility_time"
+            "get_readme_content", "get_readme" -> "get_readme_content"
+            "get_about_content", "get_about" -> "get_about_content"
             "action_add_task", "add_task" -> "action_add_task"
             "action_complete_task", "complete_task" -> "action_complete_task"
             "action_add_reminder", "add_reminder" -> "action_add_reminder"
