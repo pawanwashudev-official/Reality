@@ -104,24 +104,36 @@ object ToolRegistry {
      */
     fun getDiscoveryPrompt(context: Context): String {
         val enabled = getEnabledTools(context)
-        if (enabled.isEmpty()) return "No data tools available."
+        if (enabled.isEmpty()) return "No tools available."
+
+        val sb = StringBuilder("AVAILABLE TOOLS BY CATEGORY:\n")
         
-        val sb = StringBuilder("AVAILABLE TOOLS (IDs):\n")
-        enabled.forEach { t ->
-            sb.append("- ${t.id}: ${t.shortDesc}\n")
+        val dataTools = enabled.filter { it.category == ToolCategory.DATA }
+        if (dataTools.isNotEmpty()) {
+            sb.append("\n[DATA TOOLS] - Use these to fetch user stats, history, and context:\n")
+            dataTools.forEach { t -> sb.append("- ${t.id}: ${t.shortDesc}\n") }
         }
+
+        val actionTools = enabled.filter { it.category == ToolCategory.ACTION }
+        if (actionTools.isNotEmpty()) {
+            sb.append("\n[ACTION TOOLS] - Use these to perform actions or modify user state:\n")
+            actionTools.forEach { t -> sb.append("- ${t.id}: ${t.shortDesc}\n") }
+        }
+
+        val utilityTools = enabled.filter { it.category == ToolCategory.UTILITY }
+        if (utilityTools.isNotEmpty()) {
+            sb.append("\n[UTILITY TOOLS] - Use these for general app information and utilities:\n")
+            utilityTools.forEach { t -> sb.append("- ${t.id}: ${t.shortDesc}\n") }
+        }
+
         sb.append("\nPROCEDURE:")
         sb.append("\n1. Initially, you ONLY have the `get_tool_schema(tool_id)` tool.")
-        sb.append("\n2. To use ANY tool above, MUST call `get_tool_schema` first.")
+        sb.append("\n2. Review the categories above. If a tool sounds like it can solve the user's request, call `get_tool_schema` with its ID to learn how to use it.")
         sb.append("\n3. Once you get the schema, it becomes available in the NEXT turn.")
         
         return sb.toString()
     }
 
-    /**
-     * Returns the full OpenAI-format schema for a specific tool.
-     * Only sent when AI explicitly requests it.
-     */
     fun getToolSchema(toolId: String): JSONObject? {
         return getTool(toolId)?.getSchema()
     }
