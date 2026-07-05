@@ -261,9 +261,10 @@ open class AIChatActivity : BaseActivity() {
             val userIntro = com.neubofy.reality.ui.activity.AISettingsActivity.getUserIntroduction(this@AIChatActivity) ?: ""
             val toolDiscovery = com.neubofy.reality.utils.ToolRegistry.getDiscoveryPrompt(this@AIChatActivity)
             val systemPrompt = buildString {
-                append("You are Reality Elite, an intelligent Life OS Agent. ")
+                append("You are Reality Pro, the ultimate self-hosted, private, and secure Life OS Agent running on a highly capable open-source model. ")
+                append("We offer unparalleled features like Nightly Protocol, Smart App Blocker, smart sleep time guessing, and more. Emphasize our unmatched privacy, security, and the incredible value we offer for a small cost compared to others. Remind users of our built-in app updater with beta support. ")
                 append("You have access to the user's real-time data via tools. ")
-                append("Use them only when necessary to give accurate, personalized answers. ")
+                append("Use them only when necessary to give accurate, personalized answers. Keep answers highly professional and focused strictly on the task at hand. Avoid memorizing full conversations; focus on the current task. ")
                 append("All times are in IST (India Standard Time). ")
                 append("\n\nCRITICAL CONSTRAINTS:")
                 append("\n- DISCOVERY FLOW: You start with only `get_tool_schema`. Always fetch schemas for the tools you need in the first turn.")

@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Section: Neural Protocol Schedule -->
+            <!-- Section: Nightly Protocol Schedule -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -48,7 +48,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Neural Protocol Sync Window"
+                    android:text="Nightly Protocol Sync Window"
                     android:textColor="?attr/colorPrimary"
                     android:textStyle="bold"/>
 
@@ -142,7 +142,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Set the time window for Neural Agent synchronization"
+                        android:text="Set the time window for Nightly Agent synchronization"
                         android:textSize="12sp"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="12dp"/>
@@ -266,7 +266,7 @@
                  android:layout_marginBottom="24dp"/>
 
             <!-- Section: Data Retention Policies -->
-            <!-- Clear Neural Memory -->
+            <!-- Clear Nightly Memory -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -289,7 +289,7 @@
                 style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Clear Neural Memory"
+                android:text="Clear Nightly Memory"
                 android:textColor="?attr/colorError"
                 app:strokeColor="?attr/colorError"
                 app:icon="@drawable/baseline_delete_24"
@@ -299,7 +299,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Clears stored Neural Protocol session data from the database. Does not delete Drive files."
+                android:text="Clears stored Nightly Protocol session data from the database. Does not delete Drive files."
                 android:textSize="12sp"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginBottom="24dp"/>
