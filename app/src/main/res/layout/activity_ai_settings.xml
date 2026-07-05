@@ -132,7 +132,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="We use an open-source gpt-oss-20b model running securely on Cloudflare Workers. We do not record your chats or send your data to 3rd parties. Reality Pro members get full, private access."
+                        android:text="We use our own hosted, privacy-preserving open-source AI model (gpt-oss-20b) running securely on Cloudflare Workers. Your data is strictly used for the requested AI task and is NEVER logged, recorded, or transmitted to any third-party cloud services."
                         android:textSize="14sp"
                         android:textColor="?attr/colorOnSurfaceVariant"/>
                 </LinearLayout>

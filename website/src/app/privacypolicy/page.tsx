@@ -41,7 +41,7 @@ export default function PrivacyPolicy() {
 
               <section>
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Google Account Integration</h2>
-                <p className="mb-4">Reality offers powerful integration with Google Workspace (Docs, Tasks, Calendar, Drive). To enable these features, you must manually authorize the app via OAuth (Bring Your Own Key).</p>
+                <p className="mb-4">Reality offers powerful integration with Google Workspace (Docs, Tasks, Calendar, Drive). To enable these features, you must manually authorize the app via OAuth.</p>
                 <ul className="list-disc pl-6 space-y-2">
                   <li><strong>Your Cloud, Your Rules:</strong> If you enable Google Drive backup or Google Docs integration, your data (daily reports, AI plans, journals) is uploaded directly to <strong>your personal Google Drive</strong>. We cannot access, view, or modify these files.</li>
                   <li><strong>Scopes Used:</strong> Reality requests access to your Google Profile (email and name) solely for displaying it within the app&apos;s profile page. It may request access to Drive, Tasks, and Calendar strictly to create and manage files/tasks/events on your behalf as part of the app&apos;s core functionality.</li>
@@ -50,7 +50,7 @@ export default function PrivacyPolicy() {
 
               <section>
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">3. Third-Party AI Services</h2>
-                <p className="mb-4">Reality uses a &quot;Bring Your Own Key&quot; (BYOK) model for AI features.</p>
+                <p className="mb-4">Reality uses a privacy-preserving hosted open-source AI model on Cloudflare Workers. Your data is never sold or used for training.</p>
                 <ul className="list-disc pl-6 space-y-2">
                   <li>When you use the AI Agent (for planning, reflections, etc.), prompts and relevant local context are sent directly from your device to the API provider you configure (e.g., OpenAI, Gemini, Groq, Claude, OpenRouter).</li>
                   <li>We do not proxy these requests. The privacy of your data during AI processing is governed by the respective AI provider you choose.</li>

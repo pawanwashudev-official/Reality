@@ -560,10 +560,29 @@ open class AIChatActivity : BaseActivity() {
                     
                     val resp = conn.inputStream.bufferedReader().use { it.readText() }
                     val responseJson = JSONObject(resp)
-                    val choice = responseJson.getJSONArray("choices").getJSONObject(0)
-                    val message = choice.getJSONObject("message")
-                    val content = message.optString("content", "")
-                    val toolCalls = message.optJSONArray("tool_calls")
+                    // Handle both direct "response" (common CF output) and "choices" (OpenAI format)
+                    var content = ""
+                    var toolCalls: org.json.JSONArray? = null
+                    val message = org.json.JSONObject()
+
+                    if (responseJson.has("response")) {
+                        content = responseJson.getString("response")
+                        message.put("role", "assistant")
+                        message.put("content", content)
+                    } else if (responseJson.has("choices")) {
+                        val choice = responseJson.getJSONArray("choices").getJSONObject(0)
+                        val msg = choice.getJSONObject("message")
+                        content = msg.optString("content", "")
+                        toolCalls = msg.optJSONArray("tool_calls")
+
+                        message.put("role", "assistant")
+                        message.put("content", content)
+                        if (toolCalls != null) {
+                            message.put("tool_calls", toolCalls)
+                        }
+                    } else {
+                        content = "Error parsing response: " + responseJson.toString()
+                    }
                     
                     // Add AI response to context for next turn
                     messagesJson.put(message)

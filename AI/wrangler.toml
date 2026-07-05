@@ -4,14 +4,8 @@ compatibility_date = "2026-07-04"
 
 [ai]
 binding = "AI"
-[observability.logs]
-enabled = true
-invocation_logs = true
-
-[observability.traces]
-enabled = true
 
 [[d1_databases]]
 binding = "DB"
 database_name = "reality-db"
-database_id = "" # Left blank intentionally; GitHub Action injects this safely
+database_id = ""

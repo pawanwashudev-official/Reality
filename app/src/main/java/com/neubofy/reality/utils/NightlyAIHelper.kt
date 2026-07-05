@@ -491,7 +491,7 @@ OUTPUT FORMAT:
                 })
             })
             put("temperature", 0.7)
-            put("max_tokens", 8192)
+            // Cloudflare has strict token limits, we rely on defaults
         }
         
         conn.outputStream.bufferedWriter().use { it.write(requestBody.toString()) }
@@ -504,11 +504,16 @@ OUTPUT FORMAT:
         val response = conn.inputStream.bufferedReader().readText()
         val jsonResponse = JSONObject(response)
         
-        return jsonResponse
-            .getJSONArray("choices")
-            .getJSONObject(0)
-            .getJSONObject("message")
-            .getString("content")
+        return if (jsonResponse.has("response")) {
+            jsonResponse.getString("response")
+        } else if (jsonResponse.has("choices")) {
+            jsonResponse.getJSONArray("choices")
+                .getJSONObject(0)
+                .getJSONObject("message")
+                .getString("content")
+        } else {
+            jsonResponse.toString() // Fallback
+        }
     }
     
     data class AnalysisResult(

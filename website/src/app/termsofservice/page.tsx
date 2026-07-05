@@ -30,7 +30,7 @@ export default function TermsOfService() {
 
               <section>
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">3. Description of Service</h2>
-                <p>Reality is a productivity and lifestyle operating system designed to help users manage their time, restrict access to distracting apps, and integrate with Google Workspace and third-party AI services via a &quot;Bring Your Own Key&quot; (BYOK) model. The App operates entirely on your local device.</p>
+                <p>Reality is a productivity and lifestyle operating system designed to help users manage their time, restrict access to distracting apps, and integrate with Google Workspace and our securely hosted open-source AI model. The App operates entirely on your local device.</p>
               </section>
 
               <section>
