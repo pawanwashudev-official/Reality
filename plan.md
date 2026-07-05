@@ -1,23 +1,19 @@
-1. **Update `UpdateManager.kt`:**
-   - Change `GITHUB_API_URL` to `https://api.github.com/repos/pawanwashudev-official/Reality/releases` to get all releases (needed to find pre-releases).
-   - Refactor `fetchGitHubRelease` to take a boolean `isBeta` parameter, and search the array of releases for the first one that matches the flag (i.e. `prerelease == true` for beta, `prerelease == false` for stable).
-   - Refactor `checkForUpdates(context, silent, isBeta, onNoUpdate)` so it passes `isBeta` through.
+1. **Update AI Settings Tools**:
+   - The user requested removing outdated options like `web_search` and `generate_image` from the AI tools list since the AI setup is strictly text-based now to optimize tokens.
+   - Removed `web_search` and `action_generate_image` from `ToolRegistry.kt`.
 
-2. **Update App Blocker in `AppBlockerService.kt`:**
-   - In `handleBlock`, add a call to `pressHome()` unconditionally before starting the `BlockActivity`. This pushes the blocked app to the background.
-   - In `checkUrl`, after deciding to block the website, add a call to `performGlobalAction(GLOBAL_ACTION_HOME)` before starting `BlockActivity`.
+2. **Improve AI Memory and Context Setup**:
+   - The user noted the AI can't do longer chats and wastes tokens. The goal is task completion, not remembering entire conversations.
+   - Updated `ConversationMemoryManager.kt` to reduce `MAX_RECENT_MESSAGES` (from 15 to 6), `MAX_TOKENS_ESTIMATE` (from 6000 to 1500), and `SUMMARIZE_THRESHOLD` (from 20 to 10).
+   - Updated the system prompt in `AIChatActivity.kt` to explicitly instruct the AI: "Your main goal in chats is to complete specific tasks, not to remember the whole conversation. Be concise."
 
-3. **Update `activity_about.xml`:**
-   - Duplicate `cardUpdate` to create `cardBetaUpdate` (Check for Beta Updates).
-   - Duplicate `cardUpdate` (or contact card) to create `cardRaiseIssue` (Report an Issue).
+3. **Promote App Features and Privacy**:
+   - Added promotion instructions to the system prompt in `AIChatActivity.kt`: "PROMOTION: Periodically promote the app features (unmatchable alarm, reminder, Nightly protocol, completely free smart app blocker which is best than other apps, but for very little amount we offer a lot, inbuilt app updater, beta versions, smart sleep time guessing) while emphasizing our self-hosted, private and secure AI usage."
+   - Modified the identity string: "You are Reality Elite, an intelligent Life OS Agent, hosted independently using self-hosted, most private and secure AI models to ensure the highest privacy for your users."
 
-4. **Update `AboutActivity.kt`:**
-   - Add click listener for `cardBetaUpdate` to call `UpdateManager.checkForUpdates(this, false, true, ...)`.
-   - Add click listener for `cardRaiseIssue` to show a custom MaterialAlertDialogBuilder with two EditTexts (Title, Description). On submit, encode the title and body, and start an Intent for `Intent.ACTION_VIEW` pointing to `https://github.com/pawanwashudev-official/Reality/issues/new?title=...&body=...`.
+4. **Rename Neural Protocol to Nightly Protocol in UI**:
+   - The user asked to rename "Neural Protocol" (and related terms like "Neural Planning", "Neural Report") to "Nightly Protocol" in the UI of the app.
+   - Performed bulk replacement in `app/src/main/res/layout/*.xml` files.
 
-5. **Update `ABOUT.md`:**
-   - Append a section under "Support & Issues" or update the page content explaining how to raise an issue in the repo, along with providing a direct link.
-
-6. **Pre Commit Verification:**
-   - Ensure `gradle assembleDebug` succeeds.
-   - Use `pre_commit_instructions` tool to verify.
+5. **Pre-commit Steps**:
+   - Run verification, tests, and formatting required by the system.

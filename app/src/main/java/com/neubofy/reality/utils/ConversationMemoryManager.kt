@@ -16,10 +16,10 @@ import org.json.JSONObject
 object ConversationMemoryManager {
 
     // Configuration
-    private const val MAX_RECENT_MESSAGES = 15  // Last N messages always included
-    private const val MAX_TOKENS_ESTIMATE = 6000  // Leave room for response
+    private const val MAX_RECENT_MESSAGES = 6  // Last N messages always included
+    private const val MAX_TOKENS_ESTIMATE = 1500  // Leave room for response
     private const val TOKENS_PER_CHAR_ESTIMATE = 0.25  // ~4 chars per token (English)
-    private const val SUMMARIZE_THRESHOLD = 20  // Summarize when history exceeds this
+    private const val SUMMARIZE_THRESHOLD = 10  // Summarize when history exceeds this
     
     // Prefs for persistent memory
     private const val PREFS_NAME = "ai_memory"
