@@ -215,7 +215,7 @@ class SettingsActivity : BaseActivity() {
                     .descriptionTextColor(android.R.color.white)
                     .cancelable(true)
                     .transparentTarget(false),
-                com.getkeepsafe.taptargetview.TapTarget.forView(featuresCard, "Neural Features", "Enable or disable Reality Pro, AI, Tapasya, and more.")
+                com.getkeepsafe.taptargetview.TapTarget.forView(featuresCard, "Nightly Features", "Enable or disable Reality Pro, AI, Tapasya, and more.")
                     .outerCircleColor(R.color.md_theme_primary)
                     .targetCircleColor(android.R.color.white)
                     .titleTextSize(20)

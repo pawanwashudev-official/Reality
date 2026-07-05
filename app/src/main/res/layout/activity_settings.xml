@@ -83,7 +83,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Neural Features"
+                            android:text="Nightly Features"
                             android:textColor="?attr/colorOnSurface"
                             android:textSize="16sp"
                             android:textStyle="bold"
@@ -870,7 +870,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="About Neural Engine"
+                            android:text="About Nightly Engine"
                             android:textColor="?attr/colorOnSurface"
                             android:textSize="16sp"
                             android:textStyle="bold"
@@ -963,7 +963,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Neural Protocol Settings -->
+            <!-- Nightly Protocol Settings -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_nightly_settings"
                 android:layout_width="match_parent"
@@ -1001,7 +1001,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Neural Protocol Settings"
+                            android:text="Nightly Protocol Settings"
                             android:textColor="?attr/colorOnSurface"
                             android:textSize="16sp"
                             android:textStyle="bold"
@@ -1084,7 +1084,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Neural Focus Settings -->
+            <!-- Tapasya Focus Settings -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_tapasya_settings"
                 android:layout_width="match_parent"
@@ -1122,7 +1122,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Neural Focus Settings"
+                            android:text="Tapasya Focus Settings"
                             android:textColor="?attr/colorPrimary"
                                 android:fontFamily="monospace"
                             android:textSize="16sp"

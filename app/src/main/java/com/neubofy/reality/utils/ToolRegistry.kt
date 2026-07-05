@@ -53,7 +53,6 @@ object ToolRegistry {
         ToolMeta("health", "Health", "Steps, calories, sleep with trends", defaultEnabled = false),
         // Utility Tools
         ToolMeta("utility_time", "Current Time", "Get current date/time in IST"),
-        ToolMeta("web_search", "Tavily Web Search", "Real-time internet search for facts and news"),
         // Power Tool
         ToolMeta("universal_query", "Smart Data Query", "Advanced cross-source querying with filters"),
         // Action Tools
@@ -66,7 +65,6 @@ object ToolRegistry {
         ToolMeta("action_add_missed_tapasya", "Add Missed Tapasya", "Record a missed Tapasya session (Reason required)"),
         ToolMeta("action_schedule_notification", "Schedule Notification", "Schedule a lightweight push notification"),
         // Creative Tools
-        ToolMeta("action_generate_image", "Generate Image", "Create AI-generated images from text prompts (FREE)")
     )
 
     // --- Settings Helpers ---
@@ -103,7 +101,6 @@ object ToolRegistry {
         sb.append("\n1. Initially, you ONLY have the `get_tool_schema(tool_id)` tool.")
         sb.append("\n2. To use ANY tool above, MUST call `get_tool_schema` first.")
         sb.append("\n3. Once you get the schema, it becomes available in the NEXT turn.")
-        sb.append("\n4. CRITICAL: `web_search` is EXPENSIVE. Consolidate ALL information needs into ONE query per request.")
         
         return sb.toString()
     }
@@ -262,15 +259,6 @@ object ToolRegistry {
                 )
             )
 
-            "web_search" -> createSchema(
-                "web_search",
-                "Search the internet for real-time information using Tavily. EXPENSIVE: Use only as a last resort. Consolidate research into ONE single turn. Never repeat searches.",
-                mapOf(
-                    "query" to "Required: One comprehensive search query",
-                    "max_results" to "Optional: Number of results (1-5, default: 3)"
-                ),
-                required = listOf("query")
-            )
             
             // --- Action Tools ---
             "action_add_task" -> createSchema(
@@ -344,16 +332,6 @@ object ToolRegistry {
                     "minutes_from_now" to "Required: Delay in minutes (min 1, max 1440)"
                 ),
                 required = listOf("title", "message", "minutes_from_now")
-            )
-            "action_generate_image" -> createSchema(
-                "action_generate_image",
-                "Generate an AI image from a text prompt. Uses free Pollinations.ai. Image is displayed in chat and saved to Pictures/Reality folder. Be creative and detailed with prompts for best results.",
-                mapOf(
-                    "prompt" to "Required: Detailed description of the image to generate (be specific about style, colors, mood)",
-                    "style" to "Optional: Art style (e.g., 'realistic', 'anime', 'watercolor', 'minimalist', 'cyberpunk')",
-                    "save_to_gallery" to "Optional: 'true' to save to phone gallery (default: true)"
-                ),
-                required = listOf("prompt")
             )
             else -> null
         }
@@ -443,7 +421,6 @@ object ToolRegistry {
             "health", "get_health_stats" -> "health"
             "universal_query", "query_data" -> "universal_query"
             "utility_time", "get_current_time" -> "utility_time"
-            "web_search", "perform_web_search" -> "web_search"
             "action_add_task", "add_task" -> "action_add_task"
             "action_complete_task", "complete_task" -> "action_complete_task"
             "action_add_reminder", "add_reminder" -> "action_add_reminder"
@@ -452,7 +429,6 @@ object ToolRegistry {
             "action_start_tapasya", "start_tapasya" -> "action_start_tapasya"
             "action_add_missed_tapasya", "add_missed_tapasya" -> "action_add_missed_tapasya"
             "action_schedule_notification", "schedule_notification" -> "action_schedule_notification"
-            "action_generate_image", "generate_image" -> "action_generate_image"
             else -> if (ALL_TOOLS.any { it.id == functionName }) functionName else null
         }
     }
