@@ -3,7 +3,7 @@ name: Deploy AI Worker
 on:
   push:
     branches:
-      - main
+      - " "
     paths:
       - 'AI/**' # Triggers deployment only when files in the AI folder are modified
 
