@@ -18,9 +18,9 @@
 
 > **"Stop managing your life. Start commanding it."**
 
-### 🌟 100% Open Source • No Ads • No Trackers • Privacy-Preserving Hosted AI
+### 🌟 99.9% Source-Available • No Ads • No Trackers • Privacy-Preserving Hosted AI
 
-<p>While advanced features (like Neural Protocol, Gamification, and Google Workspace Sync) require a yearly Reality Pro subscription to support ongoing maintenance, the app remains 100% open source. You can always build the APK yourself from the source code.</p>
+<p>While advanced features (like Neural Protocol, Gamification, and Google Workspace Sync) require a yearly Reality Elite Member subscription to support ongoing maintenance, the app remains 99.9% source-available. However, building custom APKs for distribution or cloning is strictly prohibited, and the codebase is strictly source-available for review only.</p>
 
 [**🌐 Official Website**](https://reality.neubofy.in) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
 
@@ -95,8 +95,8 @@ Reality does not use a basic chatbot. It features a fully Agentic System operati
 5. **Configure AI** - No API keys required, works privately out-of-the-box.
 
 ### Pro Feature Setup
-1. **Activate Reality Pro**: Go to Settings -> Reality Pro. Sign in with Google and submit a UPI payment (or use instant UPI activation on the same device).
-   * **License Terms & Strict Mode Synergy**: Your Reality Pro license is valid for the duration you purchase. If you uninstall the app or clear its data (bypassing Strict Mode), **your Pro access will be permanently lost and you will need to buy it again**. However, if you legitimately log out and log back in with the same Google Account, your access will be restored. This ensures we can maintain low subscription costs while heavily discouraging bypass attempts.
+1. **Activate Reality Elite Member**: Go to Settings -> Reality Elite Member. Sign in with Google and submit a UPI payment (or use instant UPI activation on the same device).
+   * **License Terms & Strict Mode Synergy**: Your Reality Elite Member license is valid for the duration you purchase. If you uninstall the app or clear its data (bypassing Strict Mode), **your Pro access will be permanently lost and you will need to buy it again**. However, if you legitimately log out and log back in with the same Google Account, your access will be restored. This ensures we can maintain low subscription costs while heavily discouraging bypass attempts.
 2. **Google Workspace Sync**: Go to your Profile page and sign in with Google to grant Calendar, Drive, and Tasks permissions. This allows Reality to log your plans and fetch tasks automatically.
 3. **AI Privacy**: Navigate to Settings -> AI Settings to customize your personal introduction and review data access permissions. No API keys are required.
 
@@ -161,7 +161,7 @@ Parsing:        GSON, JSoup, Markwon
 
 ## ⚖️ Legal & License
 
-This application is strictly open source for review purposes only. We do not allow anyone to clone this repository, modify the app, or build and distribute their own version. It is strictly prohibited to make your own version of the app or to claim ownership. App stores or individuals are allowed to distribute the exact pre-compiled APK obtained directly from our GitHub release page. Our AI crawlers continuously scan the internet. If unauthorized distribution or cloning is detected, strict legal action will be taken.
+This application is strictly source-available for review purposes only. We do not allow anyone to clone this repository, modify the app, or build and distribute their own version. It is strictly prohibited to make your own version of the app or to claim ownership. App stores or individuals are allowed to distribute the exact pre-compiled APK obtained directly from our GitHub release page. Our AI crawlers continuously scan the internet. If unauthorized distribution or cloning is detected, strict legal action will be taken.
 
 - **Developer**: Pawan Washudev (Neubofy)
 - **Status**: Active Development

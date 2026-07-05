@@ -34,12 +34,12 @@ class SupportUsActivity : BaseActivity() {
 
 As an independent developer, I realized that modern technology often consumes our time rather than serving it. Reality is my response—a commitment to technical excellence, absolute privacy, and uncompromised efficacy. Every 'Elite' feature we build is designed to help you reclaim your most valuable asset: your attention.
 
-The journey from a student's vision to a world-class focus tool has been fueled by the incredible support of this community. Reality remains 100% open-source and ad-free, ensuring that digital mindfulness is accessible to everyone without compromise.
+The journey from a student's vision to a world-class focus tool has been fueled by the incredible support of this community. Reality remains 100% source-available and ad-free, ensuring that digital mindfulness is accessible to everyone without compromise.
 
 Your support fuels:
 • High-performance development of advanced focus tools.
 • Sustaining a privacy-first infrastructure with zero telemetry.
-• Empowering the next generation of open-source engineering.
+• Empowering the next generation of source-available engineering.
 
 Thank you for choosing to live in Reality. Together, we are redefining our relationship with technology.
 

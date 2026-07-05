@@ -215,7 +215,7 @@ class SettingsActivity : BaseActivity() {
                     .descriptionTextColor(android.R.color.white)
                     .cancelable(true)
                     .transparentTarget(false),
-                com.getkeepsafe.taptargetview.TapTarget.forView(featuresCard, "Neural Features", "Enable or disable Reality Pro, AI, Tapasya, and more.")
+                com.getkeepsafe.taptargetview.TapTarget.forView(featuresCard, "Neural Features", "Enable or disable Reality Elite Member, AI, Tapasya, and more.")
                     .outerCircleColor(R.color.md_theme_primary)
                     .targetCircleColor(android.R.color.white)
                     .titleTextSize(20)
@@ -355,7 +355,7 @@ class SettingsActivity : BaseActivity() {
         val visibilityRealityPro = if (isRealityProEnabled) android.view.View.VISIBLE else android.view.View.GONE
 
 
-        // Reality Pro Verification Card Logic
+        // Reality Elite Member Verification Card Logic
         val verificationCard = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_reality_pro_verification)
         if (verificationCard != null) {
             verificationCard.visibility = android.view.View.VISIBLE

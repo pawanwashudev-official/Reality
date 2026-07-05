@@ -1,12 +1,12 @@
 # Reality App - Comprehensive Analysis & Refinement Roadmap
 
-This document serves as the "source of truth" for any coding agent or developer working on Reality. It outlines the current state, identifies critical areas for improvement, and defines the vision for turning Reality into a professional-grade, open-source super app.
+This document serves as the "source of truth" for any coding agent or developer working on Reality. It outlines the current state, identifies critical areas for improvement, and defines the vision for turning Reality into a professional-grade, source-available super app.
 
 ## 1. Project Vision & Monetization Strategy
 - **Core Identity:** Reality is a comprehensive productivity and "super app" designed for deep focus (Tapasya), nightly reflection, and health monitoring.
-- **Open Source Commitment:** The entire repository and source code will remain 100% public.
+- **Source-Available Commitment:** The entire repository and source code will remain 99.9% public.
 - **Monetization:** To sustain development, we provide a "ready-to-use" optimized APK for a yearly subscription.
-- **User Promise:** Paid APK users receive a highly optimized, complete, and significantly improved UI compared to the base open-source builds.
+- **User Promise:** Paid APK users receive a highly optimized, complete, and significantly improved UI compared to the base source-available builds.
 
 ## 2. Branding & Official Information
 - **Official Website:** [reality.neubofy.in](https://reality.neubofy.in)

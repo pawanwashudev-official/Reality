@@ -34,7 +34,7 @@
         android:alpha="0.9"
         android:gravity="center"
         android:lineSpacingExtra="4dp"
-        android:text="Reality is designed with a zero-compromise approach to your privacy and security. The app is 99.9% open source, offline for basic features, and stores everything securely on your device."
+        android:text="Reality is designed with a zero-compromise approach to your privacy and security. The app is 99.9% source-available, offline for basic features, and stores everything securely on your device."
         android:textColor="@color/md_theme_onBackground"
         android:textSize="16sp" />
 
@@ -110,7 +110,7 @@
         android:gravity="center"
         android:textSize="12sp"
         android:textColor="@color/md_theme_onSurfaceVariant"
-        android:text="Disclaimer: Reality requires several system permissions to enforce focus modes. Since 99.9% of our code is open source, you can verify that no personal data is collected or sent to remote servers." />
+        android:text="Disclaimer: Reality requires several system permissions to enforce focus modes. Since 99.9% of our code is source-available, you can verify that no personal data is collected or sent to remote servers." />
 
     <Button
         android:id="@+id/btnGetStarted"

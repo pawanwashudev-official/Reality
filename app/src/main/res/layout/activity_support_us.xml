@@ -62,7 +62,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Help keep Reality free, open-source &amp; ad-free"
+                    android:text="Help keep Reality free, source-available &amp; ad-free"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     android:textSize="14sp"
                     android:gravity="center"

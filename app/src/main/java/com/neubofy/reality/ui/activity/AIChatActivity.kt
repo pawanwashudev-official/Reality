@@ -261,7 +261,7 @@ open class AIChatActivity : BaseActivity() {
             val userIntro = com.neubofy.reality.ui.activity.AISettingsActivity.getUserIntroduction(this@AIChatActivity) ?: ""
             val toolDiscovery = com.neubofy.reality.utils.ToolRegistry.getDiscoveryPrompt(this@AIChatActivity)
             val systemPrompt = buildString {
-                append("You are Reality Pro, an intelligent Life OS Agent. ")
+                append("You are Reality Elite, an intelligent Life OS Agent. ")
                 append("You have access to the user's real-time data via tools. ")
                 append("Use them only when necessary to give accurate, personalized answers. ")
                 append("All times are in IST (India Standard Time). ")
