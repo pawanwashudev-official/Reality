@@ -296,7 +296,8 @@ open class AIChatActivity : BaseActivity() {
                     put("tool_choice", "auto")
                 }
                 
-                val apiUrl = com.neubofy.reality.BuildConfig.AI_URL
+                val apiUrl = com.neubofy.reality.BuildConfig.AI_URL.removeSuffix("/")
+                if (apiUrl.isBlank()) throw Exception("AI endpoint is not configured (AI_URL is missing in build).")
                 
                 // Execute Request
                 val conn = java.net.URL(apiUrl).openConnection() as java.net.HttpURLConnection

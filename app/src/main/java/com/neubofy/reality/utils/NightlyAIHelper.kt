@@ -471,7 +471,9 @@ OUTPUT FORMAT:
 
 
         private fun callAIWorker(context: Context, prompt: String): String {
-        val apiUrl = com.neubofy.reality.BuildConfig.AI_URL
+                val apiUrl = com.neubofy.reality.BuildConfig.AI_URL.removeSuffix("/")
+        if (apiUrl.isBlank()) throw Exception("AI endpoint is not configured (AI_URL is missing in build).")
+
         val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
         val password = com.neubofy.reality.utils.IdentityManager.getBackupPassword(context)
 
