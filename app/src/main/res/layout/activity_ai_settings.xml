@@ -384,8 +384,6 @@
 
 
 
-            <!-- ==================== ADD MODEL FORM (Hidden by default) ==================== -->
-
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

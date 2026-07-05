@@ -39,12 +39,6 @@ object NightlyAIHelper {
         
         TerminalLogger.log("Nightly AI: Generating questions with model: $modelString")
         
-        
-
-
-
-
-        
         val prompt = buildPrompt(context, userIntroduction, daySummary, healthData, previousReport)
         TerminalLogger.log("Nightly AI: Prompt built, calling AI Worker...")
 
@@ -185,12 +179,6 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         
         TerminalLogger.log("Nightly AI: Analyzing plan with model: $modelString")
         
-        
-
-
-
-
-        
         // Load custom or default prompt
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_plan_prompt", null)
@@ -229,12 +217,6 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
     ): String = withContext(Dispatchers.IO) {
         
         TerminalLogger.log("Nightly AI: Normalizing tasks with model: $modelString")
-        
-        
-
-
-
-
         
         // Build list context (same logic as plan extraction)
         val listsContext = if (taskListConfigs.isNotEmpty()) {
@@ -536,12 +518,6 @@ OUTPUT FORMAT:
         
         TerminalLogger.log("Nightly AI: Analyzing reflection with model: $modelString")
         
-
-            ?: throw IllegalStateException("Invalid model configuration")
-        
-
-
-        
         val prompt = buildAnalysisPrompt(context, userIntroduction, diaryContent)
         
         val response = callAIWorker(context, prompt)
@@ -650,12 +626,6 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         
         TerminalLogger.log("Nightly AI: Generating plan suggestions...")
         
-
-            ?: throw IllegalStateException("Invalid model configuration")
-        
-
-
-        
         val prompt = buildPlanPrompt(context, userIntro, summary)
         
         val response = callAIWorker(context, prompt)
@@ -719,12 +689,6 @@ Include exactly the questions asked and the user's answers extracted strictly fr
     ): String = withContext(Dispatchers.IO) {
         
         TerminalLogger.log("Nightly AI: Generating report summary...")
-        
-
-            ?: throw IllegalStateException("Invalid model configuration")
-        
-
-
         
         // Load custom or default prompt
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
