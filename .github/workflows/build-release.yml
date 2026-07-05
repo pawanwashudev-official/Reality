@@ -42,6 +42,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           WORKER_URL: ${{ secrets.WORKER_URL }}
+          AI_URL: ${{ secrets.AI_URL }}
         run: |
           touch local.properties
           echo "KEYSTORE_FILE=keystore.jks" >> local.properties
@@ -49,6 +50,7 @@ jobs:
           echo "KEY_ALIAS=$KEY_ALIAS" >> local.properties
           echo "KEY_PASSWORD=$KEY_PASSWORD" >> local.properties
           echo "WORKER_URL=$WORKER_URL" >> local.properties
+          echo "AI_URL=$AI_URL" >> local.properties
 
       - name: Make gradlew executable
         run: chmod +x gradlew
