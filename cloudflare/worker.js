@@ -185,12 +185,12 @@ export default {
           const password = url.searchParams.get("password");
 
           if (!userId || !password) {
-            return new Response("INVALID", { headers: { "Access-Control-Allow-Origin": "*" } });
+            return new Response(JSON.stringify({ status: "INVALID" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           }
 
           const isAuthorized = await this.verifyAuth(userId, password, env.APP_SECRET_PEPPER);
           if (!isAuthorized) {
-            return new Response("UNAUTHORIZED", { status: 401, headers: { "Access-Control-Allow-Origin": "*" } });
+            return new Response(JSON.stringify({ status: "UNAUTHORIZED" }), { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           }
 
           const row = await env.DB.prepare(
@@ -198,7 +198,7 @@ export default {
           ).bind(userId).first();
 
           if (!row) {
-            return new Response("NOT_FOUND", { headers: { "Access-Control-Allow-Origin": "*" } });
+            return new Response(JSON.stringify({ status: "NOT_FOUND" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           }
 
           if (row.userId === userId && row.status === "V") {
@@ -226,9 +226,9 @@ export default {
             // fallback
             return new Response(JSON.stringify({ status: "SUCCESS" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           } else if (row.userId === userId && row.status === "P") {
-            return new Response("PENDING", { headers: { "Access-Control-Allow-Origin": "*" } });
+            return new Response(JSON.stringify({ status: "PENDING" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           } else {
-            return new Response("INVALID", { headers: { "Access-Control-Allow-Origin": "*" } });
+            return new Response(JSON.stringify({ status: "INVALID" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           }
         }
 
