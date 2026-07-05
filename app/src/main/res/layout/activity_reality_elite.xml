@@ -83,7 +83,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Reality is 99.9% source-available and ad-free. Premium features like Neural Protocol, Gamification, and Google Workspace Sync require ongoing serverless maintenance, API costs, and massive developer time. A yearly subscription sustains the project reliably, unlike inconsistent crowdfunding."
+                        android:text="Reality is 99.9% source-available and ad-free. Premium features like Nightly Protocol, Gamification, and Google Workspace Sync require ongoing serverless maintenance, API costs, and massive developer time. A yearly subscription sustains the project reliably, unlike inconsistent crowdfunding."
                         android:textSize="13sp"
                         android:lineSpacingMultiplier="1.2"
                         android:textColor="?attr/colorOnSurfaceVariant"
