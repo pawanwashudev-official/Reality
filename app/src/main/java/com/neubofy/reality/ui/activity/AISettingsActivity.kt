@@ -99,7 +99,7 @@ class AISettingsActivity : BaseActivity() {
         }
 
         // Tool Toggles (Excluding Health which is handled specially)
-        val allTools = ToolRegistry.ALL_TOOLS.filter { it.id != "health" }
+        val allTools = ToolRegistry.ALL_TOOLS.filter { it.id != "health" }.sortedBy { it.category.name }
         toolToggleAdapter = ToolToggleAdapter(allTools) { toolId, isEnabled ->
             ToolRegistry.setToolEnabled(this, toolId, isEnabled)
         }
