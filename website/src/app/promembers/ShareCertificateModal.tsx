@@ -121,7 +121,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
         const file = new File([blob], 'reality-certificate.png', { type: 'image/png' });
         await navigator.share({
           title: 'My Reality App Certificate',
-          text: isPro ? 'I am a Reality Pro member!' : 'I use the Reality app and it is really good!',
+          text: isPro ? 'I am a Reality Elite Member!' : 'I use the Reality app and it is really good!',
           files: [file]
         });
       } else {
@@ -169,7 +169,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
                   Thank you for supporting us and motivating us to build such an incredible product. Because normal crowdfunding can&apos;t sustain us and support enough to maintain everything for free, we added a small Pro barrier.
                 </p>
                 <p className="text-gray-300 text-sm leading-relaxed mb-4">
-                  With Reality Pro, you get access to advanced features like true agentic AI, unlimited local-first sleep tracking, seamless cloud backups, and much more—all while keeping the core app 99.9% open-source and deeply private.
+                  With Reality Elite Member, you get access to advanced features like true agentic AI, unlimited local-first sleep tracking, seamless cloud backups, and much more—all while keeping the core app 99.9% source-available and deeply private.
                 </p>
                 <div className="mt-6 pt-6 border-t border-gray-800 flex items-center justify-between">
                    <div>
@@ -194,7 +194,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
 
           {step === 0 && (
             <div className="text-center py-8">
-              <h3 className="text-2xl font-bold text-white mb-6">Are you a Reality Pro member?</h3>
+              <h3 className="text-2xl font-bold text-white mb-6">Are you a Reality Elite Member?</h3>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
                   onClick={() => handleProChoice(true)}

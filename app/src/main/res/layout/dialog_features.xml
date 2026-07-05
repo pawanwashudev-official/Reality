@@ -20,7 +20,7 @@
             android:textStyle="bold"
             android:layout_marginBottom="24dp" />
 
-        <!-- Reality Pro Toggle -->
+        <!-- Reality Elite Member Toggle -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -37,7 +37,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Reality Pro"
+                    android:text="Reality Elite Member"
                     android:textColor="?attr/colorOnSurface"
                     android:textSize="16sp"
                     android:textStyle="bold" />

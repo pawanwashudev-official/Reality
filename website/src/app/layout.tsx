@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Reality - Best Focus & Discipline App | Productivity OS & App Blocker",
-  description: "Stop managing your life. Start commanding it with Reality, the best focus and discipline app. A highly private, secure, and modern productivity OS with cross-platform deep support. Maintain a better disciplined lifestyle with our powerful app blocker and AI features. 99.9% Open Source.",
+  description: "Stop managing your life. Start commanding it with Reality, the best focus and discipline app. A highly private, secure, and modern productivity OS with cross-platform deep support. Maintain a better disciplined lifestyle with our powerful app blocker and AI features. 99.9% Source-Available.",
   keywords: ["best focus and discipline app", "productivity app", "app blocker", "better disciplined lifestyle", "modern features", "cross-platform deep support", "highly private and secure", "cheap subscription"],
 };
 

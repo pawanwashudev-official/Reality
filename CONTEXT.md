@@ -1,6 +1,6 @@
 # Reality Super App: Deep Context & Refinement Guide
 
-This document provides a comprehensive overview of the Reality app to ensure any AI agent or developer can maintain 100% context and align with the professional, open-source-first vision.
+This document provides a comprehensive overview of the Reality app to ensure any AI agent or developer can maintain 100% context and align with the professional, source-available-first vision.
 
 ---
 
@@ -50,7 +50,7 @@ Update `strings.xml` in all languages:
 
 ### Website (`/website` directory)
 - Current: Next.js + Tailwind.
-- Action: Update `package.json` metadata, update the landing page to reflect the "Pro Optimized APK" vs "Open Source Source Code" model.
+- Action: Update `package.json` metadata, update the landing page to reflect the "Pro Optimized APK" vs "Source-Available Source Code" model.
 
 ---
 
