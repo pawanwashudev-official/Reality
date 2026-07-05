@@ -35,10 +35,7 @@ class FeatureManager(private val context: Context) {
     fun setRealityProStartTime(timeMs: Long) {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
         val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
-        val currentStart = prefs.getLong("feature_reality_pro_start_time_$userId", 0L)
-        if (currentStart == 0L) {
-            prefs.edit().putLong("feature_reality_pro_start_time_$userId", timeMs).apply()
-        }
+        prefs.edit().putLong("feature_reality_pro_start_time_$userId", timeMs).apply()
     }
 
     fun getRealityProEndTime(): Long {

@@ -571,11 +571,16 @@ class RealityEliteActivity : BaseActivity() {
                                 val expiryDate = jsonResponse.optString("expiryDate", "")
                                 var durationMonths = 12
 
+                                var expiryUnix = 0L
                                 if (expiryDate.isNotEmpty()) {
                                     val parts = expiryDate.split("-")
-                                    if (parts.size == 4) {
+                                    if (parts.size == 2) {
+                                        expiryUnix = parts[0].toLongOrNull() ?: 0L
+                                        durationMonths = parts[1].toIntOrNull() ?: 12
+                                    } else if (parts.size == 4) {
                                         val days = parts[3].toIntOrNull() ?: 365
                                         durationMonths = Math.max(1, Math.round(days / 30.416).toInt())
+                                        // No expiryUnix for legacy, so startTime will default to netTime
                                     }
                                 }
 
@@ -583,8 +588,13 @@ class RealityEliteActivity : BaseActivity() {
                                     val netTime = com.neubofy.reality.utils.InternetTime.getTime()
                                     withContext(Dispatchers.Main) {
                                         val featureManager = FeatureManager(this@RealityEliteActivity)
-                                        featureManager.setRealityProStartTime(netTime)
-                                        featureManager.setRealityProVerified(true, netTime, durationMonths)
+                                        val startTime = if (expiryUnix > 0) {
+                                            expiryUnix - ((365L / 12) * durationMonths.toLong() * 24L * 60L * 60L * 1000L)
+                                        } else {
+                                            netTime
+                                        }
+                                        featureManager.setRealityProStartTime(startTime)
+                                        featureManager.setRealityProVerified(true, startTime, durationMonths)
                                         Toast.makeText(this@RealityEliteActivity, "Active Reality Elite Member License Found and Restored!", Toast.LENGTH_LONG).show()
 
                                         val intent = Intent(this@RealityEliteActivity, MainActivity::class.java)
@@ -595,14 +605,14 @@ class RealityEliteActivity : BaseActivity() {
                                 }
                             } else if (status.equals("EXPIRED", ignoreCase = true)) {
                                 if (isSilentCheck) {
-                                    btnRegister.text = "Registered"
+                                    handleSilentCheckFallback(userId)
                                 } else {
                                     Toast.makeText(this@RealityEliteActivity, "Your subscription has expired.", Toast.LENGTH_LONG).show()
                                     resetVerifyButton()
                                 }
                             } else {
                                 if (isSilentCheck) {
-                                    btnRegister.text = "Registered"
+                                    handleSilentCheckFallback(userId)
                                 } else {
                                     Toast.makeText(this@RealityEliteActivity, "We haven't verified your payment yet. Please check back later.", Toast.LENGTH_LONG).show()
                                     resetVerifyButton()
@@ -610,7 +620,7 @@ class RealityEliteActivity : BaseActivity() {
                             }
                         } catch (e: Exception) {
                             if (isSilentCheck) {
-                                btnRegister.text = "Registered"
+                                handleSilentCheckFallback(userId)
                             } else {
                                 Toast.makeText(this@RealityEliteActivity, "Invalid server response.", Toast.LENGTH_LONG).show()
                                 resetVerifyButton()
@@ -620,7 +630,7 @@ class RealityEliteActivity : BaseActivity() {
                 } else {
                     withContext(Dispatchers.Main) {
                         if (isSilentCheck) {
-                            btnRegister.text = "Registered"
+                            handleSilentCheckFallback(userId)
                         } else {
                             Toast.makeText(this@RealityEliteActivity, "Server Error: $responseCode", Toast.LENGTH_LONG).show()
                             resetVerifyButton()
@@ -630,7 +640,7 @@ class RealityEliteActivity : BaseActivity() {
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     if (isSilentCheck) {
-                        btnRegister.text = "Registered"
+                        handleSilentCheckFallback(userId)
                     } else {
                         Toast.makeText(this@RealityEliteActivity, "Network Error: ${e.message}", Toast.LENGTH_LONG).show()
                         resetVerifyButton()
@@ -638,6 +648,20 @@ class RealityEliteActivity : BaseActivity() {
                 }
             }
         }
+    }
+
+    private fun handleSilentCheckFallback(userId: String) {
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
+        prefs.edit().remove("pro_saved_verification_code_for_$userId").apply()
+
+        btnRegister.text = "Registered"
+        btnRegister.isEnabled = false
+        cardStep2.alpha = 1.0f
+        btnPayUpi.isEnabled = true
+        updateUpiButtonText()
+
+        cardStep3.alpha = 0.5f
+        btnVerify.isEnabled = false
     }
 
     private fun resetVerifyButton() {
