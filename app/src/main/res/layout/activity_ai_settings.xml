@@ -280,28 +280,18 @@
                             android:textColor="?attr/colorPrimary"
         android:fontFamily="monospace"/>
 
-                        <ImageView
-                            android:id="@+id/btn_edit_introduction"
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:padding="6dp"
-                            android:src="@drawable/baseline_edit_24"
-                            app:tint="?attr/colorPrimary"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="Edit"
-                            android:visibility="gone"/>
+
                     </LinearLayout>
 
                     <!-- Saved personalization display -->
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/card_saved_introduction"
+                                        <com.google.android.material.card.MaterialCardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         app:cardCornerRadius="8dp"
                         app:cardBackgroundColor="@android:color/transparent"
-        app:cardElevation="0dp"
+                        app:cardElevation="0dp"
                         app:strokeWidth="0dp"
-                        android:visibility="gone">
+                        android:layout_marginBottom="16dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -310,12 +300,21 @@
                             android:padding="12dp">
 
                             <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Personalization (About You)"
+                                android:textSize="12sp"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:layout_marginBottom="8dp"/>
+
+                            <TextView
                                 android:id="@+id/tv_saved_introduction"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:textSize="13sp"
                                 android:textColor="?attr/colorPrimary"
-        android:fontFamily="monospace"/>
+                                android:text="Not set. Tell AI about yourself (goals, challenges, studies)."
+                                android:fontFamily="monospace"/>
 
                             <LinearLayout
                                 android:layout_width="match_parent"
@@ -325,119 +324,73 @@
                                 android:layout_marginTop="8dp">
 
                                 <ImageView
-                                    android:id="@+id/btn_delete_introduction"
+                                    android:id="@+id/btn_edit_introduction"
                                     android:layout_width="32dp"
                                     android:layout_height="32dp"
                                     android:padding="4dp"
-                                    android:src="@drawable/baseline_delete_24"
-                                    app:tint="?attr/colorError"
+                                    android:src="@drawable/baseline_edit_24"
+                                    app:tint="?attr/colorPrimary"
                                     android:background="?attr/selectableItemBackgroundBorderless"
-                                    android:contentDescription="Delete"/>
+                                    android:contentDescription="Edit"/>
                             </LinearLayout>
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
 
-                    <!-- Edit form (hidden when saved) -->
-                    <LinearLayout
-                        android:id="@+id/layout_introduction_form"
+                    <com.google.android.material.card.MaterialCardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:visibility="visible">
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Tell AI about yourself"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/et_user_introduction"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="textMultiLine"
-                                android:minLines="3"
-                                android:maxLines="5"
-                                android:gravity="top"/>
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Your goals, studies, challenges. Used in system message."
-                            android:textSize="11sp"
-                            android:textColor="?attr/colorOnSurfaceVariant"
-                            android:layout_marginTop="4dp"/>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_save_introduction"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Save Personalization"
-                            android:textAllCaps="false"
-                            app:cornerRadius="8dp"
-                            android:layout_marginTop="8dp"/>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:hint="System Prompt"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/et_system_prompt"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="textMultiLine"
-                                android:minLines="5"
-                                android:maxLines="10"
-                                android:gravity="top"/>
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Modify the AI system prompt to customize how Reality behaves. Warning: advanced users only."
-                            android:textSize="11sp"
-                            android:textColor="?attr/colorOnSurfaceVariant"
-                            android:layout_marginTop="4dp"/>
+                        app:cardCornerRadius="8dp"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="0dp"
+                        android:layout_marginBottom="16dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:layout_marginTop="8dp"
-                            android:weightSum="2">
+                            android:orientation="vertical"
+                            android:padding="12dp">
 
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btn_reset_system_prompt"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="0dp"
+                            <TextView
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:layout_marginEnd="4dp"
-                                android:text="Reset"
-                                android:textAllCaps="false"
-                                app:cornerRadius="8dp"/>
+                                android:text="System Prompt"
+                                android:textSize="12sp"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:layout_marginBottom="8dp"/>
 
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btn_save_system_prompt"
-                                style="@style/Widget.Material3.Button.TonalButton"
-                                android:layout_width="0dp"
+                            <TextView
+                                android:id="@+id/tv_saved_system_prompt"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:layout_marginStart="4dp"
-                                android:text="Save Prompt"
-                                android:textAllCaps="false"
-                                app:cornerRadius="8dp"/>
+                                android:textSize="13sp"
+                                android:textColor="?attr/colorPrimary"
+                                android:maxLines="3"
+                                android:ellipsize="end"
+                                android:fontFamily="monospace"/>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="end"
+                                android:layout_marginTop="8dp">
+
+                                <ImageView
+                                    android:id="@+id/btn_edit_system_prompt"
+                                    android:layout_width="32dp"
+                                    android:layout_height="32dp"
+                                    android:padding="4dp"
+                                    android:src="@drawable/baseline_edit_24"
+                                    app:tint="?attr/colorPrimary"
+                                    android:background="?attr/selectableItemBackgroundBorderless"
+                                    android:contentDescription="Edit"/>
+                            </LinearLayout>
                         </LinearLayout>
-                    </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
-
 
             <!-- ==================== ADD MODEL FORM (Hidden by default) ==================== -->
 

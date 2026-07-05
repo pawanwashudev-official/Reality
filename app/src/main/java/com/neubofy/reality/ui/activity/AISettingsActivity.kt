@@ -24,7 +24,6 @@ class AISettingsActivity : BaseActivity() {
         setContentView(binding.root)
 
         setupUI()
-        loadData()
     }
 
     private fun setupUI() {
@@ -34,56 +33,34 @@ class AISettingsActivity : BaseActivity() {
         supportActionBar?.title = "AI Model Settings"
         toolbar.setNavigationOnClickListener { finish() }
 
-        // User Introduction Save
-        binding.btnSaveIntroduction.setOnClickListener {
-            val intro = binding.etUserIntroduction.text.toString().trim()
-            if (intro.isEmpty()) {
-                Toast.makeText(this, "Please enter something about yourself", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
-            prefs.edit().putString("user_introduction", intro).apply()
+                // Setup UI for User Introduction and System Prompt
+        updateTextDisplays()
 
-            binding.layoutIntroductionForm.visibility = android.view.View.GONE
-            binding.cardSavedIntroduction.visibility = android.view.View.VISIBLE
-            binding.btnEditIntroduction.visibility = android.view.View.VISIBLE
-            binding.tvSavedIntroduction.text = intro
-            Toast.makeText(this, "Introduction saved!", Toast.LENGTH_SHORT).show()
-        }
-        
         binding.btnEditIntroduction.setOnClickListener {
-            binding.cardSavedIntroduction.visibility = android.view.View.GONE
-            binding.layoutIntroductionForm.visibility = android.view.View.VISIBLE
-            binding.btnEditIntroduction.visibility = android.view.View.GONE
+            val currentIntro = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
+                .getString("user_introduction", "") ?: ""
+            showEditDialog(
+                title = "Personalization",
+                initialText = currentIntro,
+                hint = "Tell AI about yourself (goals, challenges, studies)",
+                isSystemPrompt = false
+            )
+        }
+
+        binding.btnEditSystemPrompt.setOnClickListener {
+            val currentPrompt = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
+                .getString("custom_system_prompt", DEFAULT_SYSTEM_PROMPT) ?: DEFAULT_SYSTEM_PROMPT
+            showEditDialog(
+                title = "System Prompt",
+                initialText = currentPrompt,
+                hint = "Modify the AI system prompt",
+                isSystemPrompt = true
+            )
         }
 
         val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
 
-        // System Prompt Setup
-        val savedPrompt = prefs.getString("custom_system_prompt", "")
-        if (savedPrompt.isNullOrEmpty()) {
-            binding.etSystemPrompt.setText(DEFAULT_SYSTEM_PROMPT)
-        } else {
-            binding.etSystemPrompt.setText(savedPrompt)
-        }
-
-        binding.btnSaveSystemPrompt.setOnClickListener {
-            val promptText = binding.etSystemPrompt.text.toString().trim()
-            if (promptText.isEmpty()) {
-                Toast.makeText(this, "System prompt cannot be empty", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            prefs.edit().putString("custom_system_prompt", promptText).apply()
-            Toast.makeText(this, "System prompt saved!", Toast.LENGTH_SHORT).show()
-        }
-
-        binding.btnResetSystemPrompt.setOnClickListener {
-            prefs.edit().remove("custom_system_prompt").apply()
-            binding.etSystemPrompt.setText(DEFAULT_SYSTEM_PROMPT)
-            Toast.makeText(this, "System prompt reset to default", Toast.LENGTH_SHORT).show()
-        }
-
-        // Widget Voice Autostart Toggle
+// Widget Voice Autostart Toggle
         binding.switchWidgetVoice.isChecked = prefs.getBoolean("widget_voice_autostart", false)
         binding.switchWidgetVoice.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("widget_voice_autostart", isChecked).apply()
@@ -99,7 +76,7 @@ class AISettingsActivity : BaseActivity() {
         }
 
         // Tool Toggles (Excluding Health which is handled specially)
-        val allTools = ToolRegistry.ALL_TOOLS.filter { it.id != "health" }
+        val allTools = ToolRegistry.ALL_TOOLS.filter { it.id != "health" }.sortedBy { it.category.name }
         toolToggleAdapter = ToolToggleAdapter(allTools) { toolId, isEnabled ->
             ToolRegistry.setToolEnabled(this, toolId, isEnabled)
         }
@@ -107,31 +84,75 @@ class AISettingsActivity : BaseActivity() {
         binding.recyclerToolToggles.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
     }
 
-    private fun loadData() {
-        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            val introTask = launch { loadUserIntroductionAsync() }
-            introTask.join()
+
+
+
+    private fun updateTextDisplays() {
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
+
+        val intro = prefs.getString("user_introduction", null)
+        if (intro.isNullOrEmpty()) {
+            binding.tvSavedIntroduction.text = "Not set. Tell AI about yourself."
+        } else {
+            binding.tvSavedIntroduction.text = intro
         }
+        
+        val prompt = prefs.getString("custom_system_prompt", DEFAULT_SYSTEM_PROMPT)
+        binding.tvSavedSystemPrompt.text = prompt
     }
 
-    private fun loadUserIntroductionAsync() {
-        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
-        val intro = prefs.getString("user_introduction", null)
-        
-        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
-            if (intro.isNullOrEmpty()) {
-                binding.cardSavedIntroduction.visibility = android.view.View.GONE
-                binding.layoutIntroductionForm.visibility = android.view.View.VISIBLE
-                binding.btnEditIntroduction.visibility = android.view.View.GONE
-                binding.etUserIntroduction.text?.clear()
-            } else {
-                binding.cardSavedIntroduction.visibility = android.view.View.VISIBLE
-                binding.layoutIntroductionForm.visibility = android.view.View.GONE
-                binding.btnEditIntroduction.visibility = android.view.View.VISIBLE
-                binding.tvSavedIntroduction.text = intro
-                binding.etUserIntroduction.setText(intro)
+    private fun showEditDialog(title: String, initialText: String, hint: String, isSystemPrompt: Boolean) {
+        val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        val dialogView = layoutInflater.inflate(com.neubofy.reality.R.layout.dialog_edit_ai_text, null)
+        dialog.setContentView(dialogView)
+
+        val tvTitle = dialogView.findViewById<android.widget.TextView>(com.neubofy.reality.R.id.tv_dialog_title)
+        val etText = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(com.neubofy.reality.R.id.et_dialog_text)
+        val tilText = dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(com.neubofy.reality.R.id.til_edit_text)
+        val btnSave = dialogView.findViewById<com.google.android.material.button.MaterialButton>(com.neubofy.reality.R.id.btn_dialog_save)
+        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(com.neubofy.reality.R.id.btn_dialog_cancel)
+        val btnReset = dialogView.findViewById<com.google.android.material.button.MaterialButton>(com.neubofy.reality.R.id.btn_dialog_reset)
+
+        tvTitle.text = title
+        tilText.hint = hint
+        etText.setText(initialText)
+
+        if (isSystemPrompt) {
+            btnReset.visibility = android.view.View.VISIBLE
+            btnReset.setOnClickListener {
+                etText.setText(DEFAULT_SYSTEM_PROMPT)
             }
         }
+
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        btnSave.setOnClickListener {
+            val newText = etText.text.toString().trim()
+            val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
+
+            if (isSystemPrompt) {
+                if (newText.isEmpty()) {
+                    Toast.makeText(this, "System prompt cannot be empty", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                prefs.edit().putString("custom_system_prompt", newText).apply()
+            } else {
+                prefs.edit().putString("user_introduction", newText).apply()
+            }
+
+            updateTextDisplays()
+            dialog.dismiss()
+            Toast.makeText(this, "Saved successfully!", Toast.LENGTH_SHORT).show()
+        }
+
+        // Request focus and open keyboard slightly delayed to let dialog animate
+        dialog.setOnShowListener {
+            etText.requestFocus()
+        }
+
+        dialog.show()
     }
 
     companion object {
