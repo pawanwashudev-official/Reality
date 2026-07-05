@@ -132,7 +132,7 @@ export default async function Home() {
             <FeatureCard
               icon={<Brain className="text-pink-500" size={28} />}
               title="Neural Assistant"
-              desc="Bring Your Own Key (BYOK) AI chat integrated into your daily workflow."
+              desc="100% private Cloudflare-hosted AI chat integrated into your daily workflow."
               colorClass="group-hover:border-pink-500 bg-pink-500/10"
             />
              <FeatureCard
@@ -143,7 +143,7 @@ export default async function Home() {
             />
              <FeatureCard
               icon={<Database className="text-orange-500" size={28} />}
-              title="G-Cloud BYOK"
+              title="Private Local-First AI"
               desc="Use your own Desktop OAuth credentials to securely sync with Tasks, Calendar, Drive, and Docs locally."
               colorClass="group-hover:border-orange-500 bg-orange-500/10"
             />
@@ -275,7 +275,7 @@ export default async function Home() {
                          <li>• Grant Accessibility + Overlay + Usage Stats</li>
                          <li>• Add Apps to Blocklist</li>
                          <li>• Set Focus Hours Schedule</li>
-                         <li>• Configure BYOK AI Key (Optional)</li>
+                         <li>• Enjoy Private Built-in AI</li>
                      </ul>
                  </div>
 

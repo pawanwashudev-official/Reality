@@ -18,7 +18,7 @@
 
 > **"Stop managing your life. Start commanding it."**
 
-### 🌟 100% Open Source • No Ads • No Trackers • Any AI (BYO Key)
+### 🌟 100% Open Source • No Ads • No Trackers • Privacy-Preserving Hosted AI
 
 <p>While advanced features (like Neural Protocol, Gamification, and Google Workspace Sync) require a yearly Reality Pro subscription to support ongoing maintenance, the app remains 100% open source. You can always build the APK yourself from the source code.</p>
 
@@ -60,8 +60,8 @@ Tapasya is not a normal timer or stopwatch; it is an aggressive deep-work state.
 ### 4. **🤖 INBUILT AI ASSISTANT (Reality AI Pro)**
 Reality does not use a basic chatbot. It features a fully Agentic System operating on a generic Model Context Protocol (MCP) architecture (`ToolRegistry.kt`, `AgentTools.kt`).
 *   **How it differs**: It acts autonomously. It can fetch your calendar, toggle alarms, block apps on command, and query the web. It is a "Siri-like" floating modal (`PopupAIChatActivity`) that allows you to use the phone simultaneously.
-*   **Supported Models**: Bring-Your-Own-Key architecture. Natively supports OpenAI, Gemini, Groq, OpenRouter, Perplexity, and Tavily.
-*   **Data Handling**: Uses a `ConversationMemoryManager` for context sliding windows and token counting. It securely encrypts all API keys using `EncryptedSharedPreferences`. The AI can explicitly store long-term facts about you into local Room storage using the `save_memory` tool.
+*   **Supported Models**: 100% private architecture using our hosted open-source gpt-oss-20b model on Cloudflare Workers. Your data is NEVER sent to third-party services like OpenAI or Groq.
+*   **Data Handling**: Uses a `ConversationMemoryManager` for context sliding windows and token counting. All requests are authenticated securely using your local Reality Identity credentials. The AI can explicitly store long-term facts about you into local Room storage using the `save_memory` tool.
 
 ### 5. **🔔 REMINDERS**
 *   **What it is**: A local, hyper-reliable notification system intertwined with your digital ecosystem.
@@ -92,13 +92,13 @@ Reality does not use a basic chatbot. It features a fully Agentic System operati
 2. **Permissions** - Grant accessibility + overlay + usage stats
 3. **Add Blocklist** - Select apps to block
 4. **Set Focus Hours** - Recurring daily schedule
-5. **Configure AI** - Add OpenAI/Groq key (optional, BYOK)
+5. **Configure AI** - No API keys required, works privately out-of-the-box.
 
 ### Pro Feature Setup
 1. **Activate Reality Pro**: Go to Settings -> Reality Pro. Sign in with Google and submit a UPI payment (or use instant UPI activation on the same device).
    * **License Terms & Strict Mode Synergy**: Your Reality Pro license is valid for the duration you purchase. If you uninstall the app or clear its data (bypassing Strict Mode), **your Pro access will be permanently lost and you will need to buy it again**. However, if you legitimately log out and log back in with the same Google Account, your access will be restored. This ensures we can maintain low subscription costs while heavily discouraging bypass attempts.
 2. **Google Workspace Sync**: Go to your Profile page and sign in with Google to grant Calendar, Drive, and Tasks permissions. This allows Reality to log your plans and fetch tasks automatically.
-3. **AI Models**: Navigate to Settings -> AI Settings to enter your API keys (e.g., Groq, OpenAI) and select the models you want to use for the AI Chat and the Nightly Protocol.
+3. **AI Privacy**: Navigate to Settings -> AI Settings to customize your personal introduction and review data access permissions. No API keys are required.
 
 ---
 

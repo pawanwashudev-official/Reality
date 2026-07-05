@@ -202,75 +202,40 @@ open class AIChatActivity : BaseActivity() {
         // No-op or remove entirely if unused
     }
 
-    private fun sendMessage(text: String) {
+        private fun sendMessage(text: String) {
         adapter.addMessage(ChatMessage(text, true))
         binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
         
         handleSessionInit(text)
-
-        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
-        val savedModelString = prefs.getString("model", "OpenAI: gpt-3.5-turbo") ?: "OpenAI: gpt-3.5-turbo"
         
-        val (provider, model) = if (savedModelString.contains(": ")) {
-            val split = savedModelString.split(": ", limit = 2)
-            split[0] to split[1]
-        } else {
-            (prefs.getString("provider", "OpenAI") ?: "OpenAI") to savedModelString
-        }
-        
-        val apiKey = prefs.getString("api_key_$provider", "") ?: ""
+        binding.tvThinking.visibility = android.view.View.VISIBLE
+        binding.tvThinking.text = "Reality is thinking..."
 
-        if (apiKey.isEmpty()) {
-            val err = "Missing API Key for $provider. Please configure in Settings."
-            adapter.addMessage(ChatMessage(err, false))
-            saveBotMessage(err)
-            return
-        }
-        
-        binding.tvThinking.visibility = View.VISIBLE
-        binding.tvThinking.text = "Reality is thinking..." // Reset text
+        val history = ArrayList(messages.filter { !it.isAnimating })
 
-        // Prepare context
-        val history = ArrayList(messages.filter { !it.isAnimating }) // Exclude animating ones if any?
-
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             val response = try {
-                if (provider == "Gemini") {
-                     // Gemini logic embedded safely or simplified
-                     // callGemini(history, apiKey, model) // Re-implement if needed, for now focusing on Groq/OpenAI Agent
-                     withContext(Dispatchers.Main) {
-                         adapter.addMessage(ChatMessage("Gemini streaming not yet supported.", false))
-                     }
-                     "Gemini streaming not yet supported."
-                } else {
-                     // Pro Mode / Agentic Loop
-                     withContext(Dispatchers.Main) { binding.tvThinking.text = "Reality is working..." }
-                     runAgentLoop(history, apiKey, model, provider)
-                }
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { binding.tvThinking.text = "Reality is working..." }
+                runAgentLoop(history)
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                     adapter.addMessage(ChatMessage("Error: ${e.message}", false))
                 }
                 "Error: ${e.message}"
             }
             
-            withContext(Dispatchers.Main) {
-                binding.tvThinking.visibility = View.GONE
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                if (!isGenerating) return@withContext
                 
-                // For Agentic Loop or GEMINI: Add message after complete (not streaming)
-                adapter.addMessage(ChatMessage(response, false, true))
-                binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
-                
-                saveBotMessage(response)
-                
-                // FORCE REFRESH to fix table rendering glitches (for tables in response)
-                binding.recyclerChat.post {
-                    adapter.notifyDataSetChanged()
-                    binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
+                binding.tvThinking.visibility = android.view.View.GONE
+                updateSendButtonState(false)
+
+                if (response.isNotEmpty()) {
+                    adapter.addMessage(ChatMessage(response, false))
+                    saveBotMessage(response)
                 }
                 
-                // Reset State
-                updateSendButtonState(false)
+                binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
             }
         }
     }
@@ -283,195 +248,11 @@ open class AIChatActivity : BaseActivity() {
      * Reads tokens as they arrive and updates UI in real-time.
      * Returns the complete response for saving to history.
      */
-    private suspend fun processStreamingChat(history: List<ChatMessage>, apiKey: String, model: String, provider: String): String {
-        val TAG = "AIChat"
-        
-        val url = when(provider) {
-            "OpenAI" -> "https://api.openai.com/v1/chat/completions"
-            "Groq" -> "https://api.groq.com/openai/v1/chat/completions"
-            "OpenRouter" -> "https://openrouter.ai/api/v1/chat/completions"
-            else -> "https://api.openai.com/v1/chat/completions"
-        }
-        
-        android.util.Log.d(TAG, "=== STREAMING REQUEST START ===")
-        android.util.Log.d(TAG, "Provider: $provider")
-        android.util.Log.d(TAG, "Model: $model")
-        android.util.Log.d(TAG, "URL: $url")
-        android.util.Log.d(TAG, "API Key (first 10 chars): ${apiKey.take(10)}...")
 
-        // System prompt with user introduction
-        val userIntro = com.neubofy.reality.ui.activity.AISettingsActivity.getUserIntroduction(this) ?: ""
-        val systemPrompt = buildString {
-            append("You are a helpful, intelligent assistant.")
-            if (userIntro.isNotEmpty()) append(" User context: $userIntro")
-        }
-        
-        // OPTIMIZED: Use sliding window + token management
-        val optimizedContext = ConversationMemoryManager.buildOptimizedHistory(
-            this, history, currentSessionId, systemPrompt
-        )
-        val jsonMessages = ConversationMemoryManager.toJsonMessages(systemPrompt, optimizedContext)
-        
-        // Construct Request WITH STREAMING ENABLED
-        val jsonBody = JSONObject().apply {
-            put("model", model)
-            put("messages", jsonMessages)
-            put("stream", true) // CRITICAL: Enable SSE streaming
-        }
-        
-        android.util.Log.d(TAG, "Request body model: $model, messages count: ${jsonMessages.length()}")
-
-        // Define outside try for access in catch
-        val fullResponse = StringBuilder()
-        var conn: java.net.HttpURLConnection? = null
-        
-        // Helper to update status on UI thread
-        suspend fun updateStatus(status: String) {
-            withContext(Dispatchers.Main) {
-                binding.tvThinking.text = status
-                binding.tvThinking.visibility = View.VISIBLE
-            }
-        }
-        
-        try {
-            // STATUS: Connecting
-            updateStatus("🔗 Connecting to $provider...")
-            
-            // API Call
-            conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
-            conn.requestMethod = "POST"
-            conn.connectTimeout = 30000
-            conn.readTimeout = 120000 // Longer read timeout for streaming
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Authorization", "Bearer $apiKey")
-            conn.setRequestProperty("Accept", "text/event-stream") // SSE header
-            if (provider == "OpenRouter") {
-                 conn.setRequestProperty("HTTP-Referer", "https://neubofy.com")
-                 conn.setRequestProperty("X-Title", "Reality App")
-            }
-            conn.doOutput = true
-            
-            // STATUS: Sending
-            updateStatus("📤 Sending request...")
-            android.util.Log.d(TAG, "Sending request...")
-            conn.outputStream.write(jsonBody.toString().toByteArray())
-            conn.outputStream.flush()
-            conn.outputStream.close()
-            
-            // STATUS: Waiting for response
-            updateStatus("⏳ Waiting for $provider...")
-            
-            val responseCode = conn.responseCode
-            android.util.Log.d(TAG, "Response code: $responseCode")
-            
-            if (responseCode != 200) {
-                val errorBody = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "No error body"
-                android.util.Log.e(TAG, "API Error: $responseCode - $errorBody")
-                
-                // STATUS: Error
-                updateStatus("❌ Error: $responseCode")
-                kotlinx.coroutines.delay(1500) // Show error briefly
-                
-                return "Error: $responseCode - $errorBody"
-            }
-            
-            // STATUS: Streaming
-            updateStatus("✨ Receiving response...")
-            android.util.Log.d(TAG, "Response OK, starting stream read...")
-
-            // --- SSE Stream Processing ---
-            
-            // Add placeholder message to UI immediately (will be updated)
-            withContext(Dispatchers.Main) {
-                adapter.addMessage(ChatMessage("", false, isAnimating = true))
-                binding.recyclerChat.scrollToPosition(adapter.itemCount - 1)
-                
-                // Start streaming mode - captures TextView for direct updates (no flicker!)
-                binding.recyclerChat.post {
-                    adapter.startStreaming(binding.recyclerChat)
-                }
-                
-                binding.tvThinking.visibility = View.GONE // Hide status, we're streaming now!
-            }
-            
-            val reader = conn.inputStream.bufferedReader()
-            var line: String?
-            var updateCounter = 0
-            
-            while (true) {
-                line = reader.readLine()
-                
-                // End of stream
-                if (line == null) break
-                
-                // Skip empty lines (SSE keepalive)
-                if (line.isBlank()) continue
-                
-                // SSE format: "data: {...json...}" or "data: [DONE]"
-                if (line.startsWith("data:")) {
-                    val jsonStr = line.removePrefix("data:").trim()
-                    
-                    if (jsonStr == "[DONE]") {
-                        // Stream finished
-                        break
-                    }
-                    
-                    // Skip empty data
-                    if (jsonStr.isEmpty()) continue
-                    
-                    try {
-                        val chunk = JSONObject(jsonStr)
-                        val choices = chunk.optJSONArray("choices")
-                        if (choices != null && choices.length() > 0) {
-                            val delta = choices.getJSONObject(0).optJSONObject("delta")
-                            val content = delta?.optString("content", "") ?: ""
-                            
-                            if (content.isNotEmpty()) {
-                                fullResponse.append(content)
-                                updateCounter++
-                                
-                                // Log each chunk for debugging
-                                android.util.Log.d("Streaming", "Chunk $updateCounter: '$content'")
-                                
-                                // Update UI on EVERY chunk for visible typewriter effect
-                                val currentText = fullResponse.toString()
-                                kotlinx.coroutines.withContext(Dispatchers.Main) {
-                                    adapter.updateLastMessageText(currentText)
-                                    // Scroll only every 5 updates to reduce jitter
-                                    if (updateCounter % 5 == 0) {
-                                        binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
-                                    }
-                                }
-                            }
-                        }
-                    } catch (e: Exception) {
-                        // Malformed JSON chunk, skip silently
-                        android.util.Log.w("Streaming", "Chunk parse error: ${e.message}")
-                    }
-                }
-            }
-            
-            // Final UI update to ensure all content is shown with proper Markwon rendering
-            kotlinx.coroutines.withContext(Dispatchers.Main) {
-                // Finish streaming mode - triggers ONE final Markwon render
-                adapter.finishStreaming()
-                binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
-            }
-            
-            reader.close()
-        } catch (e: Exception) {
-            android.util.Log.e("Streaming", "Stream error: ${e.message}", e)
-            return fullResponse.toString().ifEmpty { "Streaming Error: ${e.message}" }
-        } finally {
-            conn?.disconnect()
-        }
-        
-        return fullResponse.toString()
-    }
 
     // --- Agentic Chat (Pro Mode - Iterative Loop) ---
-    private suspend fun runAgentLoop(history: List<ChatMessage>, apiKey: String, model: String, provider: String): String {
-        return withContext(Dispatchers.IO) {
+    private suspend fun runAgentLoop(history: List<ChatMessage>): String {
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             val maxTurns = 10
             var turnCount = 0
             val toolRetryCounts = mutableMapOf<String, Int>() // Track retries per tool+args
@@ -485,57 +266,38 @@ open class AIChatActivity : BaseActivity() {
                 append("Use them only when necessary to give accurate, personalized answers. ")
                 append("All times are in IST (India Standard Time). ")
                 append("\n\nCRITICAL CONSTRAINTS:")
-                append("\n- ONE SEARCH POLICY: Web search is extremely expensive. NEVER call `web_search` more than once per user request. Consolidate ALL information needs into a single comprehensive query.")
                 append("\n- DISCOVERY FLOW: You start with only `get_tool_schema`. Always fetch schemas for the tools you need in the first turn.")
                 append("\n- ANTI-LOOP: Do not call the same tool with the same arguments twice.")
                 append("\n- COMPLETION: Do not call tools indefinitely. Aim to answer in 2-3 steps maximum.")
-                append("\n- IMAGE: If you use `generate_image`, include the markdown link ![Generated Image](URL) in your message.")
                 if (userIntro.isNotEmpty()) append("\n\nUser context: $userIntro")
                 append("\n\n$toolDiscovery")
             }
             
-            val optimizedContext = ConversationMemoryManager.buildOptimizedHistory(
+            val optimizedContext = com.neubofy.reality.utils.ConversationMemoryManager.buildOptimizedHistory(
                 this@AIChatActivity, history, currentSessionId, systemPrompt
             )
-            val messagesJson = ConversationMemoryManager.toJsonMessages(systemPrompt, optimizedContext)
+            val messagesJson = com.neubofy.reality.utils.ConversationMemoryManager.toJsonMessages(systemPrompt, optimizedContext)
             
             // 2. Start Loop
             var finalResponse = ""
-            var lastImageUrl: String? = null
             val requestedToolIds = mutableSetOf<String>()
-            var webSearchCount = 0
             
             while (turnCount < maxTurns) {
                 turnCount++
-                
-                // Track if tool result has image (Check all tool results in context)
-                for (i in 0 until messagesJson.length()) {
-                    val m = messagesJson.getJSONObject(i)
-                    if (m.optString("role") == "tool" && m.optString("content").contains("![Generated Image](")) {
-                        val toolContent = m.getString("content")
-                        val start = toolContent.indexOf("![Generated Image](") + "![Generated Image](".length
-                        val end = toolContent.indexOf(")", start)
-                        if (start >= 0 && end > start) {
-                            lastImageUrl = toolContent.substring(start, end).trim()
-                        }
-                    }
-                }
 
                 // Construct API Request with Dynamic Tools
-                val jsonBody = JSONObject().apply {
-                    put("model", model)
+                val jsonBody = org.json.JSONObject().apply {
+                    put("userId", com.neubofy.reality.utils.IdentityManager.getUserId(this@AIChatActivity))
+                    put("password", com.neubofy.reality.utils.IdentityManager.getBackupPassword(this@AIChatActivity))
+                    put("requestCount", com.neubofy.reality.utils.IdentityManager.getAndIncrementDailyAICount(this@AIChatActivity))
                     put("messages", messagesJson)
                     // Dynamic schema loading: only send meta-tool + tools AI has asked for
                     put("tools", com.neubofy.reality.utils.ToolRegistry.buildToolsArray(this@AIChatActivity, requestedToolIds.toList()))
                     put("tool_choice", "auto")
                 }
                 
-                val apiUrl = when(provider) {
-                    "OpenAI" -> "https://api.openai.com/v1/chat/completions"
-                    "Groq" -> "https://api.groq.com/openai/v1/chat/completions"
-                    "OpenRouter" -> "https://openrouter.ai/api/v1/chat/completions"
-                    else -> "https://api.openai.com/v1/chat/completions"
-                }
+                val apiUrl = com.neubofy.reality.BuildConfig.AI_URL.removeSuffix("/")
+                if (apiUrl.isBlank()) throw Exception("AI endpoint is not configured (AI_URL is missing in build).")
                 
                 // Execute Request
                 val conn = java.net.URL(apiUrl).openConnection() as java.net.HttpURLConnection
@@ -543,11 +305,6 @@ open class AIChatActivity : BaseActivity() {
                 conn.connectTimeout = 45000 
                 conn.readTimeout = 45000
                 conn.setRequestProperty("Content-Type", "application/json")
-                conn.setRequestProperty("Authorization", "Bearer $apiKey")
-                if (provider == "OpenRouter") {
-                     conn.setRequestProperty("HTTP-Referer", "https://neubofy.com")
-                     conn.setRequestProperty("X-Title", "Reality App")
-                }
                 conn.doOutput = true
                 
                 try {
@@ -559,11 +316,30 @@ open class AIChatActivity : BaseActivity() {
                     }
                     
                     val resp = conn.inputStream.bufferedReader().use { it.readText() }
-                    val responseJson = JSONObject(resp)
-                    val choice = responseJson.getJSONArray("choices").getJSONObject(0)
-                    val message = choice.getJSONObject("message")
-                    val content = message.optString("content", "")
-                    val toolCalls = message.optJSONArray("tool_calls")
+                    val responseJson = org.json.JSONObject(resp)
+                    // Handle both direct "response" (common CF output) and "choices" (OpenAI format)
+                    var content = ""
+                    var toolCalls: org.json.JSONArray? = null
+                    val message = org.json.JSONObject()
+
+                    if (responseJson.has("response")) {
+                        content = responseJson.getString("response")
+                        message.put("role", "assistant")
+                        message.put("content", content)
+                    } else if (responseJson.has("choices")) {
+                        val choice = responseJson.getJSONArray("choices").getJSONObject(0)
+                        val msg = choice.getJSONObject("message")
+                        content = msg.optString("content", "")
+                        toolCalls = msg.optJSONArray("tool_calls")
+
+                        message.put("role", "assistant")
+                        message.put("content", content)
+                        if (toolCalls != null) {
+                            message.put("tool_calls", toolCalls)
+                        }
+                    } else {
+                        content = "Error parsing response: " + responseJson.toString()
+                    }
                     
                     // Add AI response to context for next turn
                     messagesJson.put(message)
@@ -588,28 +364,23 @@ open class AIChatActivity : BaseActivity() {
                         // 1. Handle Schema Requests (Internal state update)
                         if (toolName == "get_tool_schema") {
                             try {
-                                val toolId = JSONObject(args).optString("tool_id")
+                                val toolId = org.json.JSONObject(args).optString("tool_id")
                                 if (toolId.isNotEmpty()) requestedToolIds.add(toolId)
                             } catch (e: Exception) {}
                         }
                         
-                        // 2. ANTI-LOOP & BUDGET Check
-                        val result = if (toolName == "web_search" && webSearchCount >= 1) {
-                            "Error: Search Budget Exhausted. You are ONLY allowed one web search per request to save user credits. Use the information already provided or answer based on your knowledge."
-                        } else if (currentRetries >= 1 && toolName == "web_search") {
-                            "Error: You already performed this exact search. Do not repeat it."
-                        } else if (currentRetries >= 3) {
+                        // 2. ANTI-LOOP Check
+                        val result = if (currentRetries >= 3) {
                              "Error: Max retries (3) reached for this specific tool call."
                         } else {
-                            if (toolName == "web_search") webSearchCount++
                             toolRetryCounts[callSignature] = currentRetries + 1
-                            withContext(Dispatchers.Main) { 
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                                 adapter.addMessage(ChatMessage("⚙️ Executing: $toolName...", false, false))
                             }
                             com.neubofy.reality.utils.AgentTools.execute(this@AIChatActivity, toolName, args)
                         }
                         
-                        messagesJson.put(JSONObject().apply {
+                        messagesJson.put(org.json.JSONObject().apply {
                             put("role", "tool")
                             put("tool_call_id", id)
                             put("name", toolName)
@@ -625,34 +396,13 @@ open class AIChatActivity : BaseActivity() {
                 finalResponse = "I reached the limit of 10 steps. Here is what I found so far."
             }
             
-            // --- SAFETY AUTO-APPEND ---
-            if (lastImageUrl != null && !finalResponse.contains(lastImageUrl)) {
-                finalResponse += "\n\n![Generated Image]($lastImageUrl)"
-            }
-            
             finalResponse
         }
     }
 
-    // Replace the dispatching logic in sendMessage
-    /*
-            lifecycleScope.launch(Dispatchers.IO) {
-            val response = try {
-                if (provider == "Gemini") {
-                     callGemini(history, apiKey, model)
-                } else {
-                     processChatLoop(history, apiKey, model, provider) // NEW ENTRY POINT
-                }
-            } catch (e: Exception) {
-                "Error: ${e.message}"
-            }
-            // ...
-    */
 
-    private fun callGemini(history: List<ChatMessage>, apiKey: String, model: String): String {
-        // ... (Keep existing Gemini logic roughly the same, or upgrade later)
-        return "Gemini does not support Pro Agent mode yet."
-    }
+
+
 
     private fun setupDrawer() {
         // History Adapter
@@ -753,10 +503,7 @@ open class AIChatActivity : BaseActivity() {
         }
     }
 
-    private fun callOpenAIStyle(history: List<ChatMessage>, apiKey: String, model: String, provider: String): String {
-        // Deprecated by processChatLoop, but keeping signature if needed or redirecting
-        return "Deprecated" 
-    }
+
     
     // ...
 }

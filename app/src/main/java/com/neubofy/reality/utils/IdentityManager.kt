@@ -98,4 +98,21 @@ object IdentityManager {
     fun clearIdentity(context: Context) {
         SecurePreferences.get(context, PREFS_NAME).edit().clear().apply()
     }
+    fun getAndIncrementDailyAICount(context: Context): Int {
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs")
+        val today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Kolkata")).toString()
+        val lastDate = prefs.getString("ai_request_date", "")
+
+        var count = prefs.getInt("ai_request_count", 0)
+
+        if (today != lastDate) {
+            count = 0
+            prefs.edit().putString("ai_request_date", today).apply()
+        }
+
+        count++
+        prefs.edit().putInt("ai_request_count", count).apply()
+
+        return count
+    }
 }

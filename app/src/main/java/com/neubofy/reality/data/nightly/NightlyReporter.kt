@@ -18,7 +18,7 @@ class NightlyReporter(private val context: Context) {
     ): String {
         // Fetch AI Settings
         val userIntro = AISettingsActivity.getUserIntroduction(context) ?: ""
-        val nightlyModel = AISettingsActivity.getNightlyModel(context)
+        val nightlyModel = "gpt-oss-20b"
         
         if (nightlyModel.isNullOrEmpty()) {
             return "Report Unavailable (No AI Model Configured)"

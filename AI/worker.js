@@ -8,18 +8,67 @@ export default {
       });
     }
 
-    const body = await request.json();
+    try {
+      const body = await request.json();
+      const userId = body.userId;
+      const password = body.password;
 
-    // Call GPT-OSS-20B with messages, tools, and optional parameters
-    const response = await env.AI.run("@cf/openai/gpt-oss-20b", {
-      messages: body.messages || [{ role: "user", content: "Hello!" }],
-      tools: body.tools || [],
-      max_tokens: body.max_tokens || 1024,
-      temperature: body.temperature || 0.7,
-    });
+      // Extract and verify userId and password
+      if (!userId || !password) {
+        return new Response(JSON.stringify({ error: "Missing authentication fields." }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+        });
+      }
 
-    return new Response(JSON.stringify(response), {
-      headers: { "Content-Type": "application/json" },
-    });
+
+      const isAuthorized = await this.verifyAuth(userId, password, env.APP_SECRET_PEPPER);
+      if (!isAuthorized) {
+        return new Response(JSON.stringify({ error: "Unauthorized. Invalid credentials." }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+        });
+      }
+
+
+      const requestCount = body.requestCount || 0;
+      if (requestCount >= 75) {
+        return new Response(JSON.stringify({ error: "Daily limit of 75 AI requests reached." }), {
+            status: 429,
+            headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Call GPT-OSS-20B with messages, tools, and optional parameters
+      const response = await env.AI.run("@cf/openai/gpt-oss-20b", {
+        messages: body.messages || [{ role: "user", content: "Hello!" }],
+        tools: body.tools || [],
+        max_tokens: body.max_tokens || 1024,
+        temperature: body.temperature || 0.7,
+      });
+
+      return new Response(JSON.stringify(response), {
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: "AI inference failed", details: error.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
   },
+
+  async verifyAuth(userId, providedPassword, secretPepper) {
+    if (!userId || !providedPassword || !secretPepper) return false;
+    const encoder = new TextEncoder();
+    const secretKeyData = encoder.encode(secretPepper);
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw", secretKeyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+    );
+    const pwSignature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(userId));
+    const expectedPassword = Array.from(new Uint8Array(pwSignature))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('').substring(0, 32);
+    return providedPassword === expectedPassword;
+  }
 };

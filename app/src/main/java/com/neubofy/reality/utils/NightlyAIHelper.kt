@@ -39,23 +39,16 @@ object NightlyAIHelper {
         
         TerminalLogger.log("Nightly AI: Generating questions with model: $modelString")
         
-        val providerAndKey = AISettingsActivity.getProviderAndKeyFromModel(context, modelString)
-            ?: throw IllegalStateException("Invalid model configuration: $modelString")
         
-        val (provider, apiKey) = providerAndKey
-        val modelName = modelString.substringAfter(": ")
+
+
+
+
         
         val prompt = buildPrompt(context, userIntroduction, daySummary, healthData, previousReport)
-        TerminalLogger.log("Nightly AI: Prompt built, calling $provider API...")
-        
-        val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, prompt)
-            "Gemini" -> callGemini(apiKey, modelName, prompt)
-            "Groq" -> callGroq(apiKey, modelName, prompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, prompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt)
-            else -> throw IllegalStateException("Unsupported provider: $provider")
-        }
+        TerminalLogger.log("Nightly AI: Prompt built, calling AI Worker...")
+
+        val response = callAIWorker(context, prompt)
         
         TerminalLogger.log("Nightly AI: Response received, parsing questions...")
         parseQuestions(response)
@@ -192,11 +185,11 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         
         TerminalLogger.log("Nightly AI: Analyzing plan with model: $modelString")
         
-        val providerAndKey = AISettingsActivity.getProviderAndKeyFromModel(context, modelString)
-            ?: throw IllegalStateException("Invalid model configuration: $modelString")
         
-        val (provider, apiKey) = providerAndKey
-        val modelName = modelString.substringAfter(": ")
+
+
+
+
         
         // Load custom or default prompt
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
@@ -216,16 +209,10 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
             ?.replace("{list_context}", listsContext)
             ?: getDefaultPlanPrompt(planContent, taskListConfigs)
             
-        TerminalLogger.log("Nightly AI: Plan prompt built, calling $provider API...")
-        
-        val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, systemPrompt)
-            "Gemini" -> callGemini(apiKey, modelName, systemPrompt)
-            "Groq" -> callGroq(apiKey, modelName, systemPrompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, systemPrompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, systemPrompt)
-            else -> throw IllegalStateException("Unsupported provider: $provider")
-        }
+        val prompt = systemPrompt
+        TerminalLogger.log("Nightly AI: Plan prompt built, calling AI Worker...")
+
+        val response = callAIWorker(context, prompt)
         
         response
     }
@@ -243,11 +230,11 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         
         TerminalLogger.log("Nightly AI: Normalizing tasks with model: $modelString")
         
-        val providerAndKey = AISettingsActivity.getProviderAndKeyFromModel(context, modelString)
-            ?: throw IllegalStateException("Invalid model configuration: $modelString")
         
-        val (provider, apiKey) = providerAndKey
-        val modelName = modelString.substringAfter(": ")
+
+
+
+
         
         // Build list context (same logic as plan extraction)
         val listsContext = if (taskListConfigs.isNotEmpty()) {
@@ -274,16 +261,10 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
                 .replace("{list_context}", listsContext)
         }
             
-        TerminalLogger.log("Nightly AI: Task Cleanup prompt built, calling $provider API...")
-        
-        val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, systemPrompt)
-            "Gemini" -> callGemini(apiKey, modelName, systemPrompt)
-            "Groq" -> callGroq(apiKey, modelName, systemPrompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, systemPrompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt = systemPrompt)
-            else -> throw IllegalStateException("Unsupported provider: $provider")
-        }
+        val prompt = systemPrompt
+        TerminalLogger.log("Nightly AI: Task Cleanup prompt built, calling AI Worker...")
+
+        val response = callAIWorker(context, prompt)
         
         response
     }
@@ -481,52 +462,31 @@ OUTPUT FORMAT:
             .replace("{list_context}", listsContext)
     }
 
-    private fun callOpenAI(apiKey: String, model: String, prompt: String): String {
-        return callOpenAICompatible(
-            "https://api.openai.com/v1/chat/completions",
-            apiKey,
-            model,
-            prompt
-        )
-    }
     
-    private fun callGroq(apiKey: String, model: String, prompt: String): String {
-        return callOpenAICompatible(
-            "https://api.groq.com/openai/v1/chat/completions",
-            apiKey,
-            model,
-            prompt
-        )
-    }
     
-    private fun callOpenRouter(apiKey: String, model: String, prompt: String): String {
-        return callOpenAICompatible(
-            "https://openrouter.ai/api/v1/chat/completions",
-            apiKey,
-            model,
-            prompt
-        )
-    }
     
-    private fun callPerplexity(apiKey: String, model: String, prompt: String): String {
-        return callOpenAICompatible(
-            "https://api.perplexity.ai/chat/completions",
-            apiKey,
-            model,
-            prompt
-        )
-    }
     
-    private fun callOpenAICompatible(endpoint: String, apiKey: String, model: String, prompt: String): String {
-        val url = URL(endpoint)
-        val conn = url.openConnection() as HttpURLConnection
+
+
+
+
+        private fun callAIWorker(context: Context, prompt: String): String {
+                val apiUrl = com.neubofy.reality.BuildConfig.AI_URL.removeSuffix("/")
+        if (apiUrl.isBlank()) throw Exception("AI endpoint is not configured (AI_URL is missing in build).")
+
+        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
+        val password = com.neubofy.reality.utils.IdentityManager.getBackupPassword(context)
+
+        val url = java.net.URL(apiUrl)
+        val conn = url.openConnection() as java.net.HttpURLConnection
         conn.requestMethod = "POST"
-        conn.setRequestProperty("Authorization", "Bearer $apiKey")
         conn.setRequestProperty("Content-Type", "application/json")
         conn.doOutput = true
         
-        val requestBody = JSONObject().apply {
-            put("model", model)
+                val requestBody = JSONObject().apply {
+            put("userId", userId)
+            put("password", password)
+            put("requestCount", com.neubofy.reality.utils.IdentityManager.getAndIncrementDailyAICount(context))
             put("messages", JSONArray().apply {
                 put(JSONObject().apply {
                     put("role", "user")
@@ -534,7 +494,7 @@ OUTPUT FORMAT:
                 })
             })
             put("temperature", 0.7)
-            put("max_tokens", 8192)
+            // Cloudflare has strict token limits, we rely on defaults
         }
         
         conn.outputStream.bufferedWriter().use { it.write(requestBody.toString()) }
@@ -547,54 +507,16 @@ OUTPUT FORMAT:
         val response = conn.inputStream.bufferedReader().readText()
         val jsonResponse = JSONObject(response)
         
-        return jsonResponse
-            .getJSONArray("choices")
-            .getJSONObject(0)
-            .getJSONObject("message")
-            .getString("content")
-    }
-    
-    private fun callGemini(apiKey: String, model: String, prompt: String): String {
-        val endpoint = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
-        val url = URL(endpoint)
-        val conn = url.openConnection() as HttpURLConnection
-        conn.requestMethod = "POST"
-        conn.setRequestProperty("Content-Type", "application/json")
-        conn.doOutput = true
-        
-        val requestBody = JSONObject().apply {
-            put("contents", JSONArray().apply {
-                put(JSONObject().apply {
-                    put("parts", JSONArray().apply {
-                        put(JSONObject().apply {
-                            put("text", prompt)
-                        })
-                    })
-                })
-            })
-            put("generationConfig", JSONObject().apply {
-                put("temperature", 0.7)
-                put("maxOutputTokens", 8192)
-            })
+        return if (jsonResponse.has("response")) {
+            jsonResponse.getString("response")
+        } else if (jsonResponse.has("choices")) {
+            jsonResponse.getJSONArray("choices")
+                .getJSONObject(0)
+                .getJSONObject("message")
+                .getString("content")
+        } else {
+            jsonResponse.toString() // Fallback
         }
-        
-        conn.outputStream.bufferedWriter().use { it.write(requestBody.toString()) }
-        
-        if (conn.responseCode != 200) {
-            val error = conn.errorStream?.bufferedReader()?.readText() ?: "Unknown error"
-            throw Exception("Gemini API error ${conn.responseCode}: $error")
-        }
-        
-        val response = conn.inputStream.bufferedReader().readText()
-        val jsonResponse = JSONObject(response)
-        
-        return jsonResponse
-            .getJSONArray("candidates")
-            .getJSONObject(0)
-            .getJSONObject("content")
-            .getJSONArray("parts")
-            .getJSONObject(0)
-            .getString("text")
     }
     
     data class AnalysisResult(
@@ -616,22 +538,15 @@ OUTPUT FORMAT:
         
         TerminalLogger.log("Nightly AI: Analyzing reflection with model: $modelString")
         
-        val providerAndKey = AISettingsActivity.getProviderAndKeyFromModel(context, modelString)
+
             ?: throw IllegalStateException("Invalid model configuration")
         
-        val (provider, apiKey) = providerAndKey
-        val modelName = modelString.substringAfter(": ")
+
+
         
         val prompt = buildAnalysisPrompt(context, userIntroduction, diaryContent)
         
-        val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, prompt)
-            "Gemini" -> callGemini(apiKey, modelName, prompt)
-            "Groq" -> callGroq(apiKey, modelName, prompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, prompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt)
-            else -> throw IllegalStateException("Unsupported provider: $provider")
-        }
+        val response = callAIWorker(context, prompt)
         
         parseAnalysisResponse(response)
     }
@@ -737,22 +652,15 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         
         TerminalLogger.log("Nightly AI: Generating plan suggestions...")
         
-        val providerAndKey = AISettingsActivity.getProviderAndKeyFromModel(context, modelString)
+
             ?: throw IllegalStateException("Invalid model configuration")
         
-        val (provider, apiKey) = providerAndKey
-        val modelName = modelString.substringAfter(": ")
+
+
         
         val prompt = buildPlanPrompt(context, userIntro, summary)
         
-        val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, prompt)
-            "Gemini" -> callGemini(apiKey, modelName, prompt)
-            "Groq" -> callGroq(apiKey, modelName, prompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, prompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt)
-            else -> throw IllegalStateException("Unsupported provider: $provider")
-        }
+        val response = callAIWorker(context, prompt)
         
         // Return raw response (Markdown expected)
         response.trim()
@@ -814,11 +722,11 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         
         TerminalLogger.log("Nightly AI: Generating report summary...")
         
-        val providerAndKey = AISettingsActivity.getProviderAndKeyFromModel(context, modelString)
+
             ?: throw IllegalStateException("Invalid model configuration")
         
-        val (provider, apiKey) = providerAndKey
-        val modelName = modelString.substringAfter(": ")
+
+
         
         // Load custom or default prompt
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
@@ -846,15 +754,7 @@ Include exactly the questions asked and the user's answers extracted strictly fr
             buildReportPrompt(context, userIntro, summary, xpStats, reflectionContent, planContent)
         }
         
-        val response = when (provider) {
-            "OpenAI" -> callOpenAI(apiKey, modelName, prompt)
-            "Gemini" -> callGemini(apiKey, modelName, prompt)
-            "Groq" -> callGroq(apiKey, modelName, prompt)
-            "OpenRouter" -> callOpenRouter(apiKey, modelName, prompt)
-            "Perplexity" -> callPerplexity(apiKey, modelName, prompt)
-            else -> throw IllegalStateException("Unsupported provider: $provider")
-        }
-        
+        val response = callAIWorker(context, prompt)
         response.trim()
     }
 
