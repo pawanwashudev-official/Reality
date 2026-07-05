@@ -4,8 +4,3 @@ compatibility_date = "2026-07-04"
 
 [ai]
 binding = "AI"
-
-[[d1_databases]]
-binding = "DB"
-database_name = "reality-db"
-database_id = ""

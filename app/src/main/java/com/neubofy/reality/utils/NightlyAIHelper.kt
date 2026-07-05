@@ -481,9 +481,10 @@ OUTPUT FORMAT:
         conn.setRequestProperty("Content-Type", "application/json")
         conn.doOutput = true
         
-        val requestBody = JSONObject().apply {
+                val requestBody = JSONObject().apply {
             put("userId", userId)
             put("password", password)
+            put("requestCount", com.neubofy.reality.utils.IdentityManager.getAndIncrementDailyAICount(context))
             put("messages", JSONArray().apply {
                 put(JSONObject().apply {
                     put("role", "user")

@@ -15,10 +15,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Inject D1 Database ID
-        run: |
-          sed -i 's/database_id = ""/database_id = "${{ secrets.DB_ID }}"/g' AI/wrangler.toml
-
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
