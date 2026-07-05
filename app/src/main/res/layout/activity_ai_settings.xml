@@ -107,223 +107,38 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ==================== IMAGE GENERATION SETTINGS ==================== -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Image Generation"
-                android:textColor="?attr/colorPrimary"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
-
+            <!-- ==================== AI MODEL INFO ==================== -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_image_models"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
                 app:strokeColor="?attr/colorPrimaryContainer"
                 app:strokeWidth="1dp"
                 app:cardBackgroundColor="@android:color/transparent"
-                android:layout_marginBottom="8dp">
-
+                android:layout_marginBottom="24dp">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
-
-                    <!-- Header row with + button -->
-                    <LinearLayout
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Saved Image Models"
-                            android:textSize="14sp"
-                            android:textColor="?attr/colorPrimary"
-        android:fontFamily="monospace"/>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_add_image_model"
-                            style="@style/Widget.Material3.Button.TonalButton.Icon"
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            app:icon="@drawable/baseline_add_24"
-                            app:iconGravity="textStart"
-                            app:iconPadding="0dp"
-                            app:cornerRadius="20dp"/>
-                    </LinearLayout>
-
-                    <!-- Saved image models list -->
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recycler_image_models"
+                        android:text="Privacy-Preserving AI"
+                        android:textColor="?attr/colorPrimary"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="8dp"/>
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:nestedScrollingEnabled="false"
-                        android:overScrollMode="never"
-                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
+                        android:text="We use an open-source gpt-oss-20b model running securely on Cloudflare Workers. We do not record your chats or send your data to 3rd parties. Reality Pro members get full, private access."
+                        android:textSize="14sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="AI uses the selected provider to create images. Images saved to Pictures/Reality folder."
-                android:textSize="12sp"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:layout_marginBottom="24dp"/>
-
-            <!-- ==================== CHAT MODELS CARD ==================== -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Chat Models"
-                android:textColor="?attr/colorPrimary"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_chat_models"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorPrimaryContainer"
-                app:strokeWidth="1dp"
-                app:cardBackgroundColor="@android:color/transparent"
-                android:layout_marginBottom="8dp">
-                
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <!-- Header row with + button -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Saved Models"
-                            android:textSize="14sp"
-                            android:textColor="?attr/colorPrimary"
-        android:fontFamily="monospace"/>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_add_chat_model"
-                            style="@style/Widget.Material3.Button.TonalButton.Icon"
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            app:icon="@drawable/baseline_add_24"
-                            app:iconGravity="textStart"
-                            app:iconPadding="0dp"
-                            app:cornerRadius="20dp"/>
-                    </LinearLayout>
-
-                    <!-- Saved models list -->
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recycler_chat_models"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:nestedScrollingEnabled="false"
-                        android:overScrollMode="never"
-                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Multiple models can be added. Select one as default for chat features."
-                android:textSize="12sp"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:layout_marginBottom="24dp"/>
-
-            <!-- ==================== WEB SEARCH ENGINE CARD ==================== -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Web Search Engine"
-                android:textColor="?attr/colorPrimary"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_search_engines"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
-                app:strokeColor="?attr/colorPrimaryContainer"
-                app:strokeWidth="1dp"
-                app:cardBackgroundColor="@android:color/transparent"
-                android:layout_marginBottom="8dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <!-- Header row with + button -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Tavily Search API"
-                            android:textSize="14sp"
-                            android:textColor="?attr/colorPrimary"
-        android:fontFamily="monospace"/>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_add_search_engine"
-                            style="@style/Widget.Material3.Button.TonalButton.Icon"
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            app:icon="@drawable/baseline_add_24"
-                            app:iconGravity="textStart"
-                            app:iconPadding="0dp"
-                            app:cornerRadius="20dp"/>
-                    </LinearLayout>
-
-                    <!-- Saved search engines list -->
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recycler_search_engines"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:nestedScrollingEnabled="false"
-                        android:overScrollMode="never"
-                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="AI uses Tavily for real-time web search. Enter your API key to enable."
-                android:textSize="12sp"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:layout_marginBottom="24dp"/>
-
-            <!-- ==================== AI DATA ACCESS CARD ==================== -->
+                        <!-- ==================== AI DATA ACCESS CARD ==================== -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -433,17 +248,9 @@
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginBottom="24dp"/>
 
-            <!-- ==================== NIGHTLY PROTOCOL MODEL CARD ==================== -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Neural Protocol Model"
-                android:textColor="?attr/colorPrimary"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
 
+            <!-- ==================== PERSONALIZATION CARD ==================== -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_nightly_model"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
@@ -451,71 +258,12 @@
                 app:strokeWidth="1dp"
                 app:cardBackgroundColor="@android:color/transparent"
                 android:layout_marginBottom="8dp">
-                
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
-
-                    <!-- Header row with + button -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Selected Model"
-                            android:textSize="14sp"
-                            android:textColor="?attr/colorPrimary"
-        android:fontFamily="monospace"/>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_add_nightly_model"
-                            style="@style/Widget.Material3.Button.TonalButton.Icon"
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            app:icon="@drawable/baseline_add_24"
-                            app:iconGravity="textStart"
-                            app:iconPadding="0dp"
-                            app:cornerRadius="20dp"/>
-                    </LinearLayout>
-
-                    <!-- Empty state -->
-                    <TextView
-                        android:id="@+id/tv_nightly_empty"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="No model set. Tap + to add."
-                        android:textSize="13sp"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:layout_marginTop="8dp"
-                        android:visibility="visible"/>
-
-                    <!-- Nightly model display (single item) -->
-                    <!-- Nightly models list -->
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recycler_nightly_models"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:nestedScrollingEnabled="false"
-                        android:overScrollMode="never"
-                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                        android:visibility="gone"/>
-
-                    <!-- Divider -->
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="?attr/colorOutlineVariant"
-                        android:layout_marginVertical="16dp"/>
-
-                    <!-- Personalization Section (inside Nightly card) -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -634,13 +382,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Only one model for nightly reflections. Delete to change."
-                android:textSize="12sp"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:layout_marginBottom="24dp"/>
+
 
             <!-- ==================== ADD MODEL FORM (Hidden by default) ==================== -->
 

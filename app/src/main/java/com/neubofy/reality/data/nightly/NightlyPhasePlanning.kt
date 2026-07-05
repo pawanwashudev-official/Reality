@@ -198,7 +198,7 @@ class NightlyPhasePlanning(
         saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "Reading plan...")
 
         try {
-            val nightlyModel = AISettingsActivity.getNightlyModel(context)
+            val nightlyModel = "gpt-oss-20b"
 
             if (nightlyModel.isNullOrEmpty()) {
                 listener.onStepSkipped(NightlySteps.STEP_GENERATE_PLAN, "Plan AI", "No AI Model Configured")
@@ -828,7 +828,7 @@ class NightlyPhasePlanning(
             saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_RUNNING, "AI analyzing ${allPendingTasks.size} tasks...")
             
             // 4. Call AI (Using Standardized Model)
-            val model = com.neubofy.reality.ui.activity.AISettingsActivity.getNightlyModel(context)
+            val model = "gpt-oss-20b"
             if (model.isNullOrEmpty()) {
                 throw IllegalStateException("No AI Model configured for Nightly Protocol.")
             }

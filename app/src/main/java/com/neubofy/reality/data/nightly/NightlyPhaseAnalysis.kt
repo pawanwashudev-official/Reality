@@ -83,7 +83,7 @@ class NightlyPhaseAnalysis(
 
             // 3. Get AI Model (REQUIRED - no fallback)
             val userIntro = AISettingsActivity.getUserIntroduction(context) ?: ""
-            val nightlyModel = AISettingsActivity.getNightlyModel(context)
+            val nightlyModel = "gpt-oss-20b"
 
             if (nightlyModel.isNullOrEmpty()) {
                 throw IllegalStateException("No AI Model configured. Please set up an AI model in Settings.")

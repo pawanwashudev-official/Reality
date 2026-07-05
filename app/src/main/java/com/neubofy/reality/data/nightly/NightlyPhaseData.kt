@@ -355,7 +355,7 @@ class NightlyPhaseData(
 
         val summary = daySummary
         val userIntro = AISettingsActivity.getUserIntroduction(context) ?: ""
-        val nightlyModel = AISettingsActivity.getNightlyModel(context)
+        val nightlyModel = "gpt-oss-20b"
 
         // ALWAYS use AI - throw error if no model configured
         if (nightlyModel.isNullOrEmpty()) {
