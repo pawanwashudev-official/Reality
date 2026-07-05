@@ -450,6 +450,7 @@ object AgentTools {
                     val newAlarm = com.neubofy.reality.data.model.WakeupAlarm(
                         id = System.currentTimeMillis().toString(),
                         title = title,
+                        description = "",
                         hour = hour,
                         minute = minute,
                         isEnabled = true,
