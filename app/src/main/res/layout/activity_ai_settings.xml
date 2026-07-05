@@ -275,7 +275,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Personalize AI"
+                            android:text="Reality Intelligence Assistant Settings"
                             android:textSize="14sp"
                             android:textColor="?attr/colorPrimary"
         android:fontFamily="monospace"/>
@@ -378,6 +378,61 @@
                             android:textAllCaps="false"
                             app:cornerRadius="8dp"
                             android:layout_marginTop="8dp"/>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:hint="System Prompt"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/et_system_prompt"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textMultiLine"
+                                android:minLines="5"
+                                android:maxLines="10"
+                                android:gravity="top"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Modify the AI system prompt to customize how Reality behaves. Warning: advanced users only."
+                            android:textSize="11sp"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:layout_marginTop="4dp"/>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginTop="8dp"
+                            android:weightSum="2">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_reset_system_prompt"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="4dp"
+                                android:text="Reset"
+                                android:textAllCaps="false"
+                                app:cornerRadius="8dp"/>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_save_system_prompt"
+                                style="@style/Widget.Material3.Button.TonalButton"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginStart="4dp"
+                                android:text="Save Prompt"
+                                android:textAllCaps="false"
+                                app:cornerRadius="8dp"/>
+                        </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

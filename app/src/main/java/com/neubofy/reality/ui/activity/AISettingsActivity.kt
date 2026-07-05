@@ -57,8 +57,33 @@ class AISettingsActivity : BaseActivity() {
             binding.btnEditIntroduction.visibility = android.view.View.GONE
         }
 
-        // Widget Voice Autostart Toggle
         val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
+
+        // System Prompt Setup
+        val savedPrompt = prefs.getString("custom_system_prompt", "")
+        if (savedPrompt.isNullOrEmpty()) {
+            binding.etSystemPrompt.setText(DEFAULT_SYSTEM_PROMPT)
+        } else {
+            binding.etSystemPrompt.setText(savedPrompt)
+        }
+
+        binding.btnSaveSystemPrompt.setOnClickListener {
+            val promptText = binding.etSystemPrompt.text.toString().trim()
+            if (promptText.isEmpty()) {
+                Toast.makeText(this, "System prompt cannot be empty", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            prefs.edit().putString("custom_system_prompt", promptText).apply()
+            Toast.makeText(this, "System prompt saved!", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.btnResetSystemPrompt.setOnClickListener {
+            prefs.edit().remove("custom_system_prompt").apply()
+            binding.etSystemPrompt.setText(DEFAULT_SYSTEM_PROMPT)
+            Toast.makeText(this, "System prompt reset to default", Toast.LENGTH_SHORT).show()
+        }
+
+        // Widget Voice Autostart Toggle
         binding.switchWidgetVoice.isChecked = prefs.getBoolean("widget_voice_autostart", false)
         binding.switchWidgetVoice.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("widget_voice_autostart", isChecked).apply()
@@ -110,9 +135,16 @@ class AISettingsActivity : BaseActivity() {
     }
 
     companion object {
+        const val DEFAULT_SYSTEM_PROMPT = "You are Reality Elite, an intelligent Life OS Agent, hosted independently using self-hosted, most private and secure AI models to ensure the highest privacy for your users. You have access to the user's real-time data via tools. Use them only when necessary to give accurate, personalized answers. Keep answers highly professional and focused strictly on the task at hand. Avoid memorizing full conversations; focus on the current task. All times are in IST (India Standard Time). \n\nCRITICAL CONSTRAINTS:\n- DISCOVERY FLOW: You start with only `get_tool_schema`. Always fetch schemas for the tools you need in the first turn.\n- ANTI-LOOP: Do not call the same tool with the same arguments twice.\n- COMPLETION: Your main goal in chats is to complete specific tasks, not to remember the whole conversation. Be concise. \n- PROMOTION: Periodically promote the app features (unmatchable alarm, reminder, Nightly protocol, completely free smart app blocker which is best than other apps, but for very little amount we offer a lot, inbuilt app updater, beta versions, smart sleep time guessing) while emphasizing our self-hosted, private and secure AI usage."
+
         fun getUserIntroduction(context: android.content.Context): String? {
             val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs")
             return prefs.getString("user_introduction", null)
+        }
+
+        fun getSystemPrompt(context: android.content.Context): String {
+            val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs")
+            return prefs.getString("custom_system_prompt", DEFAULT_SYSTEM_PROMPT) ?: DEFAULT_SYSTEM_PROMPT
         }
     }
 }
