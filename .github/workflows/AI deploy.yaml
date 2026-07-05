@@ -14,6 +14,10 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+      # 1. Inject the secret DB_ID from GitHub secrets into wrangler.toml before deploying
+      - name: Inject D1 Database ID
+        run: |
+          sed -i 's/database_id = ""/database_id = "${{ secrets.DB_ID }}"/g' AI/wrangler.toml
 
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3
