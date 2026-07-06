@@ -12,7 +12,7 @@
 [![License](https://img.shields.io/badge/License-Custom-blue.svg?style=for-the-badge)](#%EF%B8%8F-legal--license)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg?style=for-the-badge)](https://www.android.com)
 [![Privacy](https://img.shields.io/badge/Data-Local%20%2B%20Your%20G--Drive-lock.svg?style=for-the-badge&color=teal)]()
-[![AI](https://img.shields.io/badge/AI-Bring%20Your%20Own%20Key-purple.svg?style=for-the-badge)]()
+[![AI](https://img.shields.io/badge/AI-Deployed%20on%20Own%20server-purple.svg?style=for-the-badge)]()
 [![Ads](https://img.shields.io/badge/Ads-ZERO-red.svg?style=for-the-badge)]()
 [![Trackers](https://img.shields.io/badge/Trackers-ZERO-red.svg?style=for-the-badge)]()
 
