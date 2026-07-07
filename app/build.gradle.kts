@@ -26,7 +26,7 @@ android {
         applicationId = "com.neubofy.reality"
         minSdk = 26
         targetSdk = 36  // Android 16
-        versionCode = 27
+        versionCode = 28
         versionName = "1.0.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
