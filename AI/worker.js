@@ -41,12 +41,12 @@ export default {
 
 
       const allowedModels = [
-        "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
         "@cf/meta/llama-3.1-8b-instruct",
+        "@cf/meta/llama-3.2-3b-instruct",
+        "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
         "@cf/qwen/qwen1.5-14b-chat-awq",
-        "@hf/thebloke/mistral-7b-instruct-v0.1-awq",
-        "@cf/openai/gpt-oss-20b"
-      ];
+        "@hf/thebloke/mistral-7b-instruct-v0.1-awq"
+];
 
       const requestedModel = body.model;
       const modelToUse = allowedModels.includes(requestedModel) ? requestedModel : "@cf/meta/llama-3.1-8b-instruct";
