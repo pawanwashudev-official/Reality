@@ -69,8 +69,8 @@ object NightlySteps {
     const val PREFS_NAME = "nightly_prefs"
 
     // Templates
-    const val DEFAULT_DIARY_TEMPLATE = "# 📔 Daily Reflection Diary - {date}\n\n## 📊 Day Summary Data\n{data}\n\n## 💡 Personalized Questions\n{questions}\n\n## ✍️ My Reflection\n(Write your answers here...)\n"
-    const val DEFAULT_PLAN_TEMPLATE = "# My Plan for Tomorrow\n\n## 🎯 Top Priorities\n- [ ] \n\n## 📅 Schedule\n- \n\n## 🚀 Tapasya Focus\n- \n"
+    const val DEFAULT_DIARY_TEMPLATE = "📔 Daily Reflection Diary - {date}\n\n📊 Day Summary Data\n{data}\n\n💡 Personalized Questions\n{questions}\n\n✍️ My Reflection\n(Write your answers here...)\n"
+    const val DEFAULT_PLAN_TEMPLATE = "My Plan for Tomorrow\n\n{data}\n"
     
     const val DEFAULT_TASK_NORMALIZER_TEMPLATE = """You are a smart Task Manager Agent. 
 Your goal is to clean up a user's task list for the Next Planning Day: {target_date}.

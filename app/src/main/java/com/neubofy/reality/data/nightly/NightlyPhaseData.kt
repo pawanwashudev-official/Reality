@@ -760,57 +760,58 @@ class NightlyPhaseData(
         val efficiency = if (totalPlanned > 0) (totalEffective * 100 / totalPlanned) else 0
 
         val statsSb = StringBuilder()
-        statsSb.appendLine("## 📊 Today's Metrics")
+        statsSb.appendLine("📊 Today's Metrics")
         statsSb.appendLine("---")
-        statsSb.appendLine("- **Scheduled Time**: $totalPlanned minutes")
-        statsSb.appendLine("- **Effective Study**: $totalEffective minutes")
-        statsSb.appendLine("- **Efficiency**: $efficiency%")
+        statsSb.appendLine("- Scheduled Time: $totalPlanned minutes")
+        statsSb.appendLine("- Effective Study: $totalEffective minutes")
+        statsSb.appendLine("- Efficiency: $efficiency%")
         statsSb.appendLine()
 
-        statsSb.appendLine("### ⏱️ Productive Sessions (Tapasya)")
+        statsSb.appendLine("⏱️ Productive Sessions (Tapasya)")
         if (summary.completedSessions.isEmpty()) {
-            statsSb.appendLine("_No focused sessions completed today._")
+            statsSb.appendLine("No focused sessions completed today.")
         } else {
             summary.completedSessions.forEach { session ->
                 val effectiveMins = session.effectiveTimeMs / 60000
                 val targetMins = session.targetTimeMs / 60000
-                statsSb.appendLine("- **${session.name}**: ${effectiveMins}min (Target: ${targetMins}min)")
+                statsSb.appendLine("- ${session.name}: ${effectiveMins}min (Target: ${targetMins}min)")
             }
         }
         statsSb.appendLine()
 
-        statsSb.appendLine("### 📋 Task Summary")
+        statsSb.appendLine("📋 Task Summary")
         if (summary.tasksCompleted.isEmpty() && summary.tasksDue.isEmpty()) {
-            statsSb.appendLine("_No tasks recorded for today._")
+            statsSb.appendLine("No tasks recorded for today.")
         } else {
             summary.tasksCompleted.forEach { task -> statsSb.appendLine("- ✓ $task") }
             summary.tasksDue.forEach { task -> statsSb.appendLine("- ○ $task (pending)") }
         }
         statsSb.appendLine()
 
-        statsSb.appendLine("### 📅 Calendar Schedule")
+        statsSb.appendLine("📅 Calendar Schedule")
         if (summary.calendarEvents.isEmpty()) {
-            statsSb.appendLine("_No calendar events recorded._")
+            statsSb.appendLine("No calendar events recorded.")
         } else {
             summary.calendarEvents.forEach { event ->
                 val start = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
                     .format(java.util.Date(event.startTime))
                 val end = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
                     .format(java.util.Date(event.endTime))
-                statsSb.appendLine("- **$start - $end**: ${event.title}")
+                statsSb.appendLine("- $start - $end: ${event.title}")
             }
         }
         val statsBlock = statsSb.toString()
 
         // Build questions block
         val qSb = StringBuilder()
-        qSb.appendLine("## 💡 Personalized Reflection Questions")
+        qSb.appendLine("💡 Personalized Reflection Questions")
         qSb.appendLine("---")
-        qSb.appendLine("_Answer the following questions to gain clarity on your progress:_")
+        qSb.appendLine("Answer the following questions to gain clarity on your progress:")
         qSb.appendLine()
 
         questions.forEachIndexed { index, question ->
-            qSb.appendLine("### Q${index + 1}: $question")
+            val cleanQuestion = question.replace("**", "").replace("_", "")
+            qSb.appendLine("Q${index + 1}: $cleanQuestion")
             qSb.appendLine()
             qSb.appendLine("> ")
             qSb.appendLine()

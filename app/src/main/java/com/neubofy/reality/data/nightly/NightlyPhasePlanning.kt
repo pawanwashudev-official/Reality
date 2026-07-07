@@ -108,9 +108,12 @@ class NightlyPhasePlanning(
             val nextDay = diaryDate.plusDays(1)
             val title = "Plan - ${nextDay.format(DateTimeFormatter.ofPattern("MMM dd, yyyy"))}"
             val template = prefs.getString("template_plan", NightlySteps.DEFAULT_PLAN_TEMPLATE) ?: NightlySteps.DEFAULT_PLAN_TEMPLATE
+            val suggestions = prefs.getString("plan_suggestions_${diaryDate}", "") ?: ""
+            val cleanSuggestions = suggestions.replace("**", "").replace("_", "")
+
             val content = template
                 .replace("{date}", nextDay.format(DateTimeFormatter.ofPattern("EEEE, MMM d")))
-                .replace("{data}", "[Plan Details]")
+                .replace("{data}", cleanSuggestions)
 
             // Search or create
             var docId = prefs.getString(NightlySteps.getPlanDocIdKey(diaryDate), null)

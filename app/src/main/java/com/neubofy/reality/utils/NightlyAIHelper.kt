@@ -45,16 +45,16 @@ object NightlyAIHelper {
 
 
         
-        val prompt = buildPrompt(context, userIntroduction, daySummary, healthData, previousReport)
+        val (sysPrompt, usrPrompt) = buildPrompt(context, userIntroduction, daySummary, healthData, previousReport)
         TerminalLogger.log("Nightly AI: Prompt built, calling AI Worker...")
 
-        val response = callAIWorker(context, prompt)
+        val response = callAIWorker(context, sysPrompt, usrPrompt)
         
         TerminalLogger.log("Nightly AI: Response received, parsing questions...")
         parseQuestions(response)
     }
     
-    private fun buildPrompt(context: Context, userIntro: String, summary: DaySummary, healthData: String, previousReport: String): String {
+    private fun buildPrompt(context: Context, userIntro: String, summary: DaySummary, healthData: String, previousReport: String): Pair<String, String> {
         val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
         
         // Calendar events from device
@@ -112,9 +112,8 @@ object NightlyAIHelper {
         
         val userIntroStr = if (userIntro.isNotEmpty()) "About the user:\n$userIntro" else ""
         
-        return if (customPrompt != null) {
-            // Use custom prompt with placeholder replacement
-            customPrompt
+        if (customPrompt != null) {
+            val filled = customPrompt
                 .replace("{user_intro}", userIntroStr)
                 .replace("{date}", summary.date.format(dateFormatter))
                 .replace("{calendar}", calendarList)
@@ -124,13 +123,29 @@ object NightlyAIHelper {
                 .replace("{health}", healthData)
                 .replace("{stats}", statsStr)
                 .replace("{report}", previousReport)
+            return Pair("You are an expert productivity coach. Reply only in the requested format.", filled)
         } else {
-            // Use default prompt with previous day report
-            """You are a master productivity analyst and life coach. Your goal is to help the user identify patterns of failure and opportunities for growth.
+            val sysPrompt = """You are a master productivity analyst and life coach. Your goal is to help the user identify patterns of failure and opportunities for growth.
 
 $userIntroStr
 
-Today is ${summary.date.format(dateFormatter)}.
+[INSTRUCTIONS]
+Analyze the provided daily data deeply. Look for:
+1. Gaps between what was planned (Calendar/Tasks) and what was actually achieved (Completed Tasks/Tapasya Sessions).
+2. Signs of procrastination or distraction (High phone usage, low Reality Ratio, missed tasks).
+3. Inconsistencies between health habits (Sleep/Steps) and work performance.
+4. Patterns or recurring issues identified in the previous day's report.
+
+Generate EXACTLY 5 high-impact, analytical reflection questions.
+These questions must:
+- Challenge the user to confront their specific mistakes today (e.g., "Why were these 3 tasks ignored despite being planned?").
+- Ask the "WHY" behind failures to find root causes (burnout, lack of priority, phone addiction).
+- Reference the previous day's report if available to highlight recurring patterns or improvements.
+- Force the user to propose a CONCRETE strategy to avoid repeating today's mistakes tomorrow.
+
+CRITICAL: Return ONLY the 5 questions, numbered 1-5, one per line. Do NOT include conversational filler, meta-text, or markdown formatting."""
+
+            val usrPrompt = """Today is ${summary.date.format(dateFormatter)}.
 
 📅 SCHEDULED CALENDAR EVENTS:
 $calendarList
@@ -151,25 +166,8 @@ $healthData
 $statsStr
 
 📝 PREVIOUS DAY AI REPORT:
-$previousReport
-
----
-[INSTRUCTIONS]
-Analyze the data above deeply. Look for:
-1. Gaps between what was planned (Calendar/Tasks) and what was actually achieved (Completed Tasks/Tapasya Sessions).
-2. Signs of procrastination or distraction (High phone usage, low Reality Ratio, missed tasks).
-3. Inconsistencies between health habits (Sleep/Steps) and work performance.
-4. Patterns or recurring issues identified in the previous day's report.
-
-Generate EXACTLY 5 high-impact, analytical reflection questions.
-These questions must:
-- Challenge the user to confront their specific mistakes today (e.g., "Why were these 3 tasks ignored despite being planned?").
-- Ask the "WHY" behind failures to find root causes (burnout, lack of priority, phone addiction).
-- Reference the previous day's report if available to highlight recurring patterns or improvements.
-- Force the user to propose a CONCRETE strategy to avoid repeating today's mistakes tomorrow.
-
-Be direct, analytical, and uncompromising but constructive. Avoid generic fluff.
-Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
+$previousReport"""
+            return Pair(sysPrompt, usrPrompt)
         }
     }
     
@@ -205,14 +203,17 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
             ""
         }
 
-        val systemPrompt = customPrompt?.replace("{plan_content}", planContent)
-            ?.replace("{list_context}", listsContext)
-            ?: getDefaultPlanPrompt(planContent, taskListConfigs)
+        val (sysPrompt, usrPrompt) = if (customPrompt != null) {
+            val filled = customPrompt.replace("{plan_content}", planContent)
+                .replace("{list_context}", listsContext)
+            Pair("You are a smart planner. Reply ONLY with the requested JSON format.", filled)
+        } else {
+            getDefaultPlanPrompt(planContent, taskListConfigs)
+        }
             
-        val prompt = systemPrompt
         TerminalLogger.log("Nightly AI: Plan prompt built, calling AI Worker...")
 
-        val response = callAIWorker(context, prompt)
+        val response = callAIWorker(context, sysPrompt, usrPrompt)
         
         response
     }
@@ -250,21 +251,23 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_task_cleanup_prompt", null)
         
-        val systemPrompt = if (customPrompt != null) {
-            customPrompt.replace("{tasks_json}", tasksJson)
+        val (sysPrompt, usrPrompt) = if (customPrompt != null) {
+            val filled = customPrompt.replace("{tasks_json}", tasksJson)
                 .replace("{target_date}", targetDate)
                 .replace("{list_context}", listsContext)
+            Pair("You are a Task Manager Agent.", filled)
         } else {
-            com.neubofy.reality.data.nightly.NightlySteps.DEFAULT_TASK_NORMALIZER_TEMPLATE
-                .replace("{tasks_json}", tasksJson)
+            val sysP = com.neubofy.reality.data.nightly.NightlySteps.DEFAULT_TASK_NORMALIZER_TEMPLATE
                 .replace("{target_date}", targetDate)
                 .replace("{list_context}", listsContext)
+                .replace("{tasks_json}", "") // Removed from system prompt
+            val usrP = "Here are the tasks to normalize:\n$tasksJson"
+            Pair(sysP, usrP)
         }
             
-        val prompt = systemPrompt
         TerminalLogger.log("Nightly AI: Task Cleanup prompt built, calling AI Worker...")
 
-        val response = callAIWorker(context, prompt)
+        val response = callAIWorker(context, sysPrompt, usrPrompt)
         
         response
     }
@@ -447,7 +450,7 @@ OUTPUT FORMAT:
         """.trimIndent()
     }
 
-    fun getDefaultPlanPrompt(planContent: String, taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig> = emptyList()): String {
+    fun getDefaultPlanPrompt(planContent: String, taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig> = emptyList()): Pair<String, String> {
         val listsContext = if (taskListConfigs.isNotEmpty()) {
             val details = taskListConfigs.joinToString("\n") { 
                 "- List Name: \"${it.displayName}\" (ID: ${it.googleListId})\n  Description: ${it.description}" 
@@ -457,9 +460,14 @@ OUTPUT FORMAT:
             ""
         }
 
-        return getDefaultPlanPromptTemplate()
-            .replace("{plan_content}", planContent)
-            .replace("{list_context}", listsContext)
+        val sysPrompt = getDefaultPlanPromptTemplate().replace("{list_context}", listsContext)
+        val usrPrompt = """
+Here is the user's plan:
+[[PLAN_START]]
+$planContent
+[[PLAN_END]]
+"""
+        return Pair(sysPrompt, usrPrompt)
     }
 
     
@@ -470,7 +478,7 @@ OUTPUT FORMAT:
 
 
 
-        private fun callAIWorker(context: Context, prompt: String): String {
+        private fun callAIWorker(context: Context, systemPrompt: String?, userPrompt: String): String {
                 val apiUrl = com.neubofy.reality.BuildConfig.AI_URL.removeSuffix("/")
         if (apiUrl.isBlank()) throw Exception("AI endpoint is not configured (AI_URL is missing in build).")
 
@@ -488,9 +496,15 @@ OUTPUT FORMAT:
             put("password", password)
             put("requestCount", com.neubofy.reality.utils.IdentityManager.getAndIncrementDailyAICount(context))
             put("messages", JSONArray().apply {
+                if (systemPrompt != null) {
+                    put(JSONObject().apply {
+                        put("role", "system")
+                        put("content", systemPrompt)
+                    })
+                }
                 put(JSONObject().apply {
                     put("role", "user")
-                    put("content", prompt)
+                    put("content", userPrompt)
                 })
             })
             put("temperature", 0.7)
@@ -544,30 +558,24 @@ OUTPUT FORMAT:
 
 
         
-        val prompt = buildAnalysisPrompt(context, userIntroduction, diaryContent)
+        val (sysPrompt, usrPrompt) = buildAnalysisPrompt(context, userIntroduction, diaryContent)
         
-        val response = callAIWorker(context, prompt)
+        val response = callAIWorker(context, sysPrompt, usrPrompt)
         
         parseAnalysisResponse(response)
     }
 
-    private fun buildAnalysisPrompt(context: Context, userIntro: String, diaryContent: String): String {
+    private fun buildAnalysisPrompt(context: Context, userIntro: String, diaryContent: String): Pair<String, String> {
         // Try to get custom analyzer prompt
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_analyzer_prompt", null)
         
         val userIntroStr = if (userIntro.isNotEmpty()) "About the user:\n$userIntro" else ""
         
-        val defaultSystemPrompt = """You are a wise and strict mentor reviewing a student's nightly reflection.
+        val sysPrompt = """You are a wise and strict mentor reviewing a student's nightly reflection.
 Your goal is to ensure they are taking the process seriously and actually reflecting, not just going through the motions.
 
 $userIntroStr
-
-Analyze the following Nightly Reflection Diary:
-
-[[DIARY_START]]
-$diaryContent
-[[DIARY_END]]
 
 EVALUATION CRITERIA:
 1. DEPTH: Did they answer the questions with thought? (One word answers = Fail)
@@ -584,13 +592,23 @@ You must output a single JSON object. Do not include markdown formatting like ``
     { "q": "Question 1 text", "a": "Answer 1 text" }
   ]
 }
-Include exactly the questions asked and the user's answers extracted strictly from the DIARY in the 'qa' array."""
+Include exactly the questions asked and the user's answers extracted strictly from the DIARY in the 'qa' array.
+CRITICAL: Reply ONLY with valid JSON."""
 
-        return if (customPrompt != null) {
-            customPrompt.replace("{user_intro}", userIntroStr)
+        val usrPrompt = """
+Analyze the following Nightly Reflection Diary:
+
+[[DIARY_START]]
+$diaryContent
+[[DIARY_END]]
+"""
+
+        if (customPrompt != null) {
+            val filled = customPrompt.replace("{user_intro}", userIntroStr)
                 .replace("{diary_content}", diaryContent)
+            return Pair("You are a strict mentor. Return JSON.", filled)
         } else {
-            defaultSystemPrompt
+            return Pair(sysPrompt, usrPrompt)
         }
     }
 
@@ -658,15 +676,15 @@ Include exactly the questions asked and the user's answers extracted strictly fr
 
 
         
-        val prompt = buildPlanPrompt(context, userIntro, summary)
+        val (sysPrompt, usrPrompt) = buildPlanPrompt(context, userIntro, summary)
         
-        val response = callAIWorker(context, prompt)
+        val response = callAIWorker(context, sysPrompt, usrPrompt)
         
         // Return raw response (Markdown expected)
         response.trim()
     }
     
-    private fun buildPlanPrompt(context: Context, userIntro: String, summary: DaySummary): String {
+    private fun buildPlanPrompt(context: Context, userIntro: String, summary: DaySummary): Pair<String, String> {
         val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
         val tomorrowDate = summary.date.plusDays(1).format(dateFormatter)
         
@@ -679,14 +697,9 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         
         val userIntroStr = if (userIntro.isNotEmpty()) "About the user:\n$userIntro" else ""
         
-        return """
+        val sysPrompt = """
             You are an expert productivity planner.
             $userIntroStr
-            
-            Based on the user's pending tasks and context, suggest a realistic High-Level Plan for TOMORROW ($tomorrowDate).
-            
-            PENDING TASKS (Carry over?):
-            $pendingTasks
             
             INSTRUCTIONS:
             1. Suggest 3 Top Priorities for tomorrow.
@@ -694,20 +707,31 @@ Include exactly the questions asked and the user's answers extracted strictly fr
             3. Include any specific advice for maintaining momentum or recovering if today was slow.
             
             FORMAT:
-            Use clean Markdown.
+            Use plain text format (no markdown asterisks or hashes).
             
-            ### Top Priorities
+            Top Priorities
             1. ...
             2. ...
             3. ...
             
-            ### Suggested Schedule
-            - **Morning**: ...
-            - **Afternoon**: ...
+            Suggested Schedule
+            - Morning: ...
+            - Afternoon: ...
             
-            ### Advice
+            Advice
             ...
+
+            CRITICAL: Only reply in the format requested. No preamble. No conversational filler.
         """.trimIndent()
+
+        val usrPrompt = """
+            Based on the user's pending tasks and context, suggest a realistic High-Level Plan for TOMORROW ($tomorrowDate).
+
+            PENDING TASKS (Carry over?):
+            $pendingTasks
+        """.trimIndent()
+
+        return Pair(sysPrompt, usrPrompt)
     }
     
     suspend fun generateReportSummary(
@@ -732,14 +756,14 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_report_prompt", null)
         
-        val prompt = if (customPrompt != null) {
+        val (sysPrompt, usrPrompt) = if (customPrompt != null) {
             // Replace placeholders in custom prompt
             val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
             val totalPlanned = summary.totalPlannedMinutes
             val totalEffective = summary.totalEffectiveMinutes
             val efficiency = if (totalPlanned > 0) (totalEffective * 100 / totalPlanned) else 0
             
-            customPrompt
+            val filled = customPrompt
                 .replace("{user_intro}", userIntro)
                 .replace("{date}", summary.date.format(dateFormatter))
                 .replace("{efficiency}", "$efficiency%")
@@ -750,11 +774,12 @@ Include exactly the questions asked and the user's answers extracted strictly fr
                 .replace("{level}", "${xpStats?.level ?: 1}")
                 .replace("{reflection_content}", reflectionContent.take(8000))
                 .replace("{plan_content}", planContent.take(8000))
+            Pair("You are an executive coach. Format output safely without markdown if preferred.", filled)
         } else {
             buildReportPrompt(context, userIntro, summary, xpStats, reflectionContent, planContent)
         }
         
-        val response = callAIWorker(context, prompt)
+        val response = callAIWorker(context, sysPrompt, usrPrompt)
         response.trim()
     }
 
@@ -765,7 +790,7 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         xpStats: com.neubofy.reality.utils.XPManager.XPBreakdown?,
         reflectionContent: String,
         planContent: String
-    ): String {
+    ): Pair<String, String> {
         val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
         
         // Extract stats
@@ -795,9 +820,25 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         }
         """.trimIndent()
         
-        return """
+        val sysPrompt = """
             You are a professional executive coach and performance analyst.
             
+            INSTRUCTIONS:
+            Perform a deep analysis of the user's day based on the provided JSON metadata and the full text of their Diary and Plan.
+            1. **Daily Briefing**: Provide a concise summary of the day's achievements and challenges.
+            2. **Deep Insights**: Analyze the user's reflection. Identify patterns, wins, or recurring blockers.
+            3. **Plan Critique**: Analyze the plan for tomorrow. Evaluate its feasibility based on today's metrics.
+            4. **Level Up**: Provide a motivational comment regarding their current level and today's XP.
+            5. **Final Verdict**: Assign a "Theme of the Day" and a one-sentence "Coach's Directive".
+
+            OUTPUT FORMAT:
+            - Use clean, professional Markdown.
+            - Do NOT include any meta-talk like "As an AI..." or "Here is your analysis...".
+            - Be direct, insightful, and encouraging.
+            - **Length Constraint**: Ensure the entire report is comprehensive but remains under 7,000 characters.
+        """.trimIndent()
+
+        val usrPrompt = """
             [SYSTEM METADATA]
             $metadata
             
@@ -813,20 +854,8 @@ Include exactly the questions asked and the user's answers extracted strictly fr
             ---
             $planContent
             ---
-            
-            INSTRUCTIONS:
-            Perform a deep analysis of the user's day based on the provided JSON metadata and the full text of their Diary and Plan.
-            1. **Daily Briefing**: Provide a concise summary of the day's achievements and challenges.
-            2. **Deep Insights**: Analyze the user's reflection. Identify patterns, wins, or recurring blockers.
-            3. **Plan Critique**: Analyze the plan for tomorrow. Evaluate its feasibility based on today's metrics ($efficiency% efficiency).
-            4. **Level Up**: Provide a motivational comment regarding their current level ($level) and today's XP ($xpEarned).
-            5. **Final Verdict**: Assign a "Theme of the Day" and a one-sentence "Coach's Directive".
-
-            OUTPUT FORMAT:
-            - Use clean, professional Markdown.
-            - Do NOT include any meta-talk like "As an AI..." or "Here is your analysis...".
-            - Be direct, insightful, and encouraging.
-            - **Length Constraint**: Ensure the entire report is comprehensive but remains under 7,000 characters.
         """.trimIndent()
+
+        return Pair(sysPrompt, usrPrompt)
     }
 }
