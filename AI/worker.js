@@ -52,12 +52,18 @@ export default {
       const modelToUse = allowedModels.includes(requestedModel) ? requestedModel : "@cf/openai/gpt-oss-120b";
 
       // Call Cloudflare AI with messages, tools, and optional parameters
-      const response = await env.AI.run(modelToUse, {
+      const options = {
         messages: body.messages || [{ role: "user", content: "Hello!" }],
-        tools: body.tools || [],
         max_tokens: body.max_tokens || 1024,
         temperature: body.temperature || 0.7,
-      });
+      };
+
+      if (body.tools && body.tools.length > 0) {
+        options.tools = body.tools;
+      }
+
+      // Call Cloudflare AI with messages, tools (if any), and optional parameters
+      const response = await env.AI.run(modelToUse, options);
 
 
       return new Response(JSON.stringify(response), {
