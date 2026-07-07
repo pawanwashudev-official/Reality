@@ -288,6 +288,8 @@ open class AIChatActivity : BaseActivity() {
                     // Dynamic schema loading: only send meta-tool + tools AI has asked for
                     put("tools", com.neubofy.reality.utils.ToolRegistry.buildToolsArray(this@AIChatActivity, requestedToolIds.toList()))
                     put("tool_choice", "auto")
+                    val aiPrefs = com.neubofy.reality.utils.SecurePreferences.get(this@AIChatActivity, "ai_prefs")
+                    put("model", aiPrefs.getString("chat_model", "@cf/meta/llama-3.1-8b-instruct"))
                 }
                 
                 val apiUrl = com.neubofy.reality.BuildConfig.AI_URL.removeSuffix("/")

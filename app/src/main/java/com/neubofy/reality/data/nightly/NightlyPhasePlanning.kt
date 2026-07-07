@@ -137,7 +137,7 @@ class NightlyPhasePlanning(
 
                 if (currentContent.length < 50 || hasRawTemplate) {
                     withContext(Dispatchers.IO) {
-                        GoogleDocsManager.appendText(context, existingDocId, "\n" + content)
+                        GoogleDocsManager.appendText(context, existingDocId, "\n" + content.replace(Regex("[\\]+|[**]+|[##]+"), ""))
                     }
                     TerminalLogger.log("Nightly Phase Planning: Injected template into existing empty plan")
                 }
@@ -154,7 +154,7 @@ class NightlyPhasePlanning(
                         }
                     }
                     withContext(Dispatchers.IO) {
-                        GoogleDocsManager.appendText(context, newDocId, content)
+                        GoogleDocsManager.appendText(context, newDocId, content.replace(Regex("[\\]+|[**]+|[##]+"), ""))
                     }
                     docUrl = "https://docs.google.com/document/d/$newDocId"
 

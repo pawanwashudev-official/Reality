@@ -48,7 +48,7 @@ object NightlyAIHelper {
         val prompt = buildPrompt(context, userIntroduction, daySummary, healthData, previousReport)
         TerminalLogger.log("Nightly AI: Prompt built, calling AI Worker...")
 
-        val response = callAIWorker(context, prompt)
+        val response = callAIWorker(context, "Analyze my day and give me questions based on the system instructions.", prompt, modelString)
         
         TerminalLogger.log("Nightly AI: Response received, parsing questions...")
         parseQuestions(response)
@@ -209,10 +209,8 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
             ?.replace("{list_context}", listsContext)
             ?: getDefaultPlanPrompt(planContent, taskListConfigs)
             
-        val prompt = systemPrompt
         TerminalLogger.log("Nightly AI: Plan prompt built, calling AI Worker...")
-
-        val response = callAIWorker(context, prompt)
+        val response = callAIWorker(context, "Extract my tasks and plan based on the document provided in the system prompt.", systemPrompt, modelString)
         
         response
     }
@@ -261,10 +259,8 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
                 .replace("{list_context}", listsContext)
         }
             
-        val prompt = systemPrompt
         TerminalLogger.log("Nightly AI: Task Cleanup prompt built, calling AI Worker...")
-
-        val response = callAIWorker(context, prompt)
+        val response = callAIWorker(context, "Normalize the tasks provided in the system prompt to a valid JSON array format.", systemPrompt, modelString)
         
         response
     }
@@ -470,7 +466,7 @@ OUTPUT FORMAT:
 
 
 
-        private fun callAIWorker(context: Context, prompt: String): String {
+        private fun callAIWorker(context: Context, prompt: String, sysPrompt: String? = null, modelString: String? = null): String {
                 val apiUrl = com.neubofy.reality.BuildConfig.AI_URL.removeSuffix("/")
         if (apiUrl.isBlank()) throw Exception("AI endpoint is not configured (AI_URL is missing in build).")
 
@@ -487,7 +483,14 @@ OUTPUT FORMAT:
             put("userId", userId)
             put("password", password)
             put("requestCount", com.neubofy.reality.utils.IdentityManager.getAndIncrementDailyAICount(context))
+            put("model", modelString ?: com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/meta/llama-3.1-8b-instruct"))
             put("messages", JSONArray().apply {
+                if (sysPrompt != null) {
+                    put(JSONObject().apply {
+                        put("role", "system")
+                        put("content", sysPrompt)
+                    })
+                }
                 put(JSONObject().apply {
                     put("role", "user")
                     put("content", prompt)
@@ -544,9 +547,8 @@ OUTPUT FORMAT:
 
 
         
-        val prompt = buildAnalysisPrompt(context, userIntroduction, diaryContent)
-        
-        val response = callAIWorker(context, prompt)
+        val systemPromptStr = buildAnalysisPrompt(context, userIntroduction, diaryContent)
+        val response = callAIWorker(context, "Analyze my reflection strictly and return ONLY the JSON object format.", systemPromptStr, modelString)
         
         parseAnalysisResponse(response)
     }
@@ -658,9 +660,8 @@ Include exactly the questions asked and the user's answers extracted strictly fr
 
 
         
-        val prompt = buildPlanPrompt(context, userIntro, summary)
-        
-        val response = callAIWorker(context, prompt)
+        val systemPromptStr = buildPlanPrompt(context, userIntro, summary)
+        val response = callAIWorker(context, "Suggest a high-level plan for tomorrow based on my pending tasks and context. Output clean markdown.", systemPromptStr, modelString)
         
         // Return raw response (Markdown expected)
         response.trim()
@@ -754,7 +755,7 @@ Include exactly the questions asked and the user's answers extracted strictly fr
             buildReportPrompt(context, userIntro, summary, xpStats, reflectionContent, planContent)
         }
         
-        val response = callAIWorker(context, prompt)
+        val response = callAIWorker(context, "Generate my daily report summary based on the provided metadata, diary and plan.", prompt, modelString)
         response.trim()
     }
 
