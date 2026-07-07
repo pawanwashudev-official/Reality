@@ -92,11 +92,7 @@ class AISettingsActivity : BaseActivity() {
 
     private fun setupModelSpinners() {
         val models = listOf(
-            "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-            "@cf/meta/llama-3.2-11b-vision-instruct",
-            "@cf/meta/llama-3.2-3b-instruct",
-            "@cf/meta/llama-3.2-1b-instruct",
-            "@cf/meta/llama-3.1-8b-instruct",
+            "@cf/openai/gpt-oss-120b",
             "@cf/qwen/qwq-32b",
             "@cf/qwen/qwen2.5-coder-32b-instruct",
             "@cf/qwen/qwen1.5-14b-chat-awq",
@@ -110,8 +106,8 @@ class AISettingsActivity : BaseActivity() {
         binding.spinnerNightlyModel.adapter = adapter
 
         val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
-        val savedChatModel = prefs.getString("chat_model", "@cf/meta/llama-3.1-8b-instruct")
-        val savedNightlyModel = prefs.getString("nightly_model", "@cf/meta/llama-3.1-8b-instruct")
+        val savedChatModel = prefs.getString("chat_model", "@cf/openai/gpt-oss-120b")
+        val savedNightlyModel = prefs.getString("nightly_model", "@cf/openai/gpt-oss-120b")
 
         val chatModelIndex = models.indexOf(savedChatModel).takeIf { it >= 0 } ?: 0
         val nightlyModelIndex = models.indexOf(savedNightlyModel).takeIf { it >= 0 } ?: 0

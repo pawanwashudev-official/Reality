@@ -483,7 +483,7 @@ OUTPUT FORMAT:
             put("userId", userId)
             put("password", password)
             put("requestCount", com.neubofy.reality.utils.IdentityManager.getAndIncrementDailyAICount(context))
-            put("model", modelString ?: com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/meta/llama-3.1-8b-instruct"))
+            put("model", modelString ?: com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/openai/gpt-oss-120b"))
             put("messages", JSONArray().apply {
                 if (sysPrompt != null) {
                     put(JSONObject().apply {

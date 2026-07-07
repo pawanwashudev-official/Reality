@@ -18,7 +18,7 @@ class NightlyReporter(private val context: Context) {
     ): String {
         // Fetch AI Settings
         val userIntro = AISettingsActivity.getUserIntroduction(context) ?: ""
-        val nightlyModel = "gpt-oss-20b"
+        val nightlyModel = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
         
         if (nightlyModel.isNullOrEmpty()) {
             return "Report Unavailable (No AI Model Configured)"

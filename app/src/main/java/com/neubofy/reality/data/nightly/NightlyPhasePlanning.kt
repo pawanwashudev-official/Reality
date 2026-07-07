@@ -198,7 +198,7 @@ class NightlyPhasePlanning(
         saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "Reading plan...")
 
         try {
-            val nightlyModel = "gpt-oss-20b"
+            val nightlyModel = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
 
             if (nightlyModel.isNullOrEmpty()) {
                 listener.onStepSkipped(NightlySteps.STEP_GENERATE_PLAN, "Plan AI", "No AI Model Configured")

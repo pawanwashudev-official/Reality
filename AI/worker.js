@@ -41,11 +41,7 @@ export default {
 
 
       const allowedModels = [
-        "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-        "@cf/meta/llama-3.2-11b-vision-instruct",
-        "@cf/meta/llama-3.2-3b-instruct",
-        "@cf/meta/llama-3.2-1b-instruct",
-        "@cf/meta/llama-3.1-8b-instruct",
+        "@cf/openai/gpt-oss-120b",
         "@cf/qwen/qwq-32b",
         "@cf/qwen/qwen2.5-coder-32b-instruct",
         "@cf/qwen/qwen1.5-14b-chat-awq",
@@ -53,7 +49,7 @@ export default {
 ];
 
       const requestedModel = body.model;
-      const modelToUse = allowedModels.includes(requestedModel) ? requestedModel : "@cf/meta/llama-3.1-8b-instruct";
+      const modelToUse = allowedModels.includes(requestedModel) ? requestedModel : "@cf/openai/gpt-oss-120b";
 
       // Call Cloudflare AI with messages, tools, and optional parameters
       const response = await env.AI.run(modelToUse, {

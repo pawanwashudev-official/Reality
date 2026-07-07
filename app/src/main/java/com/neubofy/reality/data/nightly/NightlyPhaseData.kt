@@ -355,7 +355,7 @@ class NightlyPhaseData(
 
         val summary = daySummary
         val userIntro = AISettingsActivity.getUserIntroduction(context) ?: ""
-        val nightlyModel = "gpt-oss-20b"
+        val nightlyModel = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
 
         // ALWAYS use AI - throw error if no model configured
         if (nightlyModel.isNullOrEmpty()) {
