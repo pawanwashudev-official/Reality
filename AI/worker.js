@@ -41,11 +41,15 @@ export default {
 
 
       const allowedModels = [
-        "@cf/meta/llama-3.1-8b-instruct",
-        "@cf/meta/llama-3.2-3b-instruct",
         "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "@cf/meta/llama-3.2-11b-vision-instruct",
+        "@cf/meta/llama-3.2-3b-instruct",
+        "@cf/meta/llama-3.2-1b-instruct",
+        "@cf/meta/llama-3.1-8b-instruct",
+        "@cf/qwen/qwq-32b",
+        "@cf/qwen/qwen2.5-coder-32b-instruct",
         "@cf/qwen/qwen1.5-14b-chat-awq",
-        "@hf/thebloke/mistral-7b-instruct-v0.1-awq"
+        "@hf/nousresearch/hermes-2-pro-mistral-7b"
 ];
 
       const requestedModel = body.model;
