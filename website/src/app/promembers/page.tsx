@@ -25,10 +25,14 @@ async function getProMembers(): Promise<MembersResponse | null> {
 
   // Remove trailing slashes and append the endpoint path
   const dbUrl = baseUrl.replace(/\/+$/, '') + '/api/pro-members';
+  const workerSecret = process.env.WORKER_CONNECTION_SECRET || '';
 
   try {
     let res = await fetch(dbUrl, {
       method: 'GET',
+      headers: {
+        'x-worker-secret': workerSecret
+      },
       redirect: 'manual',
       next: { revalidate: 60 }
     });
@@ -38,6 +42,9 @@ async function getProMembers(): Promise<MembersResponse | null> {
       if (redirectUrl) {
         res = await fetch(redirectUrl, {
           method: 'GET',
+          headers: {
+            'x-worker-secret': workerSecret
+          },
           next: { revalidate: 60 }
         });
       }
@@ -45,6 +52,9 @@ async function getProMembers(): Promise<MembersResponse | null> {
       // Fallback to default follow behavior if manual redirect failed to catch it
       res = await fetch(dbUrl, {
         method: 'GET',
+        headers: {
+          'x-worker-secret': workerSecret
+        },
         next: { revalidate: 60 }
       });
     }

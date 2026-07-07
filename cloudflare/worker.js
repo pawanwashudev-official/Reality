@@ -158,6 +158,14 @@ export default {
       // ROUTE: WEBSITE PUBLIC PRO MEMBERS LIST
       // ============================================================
       if (url.pathname === "/api/pro-members" && request.method === "GET") {
+        const secretHeader = request.headers.get("x-worker-secret");
+        if (!secretHeader || secretHeader !== env.WORKER_CONNECTION_SECRET) {
+          return new Response(JSON.stringify({ error: "Unauthorized access" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+          });
+        }
+
         // Fetch only safe, shareable details from D1
         const { results } = await env.DB.prepare(
           'SELECT userId, date, status FROM "Reality Elite members management" WHERE status = \'V\' ORDER BY date DESC'
