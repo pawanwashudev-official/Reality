@@ -244,8 +244,10 @@ class NightlyPhasePlanning(
                     val end = aiResponse.lastIndexOf('}')
                     if (start != -1 && end != -1 && end > start) {
                         aiResponse.substring(start, end + 1)
-                    } else {
+                    } else if (aiResponse.contains("```json")) {
                         aiResponse.substringAfter("```json").substringBeforeLast("```").trim()
+                    } else {
+                        aiResponse
                     }
                 } catch (e: Exception) {
                     aiResponse
@@ -297,7 +299,7 @@ class NightlyPhasePlanning(
                 listener.onStepCompleted(NightlySteps.STEP_GENERATE_PLAN, "Plan Parsed", details)
                 saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
             } catch (e: Exception) {
-                val errorDetails = "AI response was not valid JSON. Please try again or simplify your plan."
+                val errorDetails = "AI response was not valid JSON. ${e.message}"
                 TerminalLogger.log("Step 9 JSON parse error: ${e.message}, Raw: $aiResponse")
 
                 val failureJson = JSONObject().apply {
@@ -307,6 +309,7 @@ class NightlyPhasePlanning(
 
                 saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails, failureJson)
                 listener.onAnalysisFeedback(errorDetails)
+                listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
             }
         } catch (e: Exception) {
             listener.onError(NightlySteps.STEP_GENERATE_PLAN, "AI Plan Failed: ${e.message}")
@@ -861,15 +864,20 @@ class NightlyPhasePlanning(
                     val end = aiResponse.lastIndexOf('}')
                     if (start != -1 && end != -1 && end > start) {
                         aiResponse.substring(start, end + 1)
-                    } else {
+                    } else if (aiResponse.contains("```json")) {
                         aiResponse.substringAfter("```json").substringBeforeLast("```").trim()
+                    } else {
+                        aiResponse
                     }
                 } catch (e: Exception) {
                     aiResponse
                 }
                 JSONObject(jsonStr.trim())
             } catch (e: Exception) {
-                 JSONObject(aiResponse) // Try direct parse
+                TerminalLogger.log("Step 14 JSON parse error: ${e.message}, Raw: $aiResponse")
+                listener.onError(NightlySteps.STEP_NORMALIZE_TASKS, "AI response was not valid JSON. ${e.message}")
+                saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_ERROR, "AI response was not valid JSON. ${e.message}")
+                return
             }
             
             val deleteIds = responseJson.optJSONArray("delete_ids")
