@@ -40,20 +40,67 @@ export default {
       }
 
 
-      const allowedModels = [
+      // Reasoning capable models (these might not support 'system' role or tool calling)
+      const reasoningModels = [
+        "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+        "@cf/moonshotai/kimi-k2.7-code",
+        "@cf/zai-org/glm-4.7-flash",
         "@cf/openai/gpt-oss-120b",
-        "@cf/qwen/qwq-32b",
+        "@cf/zai-org/glm-5.2",
+        "@cf/moonshotai/kimi-k2.6",
+        "@cf/google/gemma-4-26b-a4b-it",
+        "@cf/nvidia/nemotron-3-120b-a12b",
+        "@cf/openai/gpt-oss-20b",
+        "@cf/qwen/qwen3-30b-a3b-fp8",
+        "@cf/qwen/qwq-32b"
+      ];
+
+      // Tool calling compatible models
+      const toolCallingModels = [
+        "@cf/openai/gpt-oss-120b",
+        "@cf/openai/gpt-oss-20b",
+        "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
         "@cf/qwen/qwen2.5-coder-32b-instruct",
-        "@cf/qwen/qwen1.5-14b-chat-awq",
-        "@hf/nousresearch/hermes-2-pro-mistral-7b"
-];
+        "@cf/meta/llama-4-scout-17b-16e-instruct",
+        "@cf/mistralai/mistral-small-3.1-24b-instruct",
+        "@cf/moonshotai/kimi-k2.7-code",
+        "@cf/google/gemma-4-26b-a4b-it",
+        "@cf/ibm-granite/granite-4.0-h-micro",
+        "@cf/zai-org/glm-4.7-flash",
+        "@cf/zai-org/glm-5.2",
+        "@cf/moonshotai/kimi-k2.6",
+        "@cf/nvidia/nemotron-3-120b-a12b",
+        "@cf/qwen/qwen3-30b-a3b-fp8"
+      ];
+
+      const allowedModels = [...new Set([...reasoningModels, ...toolCallingModels])];
 
       const requestedModel = body.model;
       const modelToUse = allowedModels.includes(requestedModel) ? requestedModel : "@cf/openai/gpt-oss-120b";
 
+      let messages = body.messages || [{ role: "user", content: "Hello!" }];
+
+      // Handle reasoning models that might fail with system prompts
+      if (reasoningModels.includes(modelToUse)) {
+          let systemPrompt = "";
+          messages = messages.filter(msg => {
+              if (msg.role === "system") {
+                  systemPrompt += msg.content + "\n\n";
+                  return false;
+              }
+              return true;
+          });
+
+          if (systemPrompt.length > 0 && messages.length > 0) {
+              messages[0].content = systemPrompt + messages[0].content;
+          } else if (systemPrompt.length > 0) {
+              messages.push({ role: "user", content: systemPrompt.trim() });
+          }
+      }
+
       // Call Cloudflare AI with messages, tools, and optional parameters
       const options = {
-        messages: body.messages || [{ role: "user", content: "Hello!" }],
+        messages: messages,
         max_tokens: body.max_tokens || 1024,
         temperature: body.temperature || 0.7,
       };
