@@ -140,7 +140,7 @@ class NightlyPhasePlanning(
 
                 if (currentContent.length < 50 || hasRawTemplate) {
                     withContext(Dispatchers.IO) {
-                        GoogleDocsManager.appendText(context, existingDocId, "\n" + content.replace(Regex("[\\]+|[**]+|[##]+"), ""))
+                        GoogleDocsManager.appendText(context, existingDocId, "\n" + content.replace(Regex("""\*\*|##|\[|\]"""), ""))
                     }
                     TerminalLogger.log("Nightly Phase Planning: Injected template into existing empty plan")
                 }
@@ -157,7 +157,7 @@ class NightlyPhasePlanning(
                         }
                     }
                     withContext(Dispatchers.IO) {
-                        GoogleDocsManager.appendText(context, newDocId, content.replace(Regex("[\\]+|[**]+|[##]+"), ""))
+                        GoogleDocsManager.appendText(context, newDocId, content.replace(Regex("""\*\*|##|\[|\]"""), ""))
                     }
                     docUrl = "https://docs.google.com/document/d/$newDocId"
 
@@ -239,13 +239,12 @@ class NightlyPhasePlanning(
 
             // Validate JSON with robust extraction
             try {
-                val start = aiResponse.indexOf('{')
-                val end = aiResponse.lastIndexOf('}')
-
-                val jsonStr = if (start != -1 && end != -1 && end > start) {
-                    aiResponse.substring(start, end + 1)
+                // First try to extract from markdown block, fallback to basic json extraction
+                val jsonStr = if (aiResponse.contains("```json")) {
+                    aiResponse.substringAfter("```json").substringBeforeLast("```").trim()
                 } else {
-                    aiResponse
+                    val match = Regex("(?s)\\{.*\\}").find(aiResponse)
+                    match?.value ?: aiResponse
                 }
 
                 val json = JSONObject(jsonStr.trim())
@@ -853,14 +852,13 @@ class NightlyPhasePlanning(
             
             // 5. Parse AI Response
             val responseJson = try {
-                val start = aiResponse.indexOf('{')
-                val end = aiResponse.lastIndexOf('}')
-                val jsonStr = if (start != -1 && end != -1 && end > start) {
-                    aiResponse.substring(start, end + 1)
-                } else {
+                val jsonStr = if (aiResponse.contains("```json")) {
                     aiResponse.substringAfter("```json").substringBeforeLast("```").trim()
+                } else {
+                    val match = Regex("(?s)\\{.*\\}").find(aiResponse)
+                    match?.value ?: aiResponse
                 }
-                JSONObject(jsonStr)
+                JSONObject(jsonStr.trim())
             } catch (e: Exception) {
                  JSONObject(aiResponse) // Try direct parse
             }
