@@ -157,7 +157,7 @@ class NightlyPhasePlanning(
                         }
                     }
                     withContext(Dispatchers.IO) {
-                        GoogleDocsManager.appendText(context, newDocId, content.replace(Regex("""\*\*|##|\[|\]"""), ""))
+                        GoogleDocsManager.appendText(context, newDocId, content.replace(Regex("""\*\*|##"""), ""))
                     }
                     docUrl = "https://docs.google.com/document/d/$newDocId"
 
