@@ -239,16 +239,29 @@ class NightlyPhasePlanning(
 
             // Validate JSON with robust extraction
             try {
+                // Strip <think> tags completely
+                val cleanResponse = aiResponse.replace(Regex("<think>.*?</think>", RegexOption.DOT_MATCHES_ALL), "").trim()
+
                 // First try to extract from markdown block, fallback to basic json extraction
-                var jsonStr = if (aiResponse.contains("```json")) {
-                    aiResponse.substringAfter("```json").substringBeforeLast("```").trim()
+                var jsonStr = if (cleanResponse.contains("```json")) {
+                    cleanResponse.substringAfter("```json").substringBeforeLast("```").trim()
                 } else {
-                    val match = Regex("(?s)\\{.*\\}").find(aiResponse)
-                    match?.value ?: aiResponse
+                    try {
+                        val startIndex = cleanResponse.indexOf('{')
+                        val endIndex = cleanResponse.lastIndexOf('}')
+                        if (startIndex != -1 && endIndex != -1 && endIndex >= startIndex) {
+                            cleanResponse.substring(startIndex, endIndex + 1)
+                        } else {
+                            val match = Regex("(?s)\\{.*\\}").find(cleanResponse)
+                            match?.value ?: cleanResponse
+                        }
+                    } catch (e: Exception) {
+                        cleanResponse
+                    }
                 }
 
                 // If model just replies with string "null" we should catch it
-                if (jsonStr.equals("null", ignoreCase = true)) {
+                if (jsonStr.equals("null", ignoreCase = true) || jsonStr.isEmpty()) {
                     throw Exception("Model returned null output instead of JSON.")
                 }
 
@@ -298,11 +311,13 @@ class NightlyPhasePlanning(
                 listener.onStepCompleted(NightlySteps.STEP_GENERATE_PLAN, "Plan Parsed", details)
                 saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
             } catch (e: Exception) {
-                val errorDetails = "AI response was not valid JSON. Please try again or simplify your plan."
-                TerminalLogger.log("Step 9 JSON parse error: ${e.message}, Raw: $aiResponse")
+                val inputSize = planContent.length
+                val snippet = if (aiResponse.length > 200) aiResponse.take(200) + "..." else aiResponse
+                val errorDetails = "AI Plan parsing failed. Error: ${e.message}. (Input size: $inputSize, Snippet: $snippet)"
+                TerminalLogger.log("Step 9 JSON parse error: ${e.message}, Raw snippet: $snippet")
 
                 val failureJson = JSONObject().apply {
-                    put("rawResponse", aiResponse)
+                    put("rawResponseSnippet", snippet)
                     put("error", e.message)
                 }.toString()
 
@@ -857,22 +872,44 @@ class NightlyPhasePlanning(
             
             // 5. Parse AI Response
             val responseJson = try {
-                var jsonStr = if (aiResponse.contains("```json")) {
-                    aiResponse.substringAfter("```json").substringBeforeLast("```").trim()
+                // Strip <think> tags completely
+                val cleanResponse = aiResponse.replace(Regex("<think>.*?</think>", RegexOption.DOT_MATCHES_ALL), "").trim()
+
+                var jsonStr = if (cleanResponse.contains("```json")) {
+                    cleanResponse.substringAfter("```json").substringBeforeLast("```").trim()
                 } else {
-                    val match = Regex("(?s)\\{.*\\}").find(aiResponse)
-                    match?.value ?: aiResponse
+                    try {
+                        val startIndex = cleanResponse.indexOf('{')
+                        val endIndex = cleanResponse.lastIndexOf('}')
+                        if (startIndex != -1 && endIndex != -1 && endIndex >= startIndex) {
+                            cleanResponse.substring(startIndex, endIndex + 1)
+                        } else {
+                            val match = Regex("(?s)\\{.*\\}").find(cleanResponse)
+                            match?.value ?: cleanResponse
+                        }
+                    } catch (e: Exception) {
+                        cleanResponse
+                    }
                 }
 
-                if (jsonStr.equals("null", ignoreCase = true) || aiResponse.equals("null", ignoreCase = true)) {
-                     throw Exception("Model returned null output.")
+                if (jsonStr.equals("null", ignoreCase = true) || jsonStr.isEmpty()) {
+                     throw Exception("Model returned null output instead of JSON.")
                 }
                 JSONObject(jsonStr.trim())
             } catch (e: Exception) {
-                if (e.message?.contains("null output") == true) {
-                    throw e
-                }
-                JSONObject(aiResponse) // Try direct parse
+                val inputSize = tasksJsonStr.length
+                val snippet = if (aiResponse.length > 200) aiResponse.take(200) + "..." else aiResponse
+                val errorDetails = "AI Task Normalization parsing failed. Error: ${e.message}. (Input size: $inputSize, Snippet: $snippet)"
+                TerminalLogger.log("Step 14 JSON parse error: ${e.message}, Raw snippet: $snippet")
+
+                val failureJson = JSONObject().apply {
+                    put("rawResponseSnippet", snippet)
+                    put("error", e.message)
+                }.toString()
+
+                saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_ERROR, errorDetails, failureJson)
+                listener.onError(NightlySteps.STEP_NORMALIZE_TASKS, errorDetails)
+                return
             }
             
             val deleteIds = responseJson.optJSONArray("delete_ids")
