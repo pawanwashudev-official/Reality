@@ -49,12 +49,8 @@ object NightlySteps {
     const val STEP_FINALIZE_XP = 7          // XPManager
     const val STEP_CREATE_PLAN_DOC = 8      // Google Docs
     const val STEP_GENERATE_PLAN = 9        // AI
-    const val STEP_PROCESS_PLAN = 10        // Google Tasks + Calendar
     const val STEP_GENERATE_REPORT = 11     // AI -> NightlySession
     const val STEP_GENERATE_PDF = 12        // PDF -> Google Drive
-    const val STEP_SET_ALARM = 13           // AlarmManager Configuration
-    const val STEP_NORMALIZE_TASKS = 14     // AI -> Google Tasks (Deduplicate & Reschedule)
-    const val STEP_UPDATE_DISTRACTION = 15  // Auto-update distraction limit from AI Plan
     const val STEP_BACKUP_SHEET = 16        // Backup to Reality Sheet
 
     // Protocol States
@@ -71,46 +67,6 @@ object NightlySteps {
     // Templates
     const val DEFAULT_DIARY_TEMPLATE = "# 📔 Daily Reflection Diary - {date}\n\n## 📊 Day Summary Data\n{data}\n\n## 💡 Personalized Questions\n{questions}\n\n## ✍️ My Reflection\n(Write your answers here...)\n"
     const val DEFAULT_PLAN_TEMPLATE = "# My Plan for Tomorrow\n\n## 🎯 Top Priorities\n- [ ] \n\n## 📅 Schedule\n- \n\n## 🚀 Tapasya Focus\n- \n"
-    
-    const val DEFAULT_TASK_NORMALIZER_TEMPLATE = """You are a smart Task Manager Agent. 
-Your goal is to clean up a user's task list for the Next Planning Day: {target_date}.
-
-INPUT DATA (Existing Tasks):
-{tasks_json}
-
-{list_context}
-
-[STRICT CLEANUP RULES]
-1. IDENTIFY DUPLICATES:
-   - Identify tasks with same/similar titles (e.g., "Buy milk" and "Get milk").
-   - Mark multiple occurrences for DELETION.
-   
-2. TASK LIST CORRECTION:
-   - Check if each task is in the most appropriate list based on the [AVAILABLE TASK LISTS] descriptions.
-   - If a task is in the wrong list, mark it for DELETION and create a RE-ADD entry for the correct list.
-
-3. DUE TIME EXTRACTION:
-   - Extract the intended time for the task as "startTime" in 24h format (HH:mm).
-   - IMPORTANT: If no time is explicitly mentioned, use "00:00" as a default.
-   - Strip any time prefix/suffix from the "title" field.
-
-4. RESCHEDULE:
-   - All tasks being re-added MUST have their due date set to {target_date}.
-   - Formatting: RFC 3339 timestamp (e.g., 2024-01-30T00:00:00.000Z).
-
-[JSON OUTPUT FORMAT]
-(Return ONLY valid JSON. No markdown. No preamble.)
-{
-  "delete_ids": ["task_id_1", "task_id_2"],
-  "readd_tasks": [
-    { 
-      "title": "Clean Title", 
-      "startTime": "HH:mm (ALWAYS REQUIRED)", 
-      "taskListId": "EXACT_ID_FROM_CONTEXT", 
-      "notes": "Original notes" 
-    }
-  ]
-}"""
 
     // Key generators for date-specific storage
     fun getStateKey(date: LocalDate): String = "state_${date.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
@@ -138,12 +94,8 @@ INPUT DATA (Existing Tasks):
         STEP_FINALIZE_XP -> "Finalize XP & Stats"
         STEP_CREATE_PLAN_DOC -> "Create Plan Document"
         STEP_GENERATE_PLAN -> "AI Parse Plan"
-        STEP_PROCESS_PLAN -> "Create Tasks & Events"
         STEP_GENERATE_REPORT -> "Generate AI Report"
         STEP_GENERATE_PDF -> "Create PDF Report"
-        STEP_SET_ALARM -> "Set Wake-up Alarm"
-        STEP_NORMALIZE_TASKS -> "AI Task Cleanup"
-        STEP_UPDATE_DISTRACTION -> "Update Distraction Limit"
         STEP_BACKUP_SHEET -> "Backup to Sheet"
         else -> "Unknown Step"
     }

@@ -215,55 +215,7 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         response
     }
     
-    /**
-     * Normalize tasks (deduplicate & reschedule) using AI.
-     */
-    suspend fun normalizeTasks(
-        context: Context,
-        modelString: String,
-        tasksJson: String,
-        targetDate: String,
-        taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig> = emptyList()
-    ): String = withContext(Dispatchers.IO) {
-        
-        TerminalLogger.log("Nightly AI: Normalizing tasks with model: $modelString")
-        
-        
 
-
-
-
-        
-        // Build list context (same logic as plan extraction)
-        val listsContext = if (taskListConfigs.isNotEmpty()) {
-            val details = taskListConfigs.joinToString("\n") { 
-                "- List Name: \"${it.displayName}\" (ID: ${it.googleListId})\n  Description: ${it.description}" 
-            }
-            "\n[AVAILABLE TASK LISTS]\n$details\n"
-        } else {
-            ""
-        }
-
-        // Load custom or default prompt
-        val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
-        val customPrompt = prefs.getString("custom_task_cleanup_prompt", null)
-        
-        val systemPrompt = if (customPrompt != null) {
-            customPrompt.replace("{tasks_json}", tasksJson)
-                .replace("{target_date}", targetDate)
-                .replace("{list_context}", listsContext)
-        } else {
-            com.neubofy.reality.data.nightly.NightlySteps.DEFAULT_TASK_NORMALIZER_TEMPLATE
-                .replace("{tasks_json}", tasksJson)
-                .replace("{target_date}", targetDate)
-                .replace("{list_context}", listsContext)
-        }
-            
-        TerminalLogger.log("Nightly AI: Task Cleanup prompt built, calling AI Worker...")
-        val response = callAIWorker(context, "Normalize the tasks provided in the system prompt to a valid JSON format. Return ONLY raw JSON without markdown wrapping.", systemPrompt, modelString)
-        
-        response
-    }
 
     fun getDefaultQuestionsPromptTemplate(): String {
         return """You are a supportive but honest personal productivity coach.

@@ -189,15 +189,15 @@ class NightlyPhasePlanning(
         }
     }
 
-    // ========== STEP 9: AI Parse Plan to JSON ==========
+    // ========== STEP 9: AI Parse Plan, Create Tasks & Events, Set Alarm, Update Distraction ==========
     suspend fun step9_generatePlan() {
         val stepData = loadStepData(NightlySteps.STEP_GENERATE_PLAN)
         if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
-            listener.onStepCompleted(NightlySteps.STEP_GENERATE_PLAN, "Plan Parsed", stepData.details)
+            listener.onStepCompleted(NightlySteps.STEP_GENERATE_PLAN, "Plan Parsed & Applied", stepData.details)
             return
         }
 
-        listener.onStepStarted(NightlySteps.STEP_GENERATE_PLAN, "AI Parsing Plan")
+        listener.onStepStarted(NightlySteps.STEP_GENERATE_PLAN, "AI Parsing & Applying Plan")
         saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "Reading plan...")
 
         try {
@@ -218,8 +218,8 @@ class NightlyPhasePlanning(
                 return
             }
 
-            val planContent = withContext(Dispatchers.IO) {
-                GoogleDocsManager.getDocumentContent(context, planId) ?: ""
+            val planContent = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.neubofy.reality.google.GoogleDocsManager.getDocumentContent(context, planId) ?: ""
             }
 
             if (planContent.length < 20) {
@@ -232,10 +232,10 @@ class NightlyPhasePlanning(
             saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "AI parsing...")
 
             // Fetch Task List Configs for AI context
-            val taskListConfigs = withContext(Dispatchers.IO) {
-                AppDatabase.getDatabase(context).taskListConfigDao().getAll()
+            val taskListConfigs = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.neubofy.reality.data.db.AppDatabase.getDatabase(context).taskListConfigDao().getAll()
             }
-            val aiResponse = NightlyAIHelper.analyzePlan(context, nightlyModel, planContent, taskListConfigs)
+            val aiResponse = com.neubofy.reality.utils.NightlyAIHelper.analyzePlan(context, nightlyModel, planContent, taskListConfigs)
 
             // Validate JSON with robust extraction
             try {
@@ -265,10 +265,10 @@ class NightlyPhasePlanning(
                     throw Exception("Model returned null output instead of JSON.")
                 }
 
-                val json = JSONObject(jsonStr.trim())
+                val json = org.json.JSONObject(jsonStr.trim())
 
-                val tasks = json.optJSONArray("tasks") ?: JSONArray()
-                val events = json.optJSONArray("events") ?: JSONArray()
+                val tasks = json.optJSONArray("tasks") ?: org.json.JSONArray()
+                val events = json.optJSONArray("events") ?: org.json.JSONArray()
 
                 if (tasks.length() == 0 && events.length() == 0) {
                     val errorDetails = "Could not extract tasks or events from your plan. Please write clearer items with times."
@@ -277,25 +277,229 @@ class NightlyPhasePlanning(
                     return
                 }
 
-                val details = "${tasks.length()} tasks, ${events.length()} events extracted"
                 val mentorship = json.optString("mentorship", "No advice generated.")
                 val wakeupTime = json.optString("wakeupTime", "")
                 val sleepStartTime = json.optString("sleepStartTime", "")
                 val distractionTimeMinutes = json.optInt("distractionTimeMinutes", 60)
 
-                val resultJson = JSONObject().apply {
-                    put("input", JSONObject().apply {
+                saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "Creating Tasks and Events...")
+
+                // ==========================
+                // TASK AND EVENT CREATION
+                // ==========================
+                // Persist sleep/wake times
+                val prefs = context.getSharedPreferences(NightlySteps.PREFS_NAME, android.content.Context.MODE_PRIVATE)
+                prefs.edit().apply {
+                    putString("planner_wakeup_time", wakeupTime)
+                    putString("planner_sleep_time", sleepStartTime)
+                    if (sleepStartTime.isNotEmpty()) {
+                        com.neubofy.reality.utils.TerminalLogger.log("Nightly Phase Planning: Saved planned sleep time: $sleepStartTime")
+                    }
+                }.apply()
+
+                val createdItems = org.json.JSONArray()
+                val nextDay = diaryDate.plusDays(1)
+
+                var tasksCreated = 0
+                var eventsCreated = 0
+
+                // Create Google Tasks
+                for (i in 0 until tasks.length()) {
+                    val taskLog = org.json.JSONObject()
+                    try {
+                        val taskObj = tasks.optJSONObject(i) ?: continue
+                        val title = taskObj.optString("title", "").trim()
+                        val notes = taskObj.optString("notes")
+                        val rawListId = taskObj.optString("taskListId", "@default")
+                        val startTime = taskObj.optString("startTime")
+
+                        taskLog.put("inputTitle", title)
+                        taskLog.put("inputStartTime", startTime)
+                        taskLog.put("inputList", rawListId)
+
+                        if (title.isNotEmpty()) {
+                            // Resolve List ID
+                            var finalTaskListId = "@default"
+                            val matchedConfig = taskListConfigs.find {
+                                it.googleListId == rawListId || it.displayName.equals(rawListId, ignoreCase = true)
+                            }
+
+                            if (matchedConfig != null) {
+                                finalTaskListId = matchedConfig.googleListId
+                            } else if (rawListId != "@default" && rawListId.isNotEmpty()) {
+                                taskLog.put("warning", "List '$rawListId' not found. Used Default.")
+                                com.neubofy.reality.utils.TerminalLogger.log("Nightly Phase Planning: List '$rawListId' not found. Fallback to @default.")
+                            }
+
+                            val finalTitle = if (!startTime.isNullOrEmpty()) "$startTime|$title" else title
+                            val dueDate = nextDay.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE) + "T09:00:00.000Z"
+
+                            val createdTask = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                com.neubofy.reality.google.GoogleTasksManager.createTask(context, finalTitle, notes, dueDate, finalTaskListId)
+                            }
+
+                            if (createdTask != null) {
+                                tasksCreated++
+                                taskLog.put("status", "SUCCESS")
+                                taskLog.put("finalTitle", finalTitle)
+                                taskLog.put("finalList", finalTaskListId)
+                                com.neubofy.reality.utils.TerminalLogger.log("Nightly Phase Planning: Created task - $finalTitle in list $finalTaskListId")
+                            } else {
+                                taskLog.put("status", "FAILED (API Error)")
+                            }
+                        } else {
+                            taskLog.put("status", "FAILED (Empty Title)")
+                        }
+                    } catch (e: Exception) {
+                        taskLog.put("status", "ERROR: ${e.message}")
+                        com.neubofy.reality.utils.TerminalLogger.log("Nightly Phase Planning: Failed to process task at index $i - ${e.message}")
+                    }
+                    taskLog.put("type", "TASK")
+                    createdItems.put(taskLog)
+                }
+
+                // Create Calendar Events
+                for (i in 0 until events.length()) {
+                    val eventLog = org.json.JSONObject()
+                    try {
+                        val eventObj = events.optJSONObject(i) ?: continue
+                        val title = eventObj.optString("title", "").trim()
+                        val startTimeStr = eventObj.optString("startTime", "")
+                        val endTimeStr = eventObj.optString("endTime", "")
+                        val description = eventObj.optString("description")
+
+                        eventLog.put("inputTitle", title)
+                        eventLog.put("inputTime", "$startTimeStr - $endTimeStr")
+
+                        if (title.isNotEmpty() && startTimeStr.isNotEmpty() && endTimeStr.isNotEmpty()) {
+                            val startParts = startTimeStr.split(":")
+                            val endParts = endTimeStr.split(":")
+
+                            if (startParts.size >= 2 && endParts.size >= 2) {
+                                val startMs = nextDay.atTime(startParts[0].toInt(), startParts[1].toInt())
+                                    .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                                val endMs = nextDay.atTime(endParts[0].toInt(), endParts[1].toInt())
+                                    .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+                                val eventId = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                    com.neubofy.reality.google.GoogleCalendarManager.createEvent(
+                                        context, title, startMs, endMs, description
+                                    )
+                                }
+
+                                if (eventId != null) {
+                                    eventsCreated++
+                                    eventLog.put("status", "SUCCESS")
+                                    com.neubofy.reality.utils.TerminalLogger.log("Nightly Phase Planning: Created Cloud Calendar event - $title (ID: $eventId)")
+                                } else {
+                                    eventLog.put("status", "FAILED (Cloud API Error)")
+                                }
+                            } else {
+                                eventLog.put("status", "FAILED (Invalid Time Format)")
+                            }
+                        } else {
+                            eventLog.put("status", "FAILED (Missing Title or Time)")
+                        }
+                    } catch (e: Exception) {
+                        eventLog.put("status", "ERROR: ${e.message}")
+                        com.neubofy.reality.utils.TerminalLogger.log("Nightly Phase Planning: Failed to create calendar event at index $i - ${e.message}")
+                    }
+                    eventLog.put("type", "EVENT")
+                    createdItems.put(eventLog)
+                }
+
+                // Sync Bedtime
+                syncBedtime(wakeupTime, sleepStartTime)
+
+                // ==========================
+                // SET ALARM
+                // ==========================
+                saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "Setting Alarm...")
+                var alarmHour = -1
+                var alarmMin = -1
+                if (wakeupTime.isNotEmpty()) {
+                    try {
+                        val parts = wakeupTime.split(":")
+                        if (parts.size == 2) {
+                            alarmHour = parts[0].toInt()
+                            alarmMin = parts[1].toInt()
+
+                            val alarmTime = nextDay.atTime(alarmHour, alarmMin)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toInstant()
+                                .toEpochMilli()
+
+                            val alarmManager = context.getSystemService(android.content.Context.ALARM_SERVICE) as? android.app.AlarmManager
+                            if (alarmManager != null) {
+                                val canSchedule = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                                    alarmManager.canScheduleExactAlarms()
+                                } else {
+                                    true
+                                }
+
+                                if (canSchedule) {
+                                    val prefsLoader = com.neubofy.reality.utils.SavedPreferencesLoader(context)
+                                    val defaults = prefsLoader.getWakeupAlarmDefaults()
+                                    val alarmId = "nightly_wakeup"
+                                    val wakeupAlarms = prefsLoader.loadWakeupAlarms()
+                                    wakeupAlarms.removeAll { it.id == alarmId }
+                                    wakeupAlarms.add(com.neubofy.reality.data.model.WakeupAlarm(
+                                        id = alarmId,
+                                        title = "Wake Up (AI Plan)",
+                                        description = "AI generated wakeup alarm based on your daily plan.",
+                                        hour = alarmHour,
+                                        minute = alarmMin,
+                                        isEnabled = true,
+                                        repeatDays = emptyList(),
+                                        ringtoneUri = defaults.ringtoneUri,
+                                        vibrationEnabled = defaults.vibrationEnabled,
+                                        snoozeIntervalMins = defaults.snoozeIntervalMins,
+                                        maxAttempts = defaults.maxAttempts,
+                                        isDeleted = false
+                                    ))
+                                    prefsLoader.saveWakeupAlarms(wakeupAlarms)
+                                    com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(context)
+                                } else {
+                                    com.neubofy.reality.utils.TerminalLogger.log("Nightly Phase Planning: Missing alarm permission")
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        com.neubofy.reality.utils.TerminalLogger.log("Nightly Phase Planning: Alarm config error - ${e.message}")
+                    }
+                }
+
+                // ==========================
+                // UPDATE DISTRACTION
+                // ==========================
+                saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "Updating Distraction Limit...")
+                val oldLimit = prefs.getInt("screen_time_limit_minutes", 60)
+                prefs.edit().putInt("screen_time_limit_minutes", distractionTimeMinutes).apply()
+                com.neubofy.reality.utils.TerminalLogger.log("Nightly Step 9: Distraction limit updated from $oldLimit to $distractionTimeMinutes min")
+
+                val details = "${tasks.length()} tasks, ${events.length()} events extracted & applied"
+                val resultJson = org.json.JSONObject().apply {
+                    put("input", org.json.JSONObject().apply {
                         put("planContent", planContent)
                         put("model", nightlyModel)
                         put("planDocId", planId)
                     })
-                    put("output", JSONObject().apply {
+                    put("output", org.json.JSONObject().apply {
                         put("tasks", tasks)
                         put("events", events)
                         put("mentorship", mentorship)
                         put("wakeupTime", wakeupTime)
                         put("sleepStartTime", sleepStartTime)
                         put("distractionTimeMinutes", distractionTimeMinutes)
+                        put("tasksCreated", tasksCreated)
+                        put("eventsCreated", eventsCreated)
+                        put("items", createdItems)
+                        if (alarmHour != -1) {
+                            put("alarmHour", alarmHour)
+                            put("alarmMinute", alarmMin)
+                        }
+                        put("oldDistractionLimit", oldLimit)
+                        put("newDistractionLimit", distractionTimeMinutes)
                     })
                     // Legacy compatibility
                     put("tasks", tasks)
@@ -308,7 +512,7 @@ class NightlyPhasePlanning(
                     put("sanitizedJson", jsonStr)
                 }.toString()
 
-                listener.onStepCompleted(NightlySteps.STEP_GENERATE_PLAN, "Plan Parsed", details)
+                listener.onStepCompleted(NightlySteps.STEP_GENERATE_PLAN, "Plan Parsed & Applied", details)
                 saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
             } catch (e: Exception) {
                 val inputSize = planContent.length
@@ -330,182 +534,6 @@ class NightlyPhasePlanning(
         }
     }
 
-    // ========== STEP 10: Create Google Tasks & Calendar Events ==========
-    suspend fun step10_processPlan() {
-        val stepData = loadStepData(NightlySteps.STEP_PROCESS_PLAN)
-        if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
-            listener.onStepCompleted(NightlySteps.STEP_PROCESS_PLAN, "Plan Processed", stepData.details)
-            return
-        }
-
-        listener.onStepStarted(NightlySteps.STEP_PROCESS_PLAN, "Processing Plan to Tasks & Events")
-        saveStepState(NightlySteps.STEP_PROCESS_PLAN, StepProgress.STATUS_RUNNING, "Processing...")
-
-        try {
-            // Get JSON from Step 9 (from DB)
-            val step9Data = loadStepData(NightlySteps.STEP_GENERATE_PLAN)
-            if (step9Data.resultJson == null) {
-                throw IllegalStateException("Step 9 not completed. Run AI Plan first.")
-            }
-
-            val step9Json = JSONObject(step9Data.resultJson)
-            val tasks = step9Json.optJSONArray("tasks") ?: JSONArray()
-            val events = step9Json.optJSONArray("events") ?: JSONArray()
-            val wakeupTime = step9Json.optString("wakeupTime")
-            val sleepStartTime = step9Json.optString("sleepStartTime")
-
-            // Persist sleep/wake times
-            val prefs = context.getSharedPreferences(NightlySteps.PREFS_NAME, Context.MODE_PRIVATE)
-            prefs.edit().apply {
-                putString("planner_wakeup_time", wakeupTime)
-                putString("planner_sleep_time", sleepStartTime)
-                if (sleepStartTime.isNotEmpty()) {
-                    TerminalLogger.log("Nightly Phase Planning: Saved planned sleep time: $sleepStartTime")
-                }
-            }.apply()
-
-            val createdItems = JSONArray()
-            val nextDay = diaryDate.plusDays(1)
-
-            var tasksCreated = 0
-            var eventsCreated = 0
-
-            // Load Task List Configs
-            val listConfigs = withContext(Dispatchers.IO) {
-                AppDatabase.getDatabase(context).taskListConfigDao().getAll()
-            }
-
-            // Create Google Tasks
-            for (i in 0 until tasks.length()) {
-                val taskLog = JSONObject()
-                try {
-                    val taskObj = tasks.optJSONObject(i) ?: continue
-                    val title = taskObj.optString("title", "").trim()
-                    val notes = taskObj.optString("notes")
-                    val rawListId = taskObj.optString("taskListId", "@default")
-                    val startTime = taskObj.optString("startTime")
-
-                    taskLog.put("inputTitle", title)
-                    taskLog.put("inputStartTime", startTime)
-                    taskLog.put("inputList", rawListId)
-
-                    if (title.isNotEmpty()) {
-                        // Resolve List ID
-                        var finalTaskListId = "@default"
-                        val matchedConfig = listConfigs.find {
-                            it.googleListId == rawListId || it.displayName.equals(rawListId, ignoreCase = true)
-                        }
-
-                        if (matchedConfig != null) {
-                            finalTaskListId = matchedConfig.googleListId
-                        } else if (rawListId != "@default" && rawListId.isNotEmpty()) {
-                            taskLog.put("warning", "List '$rawListId' not found. Used Default.")
-                            TerminalLogger.log("Nightly Phase Planning: List '$rawListId' not found. Fallback to @default.")
-                        }
-
-                        val finalTitle = if (!startTime.isNullOrEmpty()) "$startTime|$title" else title
-                        val dueDate = nextDay.format(DateTimeFormatter.ISO_LOCAL_DATE) + "T09:00:00.000Z"
-
-                        val createdTask = withContext(Dispatchers.IO) {
-                            com.neubofy.reality.google.GoogleTasksManager.createTask(context, finalTitle, notes, dueDate, finalTaskListId)
-                        }
-
-                        if (createdTask != null) {
-                            tasksCreated++
-                            taskLog.put("status", "SUCCESS")
-                            taskLog.put("finalTitle", finalTitle)
-                            taskLog.put("finalList", finalTaskListId)
-                            TerminalLogger.log("Nightly Phase Planning: Created task - $finalTitle in list $finalTaskListId")
-                        } else {
-                            taskLog.put("status", "FAILED (API Error)")
-                        }
-                    } else {
-                        taskLog.put("status", "FAILED (Empty Title)")
-                    }
-                } catch (e: Exception) {
-                    taskLog.put("status", "ERROR: ${e.message}")
-                    TerminalLogger.log("Nightly Phase Planning: Failed to process task at index $i - ${e.message}")
-                }
-                taskLog.put("type", "TASK")
-                createdItems.put(taskLog)
-            }
-
-            // Create Calendar Events
-            for (i in 0 until events.length()) {
-                val eventLog = JSONObject()
-                try {
-                    val eventObj = events.optJSONObject(i) ?: continue
-                    val title = eventObj.optString("title", "").trim()
-                    val startTimeStr = eventObj.optString("startTime", "")
-                    val endTimeStr = eventObj.optString("endTime", "")
-                    val description = eventObj.optString("description")
-
-                    eventLog.put("inputTitle", title)
-                    eventLog.put("inputTime", "$startTimeStr - $endTimeStr")
-
-                    if (title.isNotEmpty() && startTimeStr.isNotEmpty() && endTimeStr.isNotEmpty()) {
-                        val startParts = startTimeStr.split(":")
-                        val endParts = endTimeStr.split(":")
-
-                        if (startParts.size >= 2 && endParts.size >= 2) {
-                            val startMs = nextDay.atTime(startParts[0].toInt(), startParts[1].toInt())
-                                .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                            val endMs = nextDay.atTime(endParts[0].toInt(), endParts[1].toInt())
-                                .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-
-                            val eventId = withContext(Dispatchers.IO) {
-                                com.neubofy.reality.google.GoogleCalendarManager.createEvent(
-                                    context, title, startMs, endMs, description
-                                )
-                            }
-
-                            if (eventId != null) {
-                                eventsCreated++
-                                eventLog.put("status", "SUCCESS")
-                                TerminalLogger.log("Nightly Phase Planning: Created Cloud Calendar event - $title (ID: $eventId)")
-                            } else {
-                                eventLog.put("status", "FAILED (Cloud API Error)")
-                            }
-                        } else {
-                            eventLog.put("status", "FAILED (Invalid Time Format)")
-                        }
-                    } else {
-                        eventLog.put("status", "FAILED (Missing Title or Time)")
-                    }
-                } catch (e: Exception) {
-                    eventLog.put("status", "ERROR: ${e.message}")
-                    TerminalLogger.log("Nightly Phase Planning: Failed to create calendar event at index $i - ${e.message}")
-                }
-                eventLog.put("type", "EVENT")
-                createdItems.put(eventLog)
-            }
-
-            val details = "$tasksCreated tasks, $eventsCreated events created"
-
-            val resultJson = JSONObject().apply {
-                put("input", JSONObject().apply {
-                    put("tasksCount", tasks.length())
-                    put("eventsCount", events.length())
-                    put("wakeupTime", wakeupTime)
-                    put("sleepStartTime", sleepStartTime)
-                })
-                put("output", JSONObject().apply {
-                    put("tasksCreated", tasksCreated)
-                    put("eventsCreated", eventsCreated)
-                    put("items", createdItems)
-                })
-            }.toString()
-
-            listener.onStepCompleted(NightlySteps.STEP_PROCESS_PLAN, "Plan Processed", details)
-            saveStepState(NightlySteps.STEP_PROCESS_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
-
-            // Sync Bedtime
-            syncBedtime(wakeupTime, sleepStartTime)
-        } catch (e: Exception) {
-            listener.onError(NightlySteps.STEP_PROCESS_PLAN, "Process Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_PROCESS_PLAN, StepProgress.STATUS_ERROR, e.message)
-        }
-    }
 
     // ========== STEP 11: Generate AI Report ==========
     suspend fun step11_generateReport() {
@@ -989,39 +1017,10 @@ class NightlyPhasePlanning(
                 return
             }
 
-            val step9Json = JSONObject(step9Data.resultJson)
-            val newLimit = step9Json.optInt("distractionTimeMinutes", 60)
 
-            // Get current limit from the CORRECT prefs (nightly_prefs - same as ReflectionSettingsActivity)
-            val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
-            val oldLimit = prefs.getInt("screen_time_limit_minutes", 60)
 
-            // Update preference (bypasses Strict Mode as this is authorized Nightly Protocol update)
-            prefs.edit().putInt("screen_time_limit_minutes", newLimit).apply()
 
-            val resultJson = JSONObject().apply {
-                put("input", JSONObject().apply {
-                    put("step9DistractionTime", step9Json.optInt("distractionTimeMinutes", -1))
-                    put("diaryDate", diaryDate.toString())
-                })
-                put("output", JSONObject().apply {
-                    put("oldLimit", oldLimit)
-                    put("newLimit", newLimit)
-                    put("updatedAt", System.currentTimeMillis())
-                })
-            }.toString()
 
-            val details = "${oldLimit}min → ${newLimit}min"
-            listener.onStepCompleted(NightlySteps.STEP_UPDATE_DISTRACTION, "Limit Updated", details)
-            saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_COMPLETED, details, resultJson)
-            
-            TerminalLogger.log("Nightly Step 15: Distraction limit updated from $oldLimit to $newLimit min")
-        } catch (e: Exception) {
-            TerminalLogger.log("Nightly Step 15 Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_ERROR, e.message)
-            listener.onError(NightlySteps.STEP_UPDATE_DISTRACTION, "Update Failed: ${e.message}")
-        }
-    }
 
 
     // ========== STEP 16: Backup to Reality Sheet ==========
