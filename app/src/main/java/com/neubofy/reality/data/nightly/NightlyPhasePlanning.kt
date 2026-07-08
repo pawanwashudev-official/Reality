@@ -828,7 +828,7 @@ class NightlyPhasePlanning(
             saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_RUNNING, "AI analyzing ${allPendingTasks.size} tasks...")
             
             // 4. Call AI (Using Standardized Model)
-            val model = "gpt-oss-20b"
+            val model = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
             if (model.isNullOrEmpty()) {
                 throw IllegalStateException("No AI Model configured for Nightly Protocol.")
             }
@@ -843,7 +843,14 @@ class NightlyPhasePlanning(
             
             // 5. Parse AI Response
             val responseJson = try {
-                 JSONObject(aiResponse.substringAfter("```json").substringBeforeLast("```").trim())
+                val start = aiResponse.indexOf('{')
+                val end = aiResponse.lastIndexOf('}')
+                val jsonStr = if (start != -1 && end != -1 && end > start) {
+                    aiResponse.substring(start, end + 1)
+                } else {
+                    aiResponse.substringAfter("```json").substringBeforeLast("```").trim()
+                }
+                JSONObject(jsonStr)
             } catch (e: Exception) {
                  JSONObject(aiResponse) // Try direct parse
             }

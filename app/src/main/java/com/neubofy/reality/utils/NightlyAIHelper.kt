@@ -210,7 +210,7 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
             ?: getDefaultPlanPrompt(planContent, taskListConfigs)
             
         TerminalLogger.log("Nightly AI: Plan prompt built, calling AI Worker...")
-        val response = callAIWorker(context, "Extract my tasks and plan based on the document provided in the system prompt.", systemPrompt, modelString)
+        val response = callAIWorker(context, "Extract my tasks and plan based on the document provided in the system prompt. Return ONLY valid JSON format without markdown wrapping.", systemPrompt, modelString)
         
         response
     }
@@ -260,7 +260,7 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         }
             
         TerminalLogger.log("Nightly AI: Task Cleanup prompt built, calling AI Worker...")
-        val response = callAIWorker(context, "Normalize the tasks provided in the system prompt to a valid JSON array format.", systemPrompt, modelString)
+        val response = callAIWorker(context, "Normalize the tasks provided in the system prompt to a valid JSON format. Return ONLY raw JSON without markdown wrapping.", systemPrompt, modelString)
         
         response
     }
