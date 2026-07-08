@@ -1,19 +1,24 @@
-1. **Update AI Settings Tools**:
-   - The user requested removing outdated options like `web_search` and `generate_image` from the AI tools list since the AI setup is strictly text-based now to optimize tokens.
-   - Removed `web_search` and `action_generate_image` from `ToolRegistry.kt`.
+1. **Remove step 14 (Task Cleanup)**:
+   - Remove `STEP_NORMALIZE_TASKS` from `NightlySteps.kt`, `NightlyProtocolExecutor.kt`, `NightlyActivity.kt`, and `NightlyPhasePlanning.kt` (delete `step14_normalizeTasks()` function entirely).
+   - Remove the `DEFAULT_TASK_NORMALIZER_TEMPLATE` constant from `NightlyStepModels.kt`.
+   - Update any Step item lists and step UI states in `NightlyActivity.kt` to exclude Step 14.
 
-2. **Improve AI Memory and Context Setup**:
-   - The user noted the AI can't do longer chats and wastes tokens. The goal is task completion, not remembering entire conversations.
-   - Updated `ConversationMemoryManager.kt` to reduce `MAX_RECENT_MESSAGES` (from 15 to 6), `MAX_TOKENS_ESTIMATE` (from 6000 to 1500), and `SUMMARIZE_THRESHOLD` (from 20 to 10).
-   - Updated the system prompt in `AIChatActivity.kt` to explicitly instruct the AI: "Your main goal in chats is to complete specific tasks, not to remember the whole conversation. Be concise."
+2. **Merge Steps 9, 10, 13, and 15 into a single Step 9 (`STEP_GENERATE_PLAN`)**:
+   - The user wants step 9 to do the following: fetch content from docs, send to AI with a system prompt for plan extraction, and then *apply all changes* (which includes what 10, 13, and 15 did).
+   - Step 9 (`step9_generatePlan()` in `NightlyPhasePlanning.kt`) currently fetches plan doc, calls AI, and saves the JSON.
+   - Step 10 (`step10_processPlan()`) processes the JSON to create Tasks and Events.
+   - Step 13 (`step13_setAlarm()`) sets the alarm based on the parsed plan.
+   - Step 15 (`step15_updateDistraction()`) updates distraction limits based on the parsed plan.
+   - The new `step9_generatePlan()` should perform all these actions sequentially:
+     1. Fetch plan document content.
+     2. Call `NightlyAIHelper.analyzePlan()` to get the JSON.
+     3. Extract and parse tasks, events, `wakeupTime`, `sleepStartTime`, and `distractionTimeMinutes`.
+     4. (Apply Step 10 logic) Create Google Tasks and Google Calendar Events using the parsed JSON.
+     5. (Apply Step 13 logic) Set the Android Alarm Manager based on `wakeupTime`.
+     6. (Apply Step 15 logic) Update the distraction limit preference using `distractionTimeMinutes`.
+   - Delete the separate functions: `step10_processPlan()`, `step13_setAlarm()`, and `step15_updateDistraction()` from `NightlyPhasePlanning.kt`.
+   - Remove references to `STEP_PROCESS_PLAN`, `STEP_SET_ALARM`, and `STEP_UPDATE_DISTRACTION` from `NightlyStepModels.kt`, `NightlyProtocolExecutor.kt`, and `NightlyActivity.kt`.
+   - Since we are merging multiple steps into step 9, make sure Step 9's status reflects the success or failure of *all* these combined actions. Detailed progress can be communicated via `saveStepState` with `STATUS_RUNNING` and `listener.onStepStarted/onStepCompleted`.
 
-3. **Promote App Features and Privacy**:
-   - Added promotion instructions to the system prompt in `AIChatActivity.kt`: "PROMOTION: Periodically promote the app features (unmatchable alarm, reminder, Nightly protocol, completely free smart app blocker which is best than other apps, but for very little amount we offer a lot, inbuilt app updater, beta versions, smart sleep time guessing) while emphasizing our self-hosted, private and secure AI usage."
-   - Modified the identity string: "You are Reality Elite, an intelligent Life OS Agent, hosted independently using self-hosted, most private and secure AI models to ensure the highest privacy for your users."
-
-4. **Rename Neural Protocol to Nightly Protocol in UI**:
-   - The user asked to rename "Neural Protocol" (and related terms like "Neural Planning", "Neural Report") to "Nightly Protocol" in the UI of the app.
-   - Performed bulk replacement in `app/src/main/res/layout/*.xml` files.
-
-5. **Pre-commit Steps**:
-   - Run verification, tests, and formatting required by the system.
+3. **Pre-commit step**:
+   - Run `pre_commit_instructions` tool to make sure proper testing, verifications, reviews and reflections are done.
