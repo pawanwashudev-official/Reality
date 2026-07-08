@@ -122,6 +122,10 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
         // Step 9 (Generate Plan) requires Step 8 (Create Plan Doc) to have data
         stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_GENERATE_PLAN, isStepOk(NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC))
         
+        // Step 10 (Process Plan) requires Step 9 (Generate Plan) to have data
+
+        // Step 14 (Normalize Tasks) requires Step 10 (Process Plan) to have data
+
         // Step 12 (Generate PDF) requires Step 11 (Generate Report) - check status completed
         val step11 = stepStates[NightlyProtocolExecutor.STEP_GENERATE_REPORT]
         val step11Ok = step11 != null && (step11.status == com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED || !step11.resultJson.isNullOrEmpty())
@@ -607,17 +611,10 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
                     Toast.makeText(this@NightlyActivity, "Finalizing XP...", Toast.LENGTH_SHORT).show()
                     executor.executeSpecificStep(step)
                 }
-                NightlyProtocolExecutor.STEP_NORMALIZE_TASKS -> {
-                    Toast.makeText(this@NightlyActivity, "Cleaning Tasks...", Toast.LENGTH_SHORT).show()
-                    executor.executeSpecificStep(step)
-                }
                 
                 // Phase 3: Planning
                 NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC,
-                NightlyProtocolExecutor.STEP_GENERATE_PLAN -> {
-                    Toast.makeText(this@NightlyActivity, "Re-running Plan Step...", Toast.LENGTH_SHORT).show()
-                    executor.executeSpecificStep(step)
-                }
+                NightlyProtocolExecutor.STEP_GENERATE_PLAN,
                 
                 // Phase 4: Reporting
                 NightlyProtocolExecutor.STEP_GENERATE_REPORT,
@@ -770,9 +767,15 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
             val step8Ok = stepStates[NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC]?.resultJson != null
             stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_GENERATE_PLAN, step8Ok)
             
+            // Step 10 enables if Step 9 has data
+            val step9Ok = stepStates[NightlyProtocolExecutor.STEP_GENERATE_PLAN]?.resultJson != null
+
             // Step 12 enables if Step 11 has data (Check NightlyRepository for report content)
             val step11Ok = stepStates[NightlyProtocolExecutor.STEP_GENERATE_REPORT]?.status == com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED
             stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_GENERATE_PDF, step11Ok)
+
+            // Step 14 enables if Step 10 has data
+
         }
     }
     

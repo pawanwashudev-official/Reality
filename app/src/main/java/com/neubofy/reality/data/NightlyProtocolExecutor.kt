@@ -76,12 +76,8 @@ class NightlyProtocolExecutor(
         const val STEP_FINALIZE_XP = NightlySteps.STEP_FINALIZE_XP
         const val STEP_CREATE_PLAN_DOC = NightlySteps.STEP_CREATE_PLAN_DOC
         const val STEP_GENERATE_PLAN = NightlySteps.STEP_GENERATE_PLAN
-        const val STEP_PROCESS_PLAN = NightlySteps.STEP_PROCESS_PLAN
         const val STEP_GENERATE_REPORT = NightlySteps.STEP_GENERATE_REPORT
         const val STEP_GENERATE_PDF = NightlySteps.STEP_GENERATE_PDF
-        const val STEP_SET_ALARM = NightlySteps.STEP_SET_ALARM
-        const val STEP_NORMALIZE_TASKS = NightlySteps.STEP_NORMALIZE_TASKS
-        const val STEP_UPDATE_DISTRACTION = NightlySteps.STEP_UPDATE_DISTRACTION
         const val STEP_BACKUP_SHEET = NightlySteps.STEP_BACKUP_SHEET
         
         // Legacy aliases (for backward compatibility)
@@ -699,23 +695,6 @@ class NightlyProtocolExecutor(
                         }
                     }
                     
-                    STEP_PROCESS_PLAN -> {
-                        sb.append("PLAN PROCESSING:\n")
-                        if (rawJson != null) {
-                            try {
-                                val json = JSONObject(rawJson)
-                                val output = json.optJSONObject("output") ?: json
-                                
-                                sb.append("• Tasks Created: ${output.optInt("tasksCreated", 0)}\n")
-                                sb.append("• Events Created: ${output.optInt("eventsCreated", 0)}\n")
-                            } catch (e: Exception) {
-                                sb.append("Parse error: ${e.message}\n")
-                            }
-                        } else {
-                            sb.append("No processing data in database.\n")
-                        }
-                    }
-                    
                     STEP_GENERATE_REPORT -> {
                         sb.append("REPORT GENERATION:\n")
                         if (rawJson != null) {
@@ -747,23 +726,6 @@ class NightlyProtocolExecutor(
                             }
                         } else {
                             sb.append("No PDF data in database.\n")
-                        }
-                    }
-                    
-                    STEP_SET_ALARM -> {
-                        sb.append("ALARM:\n")
-                        if (rawJson != null) {
-                            try {
-                                val json = JSONObject(rawJson)
-                                val output = json.optJSONObject("output") ?: json
-                                
-                                sb.append("• Hour: ${output.optInt("hour", 0)}\n")
-                                sb.append("• Minute: ${output.optInt("minute", 0)}\n")
-                            } catch (e: Exception) {
-                                sb.append("Parse error: ${e.message}\n")
-                            }
-                        } else {
-                            sb.append("No alarm data in database.\n")
                         }
                     }
                     
