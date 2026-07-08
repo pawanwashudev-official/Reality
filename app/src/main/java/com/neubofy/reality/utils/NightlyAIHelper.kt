@@ -597,6 +597,49 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         // Ensure we return at most 5 questions
         return questions.take(5)
     }
+
+    suspend fun normalizeTasks(
+        context: Context,
+        modelString: String,
+        tasksJson: String,
+        targetDate: String,
+        taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig>
+    ): String = withContext(Dispatchers.IO) {
+        val listsContext = taskListConfigs.joinToString("\n") {
+            "List: ${it.displayName} (ID: ${it.googleListId}), Description: ${it.description}"
+        }
+
+        val prompt = """
+            You are a rigorous task management AI.
+            Review the following list of pending tasks and normalize them based on the rules below.
+
+            [Target Date for Execution]: $targetDate
+
+            [Available Lists Context]
+            $listsContext
+
+            [RULES]
+            1. Consolidate absolute duplicates.
+            2. If a task title is extremely vague (e.g. "do thing"), correct it into an actionable statement.
+            3. Delete tasks that are obviously just tests/spam (e.g., "test", "asdf").
+            4. **List Relocation**: If a task clearly belongs in a specific list based on the provided [Available Lists Context] (e.g., a "Buy Milk" task in a "Work" list, move it to "Groceries" list).
+
+            [OUTPUT]
+            Return ONLY raw JSON with the following structure:
+            {
+              "delete_ids": ["task_id_1", "task_id_2"],
+              "readd_tasks": [
+                 { "title": "Corrected Actionable Title", "notes": "original notes", "list_id": "target_list_id", "start_time": "HH:mm" }
+              ]
+            }
+            - "delete_ids" contains the IDs of tasks that should be removed (duplicates, spam, OR tasks that need to be moved to a different list).
+            - "readd_tasks" contains new tasks that should be created. If a task was moved or its title was heavily modified, add it here with its new `list_id`. If `start_time` is missing or unknown, set it to "null".
+            Do not include markdown blocks or think tags. Return JSON ONLY.
+        """.trimIndent()
+
+        callAIWorker(context, "Analyze and normalize this JSON array of tasks.", prompt + "\n\n[TASKS]\n$tasksJson", modelString)
+    }
+
     suspend fun generatePlanSuggestions(
         context: Context,
         modelString: String,
