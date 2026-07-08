@@ -186,7 +186,7 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         TerminalLogger.log("Nightly AI: Analyzing plan with model: $modelString")
         
         // Add robust markdown stripping for plan input to prevent format breaks
-        val cleanPlanContent = planContent.replace(Regex("[\*#]+"), "").trim()
+        val cleanPlanContent = planContent.replace(Regex("[\\*#]+"), "").trim()
 
 
         

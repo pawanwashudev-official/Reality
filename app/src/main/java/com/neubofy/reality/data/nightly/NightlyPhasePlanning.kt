@@ -271,7 +271,7 @@ class NightlyPhasePlanning(
                 val events = json.optJSONArray("events") ?: org.json.JSONArray()
 
                 if (tasks.length() == 0 && events.length() == 0) {
-                    val errorDetails = "Could not extract tasks or events from your plan. Please write clearer items with times."
+                    val errorDetails = "Could not extract tasks or events from your plan. Please write clearer items with times. (Extracted JSON: $jsonStr, Raw response: $cleanResponse, Plan Length: ${planContent.length})"
                     saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails)
                     listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
                     return
