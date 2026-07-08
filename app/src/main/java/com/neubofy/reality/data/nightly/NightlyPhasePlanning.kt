@@ -256,8 +256,14 @@ class NightlyPhasePlanning(
                             cleanResponse
                         }
                     }
+                    if (extractedJsonStr.trim().equals("null", ignoreCase = true) || extractedJsonStr.trim().isEmpty()) {
+                        throw Exception("Empty or null response")
+                    }
                     JSONObject(extractedJsonStr.trim())
                 } catch (e: Exception) {
+                    if (cleanResponse.trim().equals("null", ignoreCase = true) || cleanResponse.trim().isEmpty()) {
+                        throw Exception("Empty or null response")
+                    }
                     JSONObject(cleanResponse.trim())
                 }
 
@@ -305,11 +311,14 @@ class NightlyPhasePlanning(
                 listener.onStepCompleted(NightlySteps.STEP_GENERATE_PLAN, "Plan Parsed", details)
                 saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
             } catch (e: Exception) {
-                val errorDetails = "AI response was not valid JSON. Please try again or simplify your plan."
+                val snippet = if (aiResponse.length > 200) aiResponse.take(200) + "..." else aiResponse
+                val errorDetails = "AI response was not valid JSON. AI said: $snippet"
                 TerminalLogger.log("Step 9 JSON parse error: ${e.message}, Raw: $aiResponse")
 
                 val failureJson = JSONObject().apply {
                     put("rawResponse", aiResponse)
+                    put("planContentSnippet", if (planContent.length > 200) planContent.take(200) + "..." else planContent)
+                    put("planContentLength", planContent.length)
                     put("error", e.message)
                 }.toString()
 
@@ -878,9 +887,26 @@ class NightlyPhasePlanning(
                         cleanResponse
                     }
                 }
+                if (jsonStr.trim().equals("null", ignoreCase = true) || jsonStr.trim().isEmpty()) {
+                    throw Exception("Empty or null response")
+                }
                 JSONObject(jsonStr.trim())
             } catch (e: Exception) {
-                 JSONObject(cleanResponse.trim()) // Try direct parse
+                 if (cleanResponse.trim().equals("null", ignoreCase = true) || cleanResponse.trim().isEmpty()) {
+                     throw Exception("Empty or null response")
+                 }
+                 try {
+                     JSONObject(cleanResponse.trim()) // Try direct parse
+                 } catch (inner: Exception) {
+                     val failureJson = JSONObject().apply {
+                         put("rawResponse", aiResponse)
+                         put("tasksJsonStrSnippet", if (tasksJsonStr.length > 200) tasksJsonStr.take(200) + "..." else tasksJsonStr)
+                         put("tasksJsonStrLength", tasksJsonStr.length)
+                         put("error", inner.message)
+                     }.toString()
+                     saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_ERROR, "AI response was not valid JSON", failureJson)
+                     throw inner
+                 }
             }
             
             val deleteIds = responseJson.optJSONArray("delete_ids")
