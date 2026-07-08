@@ -92,11 +92,14 @@ class AISettingsActivity : BaseActivity() {
 
     private fun setupModelSpinners() {
         val models = listOf(
-            "@cf/openai/gpt-oss-120b",
-            "@cf/qwen/qwq-32b",
+            "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
             "@cf/qwen/qwen2.5-coder-32b-instruct",
-            "@cf/qwen/qwen1.5-14b-chat-awq",
-            "@hf/nousresearch/hermes-2-pro-mistral-7b"
+            "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+            "@cf/openai/gpt-oss-120b",
+            "@cf/openai/gpt-oss-20b",
+            "@cf/meta/llama-4-scout-17b-16e-instruct",
+            "@cf/mistralai/mistral-small-3.1-24b-instruct",
+            "@cf/qwen/qwq-32b"
         )
 
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, models)
