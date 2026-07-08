@@ -140,7 +140,7 @@ class NightlyPhasePlanning(
 
                 if (currentContent.length < 50 || hasRawTemplate) {
                     withContext(Dispatchers.IO) {
-                        GoogleDocsManager.appendText(context, existingDocId, "\n" + content.replace(Regex("[\\]+|[**]+|[##]+"), ""))
+                        GoogleDocsManager.appendText(context, existingDocId, "\n" + content.replace(Regex("[\\*#]+"), ""))
                     }
                     TerminalLogger.log("Nightly Phase Planning: Injected template into existing empty plan")
                 }
@@ -157,7 +157,7 @@ class NightlyPhasePlanning(
                         }
                     }
                     withContext(Dispatchers.IO) {
-                        GoogleDocsManager.appendText(context, newDocId, content.replace(Regex("[\\]+|[**]+|[##]+"), ""))
+                        GoogleDocsManager.appendText(context, newDocId, content.replace(Regex("[\\*#]+"), ""))
                     }
                     docUrl = "https://docs.google.com/document/d/$newDocId"
 
@@ -239,16 +239,27 @@ class NightlyPhasePlanning(
 
             // Validate JSON with robust extraction
             try {
-                val start = aiResponse.indexOf('{')
-                val end = aiResponse.lastIndexOf('}')
+                val cleanResponse = aiResponse.replace(Regex("<think>.*?</think>", RegexOption.DOT_MATCHES_ALL), "")
 
-                val jsonStr = if (start != -1 && end != -1 && end > start) {
-                    aiResponse.substring(start, end + 1)
-                } else {
-                    aiResponse
+                var extractedJsonStr = cleanResponse
+                val json = try {
+                    val start = cleanResponse.indexOf('{')
+                    val end = cleanResponse.lastIndexOf('}')
+                    extractedJsonStr = if (start != -1 && end != -1 && end > start) {
+                        cleanResponse.substring(start, end + 1)
+                    } else {
+                        val markdownStart = cleanResponse.indexOf("```json")
+                        val markdownEnd = cleanResponse.lastIndexOf("```")
+                        if (markdownStart != -1 && markdownEnd != -1 && markdownEnd > markdownStart) {
+                            cleanResponse.substring(markdownStart + 7, markdownEnd).trim()
+                        } else {
+                            cleanResponse
+                        }
+                    }
+                    JSONObject(extractedJsonStr.trim())
+                } catch (e: Exception) {
+                    JSONObject(cleanResponse.trim())
                 }
-
-                val json = JSONObject(jsonStr.trim())
 
                 val tasks = json.optJSONArray("tasks") ?: JSONArray()
                 val events = json.optJSONArray("events") ?: JSONArray()
@@ -288,7 +299,7 @@ class NightlyPhasePlanning(
                     put("sleepStartTime", sleepStartTime)
                     put("distractionTimeMinutes", distractionTimeMinutes)
                     put("rawResponse", aiResponse)
-                    put("sanitizedJson", jsonStr)
+                    put("sanitizedJson", extractedJsonStr)
                 }.toString()
 
                 listener.onStepCompleted(NightlySteps.STEP_GENERATE_PLAN, "Plan Parsed", details)
@@ -852,17 +863,24 @@ class NightlyPhasePlanning(
             )
             
             // 5. Parse AI Response
+            val cleanResponse = aiResponse.replace(Regex("<think>.*?</think>", RegexOption.DOT_MATCHES_ALL), "")
             val responseJson = try {
-                val start = aiResponse.indexOf('{')
-                val end = aiResponse.lastIndexOf('}')
+                val start = cleanResponse.indexOf('{')
+                val end = cleanResponse.lastIndexOf('}')
                 val jsonStr = if (start != -1 && end != -1 && end > start) {
-                    aiResponse.substring(start, end + 1)
+                    cleanResponse.substring(start, end + 1)
                 } else {
-                    aiResponse.substringAfter("```json").substringBeforeLast("```").trim()
+                    val markdownStart = cleanResponse.indexOf("```json")
+                    val markdownEnd = cleanResponse.lastIndexOf("```")
+                    if (markdownStart != -1 && markdownEnd != -1 && markdownEnd > markdownStart) {
+                        cleanResponse.substring(markdownStart + 7, markdownEnd).trim()
+                    } else {
+                        cleanResponse
+                    }
                 }
-                JSONObject(jsonStr)
+                JSONObject(jsonStr.trim())
             } catch (e: Exception) {
-                 JSONObject(aiResponse) // Try direct parse
+                 JSONObject(cleanResponse.trim()) // Try direct parse
             }
             
             val deleteIds = responseJson.optJSONArray("delete_ids")
