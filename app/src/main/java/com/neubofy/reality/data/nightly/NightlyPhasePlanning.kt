@@ -12,6 +12,9 @@ import com.neubofy.reality.utils.NightlyAIHelper
 import com.neubofy.reality.utils.TerminalLogger
 import com.neubofy.reality.utils.XPManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
@@ -801,19 +804,26 @@ class NightlyPhasePlanning(
             val taskLists = tasksManager.getTaskLists(context)
             val allPendingTasks = mutableListOf<JSONObject>()
             
-            for (list in taskLists) {
-                val tasks = tasksManager.getTasks(context, list.id)
-                tasks.forEach { task ->
-                    if (task.status != "completed") {
-                        val json = JSONObject()
-                        json.put("id", task.id)
-                        json.put("list_id", list.id)
-                        json.put("title", task.title)
-                        json.put("due", task.due ?: "null")
-                        json.put("notes", task.notes ?: "")
-                        allPendingTasks.add(json)
+            coroutineScope {
+                val deferredTasks = taskLists.map { list ->
+                    async {
+                        val tasks = tasksManager.getTasks(context, list.id)
+                        val listPending = mutableListOf<JSONObject>()
+                        tasks.forEach { task ->
+                            if (task.status != "completed") {
+                                val json = JSONObject()
+                                json.put("id", task.id)
+                                json.put("list_id", list.id)
+                                json.put("title", task.title)
+                                json.put("due", task.due ?: "null")
+                                json.put("notes", task.notes ?: "")
+                                listPending.add(json)
+                            }
+                        }
+                        listPending
                     }
                 }
+                deferredTasks.awaitAll().forEach { allPendingTasks.addAll(it) }
             }
             
             if (allPendingTasks.isEmpty()) {
