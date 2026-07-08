@@ -32,8 +32,8 @@ class NightlyTool : AgentTool {
         val dataType = args.optString("data_type")
 
         val stepId = when(dataType) {
-            "plan" -> NightlyProtocolExecutor.STEP_GENERATE_PLAN
-            "report" -> NightlyProtocolExecutor.STEP_GENERATE_REPORT
+            "plan" -> com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN
+            "report" -> com.neubofy.reality.data.nightly.NightlySteps.STEP_REPORT
             else -> return "Error: data_type must be 'plan' or 'report'"
         }
 

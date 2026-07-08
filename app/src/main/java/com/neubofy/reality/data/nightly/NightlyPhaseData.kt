@@ -55,7 +55,7 @@ class NightlyPhaseData(
 
     // ========== STEP 1: Fetch Tasks ==========
     suspend fun step1_fetchTasks() {
-        val stepData = loadStepData(NightlySteps.STEP_FETCH_TASKS)
+        val stepData = loadStepData(NightlySteps.STEP_FETCH_ANALYTICS)
 
         // If completed, restore from saved resultJson
         if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
@@ -78,7 +78,7 @@ class NightlyPhaseData(
                     output.optInt("completedCount", completedTasks.size)
                 )
                 TerminalLogger.log("Nightly Phase Data: Step 1 restored (${fetchedTasks?.completedTasks?.size} done)")
-                listener.onStepCompleted(NightlySteps.STEP_FETCH_TASKS, "Tasks Fetched", stepData.details)
+                listener.onStepCompleted(NightlySteps.STEP_FETCH_ANALYTICS, "Tasks Fetched", stepData.details)
                 return
             } catch (e: Exception) {
                 TerminalLogger.log("Nightly Phase Data: Step 1 JSON parse failed, re-fetching")
@@ -86,8 +86,8 @@ class NightlyPhaseData(
         }
 
         // Fetch fresh from API
-        listener.onStepStarted(NightlySteps.STEP_FETCH_TASKS, "Fetching Tasks")
-        saveStepState(NightlySteps.STEP_FETCH_TASKS, StepProgress.STATUS_RUNNING, "Fetching...")
+        listener.onStepStarted(NightlySteps.STEP_FETCH_ANALYTICS, "Fetching Tasks")
+        saveStepState(NightlySteps.STEP_FETCH_ANALYTICS, StepProgress.STATUS_RUNNING, "Fetching...")
 
         try {
             fetchedTasks = dataCollector.fetchTasks(diaryDate)
@@ -104,18 +104,18 @@ class NightlyPhaseData(
                 })
             }.toString()
 
-            listener.onStepCompleted(NightlySteps.STEP_FETCH_TASKS, "Tasks Fetched", details)
-            saveStepState(NightlySteps.STEP_FETCH_TASKS, StepProgress.STATUS_COMPLETED, details, resultJson)
+            listener.onStepCompleted(NightlySteps.STEP_FETCH_ANALYTICS, "Tasks Fetched", details)
+            saveStepState(NightlySteps.STEP_FETCH_ANALYTICS, StepProgress.STATUS_COMPLETED, details, resultJson)
         } catch (e: Exception) {
             fetchedTasks = com.neubofy.reality.google.GoogleTasksManager.TaskStats(emptyList(), emptyList(), 0, 0)
-            listener.onError(NightlySteps.STEP_FETCH_TASKS, "Task Fetch Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_FETCH_TASKS, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_FETCH_ANALYTICS, "Task Fetch Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_FETCH_ANALYTICS, StepProgress.STATUS_ERROR, e.message)
         }
     }
 
     // ========== STEP 2: Fetch Sessions & Calendar ==========
     suspend fun step2_fetchSessions() {
-        val stepData = loadStepData(NightlySteps.STEP_FETCH_SESSIONS)
+        val stepData = loadStepData(NightlySteps.STEP_FETCH_ANALYTICS)
 
         if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
             try {
@@ -125,7 +125,7 @@ class NightlyPhaseData(
                 // Restore summary from local DB (fast)
                 daySummary = collectDayDataSilently()
                 TerminalLogger.log("Nightly Phase Data: Step 2 restored from DB")
-                listener.onStepCompleted(NightlySteps.STEP_FETCH_SESSIONS, "Sessions Fetched", stepData.details)
+                listener.onStepCompleted(NightlySteps.STEP_FETCH_ANALYTICS, "Sessions Fetched", stepData.details)
                 return
             } catch (e: Exception) {
                 TerminalLogger.log("Nightly Phase Data: Step 2 restore failed, re-fetching")
@@ -133,13 +133,13 @@ class NightlyPhaseData(
         }
 
         // Fetch fresh
-        listener.onStepStarted(NightlySteps.STEP_FETCH_SESSIONS, "Fetching Sessions")
-        saveStepState(NightlySteps.STEP_FETCH_SESSIONS, StepProgress.STATUS_RUNNING, "Fetching...")
+        listener.onStepStarted(NightlySteps.STEP_FETCH_ANALYTICS, "Fetching Sessions")
+        saveStepState(NightlySteps.STEP_FETCH_ANALYTICS, StepProgress.STATUS_RUNNING, "Fetching...")
 
         try {
             // Use Step 1 data if available (from DB, not refetching)
             if (fetchedTasks == null) {
-                val step1Data = loadStepData(NightlySteps.STEP_FETCH_TASKS)
+                val step1Data = loadStepData(NightlySteps.STEP_FETCH_ANALYTICS)
                 if (step1Data.resultJson != null) {
                     val json = JSONObject(step1Data.resultJson)
                     val output = json.optJSONObject("output") ?: json
@@ -192,17 +192,17 @@ class NightlyPhaseData(
                 })
             }.toString()
 
-            listener.onStepCompleted(NightlySteps.STEP_FETCH_SESSIONS, "Sessions Fetched", details)
-            saveStepState(NightlySteps.STEP_FETCH_SESSIONS, StepProgress.STATUS_COMPLETED, details, resultJson)
+            listener.onStepCompleted(NightlySteps.STEP_FETCH_ANALYTICS, "Sessions Fetched", details)
+            saveStepState(NightlySteps.STEP_FETCH_ANALYTICS, StepProgress.STATUS_COMPLETED, details, resultJson)
         } catch (e: Exception) {
-            listener.onError(NightlySteps.STEP_FETCH_SESSIONS, "Session Fetch Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_FETCH_SESSIONS, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_FETCH_ANALYTICS, "Session Fetch Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_FETCH_ANALYTICS, StepProgress.STATUS_ERROR, e.message)
         }
     }
 
     // ========== STEP 3: Calculate Screen Time & Health ==========
     suspend fun step3_calcScreenTime() {
-        val stepData = loadStepData(NightlySteps.STEP_CALC_SCREEN_TIME)
+        val stepData = loadStepData(NightlySteps.STEP_FETCH_ANALYTICS)
         if (stepData.status == StepProgress.STATUS_COMPLETED) {
             if (stepData.resultJson != null) {
                 try {
@@ -212,12 +212,12 @@ class NightlyPhaseData(
                     screenTimeXpDelta = output.optInt("xpDelta", 0)
                 } catch (_: Exception) {}
             }
-            listener.onStepCompleted(NightlySteps.STEP_CALC_SCREEN_TIME, "Health Calculated", stepData.details)
+            listener.onStepCompleted(NightlySteps.STEP_FETCH_ANALYTICS, "Health Calculated", stepData.details)
             return
         }
 
-        listener.onStepStarted(NightlySteps.STEP_CALC_SCREEN_TIME, "Calculating Health & Screen Time")
-        saveStepState(NightlySteps.STEP_CALC_SCREEN_TIME, StepProgress.STATUS_RUNNING, "Analyzing Usage...")
+        listener.onStepStarted(NightlySteps.STEP_FETCH_ANALYTICS, "Calculating Health & Screen Time")
+        saveStepState(NightlySteps.STEP_FETCH_ANALYTICS, StepProgress.STATUS_RUNNING, "Analyzing Usage...")
 
         try {
             val prefs = context.getSharedPreferences(NightlySteps.PREFS_NAME, Context.MODE_PRIVATE)
@@ -311,18 +311,18 @@ class NightlyPhaseData(
             }.toString()
 
 
-            listener.onStepCompleted(NightlySteps.STEP_CALC_SCREEN_TIME, "Health Metrics Calculated", details)
-            saveStepState(NightlySteps.STEP_CALC_SCREEN_TIME, StepProgress.STATUS_COMPLETED, details, resultJson)
+            listener.onStepCompleted(NightlySteps.STEP_FETCH_ANALYTICS, "Health Metrics Calculated", details)
+            saveStepState(NightlySteps.STEP_FETCH_ANALYTICS, StepProgress.STATUS_COMPLETED, details, resultJson)
         } catch (e: Exception) {
-            listener.onError(NightlySteps.STEP_CALC_SCREEN_TIME, "Health Calc Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_CALC_SCREEN_TIME, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_FETCH_ANALYTICS, "Health Calc Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_FETCH_ANALYTICS, StepProgress.STATUS_ERROR, e.message)
         }
     }
 
 
     // ========== STEP 4: Generate AI Questions (ALWAYS AI - NO FALLBACK) ==========
     suspend fun step4_generateQuestions() {
-        val stepData = loadStepData(NightlySteps.STEP_GENERATE_QUESTIONS)
+        val stepData = loadStepData(NightlySteps.STEP_CREATE_DIARY)
 
         if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
             try {
@@ -337,7 +337,7 @@ class NightlyPhaseData(
                     generatedQuestions = questions
                     TerminalLogger.log("Nightly Phase Data: Step 4 restored ${questions.size} questions")
                     listener.onQuestionsReady(generatedQuestions)
-                    listener.onStepCompleted(NightlySteps.STEP_GENERATE_QUESTIONS, "Questions Ready", stepData.details)
+                    listener.onStepCompleted(NightlySteps.STEP_CREATE_DIARY, "Questions Ready", stepData.details)
                     return
                 }
             } catch (e: Exception) {
@@ -350,8 +350,8 @@ class NightlyPhaseData(
             collectDayDataSilently()
         }
 
-        listener.onStepStarted(NightlySteps.STEP_GENERATE_QUESTIONS, "Generating AI Reflection Questions")
-        saveStepState(NightlySteps.STEP_GENERATE_QUESTIONS, StepProgress.STATUS_RUNNING, "Generating...")
+        listener.onStepStarted(NightlySteps.STEP_CREATE_DIARY, "Generating AI Reflection Questions")
+        saveStepState(NightlySteps.STEP_CREATE_DIARY, StepProgress.STATUS_RUNNING, "Generating...")
 
         val summary = daySummary
         val userIntro = AISettingsActivity.getUserIntroduction(context) ?: ""
@@ -360,15 +360,15 @@ class NightlyPhaseData(
         // ALWAYS use AI - throw error if no model configured
         if (nightlyModel.isNullOrEmpty()) {
             val error = "No AI Model configured. Please set up an AI model in Settings → AI Settings → Nightly Model."
-            listener.onError(NightlySteps.STEP_GENERATE_QUESTIONS, error)
-            saveStepState(NightlySteps.STEP_GENERATE_QUESTIONS, StepProgress.STATUS_ERROR, error)
+            listener.onError(NightlySteps.STEP_CREATE_DIARY, error)
+            saveStepState(NightlySteps.STEP_CREATE_DIARY, StepProgress.STATUS_ERROR, error)
             return
         }
 
         if (summary == null) {
             val error = "Day data not available. Please run Steps 1-2 first."
-            listener.onError(NightlySteps.STEP_GENERATE_QUESTIONS, error)
-            saveStepState(NightlySteps.STEP_GENERATE_QUESTIONS, StepProgress.STATUS_ERROR, error)
+            listener.onError(NightlySteps.STEP_CREATE_DIARY, error)
+            saveStepState(NightlySteps.STEP_CREATE_DIARY, StepProgress.STATUS_ERROR, error)
             return
         }
 
@@ -404,12 +404,12 @@ class NightlyPhaseData(
             }.toString()
 
             val details = "${generatedQuestions.size} AI Questions Generated"
-            listener.onStepCompleted(NightlySteps.STEP_GENERATE_QUESTIONS, "Questions Ready", details)
-            saveStepState(NightlySteps.STEP_GENERATE_QUESTIONS, StepProgress.STATUS_COMPLETED, details, resultJson)
+            listener.onStepCompleted(NightlySteps.STEP_CREATE_DIARY, "Questions Ready", details)
+            saveStepState(NightlySteps.STEP_CREATE_DIARY, StepProgress.STATUS_COMPLETED, details, resultJson)
         } catch (e: Exception) {
             val error = "AI Question Generation Failed: ${e.message}"
-            listener.onError(NightlySteps.STEP_GENERATE_QUESTIONS, error)
-            saveStepState(NightlySteps.STEP_GENERATE_QUESTIONS, StepProgress.STATUS_ERROR, error)
+            listener.onError(NightlySteps.STEP_CREATE_DIARY, error)
+            saveStepState(NightlySteps.STEP_CREATE_DIARY, StepProgress.STATUS_ERROR, error)
         }
     }
     
@@ -470,7 +470,7 @@ class NightlyPhaseData(
 
         // Ensure questions are loaded from Step 4 (from DB)
         if (generatedQuestions.isEmpty()) {
-            val step4Data = loadStepData(NightlySteps.STEP_GENERATE_QUESTIONS)
+            val step4Data = loadStepData(NightlySteps.STEP_CREATE_DIARY)
             if (step4Data.resultJson != null) {
                 try {
                     val json = JSONObject(step4Data.resultJson)
@@ -632,7 +632,7 @@ class NightlyPhaseData(
             val taskStats = if (fetchedTasks != null) {
                 fetchedTasks!!
             } else {
-                val step1Data = NightlyRepository.loadStepData(context, diaryDate, NightlySteps.STEP_FETCH_TASKS)
+                val step1Data = NightlyRepository.loadStepData(context, diaryDate, NightlySteps.STEP_FETCH_ANALYTICS)
                 if (step1Data.resultJson != null) {
                     try {
                         val json = JSONObject(step1Data.resultJson)
@@ -682,7 +682,7 @@ class NightlyPhaseData(
     }
 
     private suspend fun buildHealthDataFromStep3(): String {
-        val stepData = loadStepData(NightlySteps.STEP_CALC_SCREEN_TIME)
+        val stepData = loadStepData(NightlySteps.STEP_FETCH_ANALYTICS)
         if (stepData.resultJson == null) return "No health data collected."
 
         return try {

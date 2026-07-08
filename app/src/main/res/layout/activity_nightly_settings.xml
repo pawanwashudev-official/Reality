@@ -265,7 +265,188 @@
                 android:layout_height="wrap_content"
                  android:layout_marginBottom="24dp"/>
 
-            <!-- Section: Data Retention Policies -->
+
+
+            <com.google.android.material.divider.MaterialDivider
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"/>
+
+            <!-- Section: Protocol Steps Configuration -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Protocol Configuration"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                app:cardCornerRadius="16dp"
+                android:layout_marginBottom="24dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/cb_step1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Step 1: Fetch Analytics"
+                        android:textStyle="bold"/>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="32dp">
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cb_step1_tasks"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Google Tasks"/>
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cb_step1_calendar"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Calendar Events"/>
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cb_step1_tapasya"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Tapasya Sessions"/>
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cb_step1_distraction"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Distracting Apps Used Time"/>
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cb_step1_health"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Health Data (Sleep/Steps)"/>
+                    </LinearLayout>
+
+                    <com.google.android.material.divider.MaterialDivider
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="8dp"/>
+
+                    <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/cb_step2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Step 2: Create Diary"
+                        android:textStyle="bold"/>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="32dp">
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cb_step2_ai_questions"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Include AI-based Reflection Questions"/>
+                    </LinearLayout>
+
+                    <com.google.android.material.divider.MaterialDivider
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="8dp"/>
+
+                    <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/cb_step3"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Step 3: Save Analytics"
+                        android:textStyle="bold"/>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="32dp">
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cb_step3_sheets"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Save to Reality Sheet in Google Drive"/>
+                    </LinearLayout>
+
+                    <com.google.android.material.divider.MaterialDivider
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="8dp"/>
+
+                    <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/cb_step4"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Step 4: Create Plan Document"
+                        android:textStyle="bold"/>
+
+                    <com.google.android.material.divider.MaterialDivider
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="8dp"/>
+
+                    <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/cb_step5"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Step 5: Apply Plan"
+                        android:textStyle="bold"/>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="32dp">
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cb_step5_alarm"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Set Alarm"/>
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cb_step5_tasks"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Create Google Tasks"/>
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cb_step5_calendar"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Create Productivity Sessions in Calendar"/>
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cb_step5_sleep"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Update Sleep Time"/>
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cb_step5_distraction"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Update Distracting App Limit"/>
+                    </LinearLayout>
+
+                    <com.google.android.material.divider.MaterialDivider
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="8dp"/>
+
+                    <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/cb_step6"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Step 6: Generate AI Report"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+<!-- Section: Data Retention Policies -->
             <!-- Clear Nightly Memory -->
             <LinearLayout
                 android:layout_width="match_parent"

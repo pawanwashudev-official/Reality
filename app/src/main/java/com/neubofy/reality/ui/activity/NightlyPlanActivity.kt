@@ -110,7 +110,7 @@ class NightlyPlanActivity : BaseActivity() {
             val stepData = com.neubofy.reality.data.repository.NightlyRepository.loadStepData(
                 this@NightlyPlanActivity, 
                 selectedDate, 
-                com.neubofy.reality.data.NightlyProtocolExecutor.STEP_GENERATE_PLAN
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN
             )
 
             if (stepData?.resultJson != null) {

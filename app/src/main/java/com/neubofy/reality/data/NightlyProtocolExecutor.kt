@@ -66,23 +66,40 @@ class NightlyProtocolExecutor(
         get() = phaseData.generatedQuestions
     
     companion object {
-        // 13-Step Protocol Constants
-        const val STEP_FETCH_TASKS = NightlySteps.STEP_FETCH_TASKS
-        const val STEP_FETCH_SESSIONS = NightlySteps.STEP_FETCH_SESSIONS
-        const val STEP_CALC_SCREEN_TIME = NightlySteps.STEP_CALC_SCREEN_TIME
-        const val STEP_GENERATE_QUESTIONS = NightlySteps.STEP_GENERATE_QUESTIONS
+        const val STEP_FETCH_TASKS = NightlySteps.STEP_FETCH_ANALYTICS
+        const val STEP_FETCH_SESSIONS = NightlySteps.STEP_FETCH_ANALYTICS
+        const val STEP_CALC_SCREEN_TIME = NightlySteps.STEP_FETCH_ANALYTICS
+        const val STEP_GENERATE_QUESTIONS = NightlySteps.STEP_CREATE_DIARY
         const val STEP_CREATE_DIARY = NightlySteps.STEP_CREATE_DIARY
-        const val STEP_ANALYZE_REFLECTION = NightlySteps.STEP_ANALYZE_REFLECTION
-        const val STEP_FINALIZE_XP = NightlySteps.STEP_FINALIZE_XP
-        const val STEP_CREATE_PLAN_DOC = NightlySteps.STEP_CREATE_PLAN_DOC
-        const val STEP_GENERATE_PLAN = NightlySteps.STEP_GENERATE_PLAN
-        const val STEP_PROCESS_PLAN = NightlySteps.STEP_PROCESS_PLAN
-        const val STEP_GENERATE_REPORT = NightlySteps.STEP_GENERATE_REPORT
-        const val STEP_GENERATE_PDF = NightlySteps.STEP_GENERATE_PDF
-        const val STEP_SET_ALARM = NightlySteps.STEP_SET_ALARM
-        const val STEP_NORMALIZE_TASKS = NightlySteps.STEP_NORMALIZE_TASKS
-        const val STEP_UPDATE_DISTRACTION = NightlySteps.STEP_UPDATE_DISTRACTION
-        const val STEP_BACKUP_SHEET = NightlySteps.STEP_BACKUP_SHEET
+        const val STEP_ANALYZE_REFLECTION = NightlySteps.STEP_SAVE_ANALYTICS
+        const val STEP_FINALIZE_XP = NightlySteps.STEP_SAVE_ANALYTICS
+        const val STEP_CREATE_PLAN_DOC = NightlySteps.STEP_CREATE_PLAN
+        const val STEP_GENERATE_PLAN = NightlySteps.STEP_APPLY_PLAN
+        const val STEP_PROCESS_PLAN = NightlySteps.STEP_APPLY_PLAN
+        const val STEP_GENERATE_REPORT = NightlySteps.STEP_REPORT
+        const val STEP_GENERATE_PDF = NightlySteps.STEP_REPORT
+        const val STEP_SET_ALARM = NightlySteps.STEP_APPLY_PLAN
+        const val STEP_NORMALIZE_TASKS = NightlySteps.STEP_APPLY_PLAN
+        const val STEP_UPDATE_DISTRACTION = NightlySteps.STEP_APPLY_PLAN
+        const val STEP_BACKUP_SHEET = NightlySteps.STEP_APPLY_PLAN
+
+        // 13-Step Protocol Constants
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         
         // Legacy aliases (for backward compatibility)
         @Deprecated("Use STEP_FETCH_TASKS") const val STEP_CHECK_DIARY = 1
