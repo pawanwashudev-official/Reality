@@ -75,15 +75,7 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
         lifecycleScope.launch {
             NightlyRepository.observeSteps(this@NightlyActivity, selectedDate).collectLatest { steps ->
                 steps.forEach { step ->
-                    val hasData = !step.resultJson.isNullOrEmpty()
-                    val realStatus = if (hasData) {
-                        com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED
-                    } else if (step.status == com.neubofy.reality.data.nightly.StepProgress.STATUS_RUNNING) {
-                        // If it's running but we are just observing, keep it as running
-                        step.status
-                    } else {
-                        step.status
-                    }
+                    val realStatus = step.status
                     
                     val statusText = when (realStatus) {
                         com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED -> step.details ?: "Completed"
@@ -110,27 +102,26 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
     }
 
     private fun updateDependentSteps(stepStates: Map<Int, com.neubofy.reality.data.db.NightlyStep>) {
-        // Helper function: Step is "OK" if it has non-empty resultJson (consistent with observer)
+        // Helper function: Step is "OK" if its status is COMPLETED
         fun isStepOk(stepId: Int): Boolean {
             val step = stepStates[stepId] ?: return false
-            return !step.resultJson.isNullOrEmpty()
+            return step.status == com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED
         }
         
-        // Step 6 (Analyze Reflection) requires Step 5 (Create Diary) to have data
+        // Step 6 (Analyze Reflection) requires Step 5 (Create Diary) to be completed
         stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION, isStepOk(NightlyProtocolExecutor.STEP_CREATE_DIARY))
         
-        // Step 9 (Generate Plan) requires Step 8 (Create Plan Doc) to have data
+        // Step 9 (Generate Plan) requires Step 8 (Create Plan Doc) to be completed
         stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_GENERATE_PLAN, isStepOk(NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC))
         
-        // Step 10 (Process Plan) requires Step 9 (Generate Plan) to have data
+        // Step 10 (Process Plan) requires Step 9 (Generate Plan) to be completed
         stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_PROCESS_PLAN, isStepOk(NightlyProtocolExecutor.STEP_GENERATE_PLAN))
         
-        // Step 14 (Normalize Tasks) requires Step 10 (Process Plan) to have data
+        // Step 14 (Normalize Tasks) requires Step 10 (Process Plan) to be completed
         stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_NORMALIZE_TASKS, isStepOk(NightlyProtocolExecutor.STEP_PROCESS_PLAN))
         
-        // Step 12 (Generate PDF) requires Step 11 (Generate Report) - check status completed
-        val step11 = stepStates[NightlyProtocolExecutor.STEP_GENERATE_REPORT]
-        val step11Ok = step11 != null && (step11.status == com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED || !step11.resultJson.isNullOrEmpty())
+        // Step 12 (Generate PDF) requires Step 11 (Generate Report) to be completed
+        val step11Ok = isStepOk(NightlyProtocolExecutor.STEP_GENERATE_REPORT)
         stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_GENERATE_PDF, step11Ok)
         
         // Log for debugging

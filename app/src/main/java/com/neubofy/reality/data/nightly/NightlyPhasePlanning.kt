@@ -198,7 +198,7 @@ class NightlyPhasePlanning(
         }
 
         listener.onStepStarted(NightlySteps.STEP_GENERATE_PLAN, "AI Parsing Plan")
-        saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "Reading plan...")
+        saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "Loading doc...")
 
         try {
             val nightlyModel = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
@@ -222,6 +222,8 @@ class NightlyPhasePlanning(
                 GoogleDocsManager.getDocumentContent(context, planId) ?: ""
             }
 
+            saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "Got doc length ${planContent.length}")
+
             if (planContent.length < 20) {
                 val errorDetails = "Plan too short. Please write your tasks and schedule in the plan document."
                 saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails)
@@ -229,13 +231,15 @@ class NightlyPhasePlanning(
                 return
             }
 
-            saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "AI parsing...")
+            saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "Sending ${planContent.length} chars to AI...")
 
             // Fetch Task List Configs for AI context
             val taskListConfigs = withContext(Dispatchers.IO) {
                 AppDatabase.getDatabase(context).taskListConfigDao().getAll()
             }
             val aiResponse = NightlyAIHelper.analyzePlan(context, nightlyModel, planContent, taskListConfigs)
+
+            saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "AI returned ${aiResponse.length} chars. Validating JSON...")
 
             // Validate JSON with robust extraction
             try {
@@ -298,7 +302,7 @@ class NightlyPhasePlanning(
                 listener.onStepCompleted(NightlySteps.STEP_GENERATE_PLAN, "Plan Parsed", details)
                 saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
             } catch (e: Exception) {
-                val errorDetails = "AI response was not valid JSON. Please try again or simplify your plan."
+                val errorDetails = "AI parse error: ${e.message?.take(50)}. Response: ${aiResponse.take(50)}..."
                 TerminalLogger.log("Step 9 JSON parse error: ${e.message}, Raw: $aiResponse")
 
                 val failureJson = JSONObject().apply {
@@ -830,6 +834,8 @@ class NightlyPhasePlanning(
                 deferredTasks.awaitAll().forEach { allPendingTasks.addAll(it) }
             }
             
+            saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_RUNNING, "Found ${allPendingTasks.size} pending tasks")
+
             if (allPendingTasks.isEmpty()) {
                 saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_COMPLETED, "No tasks to clean")
                 listener.onStepCompleted(NightlySteps.STEP_NORMALIZE_TASKS, "Task Cleanup", "No pending tasks found")
@@ -839,7 +845,7 @@ class NightlyPhasePlanning(
             // 3. Prepare JSON for AI
             val tasksJsonStr = JSONArray(allPendingTasks).toString()
             
-            saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_RUNNING, "AI analyzing ${allPendingTasks.size} tasks...")
+            saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_RUNNING, "Sending ${allPendingTasks.size} tasks to AI...")
             
             // 4. Call AI (Using Standardized Model)
             val model = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
@@ -855,6 +861,8 @@ class NightlyPhasePlanning(
                 taskListConfigs = taskListConfigs
             )
             
+            saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_RUNNING, "AI returned ${aiResponse.length} chars. Validating JSON...")
+
             // 5. Parse AI Response
             val responseJson = try {
                 var jsonStr = if (aiResponse.contains("```json")) {
@@ -872,7 +880,11 @@ class NightlyPhasePlanning(
                 if (e.message?.contains("null output") == true) {
                     throw e
                 }
-                JSONObject(aiResponse) // Try direct parse
+                try {
+                    JSONObject(aiResponse) // Try direct parse
+                } catch (jsonException: Exception) {
+                    throw Exception("AI response was not valid JSON. Response: ${aiResponse.take(100)}...")
+                }
             }
             
             val deleteIds = responseJson.optJSONArray("delete_ids")
