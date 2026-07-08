@@ -99,7 +99,7 @@ INPUT DATA (Existing Tasks):
    - Formatting: RFC 3339 timestamp (e.g., 2024-01-30T00:00:00.000Z).
 
 [JSON OUTPUT FORMAT]
-(Return ONLY valid JSON. No markdown. No preamble.)
+(CRITICAL: Output EXACTLY this JSON structure. ONLY return the JSON object, absolutely NO markdown blocks, NO backticks like ```json, NO conversational preamble or postamble. Your response must start with { and end with })
 {
   "delete_ids": ["task_id_1", "task_id_2"],
   "readd_tasks": [

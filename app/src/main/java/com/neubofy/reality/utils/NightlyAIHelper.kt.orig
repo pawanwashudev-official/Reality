@@ -16,10 +16,10 @@ import java.time.format.DateTimeFormatter
  * AI helper for generating personalized nightly reflection questions.
  */
 object NightlyAIHelper {
-    
+
     /**
      * Generate personalized reflection questions based on user's day.
-     * 
+     *
      * @param context Android context
      * @param modelString Full model string in format "Provider: model-name"
      * @param userIntroduction User's self-introduction for personalization
@@ -36,27 +36,27 @@ object NightlyAIHelper {
         healthData: String,
         previousReport: String = "No previous day report available."
     ): List<String> = withContext(Dispatchers.IO) {
-        
+
         TerminalLogger.log("Nightly AI: Generating questions with model: $modelString")
-        
-        
 
 
 
 
-        
+
+
+
         val prompt = buildPrompt(context, userIntroduction, daySummary, healthData, previousReport)
         TerminalLogger.log("Nightly AI: Prompt built, calling AI Worker...")
 
         val response = callAIWorker(context, "Analyze my day and give me questions based on the system instructions.", prompt, modelString)
-        
+
         TerminalLogger.log("Nightly AI: Response received, parsing questions...")
         parseQuestions(response)
     }
-    
+
     private fun buildPrompt(context: Context, userIntro: String, summary: DaySummary, healthData: String, previousReport: String): String {
         val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
-        
+
         // Calendar events from device
         val calendarList = if (summary.calendarEvents.isEmpty()) {
             "No calendar events scheduled"
@@ -68,20 +68,20 @@ object NightlyAIHelper {
                 "- $startTime: ${event.title} (${duration} min)"
             }
         }
-        
+
         // Google Tasks
         val tasksDueList = if (summary.tasksDue.isEmpty()) {
             "No tasks due"
         } else {
             summary.tasksDue.joinToString("\n") { "- $it" }
         }
-        
+
         val tasksCompletedList = if (summary.tasksCompleted.isEmpty()) {
             "No tasks completed"
         } else {
             summary.tasksCompleted.joinToString("\n") { "- ✓ $it" }
         }
-        
+
         // Tapasya Sessions
         val sessionsList = if (summary.completedSessions.isEmpty()) {
             "No focused work sessions completed"
@@ -91,7 +91,7 @@ object NightlyAIHelper {
                 "- ${session.name}: ${effectiveMins} minutes of effective work"
             }
         }
-        
+
         val efficiency = if (summary.totalPlannedMinutes > 0) {
             (summary.totalEffectiveMinutes * 100 / summary.totalPlannedMinutes)
         } else if (summary.totalEffectiveMinutes > 0) {
@@ -99,19 +99,19 @@ object NightlyAIHelper {
         } else {
             0
         }
-        
+
         // Build stats string
         val statsStr = """- Total Planned Calendar Time: ${summary.totalPlannedMinutes} minutes
-- Total Effective Study Time: ${summary.totalEffectiveMinutes} minutes  
+- Total Effective Study Time: ${summary.totalEffectiveMinutes} minutes
 - Tasks: ${summary.tasksCompleted.size} completed, ${summary.tasksDue.size} pending
 - Efficiency: $efficiency%"""
-        
+
         // Try to get custom prompt from SharedPreferences
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_ai_prompt", null)
-        
+
         val userIntroStr = if (userIntro.isNotEmpty()) "About the user:\n$userIntro" else ""
-        
+
         return if (customPrompt != null) {
             // Use custom prompt with placeholder replacement
             customPrompt
@@ -172,7 +172,7 @@ Be direct, analytical, and uncompromising but constructive. Avoid generic fluff.
 Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         }
     }
-    
+
     /**
      * Analyze a planning document to extract tasks and events.
      */
@@ -182,23 +182,23 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         planContent: String,
         taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig> = emptyList()
     ): String = withContext(Dispatchers.IO) {
-        
+
         TerminalLogger.log("Nightly AI: Analyzing plan with model: $modelString")
-        
-        
 
 
 
 
-        
+
+
+
         // Load custom or default prompt
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_plan_prompt", null)
-        
+
         // Build List Context
         val listsContext = if (taskListConfigs.isNotEmpty()) {
-            val details = taskListConfigs.joinToString("\n") { 
-                "Task List Goal: \"${it.description}\" -> USE ID: ${it.googleListId}" 
+            val details = taskListConfigs.joinToString("\n") {
+                "Task List Goal: \"${it.description}\" -> USE ID: ${it.googleListId}"
             }
             "\n[CRITICAL: AVAILABLE TASK LISTS]\n$details\n"
         } else {
@@ -208,13 +208,13 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         val systemPrompt = customPrompt?.replace("{plan_content}", planContent)
             ?.replace("{list_context}", listsContext)
             ?: getDefaultPlanPrompt(planContent, taskListConfigs)
-            
+
         TerminalLogger.log("Nightly AI: Plan prompt built, calling AI Worker...")
         val response = callAIWorker(context, "Extract my tasks and plan based on the document provided in the system prompt. Return ONLY valid JSON format without markdown wrapping.", systemPrompt, modelString)
-        
+
         response
     }
-    
+
     /**
      * Normalize tasks (deduplicate & reschedule) using AI.
      */
@@ -225,19 +225,19 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         targetDate: String,
         taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig> = emptyList()
     ): String = withContext(Dispatchers.IO) {
-        
+
         TerminalLogger.log("Nightly AI: Normalizing tasks with model: $modelString")
-        
-        
 
 
 
 
-        
+
+
+
         // Build list context (same logic as plan extraction)
         val listsContext = if (taskListConfigs.isNotEmpty()) {
-            val details = taskListConfigs.joinToString("\n") { 
-                "- List Name: \"${it.displayName}\" (ID: ${it.googleListId})\n  Description: ${it.description}" 
+            val details = taskListConfigs.joinToString("\n") {
+                "- List Name: \"${it.displayName}\" (ID: ${it.googleListId})\n  Description: ${it.description}"
             }
             "\n[AVAILABLE TASK LISTS]\n$details\n"
         } else {
@@ -247,7 +247,7 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         // Load custom or default prompt
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_task_cleanup_prompt", null)
-        
+
         val systemPrompt = if (customPrompt != null) {
             customPrompt.replace("{tasks_json}", tasksJson)
                 .replace("{target_date}", targetDate)
@@ -258,10 +258,10 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
                 .replace("{target_date}", targetDate)
                 .replace("{list_context}", listsContext)
         }
-            
+
         TerminalLogger.log("Nightly AI: Task Cleanup prompt built, calling AI Worker...")
         val response = callAIWorker(context, "Normalize the tasks provided in the system prompt to a valid JSON format. Return ONLY raw JSON without markdown wrapping.", systemPrompt, modelString)
-        
+
         response
     }
 
@@ -371,14 +371,14 @@ OUTPUT FORMAT:
      */
     fun getDefaultPlanPromptTemplate(): String {
         return """
-            You are an advanced productivity extraction AI. 
+            You are an advanced productivity extraction AI.
             Analyze the following "Plan for Tomorrow" and extract actionable items with extreme precision.
-            
+
             [PLAN CONTENT]
             {plan_content}
-            
+
             {list_context}
-            
+
             [STRICT EXTRACTION RULES]
             1. TASKS:
                - Extract ONLY actionable task mentions that are explicitly listed.
@@ -388,36 +388,36 @@ OUTPUT FORMAT:
                - CRITICAL: You MUST use one of the "ID"s provided (e.g. "MTIzNDU..."). Do NOT use names or labels.
                - SELECTION LOGIC: If a task matches a specific list description, use that ID. Only use "@default" if NO other list matches.
                - DISTRIBUTE tasks wisely across specialized lists.
-               - DUE TIME: If a specific time is mentioned (e.g., "14:00 Finish report"), extract it as "startTime" in STRICT 24-hour HH:mm format. 
-            
-            2. CALENDAR EVENTS: 
+               - DUE TIME: If a specific time is mentioned (e.g., "14:00 Finish report"), extract it as "startTime" in STRICT 24-hour HH:mm format.
+
+            2. CALENDAR EVENTS:
                - ONLY extract productive/focused study or work sessions.
                - NEGATIVE CONSTRAINT: DO NOT extract Sleep, Travel, Commute, Relax, Eating, Gym, or Leisure activities as events.
                - TIME: Must have both "startTime" and "endTime" in STRICT 24-hour HH:mm format.
-            
+
             4. WAKE UP TIME: (Constraint: AI Decision)
                - Based on the plan's first activity, determine the optimal "wakeupTime" (STRICT 24-hour HH:mm).
                - If the plan starts at 06:00, wake up might be 05:30.
                - IMPORTANT: If no clear start time is found, return empty string "".
-             
+
              5. SLEEP START TIME: (Constraint: AI Decision)
                 - Determine the planned "sleepStartTime" (STRICT 24-hour HH:mm).
                 - Look for "Sleep", "Bed", "Wind down" at the end of the plan.
                 - If not explicitly stated, infer a reasonable time (e.g. 23:00) based on the day's intensity.
-             
+
              6. MENTORSHIP (Short Advice):
                - Provide a 2-3 sentence punchy piece of advice for the user to succeed tomorrow.
                - Focus on mindset, energy, or specific focus from the plan.
-             
+
              7. DISTRACTION TIME: (AI Decision based on day intensity)
                - Determine a reasonable "distractionTimeMinutes" (integer, 0-120) for allowed non-productive app usage.
                - LOGIC: Heavy work days with many tasks = lower distraction time (30-45 min).
                - Light days or rest days = higher allowed distraction (60-90 min).
                - If explicitly mentioned in plan (e.g. "1 hour break for social media"), use that value.
                - Default to 60 if unclear.
-            
+
             [JSON OUTPUT FORMAT]
-            (CRITICAL: Output EXACTLY this JSON structure. ONLY return the JSON object, absolutely NO markdown blocks, NO backticks like ```json, NO conversational preamble or postamble. Your response must start with { and end with })
+            (CRITICAL: Output EXACTLY this JSON structure. NO MARKDOWN. NO PREAMBLE. NO OTHER TEXT)
             {
               "wakeupTime": "HH:mm or empty",
               "sleepStartTime": "HH:mm or empty",
@@ -445,8 +445,8 @@ OUTPUT FORMAT:
 
     fun getDefaultPlanPrompt(planContent: String, taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig> = emptyList()): String {
         val listsContext = if (taskListConfigs.isNotEmpty()) {
-            val details = taskListConfigs.joinToString("\n") { 
-                "- List Name: \"${it.displayName}\" (ID: ${it.googleListId})\n  Description: ${it.description}" 
+            val details = taskListConfigs.joinToString("\n") {
+                "- List Name: \"${it.displayName}\" (ID: ${it.googleListId})\n  Description: ${it.description}"
             }
             "\n[AVAILABLE TASK LISTS]\n$details\n"
         } else {
@@ -458,10 +458,10 @@ OUTPUT FORMAT:
             .replace("{list_context}", listsContext)
     }
 
-    
-    
-    
-    
+
+
+
+
 
 
 
@@ -478,7 +478,7 @@ OUTPUT FORMAT:
         conn.requestMethod = "POST"
         conn.setRequestProperty("Content-Type", "application/json")
         conn.doOutput = true
-        
+
                 val requestBody = JSONObject().apply {
             put("userId", userId)
             put("password", password)
@@ -499,17 +499,17 @@ OUTPUT FORMAT:
             put("temperature", 0.7)
             // Cloudflare has strict token limits, we rely on defaults
         }
-        
+
         conn.outputStream.bufferedWriter().use { it.write(requestBody.toString()) }
-        
+
         if (conn.responseCode != 200) {
             val error = conn.errorStream?.bufferedReader()?.readText() ?: "Unknown error"
             throw Exception("API error ${conn.responseCode}: $error")
         }
-        
+
         val response = conn.inputStream.bufferedReader().readText()
         val jsonResponse = JSONObject(response)
-        
+
         return if (jsonResponse.has("response")) {
             jsonResponse.getString("response")
         } else if (jsonResponse.has("choices")) {
@@ -521,7 +521,7 @@ OUTPUT FORMAT:
             jsonResponse.toString() // Fallback
         }
     }
-    
+
     data class AnalysisResult(
         val xp: Int,
         val satisfied: Boolean,
@@ -538,18 +538,18 @@ OUTPUT FORMAT:
         userIntroduction: String,
         diaryContent: String
     ): AnalysisResult = withContext(Dispatchers.IO) {
-        
+
         TerminalLogger.log("Nightly AI: Analyzing reflection with model: $modelString")
-        
+
 
             ?: throw IllegalStateException("Invalid model configuration")
-        
 
 
-        
+
+
         val systemPromptStr = buildAnalysisPrompt(context, userIntroduction, diaryContent)
         val response = callAIWorker(context, "Analyze my reflection strictly and return ONLY the JSON object format.", systemPromptStr, modelString)
-        
+
         parseAnalysisResponse(response)
     }
 
@@ -557,9 +557,9 @@ OUTPUT FORMAT:
         // Try to get custom analyzer prompt
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_analyzer_prompt", null)
-        
+
         val userIntroStr = if (userIntro.isNotEmpty()) "About the user:\n$userIntro" else ""
-        
+
         val defaultSystemPrompt = """You are a wise and strict mentor reviewing a student's nightly reflection.
 Your goal is to ensure they are taking the process seriously and actually reflecting, not just going through the motions.
 
@@ -604,7 +604,7 @@ Include exactly the questions asked and the user's answers extracted strictly fr
                 .removePrefix("```")
                 .removeSuffix("```")
                 .trim()
-            
+
             val json = JSONObject(jsonStr)
             return AnalysisResult(
                 xp = json.optInt("xp", 10),
@@ -621,14 +621,14 @@ Include exactly the questions asked and the user's answers extracted strictly fr
 
     private fun parseQuestions(aiResponse: String): List<String> {
         val questions = mutableListOf<String>()
-        
+
         // Try to extract numbered questions (1. question, 2. question, etc.)
         val lines = aiResponse.trim().lines()
-        
+
         for (line in lines) {
             val trimmed = line.trim()
             if (trimmed.isEmpty()) continue
-            
+
             // Match patterns like "1.", "1)", "1:", or just starts with number
             val questionMatch = Regex("^\\d+[.):]?\\s*(.+)").find(trimmed)
             if (questionMatch != null) {
@@ -641,7 +641,7 @@ Include exactly the questions asked and the user's answers extracted strictly fr
                 questions.add(trimmed)
             }
         }
-        
+
         // Ensure we return at most 5 questions
         return questions.take(5)
     }
@@ -651,66 +651,66 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         userIntro: String,
         summary: DaySummary
     ): String = withContext(Dispatchers.IO) {
-        
+
         TerminalLogger.log("Nightly AI: Generating plan suggestions...")
-        
+
 
             ?: throw IllegalStateException("Invalid model configuration")
-        
 
 
-        
+
+
         val systemPromptStr = buildPlanPrompt(context, userIntro, summary)
         val response = callAIWorker(context, "Suggest a high-level plan for tomorrow based on my pending tasks and context. Output clean markdown.", systemPromptStr, modelString)
-        
+
         // Return raw response (Markdown expected)
         response.trim()
     }
-    
+
     private fun buildPlanPrompt(context: Context, userIntro: String, summary: DaySummary): String {
         val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
         val tomorrowDate = summary.date.plusDays(1).format(dateFormatter)
-        
+
         // Pending Tasks
         val pendingTasks = if (summary.tasksDue.isEmpty()) {
             "No overdue tasks."
         } else {
             summary.tasksDue.joinToString("\n") { "- $it" }
         }
-        
+
         val userIntroStr = if (userIntro.isNotEmpty()) "About the user:\n$userIntro" else ""
-        
+
         return """
             You are an expert productivity planner.
             $userIntroStr
-            
+
             Based on the user's pending tasks and context, suggest a realistic High-Level Plan for TOMORROW ($tomorrowDate).
-            
+
             PENDING TASKS (Carry over?):
             $pendingTasks
-            
+
             INSTRUCTIONS:
             1. Suggest 3 Top Priorities for tomorrow.
             2. Suggest a rough time-blocked schedule (Morning/Afternoon/Evening).
             3. Include any specific advice for maintaining momentum or recovering if today was slow.
-            
+
             FORMAT:
             Use clean Markdown.
-            
+
             ### Top Priorities
             1. ...
             2. ...
             3. ...
-            
+
             ### Suggested Schedule
             - **Morning**: ...
             - **Afternoon**: ...
-            
+
             ### Advice
             ...
         """.trimIndent()
     }
-    
+
     suspend fun generateReportSummary(
         context: Context,
         modelString: String,
@@ -720,26 +720,26 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         reflectionContent: String,
         planContent: String
     ): String = withContext(Dispatchers.IO) {
-        
+
         TerminalLogger.log("Nightly AI: Generating report summary...")
-        
+
 
             ?: throw IllegalStateException("Invalid model configuration")
-        
 
 
-        
+
+
         // Load custom or default prompt
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_report_prompt", null)
-        
+
         val prompt = if (customPrompt != null) {
             // Replace placeholders in custom prompt
             val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
             val totalPlanned = summary.totalPlannedMinutes
             val totalEffective = summary.totalEffectiveMinutes
             val efficiency = if (totalPlanned > 0) (totalEffective * 100 / totalPlanned) else 0
-            
+
             customPrompt
                 .replace("{user_intro}", userIntro)
                 .replace("{date}", summary.date.format(dateFormatter))
@@ -754,32 +754,32 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         } else {
             buildReportPrompt(context, userIntro, summary, xpStats, reflectionContent, planContent)
         }
-        
+
         val response = callAIWorker(context, "Generate my daily report summary based on the provided metadata, diary and plan.", prompt, modelString)
         response.trim()
     }
 
     private fun buildReportPrompt(
-        context: Context, 
-        userIntro: String, 
+        context: Context,
+        userIntro: String,
         summary: DaySummary,
         xpStats: com.neubofy.reality.utils.XPManager.XPBreakdown?,
         reflectionContent: String,
         planContent: String
     ): String {
         val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
-        
+
         // Extract stats
         val totalPlanned = summary.totalPlannedMinutes
         val totalEffective = summary.totalEffectiveMinutes
         val efficiency = if (totalPlanned > 0) (totalEffective * 100 / totalPlanned) else 0
         val tasksDone = summary.tasksCompleted.size
-        
+
         val xpEarned = xpStats?.totalDailyXP ?: 0
         val level = xpStats?.level ?: 1
-        
+
         val userIntroStr = if (userIntro.isNotEmpty()) "About the user: $userIntro" else ""
-        
+
         // Structured Metadata as JSON-like block for AI
         val metadata = """
         {
@@ -795,26 +795,26 @@ Include exactly the questions asked and the user's answers extracted strictly fr
           "user_context": "${userIntro.replace("\"", "\\\"")}"
         }
         """.trimIndent()
-        
+
         return """
             You are a professional executive coach and performance analyst.
-            
+
             [SYSTEM METADATA]
             $metadata
-            
+
             [PRIMARY SOURCE: DIARY DOCUMENT]
-            The following is the full text extracted from the user's diary document (including any tables or lists). 
+            The following is the full text extracted from the user's diary document (including any tables or lists).
             Analyze this deeply:
             ---
             $reflectionContent
             ---
-            
+
             [PRIMARY SOURCE: PLAN FOR TOMORROW]
             The following is the text extracted from the user's planning document for tomorrow:
             ---
             $planContent
             ---
-            
+
             INSTRUCTIONS:
             Perform a deep analysis of the user's day based on the provided JSON metadata and the full text of their Diary and Plan.
             1. **Daily Briefing**: Provide a concise summary of the day's achievements and challenges.
