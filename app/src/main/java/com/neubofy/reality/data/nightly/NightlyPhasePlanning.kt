@@ -236,13 +236,17 @@ class NightlyPhasePlanning(
 
             // Validate JSON with robust extraction
             try {
-                val start = aiResponse.indexOf('{')
-                val end = aiResponse.lastIndexOf('}')
+                var jsonStr = aiResponse
+                if (aiResponse.contains("```json")) {
+                    jsonStr = aiResponse.substringAfter("```json").substringBefore("```").trim()
+                } else if (aiResponse.contains("```")) {
+                    jsonStr = aiResponse.substringAfter("```").substringBefore("```").trim()
+                }
 
-                val jsonStr = if (start != -1 && end != -1 && end > start) {
-                    aiResponse.substring(start, end + 1)
-                } else {
-                    aiResponse
+                val start = jsonStr.indexOf('{')
+                val end = jsonStr.lastIndexOf('}')
+                if (start != -1 && end != -1 && end > start) {
+                    jsonStr = jsonStr.substring(start, end + 1)
                 }
 
                 val json = JSONObject(jsonStr.trim())
@@ -843,14 +847,20 @@ class NightlyPhasePlanning(
             
             // 5. Parse AI Response
             val responseJson = try {
-                val start = aiResponse.indexOf('{')
-                val end = aiResponse.lastIndexOf('}')
-                val jsonStr = if (start != -1 && end != -1 && end > start) {
-                    aiResponse.substring(start, end + 1)
-                } else {
-                    aiResponse.substringAfter("```json").substringBeforeLast("```").trim()
+                var jsonStr = aiResponse
+                if (aiResponse.contains("```json")) {
+                    jsonStr = aiResponse.substringAfter("```json").substringBefore("```").trim()
+                } else if (aiResponse.contains("```")) {
+                    jsonStr = aiResponse.substringAfter("```").substringBefore("```").trim()
                 }
-                JSONObject(jsonStr)
+
+                val start = jsonStr.indexOf('{')
+                val end = jsonStr.lastIndexOf('}')
+                if (start != -1 && end != -1 && end > start) {
+                    jsonStr = jsonStr.substring(start, end + 1)
+                }
+
+                JSONObject(jsonStr.trim())
             } catch (e: Exception) {
                  JSONObject(aiResponse) // Try direct parse
             }
