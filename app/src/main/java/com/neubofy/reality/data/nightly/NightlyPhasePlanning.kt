@@ -225,7 +225,7 @@ class NightlyPhasePlanning(
             if (planContent.length < 20) {
                 val errorDetails = "Plan too short. Please write your tasks and schedule in the plan document."
                 saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails)
-                listener.onAnalysisFeedback(errorDetails)
+                listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
                 return
             }
 
@@ -240,11 +240,16 @@ class NightlyPhasePlanning(
             // Validate JSON with robust extraction
             try {
                 // First try to extract from markdown block, fallback to basic json extraction
-                val jsonStr = if (aiResponse.contains("```json")) {
+                var jsonStr = if (aiResponse.contains("```json")) {
                     aiResponse.substringAfter("```json").substringBeforeLast("```").trim()
                 } else {
                     val match = Regex("(?s)\\{.*\\}").find(aiResponse)
                     match?.value ?: aiResponse
+                }
+
+                // If model just replies with string "null" we should catch it
+                if (jsonStr.equals("null", ignoreCase = true)) {
+                    throw Exception("Model returned null output instead of JSON.")
                 }
 
                 val json = JSONObject(jsonStr.trim())
@@ -255,7 +260,7 @@ class NightlyPhasePlanning(
                 if (tasks.length() == 0 && events.length() == 0) {
                     val errorDetails = "Could not extract tasks or events from your plan. Please write clearer items with times."
                     saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails)
-                    listener.onAnalysisFeedback(errorDetails)
+                    listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
                     return
                 }
 
@@ -302,7 +307,7 @@ class NightlyPhasePlanning(
                 }.toString()
 
                 saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails, failureJson)
-                listener.onAnalysisFeedback(errorDetails)
+                listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
             }
         } catch (e: Exception) {
             listener.onError(NightlySteps.STEP_GENERATE_PLAN, "AI Plan Failed: ${e.message}")
@@ -852,15 +857,22 @@ class NightlyPhasePlanning(
             
             // 5. Parse AI Response
             val responseJson = try {
-                val jsonStr = if (aiResponse.contains("```json")) {
+                var jsonStr = if (aiResponse.contains("```json")) {
                     aiResponse.substringAfter("```json").substringBeforeLast("```").trim()
                 } else {
                     val match = Regex("(?s)\\{.*\\}").find(aiResponse)
                     match?.value ?: aiResponse
                 }
+
+                if (jsonStr.equals("null", ignoreCase = true) || aiResponse.equals("null", ignoreCase = true)) {
+                     throw Exception("Model returned null output.")
+                }
                 JSONObject(jsonStr.trim())
             } catch (e: Exception) {
-                 JSONObject(aiResponse) // Try direct parse
+                if (e.message?.contains("null output") == true) {
+                    throw e
+                }
+                JSONObject(aiResponse) // Try direct parse
             }
             
             val deleteIds = responseJson.optJSONArray("delete_ids")
