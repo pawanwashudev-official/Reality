@@ -200,7 +200,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Report Generator (Step 11)"
+                        android:text="Report Generator (Step 10)"
                         android:textStyle="bold"
                         android:textSize="16sp"
                         android:textColor="?attr/colorPrimary"
