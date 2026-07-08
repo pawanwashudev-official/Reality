@@ -239,16 +239,29 @@ class NightlyPhasePlanning(
 
             // Validate JSON with robust extraction
             try {
+                // Strip <think> tags completely
+                val cleanResponse = aiResponse.replace(Regex("<think>.*?</think>", RegexOption.DOT_MATCHES_ALL), "").trim()
+
                 // First try to extract from markdown block, fallback to basic json extraction
-                var jsonStr = if (aiResponse.contains("```json")) {
-                    aiResponse.substringAfter("```json").substringBeforeLast("```").trim()
+                var jsonStr = if (cleanResponse.contains("```json")) {
+                    cleanResponse.substringAfter("```json").substringBeforeLast("```").trim()
                 } else {
-                    val match = Regex("(?s)\\{.*\\}").find(aiResponse)
-                    match?.value ?: aiResponse
+                    try {
+                        val startIndex = cleanResponse.indexOf('{')
+                        val endIndex = cleanResponse.lastIndexOf('}')
+                        if (startIndex != -1 && endIndex != -1 && endIndex >= startIndex) {
+                            cleanResponse.substring(startIndex, endIndex + 1)
+                        } else {
+                            val match = Regex("(?s)\\{.*\\}").find(cleanResponse)
+                            match?.value ?: cleanResponse
+                        }
+                    } catch (e: Exception) {
+                        cleanResponse
+                    }
                 }
 
                 // If model just replies with string "null" we should catch it
-                if (jsonStr.equals("null", ignoreCase = true)) {
+                if (jsonStr.equals("null", ignoreCase = true) || jsonStr.isEmpty()) {
                     throw Exception("Model returned null output instead of JSON.")
                 }
 
@@ -502,11 +515,13 @@ class NightlyPhasePlanning(
                 listener.onStepCompleted(NightlySteps.STEP_GENERATE_PLAN, "Plan Parsed & Applied", details)
                 saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
             } catch (e: Exception) {
-                val errorDetails = "AI response was not valid JSON or failed applying. Please try again."
-                com.neubofy.reality.utils.TerminalLogger.log("Step 9 process error: ${e.message}, Raw: $aiResponse")
+                val inputSize = planContent.length
+                val snippet = if (aiResponse.length > 200) aiResponse.take(200) + "..." else aiResponse
+                val errorDetails = "AI Plan parsing failed. Error: ${e.message}. (Input size: $inputSize, Snippet: $snippet)"
+                TerminalLogger.log("Step 9 JSON parse error: ${e.message}, Raw snippet: $snippet")
 
-                val failureJson = org.json.JSONObject().apply {
-                    put("rawResponse", aiResponse)
+                val failureJson = JSONObject().apply {
+                    put("rawResponseSnippet", snippet)
                     put("error", e.message)
                 }.toString()
 
@@ -707,6 +722,300 @@ class NightlyPhasePlanning(
         }
     }
 
+    // ========== STEP 13: Set Wake-up Alarm ==========
+    suspend fun step13_setAlarm() {
+        val stepData = loadStepData(NightlySteps.STEP_SET_ALARM)
+        if (stepData.status == StepProgress.STATUS_COMPLETED) {
+            listener.onStepCompleted(NightlySteps.STEP_SET_ALARM, "Alarm Scheduled", stepData.details)
+            return
+        }
+
+        listener.onStepStarted(NightlySteps.STEP_SET_ALARM, "Setting Wake-up Alarm")
+        saveStepState(NightlySteps.STEP_SET_ALARM, StepProgress.STATUS_RUNNING, "Configuring...")
+
+        try {
+            // Use data from Step 9
+            val step9Data = loadStepData(NightlySteps.STEP_GENERATE_PLAN)
+            if (step9Data.resultJson == null) {
+                throw IllegalStateException("Step 9 (AI Plan) not completed.")
+            }
+
+            val step9Json = JSONObject(step9Data.resultJson)
+            val wakeupTime = step9Json.optString("wakeupTime")
+
+            if (wakeupTime.isEmpty()) {
+                val details = "No wakeup time in AI plan"
+                listener.onStepCompleted(NightlySteps.STEP_SET_ALARM, "Alarm Skipped", details)
+                saveStepState(NightlySteps.STEP_SET_ALARM, StepProgress.STATUS_COMPLETED, details)
+                return
+            }
+
+            val parts = wakeupTime.split(":")
+            if (parts.size != 2) throw IllegalArgumentException("Invalid wakeup time format: $wakeupTime")
+
+            val hour = parts[0].toInt()
+            val min = parts[1].toInt()
+            val nextDay = diaryDate.plusDays(1)
+
+            val alarmTime = nextDay.atTime(hour, min)
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager
+                ?: throw IllegalStateException("AlarmManager not available")
+
+            // Check permission for Android 12+
+            val canSchedule = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                alarmManager.canScheduleExactAlarms()
+            } else {
+                true
+            }
+
+            if (!canSchedule) {
+                throw IllegalStateException("Alarm permission missing")
+            }
+
+
+
+            // Sync to CustomReminders for UI
+            val prefsLoader = com.neubofy.reality.utils.SavedPreferencesLoader(context)
+            val defaults = prefsLoader.getWakeupAlarmDefaults()
+            val alarmId = "nightly_wakeup"
+            val wakeupAlarms = prefsLoader.loadWakeupAlarms()
+            wakeupAlarms.removeAll { it.id == alarmId }
+            wakeupAlarms.add(com.neubofy.reality.data.model.WakeupAlarm(
+                id = alarmId,
+                title = "Wake Up (AI Plan)",
+                description = "AI generated wakeup alarm based on your daily plan.",
+                hour = hour,
+                minute = min,
+                isEnabled = true,
+                repeatDays = emptyList(),
+                ringtoneUri = defaults.ringtoneUri,
+                vibrationEnabled = defaults.vibrationEnabled,
+                snoozeIntervalMins = defaults.snoozeIntervalMins,
+                maxAttempts = defaults.maxAttempts,
+                isDeleted = false
+            ))
+            prefsLoader.saveWakeupAlarms(wakeupAlarms)
+            com.neubofy.reality.utils.WakeupAlarmScheduler.scheduleNextAlarm(context)
+
+            val resultJson = JSONObject().apply {
+                put("input", JSONObject().apply {
+                    put("date", diaryDate.toString())
+                    put("wakeupTime", wakeupTime)
+                })
+                put("output", JSONObject().apply {
+                    put("hour", hour)
+                    put("minute", min)
+                    put("scheduledAt", System.currentTimeMillis())
+                    put("url", "reality://smart_sleep")
+                })
+            }.toString()
+
+            val details = "Scheduled for $wakeupTime"
+            listener.onStepCompleted(NightlySteps.STEP_SET_ALARM, "Alarm Scheduled", details)
+            saveStepState(NightlySteps.STEP_SET_ALARM, StepProgress.STATUS_COMPLETED, details, resultJson)
+        } catch (e: Exception) {
+            TerminalLogger.log("Nightly Step 13 Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_SET_ALARM, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_SET_ALARM, "Alarm Setup Failed: ${e.message}")
+        }
+    }
+
+    // ========== STEP 14: AI Task Cleanup ==========
+    suspend fun step14_normalizeTasks() {
+        // Load target date for "tomorrow" (the day we are planning for)
+        // Diary is for 'diaryDate', so plan is for 'diaryDate + 1'
+        val planDate = diaryDate.plusDays(1)
+        val targetDateStr = planDate.format(DateTimeFormatter.ISO_LOCAL_DATE) // YYYY-MM-DD
+        
+        val stepData = loadStepData(NightlySteps.STEP_NORMALIZE_TASKS)
+        if (stepData.status == StepProgress.STATUS_COMPLETED) {
+             TerminalLogger.log("Nightly Phase Planning: Step 14 already completed.")
+             listener.onStepCompleted(NightlySteps.STEP_NORMALIZE_TASKS, "Tasks Normalized", "Already done")
+             return
+        }
+        
+        listener.onStepStarted(NightlySteps.STEP_NORMALIZE_TASKS, "AI Task Cleanup")
+        saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_RUNNING, "Fetching tasks...")
+        
+        try {
+            // 1. Fetch Task List Configs for context
+            val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(context)
+            val taskListConfigs = db.taskListConfigDao().getAll()
+
+            // 2. Fetch ALL non-completed tasks
+            val tasksManager = com.neubofy.reality.google.GoogleTasksManager
+            val taskLists = tasksManager.getTaskLists(context)
+            val allPendingTasks = mutableListOf<JSONObject>()
+            
+            coroutineScope {
+                val deferredTasks = taskLists.map { list ->
+                    async {
+                        val tasks = tasksManager.getTasks(context, list.id)
+                        val listPending = mutableListOf<JSONObject>()
+                        tasks.forEach { task ->
+                            if (task.status != "completed") {
+                                val json = JSONObject()
+                                json.put("id", task.id)
+                                json.put("list_id", list.id)
+                                json.put("title", task.title)
+                                json.put("due", task.due ?: "null")
+                                json.put("notes", task.notes ?: "")
+                                listPending.add(json)
+                            }
+                        }
+                        listPending
+                    }
+                }
+                deferredTasks.awaitAll().forEach { allPendingTasks.addAll(it) }
+            }
+            
+            if (allPendingTasks.isEmpty()) {
+                saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_COMPLETED, "No tasks to clean")
+                listener.onStepCompleted(NightlySteps.STEP_NORMALIZE_TASKS, "Task Cleanup", "No pending tasks found")
+                return
+            }
+            
+            // 3. Prepare JSON for AI
+            val tasksJsonStr = JSONArray(allPendingTasks).toString()
+            
+            saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_RUNNING, "AI analyzing ${allPendingTasks.size} tasks...")
+            
+            // 4. Call AI (Using Standardized Model)
+            val model = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
+            if (model.isNullOrEmpty()) {
+                throw IllegalStateException("No AI Model configured for Nightly Protocol.")
+            }
+             
+            val aiResponse = com.neubofy.reality.utils.NightlyAIHelper.normalizeTasks(
+                context = context, 
+                modelString = model, 
+                tasksJson = tasksJsonStr, 
+                targetDate = targetDateStr + "T00:00:00.000Z",
+                taskListConfigs = taskListConfigs
+            )
+            
+            // 5. Parse AI Response
+            val responseJson = try {
+                // Strip <think> tags completely
+                val cleanResponse = aiResponse.replace(Regex("<think>.*?</think>", RegexOption.DOT_MATCHES_ALL), "").trim()
+
+                var jsonStr = if (cleanResponse.contains("```json")) {
+                    cleanResponse.substringAfter("```json").substringBeforeLast("```").trim()
+                } else {
+                    try {
+                        val startIndex = cleanResponse.indexOf('{')
+                        val endIndex = cleanResponse.lastIndexOf('}')
+                        if (startIndex != -1 && endIndex != -1 && endIndex >= startIndex) {
+                            cleanResponse.substring(startIndex, endIndex + 1)
+                        } else {
+                            val match = Regex("(?s)\\{.*\\}").find(cleanResponse)
+                            match?.value ?: cleanResponse
+                        }
+                    } catch (e: Exception) {
+                        cleanResponse
+                    }
+                }
+
+                if (jsonStr.equals("null", ignoreCase = true) || jsonStr.isEmpty()) {
+                     throw Exception("Model returned null output instead of JSON.")
+                }
+                JSONObject(jsonStr.trim())
+            } catch (e: Exception) {
+                val inputSize = tasksJsonStr.length
+                val snippet = if (aiResponse.length > 200) aiResponse.take(200) + "..." else aiResponse
+                val errorDetails = "AI Task Normalization parsing failed. Error: ${e.message}. (Input size: $inputSize, Snippet: $snippet)"
+                TerminalLogger.log("Step 14 JSON parse error: ${e.message}, Raw snippet: $snippet")
+
+                val failureJson = JSONObject().apply {
+                    put("rawResponseSnippet", snippet)
+                    put("error", e.message)
+                }.toString()
+
+                saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_ERROR, errorDetails, failureJson)
+                listener.onError(NightlySteps.STEP_NORMALIZE_TASKS, errorDetails)
+                return
+            }
+            
+            val deleteIds = responseJson.optJSONArray("delete_ids")
+            val readdTasks = responseJson.optJSONArray("readd_tasks")
+            
+            var deletedCount = 0
+            var addedCount = 0
+            
+            // 6. Execute Deletions
+            if (deleteIds != null) {
+                for (i in 0 until deleteIds.length()) {
+                     val taskId = deleteIds.getString(i)
+                     // Find list ID for this task from our initial fetch
+                     val listId = allPendingTasks.find { it.optString("id") == taskId }?.optString("list_id")
+                     if (listId != null) {
+                         tasksManager.deleteTask(context, listId, taskId)
+                         deletedCount++
+                     }
+                }
+            }
+            
+            // 7. Execute Re-adds (New Tasks)
+            if (readdTasks != null) {
+                for (i in 0 until readdTasks.length()) {
+                    val taskData = readdTasks.optJSONObject(i) ?: continue
+                    val title = taskData.optString("title")
+                    val startTime = taskData.optString("startTime")
+                    val listId = taskData.optString("taskListId")
+                    val notes = taskData.optString("notes")
+                    
+                    if (title.isNotEmpty() && listId.isNotEmpty()) {
+                        // Build title with time always expected as HH:mm|Title
+                        val finalTitle = if (startTime.isNotEmpty() && !startTime.equals("null", true)) {
+                            "$startTime|$title"
+                        } else {
+                            "00:00|$title" // Default if AI fails to provide
+                        }
+
+                        val dueDate = targetDateStr + "T09:00:00.000Z"
+                        tasksManager.createTask(context, finalTitle, notes, dueDate, listId)
+                        addedCount++
+                    }
+                }
+            }
+            
+            // 8. Complete
+            val resultDetails = "Deleted $deletedCount duplicates/moved tasks, Re-added $addedCount corrected tasks"
+            TerminalLogger.log("Nightly Step 14: $resultDetails")
+            saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_COMPLETED, resultDetails, aiResponse)
+            listener.onStepCompleted(NightlySteps.STEP_NORMALIZE_TASKS, "Task Cleanup Complete", resultDetails)
+            
+        } catch (e: Exception) {
+            TerminalLogger.log("Nightly Step 14 Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_NORMALIZE_TASKS, "Cleanup Failed: ${e.message}")
+        }
+    }
+
+    // ========== STEP 15: Update Distraction Limit ==========
+    suspend fun step15_updateDistraction() {
+        val stepData = loadStepData(NightlySteps.STEP_UPDATE_DISTRACTION)
+        if (stepData.status == StepProgress.STATUS_COMPLETED) {
+            listener.onStepCompleted(NightlySteps.STEP_UPDATE_DISTRACTION, "Limit Updated", stepData.details)
+            return
+        }
+
+        listener.onStepStarted(NightlySteps.STEP_UPDATE_DISTRACTION, "Updating Distraction Limit")
+        saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_RUNNING, "Reading Step 9...")
+
+        try {
+            // Read Step 9 output
+            val step9Data = loadStepData(NightlySteps.STEP_GENERATE_PLAN)
+            if (step9Data.resultJson == null) {
+                val skipDetails = "Step 9 not completed - using default"
+                listener.onStepCompleted(NightlySteps.STEP_UPDATE_DISTRACTION, "Skipped", skipDetails)
+                saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_COMPLETED, skipDetails)
+                return
+            }
 
 
 
