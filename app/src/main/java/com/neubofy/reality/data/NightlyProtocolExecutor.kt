@@ -356,24 +356,29 @@ class NightlyProtocolExecutor(
     // --- Public API for Granular Control ---
     
     suspend fun executeSpecificStep(step: Int) {
-        when (step) {
-            STEP_FETCH_TASKS -> phaseData.step1_fetchTasks()
-            STEP_FETCH_SESSIONS -> phaseData.step2_fetchSessions()
-            STEP_CALC_SCREEN_TIME -> phaseData.step3_calcScreenTime()
-            STEP_GENERATE_QUESTIONS -> phaseData.step4_generateQuestions()
-            STEP_CREATE_DIARY -> phaseData.step5_createDiary()
-            STEP_ANALYZE_REFLECTION -> phaseAnalysis.step6_analyzeReflection()
-            STEP_FINALIZE_XP -> phaseAnalysis.step7_finalizeXp()
-            STEP_CREATE_PLAN_DOC -> phasePlanning.step8_createPlanDoc()
-            STEP_GENERATE_PLAN -> phasePlanning.step9_generatePlan()
-            STEP_PROCESS_PLAN -> phasePlanning.step10_processPlan()
-            STEP_GENERATE_REPORT -> phasePlanning.step11_generateReport()
-            STEP_GENERATE_PDF -> phasePlanning.step12_generatePdf()
-            STEP_SET_ALARM -> phasePlanning.step13_setAlarm()
-            STEP_NORMALIZE_TASKS -> phasePlanning.step14_normalizeTasks()
-            STEP_UPDATE_DISTRACTION -> phasePlanning.step15_updateDistraction()
-            STEP_BACKUP_SHEET -> phasePlanning.step16_backupToSheet()
-            else -> throw IllegalArgumentException("Unknown step: $step")
+        try {
+            when (step) {
+                STEP_FETCH_TASKS -> phaseData.step1_fetchTasks()
+                STEP_FETCH_SESSIONS -> phaseData.step2_fetchSessions()
+                STEP_CALC_SCREEN_TIME -> phaseData.step3_calcScreenTime()
+                STEP_GENERATE_QUESTIONS -> phaseData.step4_generateQuestions()
+                STEP_CREATE_DIARY -> phaseData.step5_createDiary()
+                STEP_ANALYZE_REFLECTION -> phaseAnalysis.step6_analyzeReflection()
+                STEP_FINALIZE_XP -> phaseAnalysis.step7_finalizeXp()
+                STEP_CREATE_PLAN_DOC -> phasePlanning.step8_createPlanDoc()
+                STEP_GENERATE_PLAN -> phasePlanning.step9_generatePlan()
+                STEP_PROCESS_PLAN -> phasePlanning.step10_processPlan()
+                STEP_GENERATE_REPORT -> phasePlanning.step11_generateReport()
+                STEP_GENERATE_PDF -> phasePlanning.step12_generatePdf()
+                STEP_SET_ALARM -> phasePlanning.step13_setAlarm()
+                STEP_NORMALIZE_TASKS -> phasePlanning.step14_normalizeTasks()
+                STEP_UPDATE_DISTRACTION -> phasePlanning.step15_updateDistraction()
+                STEP_BACKUP_SHEET -> phasePlanning.step16_backupToSheet()
+                else -> throw IllegalArgumentException("Unknown step: $step")
+            }
+        } catch (e: Exception) {
+            listener.onError(step, e.message ?: "Unknown error")
+            throw e // Re-throw to be caught by UI if needed
         }
     }
     
