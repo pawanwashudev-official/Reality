@@ -360,7 +360,7 @@ class NightlyPhasePlanning(
             for (i in 0 until tasks.length()) {
                 val taskLog = JSONObject()
                 try {
-                    val taskObj = tasks.getJSONObject(i)
+                    val taskObj = tasks.optJSONObject(i) ?: continue
                     val title = taskObj.optString("title", "").trim()
                     val notes = taskObj.optString("notes")
                     val rawListId = taskObj.optString("taskListId", "@default")
@@ -415,7 +415,7 @@ class NightlyPhasePlanning(
             for (i in 0 until events.length()) {
                 val eventLog = JSONObject()
                 try {
-                    val eventObj = events.getJSONObject(i)
+                    val eventObj = events.optJSONObject(i) ?: continue
                     val title = eventObj.optString("title", "").trim()
                     val startTimeStr = eventObj.optString("startTime", "")
                     val endTimeStr = eventObj.optString("endTime", "")
@@ -887,7 +887,7 @@ class NightlyPhasePlanning(
             // 7. Execute Re-adds (New Tasks)
             if (readdTasks != null) {
                 for (i in 0 until readdTasks.length()) {
-                    val taskData = readdTasks.getJSONObject(i)
+                    val taskData = readdTasks.optJSONObject(i) ?: continue
                     val title = taskData.optString("title")
                     val startTime = taskData.optString("startTime")
                     val listId = taskData.optString("taskListId")
