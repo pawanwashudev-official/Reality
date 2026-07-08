@@ -10,12 +10,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
-/**
- * NightlyWorker - Safeguards the Nightly Protocol against App Death.
- * 
- * Runs the heavy phases (Creation, Analysis) in a Foreground Service (via WorkManager).
- * This ensures that even if the user swipes the app away, the diary creation/AI analysis completes.
- */
 class NightlyWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     companion object {
@@ -31,39 +25,21 @@ class NightlyWorker(context: Context, params: WorkerParameters) : CoroutineWorke
 
         return withContext(Dispatchers.IO) {
             try {
-                // Use a Silent Listener that just logs to Terminal
-                // This prevents UI callbacks from crashing invalid contexts
                 val silentListener = object : NightlyProtocolExecutor.NightlyProgressListener {
-                    override fun onStepStarted(step: Int, stepName: String) {
-                        TerminalLogger.log("WORKER: Step $step ($stepName) Started")
+                    private fun broadcast(msg: String) {
+                        val intent = android.content.Intent("com.neubofy.reality.NIGHTLY_LOG")
+                        intent.putExtra("message", msg)
+                        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
                     }
-
-                    override fun onStepCompleted(step: Int, stepName: String, details: String?, linkUrl: String?) {
-                        TerminalLogger.log("WORKER: Step $step Completed - $details")
-                    }
-
-                    override fun onStepSkipped(step: Int, stepName: String, reason: String) {
-                        TerminalLogger.log("WORKER: Step $step Skipped - $reason")
-                    }
-
-                    override fun onError(step: Int, error: String) {
-                        TerminalLogger.log("WORKER ERROR: Step $step - $error")
-                    }
-
-                    override fun onQuestionsReady(questions: List<String>) {
-                        TerminalLogger.log("WORKER: Questions Generated (${questions.size})")
-                    }
-
-                    override fun onAnalysisFeedback(feedback: String) {
-                        TerminalLogger.log("WORKER: Analysis Feedback - $feedback")
-                    }
-
-                    override fun onComplete(diaryDocId: String?, diaryUrl: String?) {
-                        TerminalLogger.log("WORKER: Phase Complete! Doc: $diaryDocId")
-                    }
+                    override fun onStepStarted(step: Int, stepName: String) { broadcast("WORKER: Step $step ($stepName) Started") }
+                    override fun onStepCompleted(step: Int, stepName: String, details: String?, linkUrl: String?) { broadcast("WORKER: Step $step Completed - $details") }
+                    override fun onStepSkipped(step: Int, stepName: String, reason: String) { broadcast("WORKER: Step $step Skipped") }
+                    override fun onError(step: Int, error: String) { broadcast("WORKER ERROR: Step $step - $error") }
+                    override fun onQuestionsReady(questions: List<String>) {}
+                    override fun onAnalysisFeedback(feedback: String) {}
+                    override fun onComplete(diaryDocId: String?, diaryUrl: String?) { broadcast("WORKER: Phase Complete!") }
                 }
 
-                // Instantiate the God Class safely
                 val executor = NightlyProtocolExecutor(applicationContext, LocalDate.now(), silentListener)
 
                 when (mode) {

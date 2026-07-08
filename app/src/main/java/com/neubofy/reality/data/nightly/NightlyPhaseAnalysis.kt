@@ -39,7 +39,7 @@ class NightlyPhaseAnalysis(
 
     // ========== STEP 6: Analyze Reflection ==========
     suspend fun step6_analyzeReflection() {
-        val stepData = loadStepData(NightlySteps.STEP_ANALYZE_REFLECTION)
+        val stepData = loadStepData(NightlySteps.STEP_SAVE_ANALYTICS)
 
         // If completed, restore from saved resultJson
         if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
@@ -50,7 +50,7 @@ class NightlyPhaseAnalysis(
                 if (accepted) {
                     reflectionXp = output.optInt("xp", 0)
                     TerminalLogger.log("Nightly Phase Analysis: Step 6 restored XP: $reflectionXp")
-                    listener.onStepCompleted(NightlySteps.STEP_ANALYZE_REFLECTION, "Reflection Accepted", stepData.details)
+                    listener.onStepCompleted(NightlySteps.STEP_SAVE_ANALYTICS, "Reflection Accepted", stepData.details)
                     return
                 }
             } catch (e: Exception) {
@@ -58,8 +58,8 @@ class NightlyPhaseAnalysis(
             }
         }
 
-        listener.onStepStarted(NightlySteps.STEP_ANALYZE_REFLECTION, "Analyzing Reflection")
-        saveStepState(NightlySteps.STEP_ANALYZE_REFLECTION, StepProgress.STATUS_RUNNING, "Reading Diary...")
+        listener.onStepStarted(NightlySteps.STEP_SAVE_ANALYTICS, "Analyzing Reflection")
+        saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_RUNNING, "Reading Diary...")
 
         try {
             // 1. Get Diary Doc ID from Step 5 result (from DB)
@@ -79,7 +79,7 @@ class NightlyPhaseAnalysis(
                 throw IllegalStateException("Diary seems empty. Please write your reflection first.")
             }
 
-            saveStepState(NightlySteps.STEP_ANALYZE_REFLECTION, StepProgress.STATUS_RUNNING, "AI Analyzing...")
+            saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_RUNNING, "AI Analyzing...")
 
             // 3. Get AI Model (REQUIRED - no fallback)
             val userIntro = AISettingsActivity.getUserIntroduction(context) ?: ""
@@ -130,30 +130,30 @@ class NightlyPhaseAnalysis(
                     })
                 }.toString()
 
-                listener.onStepCompleted(NightlySteps.STEP_ANALYZE_REFLECTION, "Reflection Accepted", details)
-                saveStepState(NightlySteps.STEP_ANALYZE_REFLECTION, StepProgress.STATUS_COMPLETED, details, resultJson)
+                listener.onStepCompleted(NightlySteps.STEP_SAVE_ANALYTICS, "Reflection Accepted", details)
+                saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_COMPLETED, details, resultJson)
             } else {
                 // Rejection - Mark as ERROR so Retry button appears
                 val errorDetails = "Rejected: ${result.feedback}"
-                saveStepState(NightlySteps.STEP_ANALYZE_REFLECTION, StepProgress.STATUS_ERROR, errorDetails)
+                saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_ERROR, errorDetails)
                 listener.onAnalysisFeedback(result.feedback)
             }
         } catch (e: Exception) {
-            listener.onError(NightlySteps.STEP_ANALYZE_REFLECTION, "Analysis Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_ANALYZE_REFLECTION, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_SAVE_ANALYTICS, "Analysis Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_ERROR, e.message)
         }
     }
 
     // ========== STEP 7: Finalize XP & Stats ==========
     suspend fun step7_finalizeXp() {
-        val stepData = loadStepData(NightlySteps.STEP_FINALIZE_XP)
+        val stepData = loadStepData(NightlySteps.STEP_SAVE_ANALYTICS)
         if (stepData.status == StepProgress.STATUS_COMPLETED) {
-            listener.onStepCompleted(NightlySteps.STEP_FINALIZE_XP, "XP Finalized", stepData.details)
+            listener.onStepCompleted(NightlySteps.STEP_SAVE_ANALYTICS, "XP Finalized", stepData.details)
             return
         }
 
-        listener.onStepStarted(NightlySteps.STEP_FINALIZE_XP, "Finalizing XP & Streak")
-        saveStepState(NightlySteps.STEP_FINALIZE_XP, StepProgress.STATUS_RUNNING, "Calculating...")
+        listener.onStepStarted(NightlySteps.STEP_SAVE_ANALYTICS, "Finalizing XP & Streak")
+        saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_RUNNING, "Calculating...")
 
         try {
             // Fetch Cloud Events for XP calculation
@@ -204,11 +204,11 @@ class NightlyPhaseAnalysis(
             }.toString()
 
             val details = "XP: +${finalStats.totalDailyXP} | Level ${finalStats.level} | ${finalStats.streak} Day Streak"
-            listener.onStepCompleted(NightlySteps.STEP_FINALIZE_XP, "Day Complete", details)
-            saveStepState(NightlySteps.STEP_FINALIZE_XP, StepProgress.STATUS_COMPLETED, details, resultJson)
+            listener.onStepCompleted(NightlySteps.STEP_SAVE_ANALYTICS, "Day Complete", details)
+            saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_COMPLETED, details, resultJson)
         } catch (e: Exception) {
-            listener.onError(NightlySteps.STEP_FINALIZE_XP, "XP Finalization Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_FINALIZE_XP, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_SAVE_ANALYTICS, "XP Finalization Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_ERROR, e.message)
         }
     }
 
@@ -234,7 +234,7 @@ class NightlyPhaseAnalysis(
      */
     private suspend fun getDiaryDocIdFromDB(): String? {
         // 1. Try Step 5 result
-        val step5Data = loadStepData(NightlySteps.STEP_CREATE_DIARY)
+        val step5Data = loadStepData(NightlySteps.STEP_CREATE_DIARY_DOCS)
         if (step5Data.resultJson != null) {
             try {
                 val json = JSONObject(step5Data.resultJson)
@@ -272,7 +272,7 @@ class NightlyPhaseAnalysis(
      * Uses cached diaryDocId if available.
      */
     suspend fun readDiaryContent(): String {
-        listener.onStepStarted(NightlySteps.STEP_ANALYZE_REFLECTION, "Reading Diary")
+        listener.onStepStarted(NightlySteps.STEP_SAVE_ANALYTICS, "Reading Diary")
 
         if (diaryDocId == null) {
             diaryDocId = getDiaryDocIdFromDB()
@@ -305,7 +305,7 @@ class NightlyPhaseAnalysis(
             val plannedEvents = db.calendarEventDao().getEventsInRange(startOfDay, endOfDay)
 
             // Get tasks from Step 1 DB
-            val step1Data = NightlyRepository.loadStepData(context, diaryDate, NightlySteps.STEP_FETCH_TASKS)
+            val step1Data = NightlyRepository.loadStepData(context, diaryDate, NightlySteps.STEP_FETCH_ANALYTICS)
             val dueTasks = mutableListOf<String>()
             val completedTasks = mutableListOf<String>()
             if (step1Data.resultJson != null) {

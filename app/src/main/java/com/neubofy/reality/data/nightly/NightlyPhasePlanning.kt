@@ -54,7 +54,7 @@ class NightlyPhasePlanning(
 
     // ========== STEP 8: Create Plan Document ==========
     suspend fun step8_createPlanDoc() {
-        val stepData = loadStepData(NightlySteps.STEP_CREATE_PLAN_DOC)
+        val stepData = loadStepData(NightlySteps.STEP_CREATE_PLAN)
 
         if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
             try {
@@ -67,7 +67,7 @@ class NightlyPhasePlanning(
                     planDocId = savedDocId
                     TerminalLogger.log("Nightly Phase Planning: Step 8 restored planDocId: $savedDocId")
                     if (savedUrl.isNotEmpty()) {
-                        listener.onStepCompleted(NightlySteps.STEP_CREATE_PLAN_DOC, "Plan Doc Ready", "Restored", savedUrl)
+                        listener.onStepCompleted(NightlySteps.STEP_CREATE_PLAN, "Plan Doc Ready", "Restored", savedUrl)
                     }
                     return
                 }
@@ -76,8 +76,8 @@ class NightlyPhasePlanning(
             }
         }
 
-        listener.onStepStarted(NightlySteps.STEP_CREATE_PLAN_DOC, "Creating Plan Document")
-        saveStepState(NightlySteps.STEP_CREATE_PLAN_DOC, StepProgress.STATUS_RUNNING, "Creating...")
+        listener.onStepStarted(NightlySteps.STEP_CREATE_PLAN, "Creating Plan Document")
+        saveStepState(NightlySteps.STEP_CREATE_PLAN, StepProgress.STATUS_RUNNING, "Creating...")
 
         try {
             val prefs = context.getSharedPreferences(NightlySteps.PREFS_NAME, Context.MODE_PRIVATE)
@@ -181,31 +181,31 @@ class NightlyPhasePlanning(
                 })
             }.toString()
 
-            listener.onStepCompleted(NightlySteps.STEP_CREATE_PLAN_DOC, "Plan Doc Ready", "Ready to Edit", docUrl)
-            saveStepState(NightlySteps.STEP_CREATE_PLAN_DOC, StepProgress.STATUS_COMPLETED, "Ready to Edit", resultJson, docUrl)
+            listener.onStepCompleted(NightlySteps.STEP_CREATE_PLAN, "Plan Doc Ready", "Ready to Edit", docUrl)
+            saveStepState(NightlySteps.STEP_CREATE_PLAN, StepProgress.STATUS_COMPLETED, "Ready to Edit", resultJson, docUrl)
         } catch (e: Exception) {
-            listener.onError(NightlySteps.STEP_CREATE_PLAN_DOC, "Failed to create plan: ${e.message}")
-            saveStepState(NightlySteps.STEP_CREATE_PLAN_DOC, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_CREATE_PLAN, "Failed to create plan: ${e.message}")
+            saveStepState(NightlySteps.STEP_CREATE_PLAN, StepProgress.STATUS_ERROR, e.message)
         }
     }
 
     // ========== STEP 9: AI Parse Plan to JSON ==========
     suspend fun step9_generatePlan() {
-        val stepData = loadStepData(NightlySteps.STEP_GENERATE_PLAN)
+        val stepData = loadStepData(NightlySteps.STEP_CREATE_PLAN)
         if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
-            listener.onStepCompleted(NightlySteps.STEP_GENERATE_PLAN, "Plan Parsed", stepData.details)
+            listener.onStepCompleted(NightlySteps.STEP_CREATE_PLAN, "Plan Parsed", stepData.details)
             return
         }
 
-        listener.onStepStarted(NightlySteps.STEP_GENERATE_PLAN, "AI Parsing Plan")
-        saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "Reading plan...")
+        listener.onStepStarted(NightlySteps.STEP_CREATE_PLAN, "AI Parsing Plan")
+        saveStepState(NightlySteps.STEP_CREATE_PLAN, StepProgress.STATUS_RUNNING, "Reading plan...")
 
         try {
             val nightlyModel = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
 
             if (nightlyModel.isNullOrEmpty()) {
-                listener.onStepSkipped(NightlySteps.STEP_GENERATE_PLAN, "Plan AI", "No AI Model Configured")
-                saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_SKIPPED, "No Model")
+                listener.onStepSkipped(NightlySteps.STEP_CREATE_PLAN, "Plan AI", "No AI Model Configured")
+                saveStepState(NightlySteps.STEP_CREATE_PLAN, StepProgress.STATUS_SKIPPED, "No Model")
                 return
             }
 
@@ -213,8 +213,8 @@ class NightlyPhasePlanning(
             val planId = getPlanDocIdFromDB()
 
             if (planId == null) {
-                listener.onError(NightlySteps.STEP_GENERATE_PLAN, "Plan Document missing. Run Step 8 first.")
-                saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, "No Plan Doc")
+                listener.onError(NightlySteps.STEP_CREATE_PLAN, "Plan Document missing. Run Step 8 first.")
+                saveStepState(NightlySteps.STEP_CREATE_PLAN, StepProgress.STATUS_ERROR, "No Plan Doc")
                 return
             }
 
@@ -224,12 +224,12 @@ class NightlyPhasePlanning(
 
             if (planContent.length < 20) {
                 val errorDetails = "Plan too short. Please write your tasks and schedule in the plan document."
-                saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails)
-                listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
+                saveStepState(NightlySteps.STEP_CREATE_PLAN, StepProgress.STATUS_ERROR, errorDetails)
+                listener.onError(NightlySteps.STEP_CREATE_PLAN, errorDetails)
                 return
             }
 
-            saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_RUNNING, "AI parsing...")
+            saveStepState(NightlySteps.STEP_CREATE_PLAN, StepProgress.STATUS_RUNNING, "AI parsing...")
 
             // Fetch Task List Configs for AI context
             val taskListConfigs = withContext(Dispatchers.IO) {
@@ -259,8 +259,8 @@ class NightlyPhasePlanning(
 
                 if (tasks.length() == 0 && events.length() == 0) {
                     val errorDetails = "Could not extract tasks or events from your plan. Please write clearer items with times."
-                    saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails)
-                    listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
+                    saveStepState(NightlySteps.STEP_CREATE_PLAN, StepProgress.STATUS_ERROR, errorDetails)
+                    listener.onError(NightlySteps.STEP_CREATE_PLAN, errorDetails)
                     return
                 }
 
@@ -295,8 +295,8 @@ class NightlyPhasePlanning(
                     put("sanitizedJson", jsonStr)
                 }.toString()
 
-                listener.onStepCompleted(NightlySteps.STEP_GENERATE_PLAN, "Plan Parsed", details)
-                saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
+                listener.onStepCompleted(NightlySteps.STEP_CREATE_PLAN, "Plan Parsed", details)
+                saveStepState(NightlySteps.STEP_CREATE_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
             } catch (e: Exception) {
                 val errorDetails = "AI response was not valid JSON. Please try again or simplify your plan."
                 TerminalLogger.log("Step 9 JSON parse error: ${e.message}, Raw: $aiResponse")
@@ -306,29 +306,29 @@ class NightlyPhasePlanning(
                     put("error", e.message)
                 }.toString()
 
-                saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails, failureJson)
-                listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
+                saveStepState(NightlySteps.STEP_CREATE_PLAN, StepProgress.STATUS_ERROR, errorDetails, failureJson)
+                listener.onError(NightlySteps.STEP_CREATE_PLAN, errorDetails)
             }
         } catch (e: Exception) {
-            listener.onError(NightlySteps.STEP_GENERATE_PLAN, "AI Plan Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_CREATE_PLAN, "AI Plan Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_CREATE_PLAN, StepProgress.STATUS_ERROR, e.message)
         }
     }
 
     // ========== STEP 10: Create Google Tasks & Calendar Events ==========
     suspend fun step10_processPlan() {
-        val stepData = loadStepData(NightlySteps.STEP_PROCESS_PLAN)
+        val stepData = loadStepData(NightlySteps.STEP_APPLY_PLAN)
         if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
-            listener.onStepCompleted(NightlySteps.STEP_PROCESS_PLAN, "Plan Processed", stepData.details)
+            listener.onStepCompleted(NightlySteps.STEP_APPLY_PLAN, "Plan Processed", stepData.details)
             return
         }
 
-        listener.onStepStarted(NightlySteps.STEP_PROCESS_PLAN, "Processing Plan to Tasks & Events")
-        saveStepState(NightlySteps.STEP_PROCESS_PLAN, StepProgress.STATUS_RUNNING, "Processing...")
+        listener.onStepStarted(NightlySteps.STEP_APPLY_PLAN, "Processing Plan to Tasks & Events")
+        saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_RUNNING, "Processing...")
 
         try {
             // Get JSON from Step 9 (from DB)
-            val step9Data = loadStepData(NightlySteps.STEP_GENERATE_PLAN)
+            val step9Data = loadStepData(NightlySteps.STEP_CREATE_PLAN)
             if (step9Data.resultJson == null) {
                 throw IllegalStateException("Step 9 not completed. Run AI Plan first.")
             }
@@ -481,28 +481,28 @@ class NightlyPhasePlanning(
                 })
             }.toString()
 
-            listener.onStepCompleted(NightlySteps.STEP_PROCESS_PLAN, "Plan Processed", details)
-            saveStepState(NightlySteps.STEP_PROCESS_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
+            listener.onStepCompleted(NightlySteps.STEP_APPLY_PLAN, "Plan Processed", details)
+            saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
 
             // Sync Bedtime
             syncBedtime(wakeupTime, sleepStartTime)
         } catch (e: Exception) {
-            listener.onError(NightlySteps.STEP_PROCESS_PLAN, "Process Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_PROCESS_PLAN, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_APPLY_PLAN, "Process Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_ERROR, e.message)
         }
     }
 
     // ========== STEP 11: Generate AI Report ==========
     suspend fun step11_generateReport() {
-        val stepData = loadStepData(NightlySteps.STEP_GENERATE_REPORT)
+        val stepData = loadStepData(NightlySteps.STEP_REPORT)
         if (stepData.status == StepProgress.STATUS_COMPLETED) {
             TerminalLogger.log("Nightly Phase Planning: Step 11 already completed for $diaryDate")
-            listener.onStepCompleted(NightlySteps.STEP_GENERATE_REPORT, "Report Generated", stepData.details)
+            listener.onStepCompleted(NightlySteps.STEP_REPORT, "Report Generated", stepData.details)
             return
         }
 
-        listener.onStepStarted(NightlySteps.STEP_GENERATE_REPORT, "Generating Report")
-        saveStepState(NightlySteps.STEP_GENERATE_REPORT, StepProgress.STATUS_RUNNING, "Collecting day summary...")
+        listener.onStepStarted(NightlySteps.STEP_REPORT, "Generating Report")
+        saveStepState(NightlySteps.STEP_REPORT, StepProgress.STATUS_RUNNING, "Collecting day summary...")
 
         try {
             // Recover Day Summary from Phase Data steps
@@ -511,7 +511,7 @@ class NightlyPhasePlanning(
             TerminalLogger.log("Nightly Phase Planning: Step 11 Summary recovered (${summary.tasksCompleted.size} tasks done)")
 
             // Recover Doc IDs from previous steps
-            saveStepState(NightlySteps.STEP_GENERATE_REPORT, StepProgress.STATUS_RUNNING, "Retrieving document IDs...")
+            saveStepState(NightlySteps.STEP_REPORT, StepProgress.STATUS_RUNNING, "Retrieving document IDs...")
             val dId = getDiaryDocIdFromDB()
             val pId = getPlanDocIdFromDB()
 
@@ -519,7 +519,7 @@ class NightlyPhasePlanning(
             if (pId == null) TerminalLogger.log("Nightly Phase Planning: Step 11 WARNING - Plan Doc ID is missing")
 
             // Fetch Diary Content
-            saveStepState(NightlySteps.STEP_GENERATE_REPORT, StepProgress.STATUS_RUNNING, "Fetching Diary content...")
+            saveStepState(NightlySteps.STEP_REPORT, StepProgress.STATUS_RUNNING, "Fetching Diary content...")
             val diaryContent = withContext(Dispatchers.IO) {
                 if (dId != null) {
                     GoogleDocsManager.getDocumentContent(context, dId) ?: ""
@@ -527,7 +527,7 @@ class NightlyPhasePlanning(
             }
 
             // Fetch Plan Content
-            saveStepState(NightlySteps.STEP_GENERATE_REPORT, StepProgress.STATUS_RUNNING, "Fetching Plan content...")
+            saveStepState(NightlySteps.STEP_REPORT, StepProgress.STATUS_RUNNING, "Fetching Plan content...")
             val planContent = withContext(Dispatchers.IO) {
                 if (pId != null) {
                     GoogleDocsManager.getDocumentContent(context, pId) ?: ""
@@ -538,7 +538,7 @@ class NightlyPhasePlanning(
                 throw Exception("Both Diary and Plan are empty. Please ensure documents have content (Diary ID: $dId, Plan ID: $pId).")
             }
 
-            saveStepState(NightlySteps.STEP_GENERATE_REPORT, StepProgress.STATUS_RUNNING, "AI Generating report...")
+            saveStepState(NightlySteps.STEP_REPORT, StepProgress.STATUS_RUNNING, "AI Generating report...")
             TerminalLogger.log("Nightly Phase Planning: Step 11 Prompting AI with ${diaryContent.length} chars diary and ${planContent.length} chars plan")
 
             // Generate report using AI
@@ -560,31 +560,31 @@ class NightlyPhasePlanning(
             }.toString()
 
             val details = "Report generated (${report.length} chars)"
-            listener.onStepCompleted(NightlySteps.STEP_GENERATE_REPORT, "Report Generated", details)
-            saveStepState(NightlySteps.STEP_GENERATE_REPORT, StepProgress.STATUS_COMPLETED, details, resultJson)
+            listener.onStepCompleted(NightlySteps.STEP_REPORT, "Report Generated", details)
+            saveStepState(NightlySteps.STEP_REPORT, StepProgress.STATUS_COMPLETED, details, resultJson)
 
             // Notification
-            com.neubofy.reality.utils.NotificationHelper.showNotification(context, "Nightly: Report Ready", "Analysis complete. Tap to view.", NightlySteps.STEP_GENERATE_REPORT)
+            com.neubofy.reality.utils.NotificationHelper.showNotification(context, "Nightly: Report Ready", "Analysis complete. Tap to view.", NightlySteps.STEP_REPORT)
         } catch (e: Exception) {
             val err = "Step 11 Error: ${e.message}"
             TerminalLogger.log("Nightly Phase Planning: ERROR (Step 11): $err")
-            listener.onError(NightlySteps.STEP_GENERATE_REPORT, err)
-            saveStepState(NightlySteps.STEP_GENERATE_REPORT, StepProgress.STATUS_ERROR, err)
+            listener.onError(NightlySteps.STEP_REPORT, err)
+            saveStepState(NightlySteps.STEP_REPORT, StepProgress.STATUS_ERROR, err)
 
-            com.neubofy.reality.utils.NotificationHelper.showNotification(context, "Nightly: Failed", "Report generation failed.", NightlySteps.STEP_GENERATE_REPORT)
+            com.neubofy.reality.utils.NotificationHelper.showNotification(context, "Nightly: Failed", "Report generation failed.", NightlySteps.STEP_REPORT)
         }
     }
 
     // ========== STEP 12: Generate PDF Report ==========
     suspend fun step12_generatePdf() {
-        val stepData = loadStepData(NightlySteps.STEP_GENERATE_PDF)
+        val stepData = loadStepData(NightlySteps.STEP_REPORT)
         if (stepData.status == StepProgress.STATUS_COMPLETED) {
-            listener.onStepCompleted(NightlySteps.STEP_GENERATE_PDF, "PDF Created", stepData.details)
+            listener.onStepCompleted(NightlySteps.STEP_REPORT, "PDF Created", stepData.details)
             return
         }
 
-        listener.onStepStarted(NightlySteps.STEP_GENERATE_PDF, "Creating PDF Report")
-        saveStepState(NightlySteps.STEP_GENERATE_PDF, StepProgress.STATUS_RUNNING, "Creating PDF...")
+        listener.onStepStarted(NightlySteps.STEP_REPORT, "Creating PDF Report")
+        saveStepState(NightlySteps.STEP_REPORT, StepProgress.STATUS_RUNNING, "Creating PDF...")
 
         try {
             // Get report content from Step 11
@@ -592,8 +592,8 @@ class NightlyPhasePlanning(
 
             if (reportContent.isNullOrEmpty()) {
                 val err = "No report content available (Step 11 may have failed)"
-                listener.onStepSkipped(NightlySteps.STEP_GENERATE_PDF, "PDF Skipped", err)
-                saveStepState(NightlySteps.STEP_GENERATE_PDF, StepProgress.STATUS_SKIPPED, err)
+                listener.onStepSkipped(NightlySteps.STEP_REPORT, "PDF Skipped", err)
+                saveStepState(NightlySteps.STEP_REPORT, StepProgress.STATUS_SKIPPED, err)
                 return
             }
 
@@ -602,8 +602,8 @@ class NightlyPhasePlanning(
 
             if (reportFolderId.isNullOrEmpty()) {
                 val err = "Report folder not configured"
-                listener.onError(NightlySteps.STEP_GENERATE_PDF, err)
-                saveStepState(NightlySteps.STEP_GENERATE_PDF, StepProgress.STATUS_ERROR, err)
+                listener.onError(NightlySteps.STEP_REPORT, err)
+                saveStepState(NightlySteps.STEP_REPORT, StepProgress.STATUS_ERROR, err)
                 return
             }
 
@@ -653,7 +653,7 @@ class NightlyPhasePlanning(
 
             val details = "PDF uploaded: $pdfFileId"
             val pdfUrl = "https://drive.google.com/file/d/$pdfFileId/view"
-            listener.onStepCompleted(NightlySteps.STEP_GENERATE_PDF, "PDF Created", details, pdfUrl)
+            listener.onStepCompleted(NightlySteps.STEP_REPORT, "PDF Created", details, pdfUrl)
 
             val resultJson = JSONObject().apply {
                 put("input", JSONObject().apply {
@@ -665,34 +665,34 @@ class NightlyPhasePlanning(
                     put("pdfUrl", pdfUrl)
                 })
             }.toString()
-            saveStepState(NightlySteps.STEP_GENERATE_PDF, StepProgress.STATUS_COMPLETED, details, resultJson)
+            saveStepState(NightlySteps.STEP_REPORT, StepProgress.STATUS_COMPLETED, details, resultJson)
 
-            com.neubofy.reality.utils.NotificationHelper.showNotification(context, "Nightly: PDF Saved", "Report uploaded to Drive.", NightlySteps.STEP_GENERATE_PDF)
+            com.neubofy.reality.utils.NotificationHelper.showNotification(context, "Nightly: PDF Saved", "Report uploaded to Drive.", NightlySteps.STEP_REPORT)
         } catch (e: Exception) {
             val err = "PDF generation failed: ${e.message}"
             TerminalLogger.log("Nightly Phase Planning: $err")
             e.printStackTrace()
-            listener.onError(NightlySteps.STEP_GENERATE_PDF, err)
-            saveStepState(NightlySteps.STEP_GENERATE_PDF, StepProgress.STATUS_ERROR, err)
+            listener.onError(NightlySteps.STEP_REPORT, err)
+            saveStepState(NightlySteps.STEP_REPORT, StepProgress.STATUS_ERROR, err)
 
-            com.neubofy.reality.utils.NotificationHelper.showNotification(context, "Nightly: PDF Error", "Failed to create/upload PDF.", NightlySteps.STEP_GENERATE_PDF)
+            com.neubofy.reality.utils.NotificationHelper.showNotification(context, "Nightly: PDF Error", "Failed to create/upload PDF.", NightlySteps.STEP_REPORT)
         }
     }
 
     // ========== STEP 13: Set Wake-up Alarm ==========
     suspend fun step13_setAlarm() {
-        val stepData = loadStepData(NightlySteps.STEP_SET_ALARM)
+        val stepData = loadStepData(NightlySteps.STEP_APPLY_PLAN)
         if (stepData.status == StepProgress.STATUS_COMPLETED) {
-            listener.onStepCompleted(NightlySteps.STEP_SET_ALARM, "Alarm Scheduled", stepData.details)
+            listener.onStepCompleted(NightlySteps.STEP_APPLY_PLAN, "Alarm Scheduled", stepData.details)
             return
         }
 
-        listener.onStepStarted(NightlySteps.STEP_SET_ALARM, "Setting Wake-up Alarm")
-        saveStepState(NightlySteps.STEP_SET_ALARM, StepProgress.STATUS_RUNNING, "Configuring...")
+        listener.onStepStarted(NightlySteps.STEP_APPLY_PLAN, "Setting Wake-up Alarm")
+        saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_RUNNING, "Configuring...")
 
         try {
             // Use data from Step 9
-            val step9Data = loadStepData(NightlySteps.STEP_GENERATE_PLAN)
+            val step9Data = loadStepData(NightlySteps.STEP_CREATE_PLAN)
             if (step9Data.resultJson == null) {
                 throw IllegalStateException("Step 9 (AI Plan) not completed.")
             }
@@ -702,8 +702,8 @@ class NightlyPhasePlanning(
 
             if (wakeupTime.isEmpty()) {
                 val details = "No wakeup time in AI plan"
-                listener.onStepCompleted(NightlySteps.STEP_SET_ALARM, "Alarm Skipped", details)
-                saveStepState(NightlySteps.STEP_SET_ALARM, StepProgress.STATUS_COMPLETED, details)
+                listener.onStepCompleted(NightlySteps.STEP_APPLY_PLAN, "Alarm Skipped", details)
+                saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_COMPLETED, details)
                 return
             }
 
@@ -772,12 +772,12 @@ class NightlyPhasePlanning(
             }.toString()
 
             val details = "Scheduled for $wakeupTime"
-            listener.onStepCompleted(NightlySteps.STEP_SET_ALARM, "Alarm Scheduled", details)
-            saveStepState(NightlySteps.STEP_SET_ALARM, StepProgress.STATUS_COMPLETED, details, resultJson)
+            listener.onStepCompleted(NightlySteps.STEP_APPLY_PLAN, "Alarm Scheduled", details)
+            saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
         } catch (e: Exception) {
             TerminalLogger.log("Nightly Step 13 Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_SET_ALARM, StepProgress.STATUS_ERROR, e.message)
-            listener.onError(NightlySteps.STEP_SET_ALARM, "Alarm Setup Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_APPLY_PLAN, "Alarm Setup Failed: ${e.message}")
         }
     }
 
@@ -788,15 +788,15 @@ class NightlyPhasePlanning(
         val planDate = diaryDate.plusDays(1)
         val targetDateStr = planDate.format(DateTimeFormatter.ISO_LOCAL_DATE) // YYYY-MM-DD
         
-        val stepData = loadStepData(NightlySteps.STEP_NORMALIZE_TASKS)
+        val stepData = loadStepData(NightlySteps.STEP_APPLY_PLAN)
         if (stepData.status == StepProgress.STATUS_COMPLETED) {
              TerminalLogger.log("Nightly Phase Planning: Step 14 already completed.")
-             listener.onStepCompleted(NightlySteps.STEP_NORMALIZE_TASKS, "Tasks Normalized", "Already done")
+             listener.onStepCompleted(NightlySteps.STEP_APPLY_PLAN, "Tasks Normalized", "Already done")
              return
         }
         
-        listener.onStepStarted(NightlySteps.STEP_NORMALIZE_TASKS, "AI Task Cleanup")
-        saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_RUNNING, "Fetching tasks...")
+        listener.onStepStarted(NightlySteps.STEP_APPLY_PLAN, "AI Task Cleanup")
+        saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_RUNNING, "Fetching tasks...")
         
         try {
             // 1. Fetch Task List Configs for context
@@ -831,15 +831,15 @@ class NightlyPhasePlanning(
             }
             
             if (allPendingTasks.isEmpty()) {
-                saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_COMPLETED, "No tasks to clean")
-                listener.onStepCompleted(NightlySteps.STEP_NORMALIZE_TASKS, "Task Cleanup", "No pending tasks found")
+                saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_COMPLETED, "No tasks to clean")
+                listener.onStepCompleted(NightlySteps.STEP_APPLY_PLAN, "Task Cleanup", "No pending tasks found")
                 return
             }
             
             // 3. Prepare JSON for AI
             val tasksJsonStr = JSONArray(allPendingTasks).toString()
             
-            saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_RUNNING, "AI analyzing ${allPendingTasks.size} tasks...")
+            saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_RUNNING, "AI analyzing ${allPendingTasks.size} tasks...")
             
             // 4. Call AI (Using Standardized Model)
             val model = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
@@ -921,34 +921,34 @@ class NightlyPhasePlanning(
             // 8. Complete
             val resultDetails = "Deleted $deletedCount duplicates/moved tasks, Re-added $addedCount corrected tasks"
             TerminalLogger.log("Nightly Step 14: $resultDetails")
-            saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_COMPLETED, resultDetails, aiResponse)
-            listener.onStepCompleted(NightlySteps.STEP_NORMALIZE_TASKS, "Task Cleanup Complete", resultDetails)
+            saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_COMPLETED, resultDetails, aiResponse)
+            listener.onStepCompleted(NightlySteps.STEP_APPLY_PLAN, "Task Cleanup Complete", resultDetails)
             
         } catch (e: Exception) {
             TerminalLogger.log("Nightly Step 14 Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_ERROR, e.message)
-            listener.onError(NightlySteps.STEP_NORMALIZE_TASKS, "Cleanup Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_APPLY_PLAN, "Cleanup Failed: ${e.message}")
         }
     }
 
     // ========== STEP 15: Update Distraction Limit ==========
     suspend fun step15_updateDistraction() {
-        val stepData = loadStepData(NightlySteps.STEP_UPDATE_DISTRACTION)
+        val stepData = loadStepData(NightlySteps.STEP_APPLY_PLAN)
         if (stepData.status == StepProgress.STATUS_COMPLETED) {
-            listener.onStepCompleted(NightlySteps.STEP_UPDATE_DISTRACTION, "Limit Updated", stepData.details)
+            listener.onStepCompleted(NightlySteps.STEP_APPLY_PLAN, "Limit Updated", stepData.details)
             return
         }
 
-        listener.onStepStarted(NightlySteps.STEP_UPDATE_DISTRACTION, "Updating Distraction Limit")
-        saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_RUNNING, "Reading Step 9...")
+        listener.onStepStarted(NightlySteps.STEP_APPLY_PLAN, "Updating Distraction Limit")
+        saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_RUNNING, "Reading Step 9...")
 
         try {
             // Read Step 9 output
-            val step9Data = loadStepData(NightlySteps.STEP_GENERATE_PLAN)
+            val step9Data = loadStepData(NightlySteps.STEP_CREATE_PLAN)
             if (step9Data.resultJson == null) {
                 val skipDetails = "Step 9 not completed - using default"
-                listener.onStepCompleted(NightlySteps.STEP_UPDATE_DISTRACTION, "Skipped", skipDetails)
-                saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_COMPLETED, skipDetails)
+                listener.onStepCompleted(NightlySteps.STEP_APPLY_PLAN, "Skipped", skipDetails)
+                saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_COMPLETED, skipDetails)
                 return
             }
 
@@ -975,28 +975,28 @@ class NightlyPhasePlanning(
             }.toString()
 
             val details = "${oldLimit}min → ${newLimit}min"
-            listener.onStepCompleted(NightlySteps.STEP_UPDATE_DISTRACTION, "Limit Updated", details)
-            saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_COMPLETED, details, resultJson)
+            listener.onStepCompleted(NightlySteps.STEP_APPLY_PLAN, "Limit Updated", details)
+            saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
             
             TerminalLogger.log("Nightly Step 15: Distraction limit updated from $oldLimit to $newLimit min")
         } catch (e: Exception) {
             TerminalLogger.log("Nightly Step 15 Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_ERROR, e.message)
-            listener.onError(NightlySteps.STEP_UPDATE_DISTRACTION, "Update Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_APPLY_PLAN, "Update Failed: ${e.message}")
         }
     }
 
 
     // ========== STEP 16: Backup to Reality Sheet ==========
     suspend fun step16_backupToSheet() {
-        val stepData = loadStepData(NightlySteps.STEP_BACKUP_SHEET)
+        val stepData = loadStepData(NightlySteps.STEP_SAVE_ANALYTICS)
         if (stepData.status == StepProgress.STATUS_COMPLETED) {
-            listener.onStepCompleted(NightlySteps.STEP_BACKUP_SHEET, "Backed Up", stepData.details)
+            listener.onStepCompleted(NightlySteps.STEP_SAVE_ANALYTICS, "Backed Up", stepData.details)
             return
         }
 
-        listener.onStepStarted(NightlySteps.STEP_BACKUP_SHEET, "Backing up to Reality Sheet")
-        saveStepState(NightlySteps.STEP_BACKUP_SHEET, StepProgress.STATUS_RUNNING, "Preparing data...")
+        listener.onStepStarted(NightlySteps.STEP_SAVE_ANALYTICS, "Backing up to Reality Sheet")
+        saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_RUNNING, "Preparing data...")
 
         try {
             val nightlyPrefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
@@ -1004,19 +1004,19 @@ class NightlyPhasePlanning(
 
             if (sheetId.isNullOrEmpty()) {
                 val skipDetails = "Reality Sheet not configured."
-                listener.onStepCompleted(NightlySteps.STEP_BACKUP_SHEET, "Skipped", skipDetails)
-                saveStepState(NightlySteps.STEP_BACKUP_SHEET, StepProgress.STATUS_COMPLETED, skipDetails)
+                listener.onStepCompleted(NightlySteps.STEP_SAVE_ANALYTICS, "Skipped", skipDetails)
+                saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_COMPLETED, skipDetails)
                 return
             }
 
             // Load required step data
-            val step1 = loadStepData(NightlySteps.STEP_FETCH_TASKS)
-            val step2 = loadStepData(NightlySteps.STEP_FETCH_SESSIONS)
-            val step3 = loadStepData(NightlySteps.STEP_CALC_SCREEN_TIME)
-            val step6 = loadStepData(NightlySteps.STEP_CREATE_DIARY)
-            val step7 = loadStepData(NightlySteps.STEP_ANALYZE_REFLECTION)
-            val step9 = loadStepData(NightlySteps.STEP_GENERATE_PLAN)
-            val step12 = loadStepData(NightlySteps.STEP_GENERATE_PDF)
+            val step1 = loadStepData(NightlySteps.STEP_FETCH_ANALYTICS)
+            val step2 = loadStepData(NightlySteps.STEP_FETCH_ANALYTICS)
+            val step3 = loadStepData(NightlySteps.STEP_FETCH_ANALYTICS)
+            val step6 = loadStepData(NightlySteps.STEP_CREATE_DIARY_DOCS)
+            val step7 = loadStepData(NightlySteps.STEP_SAVE_ANALYTICS)
+            val step9 = loadStepData(NightlySteps.STEP_CREATE_PLAN)
+            val step12 = loadStepData(NightlySteps.STEP_REPORT)
 
             fun extractJson(data: com.neubofy.reality.data.repository.StepData?): org.json.JSONObject {
                 if (data?.resultJson == null) return org.json.JSONObject()
@@ -1052,7 +1052,7 @@ class NightlyPhasePlanning(
             rowValues.add(j7.optString("feedback", "No feedback"))
 
             // "XP_Tapasya", "XP_Task", "XP_Session", "XP_Distraction", "XP_Reflection", "XP_Total", "Level", "Streak"
-            val step8Data = loadStepData(NightlySteps.STEP_FINALIZE_XP)
+            val step8Data = loadStepData(NightlySteps.STEP_SAVE_ANALYTICS)
             val j8 = extractJson(step8Data).optJSONObject("output") ?: org.json.JSONObject()
 
             rowValues.add(j8.optInt("tapasyaXp", 0).toString())
@@ -1097,17 +1097,17 @@ class NightlyPhasePlanning(
 
             if (success) {
                 val details = "Successfully appended to Reality Sheet."
-                listener.onStepCompleted(NightlySteps.STEP_BACKUP_SHEET, "Backed Up", details)
-                saveStepState(NightlySteps.STEP_BACKUP_SHEET, StepProgress.STATUS_COMPLETED, details, linkUrl = "https://docs.google.com/spreadsheets/d/$sheetId")
+                listener.onStepCompleted(NightlySteps.STEP_SAVE_ANALYTICS, "Backed Up", details)
+                saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_COMPLETED, details, linkUrl = "https://docs.google.com/spreadsheets/d/$sheetId")
             } else {
                 val err = "Failed to append to Reality Sheet."
-                listener.onError(NightlySteps.STEP_BACKUP_SHEET, err)
-                saveStepState(NightlySteps.STEP_BACKUP_SHEET, StepProgress.STATUS_ERROR, err)
+                listener.onError(NightlySteps.STEP_SAVE_ANALYTICS, err)
+                saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_ERROR, err)
             }
         } catch (e: Exception) {
             TerminalLogger.log("Nightly Step 16 Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_BACKUP_SHEET, StepProgress.STATUS_ERROR, e.message)
-            listener.onError(NightlySteps.STEP_BACKUP_SHEET, "Backup Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_SAVE_ANALYTICS, "Backup Failed: ${e.message}")
         }
     }
 
@@ -1128,7 +1128,7 @@ class NightlyPhasePlanning(
     }
 
     private suspend fun getDiaryDocIdFromDB(): String? {
-        val step5Data = loadStepData(NightlySteps.STEP_CREATE_DIARY)
+        val step5Data = loadStepData(NightlySteps.STEP_CREATE_DIARY_DOCS)
         if (step5Data.resultJson != null) {
             try {
                 val json = JSONObject(step5Data.resultJson)
@@ -1141,7 +1141,7 @@ class NightlyPhasePlanning(
     }
 
     private suspend fun getPlanDocIdFromDB(): String? {
-        val step8Data = loadStepData(NightlySteps.STEP_CREATE_PLAN_DOC)
+        val step8Data = loadStepData(NightlySteps.STEP_CREATE_PLAN)
         if (step8Data.resultJson != null) {
             try {
                 val json = JSONObject(step8Data.resultJson)
@@ -1212,7 +1212,7 @@ class NightlyPhasePlanning(
             val plannedEvents = db.calendarEventDao().getEventsInRange(startOfDay, endOfDay)
 
             // Get tasks from Step 1 DB
-            val step1Data = NightlyRepository.loadStepData(context, diaryDate, NightlySteps.STEP_FETCH_TASKS)
+            val step1Data = NightlyRepository.loadStepData(context, diaryDate, NightlySteps.STEP_FETCH_ANALYTICS)
             val dueTasks = mutableListOf<String>()
             val completedTasks = mutableListOf<String>()
             if (step1Data.resultJson != null) {

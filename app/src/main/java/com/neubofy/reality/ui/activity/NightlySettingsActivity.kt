@@ -73,6 +73,8 @@ class NightlySettingsActivity : BaseActivity() {
     private fun setupListeners() {
         // binding.btnBack handled by toolbar
 
+        setupToggleListeners()
+
 
         // Clear Nightly Memory - Day Selector Dialog
         binding.btnClearNightlyMemory.setOnClickListener {
@@ -227,6 +229,47 @@ class NightlySettingsActivity : BaseActivity() {
     private fun loadSavedData() {
         // Load time window settings first
         loadTimeWindowSettings()
+
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        binding.switchStep1Enable.isChecked = prefs.getBoolean("step1_enable", true)
+        binding.cbStep1Task.isChecked = prefs.getBoolean("step1_task", true)
+        binding.cbStep1Calendar.isChecked = prefs.getBoolean("step1_calendar", true)
+        binding.cbStep1Tapasya.isChecked = prefs.getBoolean("step1_tapasya", true)
+        binding.cbStep1Apps.isChecked = prefs.getBoolean("step1_apps", true)
+        binding.cbStep1Health.isChecked = prefs.getBoolean("step1_health", true)
+        binding.switchStep2Enable.isChecked = prefs.getBoolean("step2_enable", true)
+        binding.cbStep2AiQuestions.isChecked = prefs.getBoolean("step2_ai_questions", true)
+        binding.switchStep3Enable.isChecked = prefs.getBoolean("step3_enable", true)
+        binding.cbStep3Sheet.isChecked = prefs.getBoolean("step3_sheet", true)
+        binding.switchStep4Enable.isChecked = prefs.getBoolean("step4_enable", true)
+        binding.switchStep5Enable.isChecked = prefs.getBoolean("step5_enable", true)
+        binding.cbStep5Alarm.isChecked = prefs.getBoolean("step5_alarm", true)
+        binding.cbStep5Task.isChecked = prefs.getBoolean("step5_task", true)
+        binding.cbStep5Event.isChecked = prefs.getBoolean("step5_event", true)
+        binding.cbStep5Sleep.isChecked = prefs.getBoolean("step5_sleep", true)
+        binding.cbStep5Limit.isChecked = prefs.getBoolean("step5_limit", true)
+        binding.switchStep6Enable.isChecked = prefs.getBoolean("step6_enable", true)
+    }
+    private fun setupToggleListeners() {
+        val editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+        binding.switchStep1Enable.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step1_enable", isChecked).apply() }
+        binding.cbStep1Task.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step1_task", isChecked).apply() }
+        binding.cbStep1Calendar.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step1_calendar", isChecked).apply() }
+        binding.cbStep1Tapasya.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step1_tapasya", isChecked).apply() }
+        binding.cbStep1Apps.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step1_apps", isChecked).apply() }
+        binding.cbStep1Health.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step1_health", isChecked).apply() }
+        binding.switchStep2Enable.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step2_enable", isChecked).apply() }
+        binding.cbStep2AiQuestions.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step2_ai_questions", isChecked).apply() }
+        binding.switchStep3Enable.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step3_enable", isChecked).apply() }
+        binding.cbStep3Sheet.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step3_sheet", isChecked).apply() }
+        binding.switchStep4Enable.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step4_enable", isChecked).apply() }
+        binding.switchStep5Enable.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step5_enable", isChecked).apply() }
+        binding.cbStep5Alarm.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step5_alarm", isChecked).apply() }
+        binding.cbStep5Task.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step5_task", isChecked).apply() }
+        binding.cbStep5Event.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step5_event", isChecked).apply() }
+        binding.cbStep5Sleep.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step5_sleep", isChecked).apply() }
+        binding.cbStep5Limit.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step5_limit", isChecked).apply() }
+        binding.switchStep6Enable.setOnCheckedChangeListener { _, isChecked -> editor.putBoolean("step6_enable", isChecked).apply() }
     }
 
     private fun showTimePicker(isStartTime: Boolean) {

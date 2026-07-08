@@ -117,21 +117,21 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
         }
         
         // Step 6 (Analyze Reflection) requires Step 5 (Create Diary) to have data
-        stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION, isStepOk(NightlyProtocolExecutor.STEP_CREATE_DIARY))
+        stepAdapter.setStepEnabled(com.neubofy.reality.data.nightly.NightlySteps.STEP_SAVE_ANALYTICS, isStepOk(com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_DIARY_DOCS))
         
         // Step 9 (Generate Plan) requires Step 8 (Create Plan Doc) to have data
-        stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_GENERATE_PLAN, isStepOk(NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC))
+        stepAdapter.setStepEnabled(com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_PLAN, isStepOk(com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_PLAN))
         
         // Step 10 (Process Plan) requires Step 9 (Generate Plan) to have data
-        stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_PROCESS_PLAN, isStepOk(NightlyProtocolExecutor.STEP_GENERATE_PLAN))
+        stepAdapter.setStepEnabled(com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN, isStepOk(com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_PLAN))
         
         // Step 14 (Normalize Tasks) requires Step 10 (Process Plan) to have data
-        stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_NORMALIZE_TASKS, isStepOk(NightlyProtocolExecutor.STEP_PROCESS_PLAN))
+        stepAdapter.setStepEnabled(com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN, isStepOk(com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN))
         
         // Step 12 (Generate PDF) requires Step 11 (Generate Report) - check status completed
-        val step11 = stepStates[NightlyProtocolExecutor.STEP_GENERATE_REPORT]
+        val step11 = stepStates[com.neubofy.reality.data.nightly.NightlySteps.STEP_REPORT]
         val step11Ok = step11 != null && (step11.status == com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED || !step11.resultJson.isNullOrEmpty())
-        stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_GENERATE_PDF, step11Ok)
+        stepAdapter.setStepEnabled(com.neubofy.reality.data.nightly.NightlySteps.STEP_REPORT, step11Ok)
         
         // Log for debugging
         com.neubofy.reality.utils.TerminalLogger.log("Step Dependencies: Diary=${isStepOk(5)}, PlanDoc=${isStepOk(8)}, GenPlan=${isStepOk(9)}, ProcessPlan=${isStepOk(10)}, Report=$step11Ok")
@@ -218,31 +218,14 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
     
     private fun setupStepsRecyclerView() {
         // Initialize 13 Step Items
+        val prefs = getSharedPreferences(com.neubofy.reality.data.nightly.NightlySteps.PREFS_NAME, MODE_PRIVATE)
         stepItems.clear()
-        stepItems.addAll(listOf(
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_FETCH_TASKS, "1. Fetch Tasks", R.drawable.baseline_sync_24),
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_FETCH_SESSIONS, "2. Fetch Sessions", R.drawable.baseline_sync_24),
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_CALC_SCREEN_TIME, "3. Screen Time", R.drawable.baseline_access_time_24),
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS, "4. AI Questions", R.drawable.baseline_auto_awesome_24),
-            
-            // Step 5
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_CREATE_DIARY, "5. Create Diary", R.drawable.baseline_edit_24),
-                
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION, "6. Analyze Reflection", R.drawable.baseline_auto_awesome_24, isEnabled = false), // Initially disabled
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_FINALIZE_XP, "7. Finalize XP", R.drawable.baseline_bolt_24),
-            
-            // Step 8 
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC, "8. Create Plan", R.drawable.baseline_description_24),
-                
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_GENERATE_PLAN, "9. AI Plan", R.drawable.baseline_auto_awesome_24, isEnabled = false), // Initially disabled
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_PROCESS_PLAN, "10. Process Plan", R.drawable.baseline_calendar_month_24),
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_GENERATE_REPORT, "11. Generate Report", R.drawable.baseline_description_24),
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_GENERATE_PDF, "12. Generate PDF", R.drawable.baseline_picture_as_pdf_24),
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_SET_ALARM, "13. Set Alarm", R.drawable.baseline_alarm_add_24),
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_NORMALIZE_TASKS, "14. AI Task Cleanup", R.drawable.baseline_auto_fix_high_24),
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_UPDATE_DISTRACTION, "15. Update Distraction", R.drawable.baseline_do_not_disturb_on_24),
-            com.neubofy.reality.ui.adapter.StepItem(NightlyProtocolExecutor.STEP_BACKUP_SHEET, "16. Reality Sheet", R.drawable.baseline_auto_awesome_24)
-        ))
+        if (prefs.getBoolean("step1_enable", true)) stepItems.add(com.neubofy.reality.ui.adapter.StepItem(com.neubofy.reality.data.nightly.NightlySteps.STEP_FETCH_ANALYTICS, "1. Fetch Analytics", R.drawable.baseline_sync_24))
+        if (prefs.getBoolean("step2_enable", true)) stepItems.add(com.neubofy.reality.ui.adapter.StepItem(com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_DIARY_DOCS, "2. Create Diary Docs", R.drawable.baseline_edit_24))
+        if (prefs.getBoolean("step3_enable", true)) stepItems.add(com.neubofy.reality.ui.adapter.StepItem(com.neubofy.reality.data.nightly.NightlySteps.STEP_SAVE_ANALYTICS, "3. Save Analytics", R.drawable.baseline_auto_awesome_24))
+        if (prefs.getBoolean("step4_enable", true)) stepItems.add(com.neubofy.reality.ui.adapter.StepItem(com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_PLAN, "4. Create Plan", R.drawable.baseline_description_24))
+        if (prefs.getBoolean("step5_enable", true)) stepItems.add(com.neubofy.reality.ui.adapter.StepItem(com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN, "5. Apply Plan", R.drawable.baseline_calendar_month_24))
+        if (prefs.getBoolean("step6_enable", true)) stepItems.add(com.neubofy.reality.ui.adapter.StepItem(com.neubofy.reality.data.nightly.NightlySteps.STEP_REPORT, "6. Report", R.drawable.baseline_picture_as_pdf_24))
         
         stepAdapter = com.neubofy.reality.ui.adapter.NightlyStepAdapter(
             steps = stepItems,
@@ -495,7 +478,7 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
                 }
                 
                 // Extra actions for specific steps
-                if (step == NightlyProtocolExecutor.STEP_CREATE_DIARY) {
+                if (step == com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_DIARY_DOCS) {
                     val diaryId = prefs.getString(NightlyProtocolExecutor.getDiaryDocIdKey(selectedDate), null)
                     if (diaryId != null) {
                         builder.setPositiveButton("📖 Open Diary") { _, _ ->
@@ -533,20 +516,20 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
     
     private fun confirmDeleteAndRerun(step: Int, executorStep: Int) {
         val stepName = when (step) {
-            NightlyProtocolExecutor.STEP_FETCH_TASKS -> "Fetch Tasks"
-            NightlyProtocolExecutor.STEP_FETCH_SESSIONS -> "Fetch Sessions"
-            NightlyProtocolExecutor.STEP_CALC_SCREEN_TIME -> "Screen Time"
-            NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS -> "Generate Questions"
-            NightlyProtocolExecutor.STEP_CREATE_DIARY -> "Create Diary"
-            NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION -> "Analyze Reflection"
-            NightlyProtocolExecutor.STEP_FINALIZE_XP -> "Finalize XP"
-            NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC -> "Create Plan Doc"
-            NightlyProtocolExecutor.STEP_GENERATE_PLAN -> "Generate Plan Suggestions"
-            NightlyProtocolExecutor.STEP_PROCESS_PLAN -> "Process Plan"
-            NightlyProtocolExecutor.STEP_GENERATE_REPORT -> "Generate Report"
-            NightlyProtocolExecutor.STEP_GENERATE_PDF -> "Generate PDF"
-            NightlyProtocolExecutor.STEP_SET_ALARM -> "Set Alarm"
-            NightlyProtocolExecutor.STEP_NORMALIZE_TASKS -> "AI Task Cleanup"
+            com.neubofy.reality.data.nightly.NightlySteps.STEP_FETCH_ANALYTICS -> "Fetch Tasks"
+            com.neubofy.reality.data.nightly.NightlySteps.STEP_FETCH_ANALYTICS -> "Fetch Sessions"
+            com.neubofy.reality.data.nightly.NightlySteps.STEP_FETCH_ANALYTICS -> "Screen Time"
+            com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_DIARY_DOCS -> "Generate Questions"
+            com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_DIARY_DOCS -> "Create Diary"
+            com.neubofy.reality.data.nightly.NightlySteps.STEP_SAVE_ANALYTICS -> "Analyze Reflection"
+            com.neubofy.reality.data.nightly.NightlySteps.STEP_SAVE_ANALYTICS -> "Finalize XP"
+            com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_PLAN -> "Create Plan Doc"
+            com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_PLAN -> "Generate Plan Suggestions"
+            com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN -> "Process Plan"
+            com.neubofy.reality.data.nightly.NightlySteps.STEP_REPORT -> "Generate Report"
+            com.neubofy.reality.data.nightly.NightlySteps.STEP_REPORT -> "Generate PDF"
+            com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN -> "Set Alarm"
+            com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN -> "AI Task Cleanup"
             else -> "Step $step"
         }
         
@@ -562,14 +545,14 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
                     )
                     
                     // Clear persistent Doc IDs if applicable
-                    if (executorStep == NightlyProtocolExecutor.STEP_CREATE_DIARY) {
+                    if (executorStep == com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_DIARY_DOCS) {
                         com.neubofy.reality.data.repository.NightlyRepository.clearDiaryDocId(this@NightlyActivity, selectedDate)
                         // Also clear preferences for legacy support if needed
                         getSharedPreferences("nightly_prefs", MODE_PRIVATE).edit()
                             .remove(NightlyProtocolExecutor.getDiaryDocIdKey(selectedDate))
                             .apply()
                     }
-                    if (executorStep == NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC) {
+                    if (executorStep == com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_PLAN) {
                          com.neubofy.reality.data.repository.NightlyRepository.clearPlanDocId(this@NightlyActivity, selectedDate)
                     }
 
@@ -595,48 +578,48 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
             
             when (step) {
                 // Phase 1 & 2: Creation Phase (Dependencies: 1->2->3->4->5)
-                NightlyProtocolExecutor.STEP_FETCH_TASKS,
-                NightlyProtocolExecutor.STEP_FETCH_SESSIONS,
-                NightlyProtocolExecutor.STEP_CALC_SCREEN_TIME,
-                NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS -> {
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_FETCH_ANALYTICS,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_FETCH_ANALYTICS,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_FETCH_ANALYTICS,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_DIARY_DOCS -> {
                      Toast.makeText(this@NightlyActivity, "Restarting Data Collection...", Toast.LENGTH_SHORT).show()
                      executor.executeSpecificStep(step) // Just run this step, don't force whole chain unless needed?
                      // Actually, safer to just run specific step if user asked for specific step.
                      // But dependencies might be missing? executeSpecificStep handles silent collection.
                 }
                 
-                NightlyProtocolExecutor.STEP_CREATE_DIARY -> {
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_DIARY_DOCS -> {
                     NightlyProtocolExecutor.clearMemory(this@NightlyActivity)
                     Toast.makeText(this@NightlyActivity, "Re-creating Diary...", Toast.LENGTH_SHORT).show()
                     executor.executeSpecificStep(step)
                 }
                 
                 // Phase 2: Analysis/XP
-                NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION -> {
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_SAVE_ANALYTICS -> {
                     Toast.makeText(this@NightlyActivity, "Re-analyzing...", Toast.LENGTH_SHORT).show()
                     executor.executeSpecificStep(step)
                 }
-                NightlyProtocolExecutor.STEP_FINALIZE_XP -> {
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_SAVE_ANALYTICS -> {
                     Toast.makeText(this@NightlyActivity, "Finalizing XP...", Toast.LENGTH_SHORT).show()
                     executor.executeSpecificStep(step)
                 }
-                NightlyProtocolExecutor.STEP_NORMALIZE_TASKS -> {
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN -> {
                     Toast.makeText(this@NightlyActivity, "Cleaning Tasks...", Toast.LENGTH_SHORT).show()
                     executor.executeSpecificStep(step)
                 }
                 
                 // Phase 3: Planning
-                NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC,
-                NightlyProtocolExecutor.STEP_GENERATE_PLAN,
-                NightlyProtocolExecutor.STEP_PROCESS_PLAN -> {
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_PLAN,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_PLAN,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN -> {
                     Toast.makeText(this@NightlyActivity, "Re-running Plan Step...", Toast.LENGTH_SHORT).show()
                     executor.executeSpecificStep(step)
                 }
                 
                 // Phase 4: Reporting
-                NightlyProtocolExecutor.STEP_GENERATE_REPORT,
-                NightlyProtocolExecutor.STEP_GENERATE_PDF -> {
-                    val label = if (step == NightlyProtocolExecutor.STEP_GENERATE_REPORT) "Report" else "PDF"
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_REPORT,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_REPORT -> {
+                    val label = if (step == com.neubofy.reality.data.nightly.NightlySteps.STEP_REPORT) "Report" else "PDF"
                     Toast.makeText(this@NightlyActivity, "Re-generating $label...", Toast.LENGTH_SHORT).show()
                     executor.executeSpecificStep(step)
                 }
@@ -732,22 +715,22 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
         lifecycleScope.launch {
             // Iterate through all 12 steps and update adapter
             val allSteps = listOf(
-                NightlyProtocolExecutor.STEP_FETCH_TASKS,
-                NightlyProtocolExecutor.STEP_FETCH_SESSIONS,
-                NightlyProtocolExecutor.STEP_CALC_SCREEN_TIME,
-                NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS,
-                NightlyProtocolExecutor.STEP_CREATE_DIARY,
-                NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION,
-                NightlyProtocolExecutor.STEP_FINALIZE_XP,
-                NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC,
-                NightlyProtocolExecutor.STEP_GENERATE_PLAN,
-                NightlyProtocolExecutor.STEP_PROCESS_PLAN,
-                NightlyProtocolExecutor.STEP_GENERATE_REPORT,
-                NightlyProtocolExecutor.STEP_GENERATE_PDF,
-                NightlyProtocolExecutor.STEP_SET_ALARM,
-                NightlyProtocolExecutor.STEP_NORMALIZE_TASKS,
-                NightlyProtocolExecutor.STEP_UPDATE_DISTRACTION,
-                NightlyProtocolExecutor.STEP_BACKUP_SHEET
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_FETCH_ANALYTICS,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_FETCH_ANALYTICS,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_FETCH_ANALYTICS,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_DIARY_DOCS,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_DIARY_DOCS,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_SAVE_ANALYTICS,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_SAVE_ANALYTICS,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_PLAN,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_PLAN,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_REPORT,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_REPORT,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN,
+                com.neubofy.reality.data.nightly.NightlySteps.STEP_SAVE_ANALYTICS
             )
             
             allSteps.forEach { step ->
@@ -781,24 +764,24 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
             }
 
             // Step 6 enables if Step 5 has data
-            val step5Ok = stepStates[NightlyProtocolExecutor.STEP_CREATE_DIARY]?.resultJson != null
-            stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION, step5Ok)
+            val step5Ok = stepStates[com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_DIARY_DOCS]?.resultJson != null
+            stepAdapter.setStepEnabled(com.neubofy.reality.data.nightly.NightlySteps.STEP_SAVE_ANALYTICS, step5Ok)
             
             // Step 9 enables if Step 8 has data
-            val step8Ok = stepStates[NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC]?.resultJson != null
-            stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_GENERATE_PLAN, step8Ok)
+            val step8Ok = stepStates[com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_PLAN]?.resultJson != null
+            stepAdapter.setStepEnabled(com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_PLAN, step8Ok)
             
             // Step 10 enables if Step 9 has data
-            val step9Ok = stepStates[NightlyProtocolExecutor.STEP_GENERATE_PLAN]?.resultJson != null
-            stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_PROCESS_PLAN, step9Ok)
+            val step9Ok = stepStates[com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_PLAN]?.resultJson != null
+            stepAdapter.setStepEnabled(com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN, step9Ok)
             
             // Step 12 enables if Step 11 has data (Check NightlyRepository for report content)
-            val step11Ok = stepStates[NightlyProtocolExecutor.STEP_GENERATE_REPORT]?.status == com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED
-            stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_GENERATE_PDF, step11Ok)
+            val step11Ok = stepStates[com.neubofy.reality.data.nightly.NightlySteps.STEP_REPORT]?.status == com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED
+            stepAdapter.setStepEnabled(com.neubofy.reality.data.nightly.NightlySteps.STEP_REPORT, step11Ok)
 
             // Step 14 enables if Step 10 has data
-            val step10Ok_Load = stepStates[NightlyProtocolExecutor.STEP_PROCESS_PLAN]?.resultJson != null
-            stepAdapter.setStepEnabled(NightlyProtocolExecutor.STEP_NORMALIZE_TASKS, step10Ok_Load)
+            val step10Ok_Load = stepStates[com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN]?.resultJson != null
+            stepAdapter.setStepEnabled(com.neubofy.reality.data.nightly.NightlySteps.STEP_APPLY_PLAN, step10Ok_Load)
         }
     }
     
@@ -868,7 +851,7 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
                     // Update Step 5 diary card with link
                     if (lastDocId != null) {
                         diaryUrl = "https://docs.google.com/document/d/$lastDocId/edit"
-                        stepAdapter.updateStep(NightlyProtocolExecutor.STEP_CREATE_DIARY, 
+                        stepAdapter.updateStep(com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_DIARY_DOCS,
                             com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED, 
                             "Diary ready", diaryUrl)
                     }
@@ -928,7 +911,7 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
             if (diaryUrl != null) {
                 this.diaryUrl = diaryUrl
                 // Update step 5 with link
-                stepAdapter.updateStep(NightlyProtocolExecutor.STEP_CREATE_DIARY, 
+                stepAdapter.updateStep(com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_DIARY_DOCS,
                     com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED, "Diary ready", diaryUrl)
             }
         }
@@ -1014,7 +997,7 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
             appendLog("Generated ${questions.size} questions.")
             
             // Update step adapter instead of showing separate card
-            stepAdapter.updateStep(NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS, 
+            stepAdapter.updateStep(com.neubofy.reality.data.nightly.NightlySteps.STEP_CREATE_DIARY_DOCS,
                 com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED,
                 "${questions.size} questions generated")
         }

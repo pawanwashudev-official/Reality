@@ -305,6 +305,47 @@
                 android:layout_marginBottom="24dp"/>
 
 
+            <com.google.android.material.divider.MaterialDivider
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"/>
+            <!-- Section: Sub-Permissions -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sub-Permissions &amp; Toggles"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+            <TextView android:text="Step 1: Data Collection" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_step1_enable" android:text="Enable Step 1 Entirely" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_step1_task" android:text="Task Collection" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_step1_calendar" android:text="Calendar Events" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_step1_tapasya" android:text="Tapasya Sessions" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_step1_apps" android:text="Distracting Apps" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_step1_health" android:text="Health Data" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp"/>
+            <!-- Step 2 Toggles -->
+            <TextView android:text="Step 2: Create Diary Docs" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_step2_enable" android:text="Enable Step 2 Entirely" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_step2_ai_questions" android:text="Include AI Based Questions" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp"/>
+            <!-- Step 3 Toggles -->
+            <TextView android:text="Step 3: Save Analytics" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_step3_enable" android:text="Enable Step 3 Entirely" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_step3_sheet" android:text="Save in Reality Sheet" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp"/>
+            <!-- Step 4 Toggles -->
+            <TextView android:text="Step 4: Create Plan" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_step4_enable" android:text="Enable Step 4 Entirely" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp"/>
+            <!-- Step 5 Toggles -->
+            <TextView android:text="Step 5: Apply Plan" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_step5_enable" android:text="Enable Step 5 Entirely" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_step5_alarm" android:text="Set Alarm" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_step5_task" android:text="Create Task in Google Tasks" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_step5_event" android:text="Calendar Event" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_step5_sleep" android:text="Update Sleep Time" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/cb_step5_limit" android:text="Update Distracting App Limit" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp"/>
+            <!-- Step 6 Toggles -->
+            <TextView android:text="Step 6: Report" android:textStyle="bold" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_step6_enable" android:text="Enable Step 6 Entirely" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="24dp"/>
             <!-- Additional Settings -->
             <TextView
                 android:layout_width="wrap_content"
