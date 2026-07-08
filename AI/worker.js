@@ -39,13 +39,32 @@ export default {
         });
       }
 
-      // Call GPT-OSS-20B with messages, tools, and optional parameters
-      const response = await env.AI.run("@cf/openai/gpt-oss-20b", {
+
+      const allowedModels = [
+        "@cf/openai/gpt-oss-120b",
+        "@cf/qwen/qwq-32b",
+        "@cf/qwen/qwen2.5-coder-32b-instruct",
+        "@cf/qwen/qwen1.5-14b-chat-awq",
+        "@hf/nousresearch/hermes-2-pro-mistral-7b"
+];
+
+      const requestedModel = body.model;
+      const modelToUse = allowedModels.includes(requestedModel) ? requestedModel : "@cf/openai/gpt-oss-120b";
+
+      // Call Cloudflare AI with messages, tools, and optional parameters
+      const options = {
         messages: body.messages || [{ role: "user", content: "Hello!" }],
-        tools: body.tools || [],
         max_tokens: body.max_tokens || 1024,
         temperature: body.temperature || 0.7,
-      });
+      };
+
+      if (body.tools && body.tools.length > 0) {
+        options.tools = body.tools;
+      }
+
+      // Call Cloudflare AI with messages, tools (if any), and optional parameters
+      const response = await env.AI.run(modelToUse, options);
+
 
       return new Response(JSON.stringify(response), {
         headers: { "Content-Type": "application/json" },

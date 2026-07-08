@@ -355,7 +355,7 @@ class NightlyPhaseData(
 
         val summary = daySummary
         val userIntro = AISettingsActivity.getUserIntroduction(context) ?: ""
-        val nightlyModel = "gpt-oss-20b"
+        val nightlyModel = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
 
         // ALWAYS use AI - throw error if no model configured
         if (nightlyModel.isNullOrEmpty()) {
@@ -559,7 +559,8 @@ class NightlyPhaseData(
                     val hasRawTemplate = currentContent.contains("{data}") || currentContent.contains("{questions}")
 
                     if (currentContent.length < 50 || hasRawTemplate) {
-                        GoogleDocsManager.appendText(context, docId, "\n\n" + content)
+                        // Only use supported formatting if needed, but since it's just raw text, we make sure it's clean markdown compatible text if possible.
+                        GoogleDocsManager.appendText(context, docId, "\n\n" + content.replace(Regex("[\\]+|[**]+|[##]+"), ""))
                         TerminalLogger.log("Nightly Phase Data: Injected data into existing diary")
                     }
                     processedUrl = "https://docs.google.com/document/d/$docId"
@@ -567,7 +568,7 @@ class NightlyPhaseData(
                     docId = GoogleDocsManager.createDocument(context, diaryTitle)
                     if (docId != null) {
                         GoogleDriveManager.moveFileToFolder(context, docId, diaryFolderId)
-                        GoogleDocsManager.appendText(context, docId, content)
+                        GoogleDocsManager.appendText(context, docId, content.replace(Regex("[\\]+|[**]+|[##]+"), ""))
                         processedUrl = "https://docs.google.com/document/d/$docId"
 
                         prefs.edit()

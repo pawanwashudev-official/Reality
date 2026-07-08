@@ -1,6 +1,9 @@
 package com.neubofy.reality.ui.activity
 
 import android.os.Bundle
+import android.widget.ArrayAdapter
+import android.view.View
+import android.widget.AdapterView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.neubofy.reality.ui.base.BaseActivity
@@ -75,6 +78,7 @@ class AISettingsActivity : BaseActivity() {
             binding.switchHealthAccess.isChecked = !binding.switchHealthAccess.isChecked
         }
 
+
         // Tool Toggles (Excluding Health which is handled specially)
         val allTools = ToolRegistry.ALL_TOOLS.filter { it.id != "health" }.sortedBy { it.category.name }
         toolToggleAdapter = ToolToggleAdapter(allTools) { toolId, isEnabled ->
@@ -82,6 +86,49 @@ class AISettingsActivity : BaseActivity() {
         }
         binding.recyclerToolToggles.adapter = toolToggleAdapter
         binding.recyclerToolToggles.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+
+        setupModelSpinners()
+    }
+
+    private fun setupModelSpinners() {
+        val models = listOf(
+            "@cf/openai/gpt-oss-120b",
+            "@cf/qwen/qwq-32b",
+            "@cf/qwen/qwen2.5-coder-32b-instruct",
+            "@cf/qwen/qwen1.5-14b-chat-awq",
+            "@hf/nousresearch/hermes-2-pro-mistral-7b"
+        )
+
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, models)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+
+        binding.spinnerChatModel.adapter = adapter
+        binding.spinnerNightlyModel.adapter = adapter
+
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
+        val savedChatModel = prefs.getString("chat_model", "@cf/openai/gpt-oss-120b")
+        val savedNightlyModel = prefs.getString("nightly_model", "@cf/openai/gpt-oss-120b")
+
+        val chatModelIndex = models.indexOf(savedChatModel).takeIf { it >= 0 } ?: 0
+        val nightlyModelIndex = models.indexOf(savedNightlyModel).takeIf { it >= 0 } ?: 0
+
+        binding.spinnerChatModel.setSelection(chatModelIndex)
+        binding.spinnerNightlyModel.setSelection(nightlyModelIndex)
+
+        binding.spinnerChatModel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                prefs.edit().putString("chat_model", models[position]).apply()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        binding.spinnerNightlyModel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                prefs.edit().putString("nightly_model", models[position]).apply()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
     }
 
 
