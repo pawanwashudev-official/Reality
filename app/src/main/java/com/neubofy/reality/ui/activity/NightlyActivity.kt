@@ -897,7 +897,7 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
         
         // Auto-scroll to bottom
         binding.tvExecutionLog.post {
-            val scroll = binding.tvExecutionLog.parent as? android.widget.ScrollView
+            val scroll = binding.tvExecutionLog.parent as? androidx.core.widget.NestedScrollView
             scroll?.fullScroll(View.FOCUS_DOWN)
         }
     }
@@ -1002,6 +1002,9 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
             isExecuting = false
             binding.btnStartNightly.isEnabled = true
             binding.btnStartNightly.text = "Retry"
+
+            // Force full refresh of all step states to ensure UI is in sync and dependencies are checked
+            loadPersistentState()
         }
     }
     

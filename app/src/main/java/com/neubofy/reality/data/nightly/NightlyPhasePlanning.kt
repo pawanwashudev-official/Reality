@@ -140,7 +140,7 @@ class NightlyPhasePlanning(
 
                 if (currentContent.length < 50 || hasRawTemplate) {
                     withContext(Dispatchers.IO) {
-                        GoogleDocsManager.appendText(context, existingDocId, "\n" + content.replace(Regex("[\\]+|[**]+|[##]+"), ""))
+                        GoogleDocsManager.appendText(context, existingDocId, "\n" + content.replace(Regex("""\*\*|##|\[|\]"""), ""))
                     }
                     TerminalLogger.log("Nightly Phase Planning: Injected template into existing empty plan")
                 }
@@ -157,7 +157,7 @@ class NightlyPhasePlanning(
                         }
                     }
                     withContext(Dispatchers.IO) {
-                        GoogleDocsManager.appendText(context, newDocId, content.replace(Regex("[\\]+|[**]+|[##]+"), ""))
+                        GoogleDocsManager.appendText(context, newDocId, content.replace(Regex("""\*\*|##|\[|\]"""), ""))
                     }
                     docUrl = "https://docs.google.com/document/d/$newDocId"
 
@@ -225,7 +225,7 @@ class NightlyPhasePlanning(
             if (planContent.length < 20) {
                 val errorDetails = "Plan too short. Please write your tasks and schedule in the plan document."
                 saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails)
-                listener.onAnalysisFeedback(errorDetails)
+                listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
                 return
             }
 
@@ -239,13 +239,17 @@ class NightlyPhasePlanning(
 
             // Validate JSON with robust extraction
             try {
-                val start = aiResponse.indexOf('{')
-                val end = aiResponse.lastIndexOf('}')
-
-                val jsonStr = if (start != -1 && end != -1 && end > start) {
-                    aiResponse.substring(start, end + 1)
+                // First try to extract from markdown block, fallback to basic json extraction
+                var jsonStr = if (aiResponse.contains("```json")) {
+                    aiResponse.substringAfter("```json").substringBeforeLast("```").trim()
                 } else {
-                    aiResponse
+                    val match = Regex("(?s)\\{.*\\}").find(aiResponse)
+                    match?.value ?: aiResponse
+                }
+
+                // If model just replies with string "null" we should catch it
+                if (jsonStr.equals("null", ignoreCase = true)) {
+                    throw Exception("Model returned null output instead of JSON.")
                 }
 
                 val json = JSONObject(jsonStr.trim())
@@ -256,7 +260,7 @@ class NightlyPhasePlanning(
                 if (tasks.length() == 0 && events.length() == 0) {
                     val errorDetails = "Could not extract tasks or events from your plan. Please write clearer items with times."
                     saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails)
-                    listener.onAnalysisFeedback(errorDetails)
+                    listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
                     return
                 }
 
@@ -303,7 +307,7 @@ class NightlyPhasePlanning(
                 }.toString()
 
                 saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails, failureJson)
-                listener.onAnalysisFeedback(errorDetails)
+                listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
             }
         } catch (e: Exception) {
             listener.onError(NightlySteps.STEP_GENERATE_PLAN, "AI Plan Failed: ${e.message}")
@@ -853,16 +857,22 @@ class NightlyPhasePlanning(
             
             // 5. Parse AI Response
             val responseJson = try {
-                val start = aiResponse.indexOf('{')
-                val end = aiResponse.lastIndexOf('}')
-                val jsonStr = if (start != -1 && end != -1 && end > start) {
-                    aiResponse.substring(start, end + 1)
-                } else {
+                var jsonStr = if (aiResponse.contains("```json")) {
                     aiResponse.substringAfter("```json").substringBeforeLast("```").trim()
+                } else {
+                    val match = Regex("(?s)\\{.*\\}").find(aiResponse)
+                    match?.value ?: aiResponse
                 }
-                JSONObject(jsonStr)
+
+                if (jsonStr.equals("null", ignoreCase = true) || aiResponse.equals("null", ignoreCase = true)) {
+                     throw Exception("Model returned null output.")
+                }
+                JSONObject(jsonStr.trim())
             } catch (e: Exception) {
-                 JSONObject(aiResponse) // Try direct parse
+                if (e.message?.contains("null output") == true) {
+                    throw e
+                }
+                JSONObject(aiResponse) // Try direct parse
             }
             
             val deleteIds = responseJson.optJSONArray("delete_ids")
