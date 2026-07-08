@@ -185,6 +185,10 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         
         TerminalLogger.log("Nightly AI: Analyzing plan with model: $modelString")
         
+        // Add robust markdown stripping for plan input to prevent format breaks
+        val cleanPlanContent = planContent.replace(Regex("[\*#]+"), "").trim()
+
+
         
 
 
@@ -207,10 +211,10 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
 
         val systemPrompt = customPrompt?.replace("{plan_content}", planContent)
             ?.replace("{list_context}", listsContext)
-            ?: getDefaultPlanPrompt(planContent, taskListConfigs)
+            ?: getDefaultPlanPrompt(cleanPlanContent, taskListConfigs)
             
         TerminalLogger.log("Nightly AI: Plan prompt built, calling AI Worker...")
-        val response = callAIWorker(context, "Extract my tasks and plan based on the document provided in the system prompt. Return ONLY valid JSON format without markdown wrapping.", systemPrompt, modelString)
+        val response = callAIWorker(context, "Extract my tasks and plan based on the document provided in the system prompt. Return ONLY valid raw JSON format without markdown wrapping. Do not include any reasoning blocks or markdown code block formatting.", systemPrompt, modelString)
         
         response
     }
@@ -637,7 +641,7 @@ Include exactly the questions asked and the user's answers extracted strictly fr
             Do not include markdown blocks or think tags. Return JSON ONLY.
         """.trimIndent()
 
-        callAIWorker(context, "Analyze and normalize this JSON array of tasks.", prompt + "\n\n[TASKS]\n$tasksJson", modelString)
+        callAIWorker(context, "Analyze and normalize this JSON array of tasks. Return ONLY valid raw JSON format without markdown wrapping. Do not include any reasoning blocks or markdown code block formatting.", prompt + "\n\n[TASKS]\n$tasksJson", modelString)
     }
 
     suspend fun generatePlanSuggestions(
