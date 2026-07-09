@@ -334,8 +334,16 @@ class NightlyProtocolExecutor(
             phasePlanning.step12_generatePdf()
             
             // Step 13: Set Wake-up Alarm
+            phasePlanning.step13_setAlarm()
 
             // Step 14: AI Task Cleanup (Normalize)
+            phasePlanning.step14_normalizeTasks()
+
+            // Step 15: Update Distraction
+            phasePlanning.step15_updateDistraction()
+
+            // Step 16: Backup to sheet
+            phasePlanning.step16_backupToSheet()
             
             setProtocolState(STATE_COMPLETE)
             diaryDocId = NightlyRepository.getDiaryDocId(context, diaryDate)
@@ -361,6 +369,9 @@ class NightlyProtocolExecutor(
             STEP_GENERATE_PLAN -> phasePlanning.step9_generatePlan()
             STEP_GENERATE_REPORT -> phasePlanning.step11_generateReport()
             STEP_GENERATE_PDF -> phasePlanning.step12_generatePdf()
+            NightlySteps.STEP_SET_ALARM -> phasePlanning.step13_setAlarm()
+            NightlySteps.STEP_NORMALIZE_TASKS -> phasePlanning.step14_normalizeTasks()
+            NightlySteps.STEP_UPDATE_DISTRACTION -> phasePlanning.step15_updateDistraction()
             STEP_BACKUP_SHEET -> phasePlanning.step16_backupToSheet()
             else -> throw IllegalArgumentException("Unknown step: $step")
         }

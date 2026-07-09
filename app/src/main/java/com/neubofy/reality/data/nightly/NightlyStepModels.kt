@@ -51,6 +51,9 @@ object NightlySteps {
     const val STEP_GENERATE_PLAN = 9        // AI
     const val STEP_GENERATE_REPORT = 11     // AI -> NightlySession
     const val STEP_GENERATE_PDF = 12        // PDF -> Google Drive
+    const val STEP_SET_ALARM = 13
+    const val STEP_NORMALIZE_TASKS = 14
+    const val STEP_UPDATE_DISTRACTION = 15
     const val STEP_BACKUP_SHEET = 16        // Backup to Reality Sheet
 
     // Protocol States
@@ -96,6 +99,9 @@ object NightlySteps {
         STEP_GENERATE_PLAN -> "AI Parse Plan"
         STEP_GENERATE_REPORT -> "Generate AI Report"
         STEP_GENERATE_PDF -> "Create PDF Report"
+        STEP_SET_ALARM -> "Set Alarm"
+        STEP_NORMALIZE_TASKS -> "AI Task Cleanup"
+        STEP_UPDATE_DISTRACTION -> "Update Distraction Limit"
         STEP_BACKUP_SHEET -> "Backup to Sheet"
         else -> "Unknown Step"
     }

@@ -157,7 +157,7 @@ class NightlyPhasePlanning(
                         }
                     }
                     withContext(Dispatchers.IO) {
-                        GoogleDocsManager.appendText(context, newDocId, content.replace(Regex("""\*\*|##|\[|\]"""), ""))
+                        GoogleDocsManager.appendText(context, newDocId, content.replace(Regex("""\*\*|##"""), ""))
                     }
                     docUrl = "https://docs.google.com/document/d/$newDocId"
 
@@ -261,8 +261,14 @@ class NightlyPhasePlanning(
                 }
 
                 // If model just replies with string "null" we should catch it
-                if (jsonStr.equals("null", ignoreCase = true) || jsonStr.isEmpty()) {
-                    throw Exception("Model returned null output instead of JSON.")
+                if (jsonStr.equals("null", ignoreCase = true) || jsonStr.isEmpty() || jsonStr == cleanResponse) {
+                    // Try parsing the full clean response as a fallback if extraction failed
+                    try {
+                        org.json.JSONObject(cleanResponse.trim())
+                        jsonStr = cleanResponse.trim()
+                    } catch (e: Exception) {
+                        jsonStr = "{}" // Default to empty json object to avoid crash
+                    }
                 }
 
                 val json = org.json.JSONObject(jsonStr.trim())
@@ -271,8 +277,15 @@ class NightlyPhasePlanning(
                 val events = json.optJSONArray("events") ?: org.json.JSONArray()
 
                 if (tasks.length() == 0 && events.length() == 0) {
-                    val errorDetails = "Could not extract tasks or events from your plan. Please write clearer items with times."
-                    saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails)
+                    val errorDetails = "Could not extract tasks or events from your plan. Please write clearer items with times. (Extracted JSON: $jsonStr, Raw response: $cleanResponse, Plan Length: ${planContent.length})"
+
+                    val failureJson = org.json.JSONObject().apply {
+                        put("error", errorDetails)
+                        put("rawResponse", aiResponse)
+                        put("sanitizedJson", jsonStr)
+                    }.toString()
+
+                    saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails, failureJson)
                     listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
                     return
                 }
@@ -529,8 +542,11 @@ class NightlyPhasePlanning(
                 listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
             }
         } catch (e: Exception) {
+            val failureJson = org.json.JSONObject().apply {
+                put("error", e.message)
+            }.toString()
             listener.onError(NightlySteps.STEP_GENERATE_PLAN, "AI Plan Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, e.message)
+            saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, e.message, failureJson)
         }
     }
 
@@ -921,7 +937,7 @@ class NightlyPhasePlanning(
                 }
 
                 if (jsonStr.equals("null", ignoreCase = true) || jsonStr.isEmpty()) {
-                     throw Exception("Model returned null output instead of JSON.")
+                     jsonStr = "{}"
                 }
                 JSONObject(jsonStr.trim())
             } catch (e: Exception) {
@@ -991,7 +1007,10 @@ class NightlyPhasePlanning(
             
         } catch (e: Exception) {
             TerminalLogger.log("Nightly Step 14 Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_ERROR, e.message)
+            val failureJson = org.json.JSONObject().apply {
+                put("error", e.message)
+            }.toString()
+            saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_ERROR, e.message, failureJson)
             listener.onError(NightlySteps.STEP_NORMALIZE_TASKS, "Cleanup Failed: ${e.message}")
         }
     }
@@ -1017,11 +1036,32 @@ class NightlyPhasePlanning(
                 return
             }
 
+            val step9Json = org.json.JSONObject(step9Data.resultJson)
+            val output = step9Json.optJSONObject("output") ?: step9Json
+            val newLimit = output.optInt("newDistractionLimit", -1)
 
+            if (newLimit == -1) {
+                val skipDetails = "No distraction limit in AI plan"
+                listener.onStepCompleted(NightlySteps.STEP_UPDATE_DISTRACTION, "Skipped", skipDetails)
+                saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_COMPLETED, skipDetails)
+                return
+            }
 
+            val prefs = context.getSharedPreferences(NightlySteps.PREFS_NAME, android.content.Context.MODE_PRIVATE)
+            val oldLimit = prefs.getInt("screen_time_limit_minutes", 60)
+            prefs.edit().putInt("screen_time_limit_minutes", newLimit).apply()
 
+            val details = "Distraction limit updated from $oldLimit to $newLimit min"
+            com.neubofy.reality.utils.TerminalLogger.log("Nightly Step 15: $details")
+            saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_COMPLETED, details)
+            listener.onStepCompleted(NightlySteps.STEP_UPDATE_DISTRACTION, "Distraction Updated", details)
 
-
+        } catch (e: Exception) {
+            com.neubofy.reality.utils.TerminalLogger.log("Nightly Step 15 Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_UPDATE_DISTRACTION, StepProgress.STATUS_ERROR, e.message)
+            listener.onError(NightlySteps.STEP_UPDATE_DISTRACTION, "Limit Update Failed: ${e.message}")
+        }
+    }
 
     // ========== STEP 16: Backup to Reality Sheet ==========
     suspend fun step16_backupToSheet() {
