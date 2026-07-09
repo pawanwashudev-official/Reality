@@ -261,8 +261,14 @@ class NightlyPhasePlanning(
                 }
 
                 // If model just replies with string "null" we should catch it
-                if (jsonStr.equals("null", ignoreCase = true) || jsonStr.isEmpty()) {
-                    jsonStr = "{}" // Default to empty json object to avoid crash
+                if (jsonStr.equals("null", ignoreCase = true) || jsonStr.isEmpty() || jsonStr == cleanResponse) {
+                    // Try parsing the full clean response as a fallback if extraction failed
+                    try {
+                        org.json.JSONObject(cleanResponse.trim())
+                        jsonStr = cleanResponse.trim()
+                    } catch (e: Exception) {
+                        jsonStr = "{}" // Default to empty json object to avoid crash
+                    }
                 }
 
                 val json = org.json.JSONObject(jsonStr.trim())
