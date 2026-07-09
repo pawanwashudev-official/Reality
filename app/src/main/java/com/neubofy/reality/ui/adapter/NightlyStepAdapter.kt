@@ -17,7 +17,8 @@ data class StepItem(
     var linkUrl: String? = null,
     var isEnabled: Boolean = true,
     var checkboxLabel: String? = null,
-    var isChecked: Boolean = false
+    var isChecked: Boolean = false,
+    var logs: List<String> = emptyList()
 )
 
 class NightlyStepAdapter(
@@ -52,8 +53,6 @@ class NightlyStepAdapter(
             binding.iconStatus.setColorFilter(binding.root.context.getColor(tintColor))
             
             // Action Button Text and State
-            // Completed = button disabled (grayed out), user can use long-press Reset if needed
-            // Pending/Error = button enabled to run/retry
             when (item.status) {
                 StepProgress.STATUS_COMPLETED -> {
                     binding.btnAction.text = "Done"
@@ -79,7 +78,6 @@ class NightlyStepAdapter(
             
             // Open Link Button
             binding.btnOpenLink.visibility = if (item.linkUrl != null) View.VISIBLE else View.GONE
-            binding.btnOpenLink.visibility = if (item.linkUrl != null) View.VISIBLE else View.GONE
             binding.btnOpenLink.setOnClickListener {
                 item.linkUrl?.let { url ->
                     val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
@@ -87,11 +85,19 @@ class NightlyStepAdapter(
                 }
             }
             
+            // Logs View
+            if (item.logs.isNotEmpty()) {
+                binding.tvStepLogs.visibility = View.VISIBLE
+                binding.tvStepLogs.text = item.logs.joinToString("\n")
+            } else {
+                binding.tvStepLogs.visibility = View.GONE
+            }
+            
             // Checkbox Logic
             if (item.checkboxLabel != null) {
                 binding.cbStepVerification.visibility = View.VISIBLE
                 binding.cbStepVerification.text = item.checkboxLabel
-                binding.cbStepVerification.setOnCheckedChangeListener(null) // Prevent recursive trigger
+                binding.cbStepVerification.setOnCheckedChangeListener(null)
                 binding.cbStepVerification.isChecked = item.isChecked
                 binding.cbStepVerification.setOnCheckedChangeListener { _, isChecked ->
                     item.isChecked = isChecked
@@ -121,7 +127,6 @@ class NightlyStepAdapter(
                 true
             }
             
-            // Card Alpha for disabled state
             binding.cardStep.alpha = if (item.isEnabled) 1.0f else 0.5f
         }
     }
@@ -137,11 +142,12 @@ class NightlyStepAdapter(
 
     override fun getItemCount() = steps.size
     
-    fun updateStep(stepId: Int, status: Int, detail: String, linkUrl: String? = null) {
+    fun updateStep(stepId: Int, status: Int, detail: String, linkUrl: String? = null, logs: List<String> = emptyList()) {
         val index = steps.indexOfFirst { it.stepId == stepId }
         if (index != -1) {
             steps[index].status = status
             steps[index].detail = detail
+            steps[index].logs = logs
             if (linkUrl != null) steps[index].linkUrl = linkUrl
             notifyItemChanged(index)
         }

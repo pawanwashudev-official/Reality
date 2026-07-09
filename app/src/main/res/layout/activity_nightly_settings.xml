@@ -305,6 +305,219 @@
                 android:layout_marginBottom="24dp"/>
 
 
+            <!-- Section: Custom Step Enablement & Sub-Permissions -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Step Toggles &amp; Permissions"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Toggles container -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="16dp"
+                app:strokeColor="?attr/colorPrimaryContainer"
+                app:strokeWidth="1dp"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Step 1: Fetch Analytics Toggle -->
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switch_step_analytics"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Enable Step 1: Fetch Analytics"
+                        android:checked="true"
+                        android:layout_marginBottom="8dp"/>
+
+                    <!-- Sub-permission layout for Step 1 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginBottom="16dp">
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_perm_tasks"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Fetch Tasks"
+                            android:checked="true"
+                            android:layout_marginBottom="4dp"/>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_perm_calendar"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Fetch Calendar Events"
+                            android:checked="true"
+                            android:layout_marginBottom="4dp"/>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_perm_tapasya"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Fetch Tapasya Sessions"
+                            android:checked="true"
+                            android:layout_marginBottom="4dp"/>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_perm_distraction"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Fetch Distraction App Usage"
+                            android:checked="true"
+                            android:layout_marginBottom="4dp"/>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_perm_health"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Fetch Health &amp; Sleep Data"
+                            android:checked="true"
+                            android:layout_marginBottom="4dp"/>
+                    </LinearLayout>
+
+                    <!-- Step 2: Create Diary Toggle -->
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switch_step_diary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Enable Step 2: Create Diary"
+                        android:checked="true"
+                        android:layout_marginBottom="8dp"/>
+
+                    <!-- Sub-permission layout for Step 2 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginBottom="16dp">
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_perm_ai_questions"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Include AI Reflection Questions"
+                            android:checked="true"
+                            android:layout_marginBottom="4dp"/>
+                    </LinearLayout>
+
+                    <!-- Step 3: Save Today Analytics Toggle -->
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switch_step_save_analytics"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Enable Step 3: Save Today Analytics"
+                        android:checked="true"
+                        android:layout_marginBottom="8dp"/>
+
+                    <!-- Sub-permission layout for Step 3 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginBottom="16dp">
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_perm_save_sheet"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Backup to Reality Sheet"
+                            android:checked="true"
+                            android:layout_marginBottom="4dp"/>
+                    </LinearLayout>
+
+                    <!-- Step 4: Create Plan Toggle -->
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switch_step_create_plan"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Enable Step 4: Create Plan"
+                        android:checked="true"
+                        android:layout_marginBottom="16dp"/>
+
+                    <!-- Step 5: Apply Plan Toggle -->
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switch_step_apply_plan"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Enable Step 5: Apply Plan"
+                        android:checked="true"
+                        android:layout_marginBottom="8dp"/>
+
+                    <!-- Sub-permission layout for Step 5 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginBottom="16dp">
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_perm_apply_alarm"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Schedule Wakeup Alarm"
+                            android:checked="true"
+                            android:layout_marginBottom="4dp"/>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_perm_apply_tasks"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Create Google Tasks"
+                            android:checked="true"
+                            android:layout_marginBottom="4dp"/>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_perm_apply_calendar"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Create Calendar Events"
+                            android:checked="true"
+                            android:layout_marginBottom="4dp"/>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_perm_apply_sleep"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Update Sleep Schedule"
+                            android:checked="true"
+                            android:layout_marginBottom="4dp"/>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_perm_apply_distraction"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Update Distraction App Limit"
+                            android:checked="true"
+                            android:layout_marginBottom="4dp"/>
+                    </LinearLayout>
+
+                    <!-- Step 6: Generate Report Toggle -->
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switch_step_report"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Enable Step 6: Report &amp; Finalize"
+                        android:checked="true"/>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Additional Settings -->
             <TextView
                 android:layout_width="wrap_content"

@@ -93,5 +93,21 @@
             android:visibility="gone"
             app:icon="@drawable/baseline_link_24"
             app:iconSize="14dp"/>
+
+        <!-- Live Persistent Logs Terminal -->
+        <TextView
+            android:id="@+id/tv_step_logs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginStart="36dp"
+            android:padding="8dp"
+            android:background="#1E1E1E"
+            android:textColor="#00FF00"
+            android:fontFamily="monospace"
+            android:textSize="10sp"
+            android:visibility="gone"
+            tools:visibility="visible"
+            tools:text="[11:30:00] Initializing...\n[11:30:02] Fetched 5 tasks successfully."/>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

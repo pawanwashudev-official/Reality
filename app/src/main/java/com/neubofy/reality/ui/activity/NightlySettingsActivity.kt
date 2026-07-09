@@ -17,6 +17,8 @@ import com.neubofy.reality.utils.ThemeManager
 import kotlinx.coroutines.launch
 import com.neubofy.reality.utils.SavedPreferencesLoader
 import com.neubofy.reality.R
+import com.neubofy.reality.data.repository.NightlyRepository
+import com.neubofy.reality.data.NightlyProtocolExecutor
 
 class NightlySettingsActivity : BaseActivity() {
 
@@ -37,6 +39,7 @@ class NightlySettingsActivity : BaseActivity() {
 
         setupListeners()
         setupToolbar()
+        loadSavedData()
     }
 
     private fun setupToolbar() {
@@ -64,16 +67,8 @@ class NightlySettingsActivity : BaseActivity() {
             super.onOptionsItemSelected(item)
         }
     }
-    
-    
-
-
-
 
     private fun setupListeners() {
-        // binding.btnBack handled by toolbar
-
-
         // Clear Nightly Memory - Day Selector Dialog
         binding.btnClearNightlyMemory.setOnClickListener {
             showDaySelectClearDialog()
@@ -88,7 +83,6 @@ class NightlySettingsActivity : BaseActivity() {
             showTimePicker(false)
         }
 
-        
         // Save Schedule Button
         binding.btnSaveSchedule.setOnClickListener {
             saveTimeWindowSettings()
@@ -122,11 +116,66 @@ class NightlySettingsActivity : BaseActivity() {
         binding.btnManagePrompts.setOnClickListener {
             startActivity(Intent(this, NightlyPromptsActivity::class.java))
         }
+
+        // Step toggles change listeners
+        binding.switchStepAnalytics.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setStepEnabled(this, NightlyProtocolExecutor.STEP_FETCH_ANALYTICS, isChecked)
+        }
+        binding.switchStepDiary.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setStepEnabled(this, NightlyProtocolExecutor.STEP_CREATE_DIARY, isChecked)
+        }
+        binding.switchStepSaveAnalytics.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setStepEnabled(this, NightlyProtocolExecutor.STEP_SAVE_ANALYTICS, isChecked)
+        }
+        binding.switchStepCreatePlan.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setStepEnabled(this, NightlyProtocolExecutor.STEP_CREATE_PLAN, isChecked)
+        }
+        binding.switchStepApplyPlan.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setStepEnabled(this, NightlyProtocolExecutor.STEP_APPLY_PLAN, isChecked)
+        }
+        binding.switchStepReport.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setStepEnabled(this, NightlyProtocolExecutor.STEP_GENERATE_REPORT, isChecked)
+        }
+
+        // Sub-permissions change listeners
+        binding.switchPermTasks.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setSubFeatureEnabled(this, "fetch_tasks", isChecked)
+        }
+        binding.switchPermCalendar.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setSubFeatureEnabled(this, "fetch_calendar", isChecked)
+        }
+        binding.switchPermTapasya.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setSubFeatureEnabled(this, "fetch_tapasya", isChecked)
+        }
+        binding.switchPermDistraction.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setSubFeatureEnabled(this, "fetch_distraction", isChecked)
+        }
+        binding.switchPermHealth.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setSubFeatureEnabled(this, "fetch_health", isChecked)
+        }
+        binding.switchPermAiQuestions.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setSubFeatureEnabled(this, "ai_reflection_questions", isChecked)
+        }
+        binding.switchPermSaveSheet.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setSubFeatureEnabled(this, "save_to_reality_sheet", isChecked)
+        }
+        binding.switchPermApplyAlarm.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setSubFeatureEnabled(this, "apply_alarm", isChecked)
+        }
+        binding.switchPermApplyTasks.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setSubFeatureEnabled(this, "apply_tasks", isChecked)
+        }
+        binding.switchPermApplyCalendar.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setSubFeatureEnabled(this, "apply_calendar_events", isChecked)
+        }
+        binding.switchPermApplySleep.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setSubFeatureEnabled(this, "apply_sleep_time", isChecked)
+        }
+        binding.switchPermApplyDistraction.setOnCheckedChangeListener { _, isChecked ->
+            NightlyRepository.setSubFeatureEnabled(this, "apply_distraction_limit", isChecked)
+        }
     }
     
-    
-    
-    // Day Selector Clear Dialog - Shows available days with checkboxes
     private fun showDaySelectClearDialog() {
         lifecycleScope.launch {
             val sessions = com.neubofy.reality.data.repository.NightlyRepository.getAllSessions(this@NightlySettingsActivity)
@@ -140,7 +189,7 @@ class NightlySettingsActivity : BaseActivity() {
                 try {
                     java.time.LocalDate.parse(it.date) 
                 } catch (e: Exception) { 
-                    java.time.LocalDate.now() // Fallback
+                    java.time.LocalDate.now()
                 }
             }
             
@@ -190,7 +239,6 @@ class NightlySettingsActivity : BaseActivity() {
             .putInt("nightly_end_time", endTimeMinutes)
             .putBoolean("schedule_saved", true)
             .apply()
-        // Auto-start removed - process is now fully manual
     }
     
     private fun loadTimeWindowSettings() {
@@ -209,15 +257,11 @@ class NightlySettingsActivity : BaseActivity() {
         val isSaved = prefs.getBoolean("schedule_saved", false)
         
         if (isSaved) {
-            // Show saved state
             binding.cardSavedSchedule.visibility = View.VISIBLE
             binding.cardScheduleForm.visibility = View.GONE
             binding.btnEditSchedule.visibility = View.VISIBLE
             binding.tvSavedSchedule.text = "${formatTime(startTimeMinutes)} → ${formatTime(endTimeMinutes)}"
-            
-            // Auto-Start UI removed - process is now fully manual
         } else {
-            // Show form
             binding.cardSavedSchedule.visibility = View.GONE
             binding.cardScheduleForm.visibility = View.VISIBLE
             binding.btnEditSchedule.visibility = View.GONE
@@ -225,8 +269,29 @@ class NightlySettingsActivity : BaseActivity() {
     }
 
     private fun loadSavedData() {
-        // Load time window settings first
         loadTimeWindowSettings()
+        
+        // Load step toggles
+        binding.switchStepAnalytics.isChecked = NightlyRepository.isStepEnabled(this, NightlyProtocolExecutor.STEP_FETCH_ANALYTICS)
+        binding.switchStepDiary.isChecked = NightlyRepository.isStepEnabled(this, NightlyProtocolExecutor.STEP_CREATE_DIARY)
+        binding.switchStepSaveAnalytics.isChecked = NightlyRepository.isStepEnabled(this, NightlyProtocolExecutor.STEP_SAVE_ANALYTICS)
+        binding.switchStepCreatePlan.isChecked = NightlyRepository.isStepEnabled(this, NightlyProtocolExecutor.STEP_CREATE_PLAN)
+        binding.switchStepApplyPlan.isChecked = NightlyRepository.isStepEnabled(this, NightlyProtocolExecutor.STEP_APPLY_PLAN)
+        binding.switchStepReport.isChecked = NightlyRepository.isStepEnabled(this, NightlyProtocolExecutor.STEP_GENERATE_REPORT)
+
+        // Load sub-permissions
+        binding.switchPermTasks.isChecked = NightlyRepository.isSubFeatureEnabled(this, "fetch_tasks")
+        binding.switchPermCalendar.isChecked = NightlyRepository.isSubFeatureEnabled(this, "fetch_calendar")
+        binding.switchPermTapasya.isChecked = NightlyRepository.isSubFeatureEnabled(this, "fetch_tapasya")
+        binding.switchPermDistraction.isChecked = NightlyRepository.isSubFeatureEnabled(this, "fetch_distraction")
+        binding.switchPermHealth.isChecked = NightlyRepository.isSubFeatureEnabled(this, "fetch_health")
+        binding.switchPermAiQuestions.isChecked = NightlyRepository.isSubFeatureEnabled(this, "ai_reflection_questions")
+        binding.switchPermSaveSheet.isChecked = NightlyRepository.isSubFeatureEnabled(this, "save_to_reality_sheet")
+        binding.switchPermApplyAlarm.isChecked = NightlyRepository.isSubFeatureEnabled(this, "apply_alarm")
+        binding.switchPermApplyTasks.isChecked = NightlyRepository.isSubFeatureEnabled(this, "apply_tasks")
+        binding.switchPermApplyCalendar.isChecked = NightlyRepository.isSubFeatureEnabled(this, "apply_calendar_events")
+        binding.switchPermApplySleep.isChecked = NightlyRepository.isSubFeatureEnabled(this, "apply_sleep_time")
+        binding.switchPermApplyDistraction.isChecked = NightlyRepository.isSubFeatureEnabled(this, "apply_distraction_limit")
     }
 
     private fun showTimePicker(isStartTime: Boolean) {

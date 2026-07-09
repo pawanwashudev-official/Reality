@@ -273,4 +273,71 @@ object NightlyRepository {
         val dateStr = formatDate(date)
         return db.nightlyDao().getSession(dateStr)?.reportContent
     }
+
+    suspend fun logSubStep(
+        context: Context,
+        date: LocalDate,
+        step: Int,
+        message: String,
+        listener: com.neubofy.reality.data.nightly.NightlyProgressListener? = null
+    ) {
+        val db = AppDatabase.getDatabase(context)
+        val dateStr = formatDate(date)
+        
+        val existing = db.nightlyDao().getStep(dateStr, step)
+        val logsArray = try {
+            val json = existing?.resultJson?.let { org.json.JSONObject(it) } ?: org.json.JSONObject()
+            json.optJSONArray("logs") ?: org.json.JSONArray()
+        } catch (e: Exception) {
+            org.json.JSONArray()
+        }
+        
+        val timestamp = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
+        val formattedLine = "[$timestamp] $message"
+        logsArray.put(formattedLine)
+        
+        val updatedResultJson = try {
+            val json = existing?.resultJson?.let { org.json.JSONObject(it) } ?: org.json.JSONObject()
+            json.put("logs", logsArray)
+            json.toString()
+        } catch (e: Exception) {
+            existing?.resultJson
+        }
+        
+        val currentStatus = existing?.status ?: com.neubofy.reality.data.nightly.StepProgress.STATUS_RUNNING
+        val currentDetails = existing?.details ?: "Running..."
+        val currentLinkUrl = existing?.linkUrl
+        
+        saveStepState(
+            context = context,
+            date = date,
+            step = step,
+            status = currentStatus,
+            details = currentDetails,
+            resultJson = updatedResultJson,
+            linkUrl = currentLinkUrl
+        )
+        
+        listener?.onStepLog(step, formattedLine)
+    }
+
+    fun isStepEnabled(context: Context, step: Int): Boolean {
+        val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
+        return prefs.getBoolean("step_enabled_$step", true)
+    }
+
+    fun setStepEnabled(context: Context, step: Int, enabled: Boolean) {
+        val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("step_enabled_$step", enabled).apply()
+    }
+    
+    fun isSubFeatureEnabled(context: Context, key: String): Boolean {
+        val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
+        return prefs.getBoolean(key, true)
+    }
+
+    fun setSubFeatureEnabled(context: Context, key: String, enabled: Boolean) {
+        val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(key, enabled).apply()
+    }
 }

@@ -19,6 +19,7 @@ interface NightlyProgressListener {
     fun onQuestionsReady(questions: List<String>)
     fun onAnalysisFeedback(feedback: String)
     fun onComplete(diaryDocId: String?, diaryUrl: String?)
+    fun onStepLog(step: Int, logLine: String)
 }
 
 // Step progress tracking
@@ -36,25 +37,28 @@ data class StepProgress(
 }
 
 /**
- * Constants and helper functions for the 13-step Nightly Protocol.
+ * Constants and helper functions for the 6-step Nightly Protocol.
  */
 object NightlySteps {
-    // 13-Step Protocol
-    const val STEP_FETCH_TASKS = 1          // Google Tasks API
-    const val STEP_FETCH_SESSIONS = 2       // Tapasya DB + Calendar
-    const val STEP_CALC_SCREEN_TIME = 3     // UsageStats
-    const val STEP_GENERATE_QUESTIONS = 4   // AI (ALWAYS uses AI - no fallback)
-    const val STEP_CREATE_DIARY = 5         // Google Docs
-    const val STEP_ANALYZE_REFLECTION = 6   // AI
-    const val STEP_FINALIZE_XP = 7          // XPManager
-    const val STEP_CREATE_PLAN_DOC = 8      // Google Docs
-    const val STEP_GENERATE_PLAN = 9        // AI
-    const val STEP_GENERATE_REPORT = 11     // AI -> NightlySession
-    const val STEP_GENERATE_PDF = 12        // PDF -> Google Drive
-    const val STEP_SET_ALARM = 13
-    const val STEP_NORMALIZE_TASKS = 14
-    const val STEP_UPDATE_DISTRACTION = 15
-    const val STEP_BACKUP_SHEET = 16        // Backup to Reality Sheet
+    // 6-Step Protocol
+    const val STEP_FETCH_ANALYTICS = 1
+    const val STEP_CREATE_DIARY = 2
+    const val STEP_SAVE_ANALYTICS = 3
+    const val STEP_CREATE_PLAN = 4
+    const val STEP_APPLY_PLAN = 5
+    const val STEP_GENERATE_REPORT = 6
+
+    // Legacy Aliases for seamless compilation
+    const val STEP_FETCH_TASKS = STEP_FETCH_ANALYTICS
+    const val STEP_FETCH_SESSIONS = STEP_FETCH_ANALYTICS
+    const val STEP_CALC_SCREEN_TIME = STEP_FETCH_ANALYTICS
+    const val STEP_GENERATE_QUESTIONS = STEP_CREATE_DIARY
+    const val STEP_ANALYZE_REFLECTION = STEP_SAVE_ANALYTICS
+    const val STEP_FINALIZE_XP = STEP_SAVE_ANALYTICS
+    const val STEP_CREATE_PLAN_DOC = STEP_CREATE_PLAN
+    const val STEP_GENERATE_PLAN = STEP_APPLY_PLAN
+    const val STEP_GENERATE_PDF = STEP_GENERATE_REPORT
+    const val STEP_BACKUP_SHEET = STEP_GENERATE_REPORT
 
     // Protocol States
     const val STATE_IDLE = 0
@@ -88,21 +92,12 @@ object NightlySteps {
 
     // Step name for UI/debug
     fun getStepName(step: Int): String = when (step) {
-        STEP_FETCH_TASKS -> "Fetch Tasks"
-        STEP_FETCH_SESSIONS -> "Fetch Sessions"
-        STEP_CALC_SCREEN_TIME -> "Calculate Health & Screen Time"
-        STEP_GENERATE_QUESTIONS -> "Generate AI Questions"
+        STEP_FETCH_ANALYTICS -> "Fetch Analytics"
         STEP_CREATE_DIARY -> "Create Diary Document"
-        STEP_ANALYZE_REFLECTION -> "Analyze Reflection"
-        STEP_FINALIZE_XP -> "Finalize XP & Stats"
-        STEP_CREATE_PLAN_DOC -> "Create Plan Document"
-        STEP_GENERATE_PLAN -> "AI Parse Plan"
-        STEP_GENERATE_REPORT -> "Generate AI Report"
-        STEP_GENERATE_PDF -> "Create PDF Report"
-        STEP_SET_ALARM -> "Set Alarm"
-        STEP_NORMALIZE_TASKS -> "AI Task Cleanup"
-        STEP_UPDATE_DISTRACTION -> "Update Distraction Limit"
-        STEP_BACKUP_SHEET -> "Backup to Sheet"
+        STEP_SAVE_ANALYTICS -> "Save Today Analytics"
+        STEP_CREATE_PLAN -> "Create Plan Document"
+        STEP_APPLY_PLAN -> "Apply Plan"
+        STEP_GENERATE_REPORT -> "Report & Finalize"
         else -> "Unknown Step"
     }
 

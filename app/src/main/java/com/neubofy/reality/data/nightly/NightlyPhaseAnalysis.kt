@@ -37,59 +37,53 @@ class NightlyPhaseAnalysis(
     var daySummary: DaySummary? = null
         private set
 
-    // ========== STEP 6: Analyze Reflection ==========
-    suspend fun step6_analyzeReflection() {
-        val stepData = loadStepData(NightlySteps.STEP_ANALYZE_REFLECTION)
+    // ========== STEP 3: Save Today Analytics ==========
+    suspend fun step3_saveAnalytics() {
+        val stepData = loadStepData(NightlySteps.STEP_SAVE_ANALYTICS)
 
         // If completed, restore from saved resultJson
         if (stepData.status == StepProgress.STATUS_COMPLETED && stepData.resultJson != null) {
             try {
                 val json = JSONObject(stepData.resultJson)
                 val output = json.optJSONObject("output") ?: json
-                val accepted = output.optBoolean("accepted", false)
-                if (accepted) {
-                    reflectionXp = output.optInt("xp", 0)
-                    TerminalLogger.log("Nightly Phase Analysis: Step 6 restored XP: $reflectionXp")
-                    listener.onStepCompleted(NightlySteps.STEP_ANALYZE_REFLECTION, "Reflection Accepted", stepData.details)
-                    return
-                }
+                reflectionXp = output.optInt("reflectionXp", 0)
+                TerminalLogger.log("Nightly Phase Analysis: Step 3 restored XP: $reflectionXp")
+                listener.onStepCompleted(NightlySteps.STEP_SAVE_ANALYTICS, "Analytics Saved", stepData.details)
+                return
             } catch (e: Exception) {
-                TerminalLogger.log("Nightly Phase Analysis: Step 6 JSON parse failed")
+                TerminalLogger.log("Nightly Phase Analysis: Step 3 JSON parse failed")
             }
         }
 
-        listener.onStepStarted(NightlySteps.STEP_ANALYZE_REFLECTION, "Analyzing Reflection")
-        saveStepState(NightlySteps.STEP_ANALYZE_REFLECTION, StepProgress.STATUS_RUNNING, "Reading Diary...")
+        listener.onStepStarted(NightlySteps.STEP_SAVE_ANALYTICS, "Saving Analytics")
+        saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_RUNNING, "Reading diary reflection...")
+        NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "Reading reflection from Google Doc...", listener)
 
         try {
-            // 1. Get Diary Doc ID from Step 5 result (from DB)
             diaryDocId = getDiaryDocIdFromDB()
-
             if (diaryDocId == null) {
-                throw IllegalStateException("Diary document not found. Please run Steps 1-5 first.")
+                throw IllegalStateException("Diary document not found. Please run Step 2 first.")
             }
 
-            // 2. Read Diary Content
             val diaryContent = withContext(Dispatchers.IO) {
                 GoogleDocsManager.getDocumentContent(context, diaryDocId!!)
-                    ?: throw IllegalStateException("Failed to read diary document")
+                    ?: throw IllegalStateException("Failed to read diary document content")
             }
 
             if (diaryContent.length < 50) {
-                throw IllegalStateException("Diary seems empty. Please write your reflection first.")
+                throw IllegalStateException("Diary content is too short. Please write your reflection first.")
             }
 
-            saveStepState(NightlySteps.STEP_ANALYZE_REFLECTION, StepProgress.STATUS_RUNNING, "AI Analyzing...")
+            saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_RUNNING, "AI Grading Reflection...")
+            NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "Analyzing reflection via AI...", listener)
 
-            // 3. Get AI Model (REQUIRED - no fallback)
             val userIntro = AISettingsActivity.getUserIntroduction(context) ?: ""
             val nightlyModel = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
 
-            if (nightlyModel.isNullOrEmpty()) {
-                throw IllegalStateException("No AI Model configured. Please set up an AI model in Settings.")
+            if (nightlyModel.isEmpty()) {
+                throw IllegalStateException("No AI Model configured for grading.")
             }
 
-            // 4. AI Analysis
             val result = NightlyAIHelper.analyzeReflection(
                 context = context,
                 modelString = nightlyModel,
@@ -97,72 +91,27 @@ class NightlyPhaseAnalysis(
                 diaryContent = diaryContent
             )
 
-            if (result.satisfied) {
-                // Success
-                reflectionXp = result.xp
-                val details = "Accepted! XP: ${result.xp}. \"${result.feedback}\""
-
-                // Save directly to XPManager AND NightlyRepository
-                XPManager.setReflectionXP(context, result.xp, diaryDate.toString())
-                NightlyRepository.setReflectionXp(context, diaryDate, result.xp)
-
-                val resultJson = JSONObject().apply {
-                    put("input", JSONObject().apply {
-                        put("diarySnippet", diaryContent.take(1000) + if (diaryContent.length > 1000) "..." else "")
-                        put("model", nightlyModel)
-                        put("diaryDocId", diaryDocId)
-                    })
-
-                    // Parse rawJson to include 'qa' array if available
-                    val rawObj = try {
-                        if (result.rawJson != null) JSONObject(result.rawJson) else JSONObject()
-                    } catch (e: Exception) {
-                        JSONObject()
-                    }
-
-                    put("output", JSONObject().apply {
-                        put("accepted", true)
-                        put("xp", result.xp)
-                        put("feedback", result.feedback)
-                        if (rawObj.has("qa")) {
-                            put("qa", rawObj.optJSONArray("qa"))
-                        }
-                    })
-                }.toString()
-
-                listener.onStepCompleted(NightlySteps.STEP_ANALYZE_REFLECTION, "Reflection Accepted", details)
-                saveStepState(NightlySteps.STEP_ANALYZE_REFLECTION, StepProgress.STATUS_COMPLETED, details, resultJson)
-            } else {
-                // Rejection - Mark as ERROR so Retry button appears
+            if (!result.satisfied) {
                 val errorDetails = "Rejected: ${result.feedback}"
-                saveStepState(NightlySteps.STEP_ANALYZE_REFLECTION, StepProgress.STATUS_ERROR, errorDetails)
+                saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_ERROR, errorDetails)
                 listener.onAnalysisFeedback(result.feedback)
+                NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "AI reflection check failed: ${result.feedback}", listener)
+                return
             }
-        } catch (e: Exception) {
-            listener.onError(NightlySteps.STEP_ANALYZE_REFLECTION, "Analysis Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_ANALYZE_REFLECTION, StepProgress.STATUS_ERROR, e.message)
-        }
-    }
 
-    // ========== STEP 7: Finalize XP & Stats ==========
-    suspend fun step7_finalizeXp() {
-        val stepData = loadStepData(NightlySteps.STEP_FINALIZE_XP)
-        if (stepData.status == StepProgress.STATUS_COMPLETED) {
-            listener.onStepCompleted(NightlySteps.STEP_FINALIZE_XP, "XP Finalized", stepData.details)
-            return
-        }
+            reflectionXp = result.xp
+            XPManager.setReflectionXP(context, result.xp, diaryDate.toString())
+            NightlyRepository.setReflectionXp(context, diaryDate, result.xp)
+            NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "AI Grading complete: Earned $reflectionXp XP. Feedback: ${result.feedback}", listener)
 
-        listener.onStepStarted(NightlySteps.STEP_FINALIZE_XP, "Finalizing XP & Streak")
-        saveStepState(NightlySteps.STEP_FINALIZE_XP, StepProgress.STATUS_RUNNING, "Calculating...")
+            // Recalculate daily stats
+            saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_RUNNING, "Finalizing XP & Streak...")
+            NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "Fetching cloud calendar events for finalized XP...", listener)
 
-        try {
-            // Fetch Cloud Events for XP calculation
             val startOfDay = diaryDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
             val endOfDay = diaryDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
 
             val cloudEvents = com.neubofy.reality.google.GoogleCalendarManager.getEvents(context, startOfDay, endOfDay)
-
-            // Map to internal format
             val mappedEvents = cloudEvents.map { event ->
                 com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent(
                     id = 0,
@@ -175,40 +124,113 @@ class NightlyPhaseAnalysis(
                 )
             }
 
-            TerminalLogger.log("Nightly Phase Analysis: Step 7 fetched ${mappedEvents.size} cloud events")
-
-            // Recalculate all stats using cloud events
             XPManager.recalculateDailyStats(context, diaryDate.toString(), externalEvents = mappedEvents)
-
-            // Get updated stats
             val finalStats = XPManager.getDailyStats(context, diaryDate.toString())
-                ?: throw IllegalStateException("Failed to retrieve stats after calculation")
+                ?: throw IllegalStateException("Failed to calculate stats")
+
+            NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "XP calculation complete. Total XP: ${finalStats.totalDailyXP}, Level: ${finalStats.level}, Streak: ${finalStats.streak} days.", listener)
+
+            // Sheet backup sub-permission
+            val saveToSheet = NightlyRepository.isSubFeatureEnabled(context, "save_to_reality_sheet")
+            var sheetSuccess = false
+            val prefs = context.getSharedPreferences(NightlySteps.PREFS_NAME, Context.MODE_PRIVATE)
+            val sheetId = prefs.getString("reality_sheet_id", null)
+
+            if (saveToSheet && !sheetId.isNullOrEmpty()) {
+                NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "Backing up today's stats to Reality Sheet in Drive...", listener)
+                
+                // Get Step 1 output for sheet
+                val step1Data = loadStepData(NightlySteps.STEP_FETCH_ANALYTICS)
+                val j1 = try {
+                    if (step1Data.resultJson != null) JSONObject(step1Data.resultJson).optJSONObject("output") ?: JSONObject() else JSONObject()
+                } catch (e: Exception) {
+                    JSONObject()
+                }
+
+                val rowValues = mutableListOf<Any>()
+                rowValues.add(diaryDate.toString())
+
+                val totalDue = j1.optInt("pendingCount", 0) + j1.optInt("completedCount", 0)
+                val totalComp = j1.optInt("completedCount", 0)
+                rowValues.add("$totalComp/$totalDue Completed")
+
+                rowValues.add(j1.optInt("sessionCount", 0).toString())
+                rowValues.add(j1.optInt("effectiveMinutes", 0).toString())
+                rowValues.add(j1.optInt("usedMinutes", 0).toString())
+                rowValues.add(j1.optInt("limitMinutes", 60).toString())
+                rowValues.add(result.feedback)
+
+                rowValues.add(finalStats.tapasyaXP.toString())
+                rowValues.add(finalStats.taskXP.toString())
+                rowValues.add(finalStats.sessionXP.toString())
+                rowValues.add(finalStats.distractionXP.toString())
+                rowValues.add(finalStats.reflectionXP.toString())
+                rowValues.add(finalStats.totalDailyXP.toString())
+                rowValues.add(finalStats.level.toString())
+                rowValues.add(finalStats.streak.toString())
+                rowValues.add("https://docs.google.com/document/d/${diaryDocId ?: ""}") // Diary doc url
+                rowValues.add("") // Report link placeholder (runs in step 6)
+
+                sheetSuccess = withContext(Dispatchers.IO) {
+                    try {
+                        val credential = com.neubofy.reality.google.GoogleAuthManager.getGoogleCredential(context)
+                        val service = credential?.let {
+                            com.google.api.services.sheets.v4.Sheets.Builder(
+                                com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport(),
+                                com.google.api.client.json.gson.GsonFactory.getDefaultInstance(),
+                                it
+                            ).setApplicationName("Reality").build()
+                        }
+                        if (service != null) {
+                            val body = com.google.api.services.sheets.v4.model.ValueRange().setValues(listOf(rowValues as List<Any>))
+                            service.spreadsheets().values()
+                                .append(sheetId, "Sheet1", body)
+                                .setValueInputOption("USER_ENTERED")
+                                .execute()
+                            true
+                        } else false
+                    } catch (e: Exception) {
+                        TerminalLogger.log("Sheets backup failed: ${e.message}")
+                        false
+                    }
+                }
+                
+                if (sheetSuccess) {
+                    NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "Successfully appended row to Reality Sheet.", listener)
+                } else {
+                    NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "Warning: Failed to append row to Reality Sheet.", listener)
+                }
+            } else if (saveToSheet) {
+                NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "Sheet backup skipped: Reality Sheet ID not configured.", listener)
+            } else {
+                NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "Sheet backup skipped by user setting.", listener)
+            }
+
+            val details = "XP: +${finalStats.totalDailyXP} | Level ${finalStats.level} | ${finalStats.streak} Day Streak"
 
             val resultJson = JSONObject().apply {
                 put("input", JSONObject().apply {
-                    put("cloudEventsCount", mappedEvents.size)
-                    put("cloudEventsSummary", mappedEvents.joinToString { it.title }.take(500))
+                    put("diaryDocId", diaryDocId)
+                    put("model", nightlyModel)
                 })
                 put("output", JSONObject().apply {
-                    put("diaryXp", 50)
-                    put("reflectionXp", finalStats.reflectionXP)
-                    put("sessionXp", finalStats.sessionXP)
-                    put("tapasyaXp", finalStats.tapasyaXP)
-                    put("taskXp", finalStats.taskXP)
-                    put("distractionXp", finalStats.distractionXP)
-                    put("penaltyXp", finalStats.penaltyXP)
+                    put("accepted", true)
+                    put("reflectionXp", reflectionXp)
                     put("totalXp", finalStats.totalDailyXP)
                     put("level", finalStats.level)
                     put("streak", finalStats.streak)
+                    put("feedback", result.feedback)
+                    put("sheetBackup", sheetSuccess)
                 })
             }.toString()
 
-            val details = "XP: +${finalStats.totalDailyXP} | Level ${finalStats.level} | ${finalStats.streak} Day Streak"
-            listener.onStepCompleted(NightlySteps.STEP_FINALIZE_XP, "Day Complete", details)
-            saveStepState(NightlySteps.STEP_FINALIZE_XP, StepProgress.STATUS_COMPLETED, details, resultJson)
+            NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "Analytics saved successfully.", listener)
+            listener.onStepCompleted(NightlySteps.STEP_SAVE_ANALYTICS, "Analytics Saved", details)
+            saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_COMPLETED, details, resultJson)
         } catch (e: Exception) {
-            listener.onError(NightlySteps.STEP_FINALIZE_XP, "XP Finalization Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_FINALIZE_XP, StepProgress.STATUS_ERROR, e.message)
+            NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "Error saving analytics: ${e.message}", listener)
+            listener.onError(NightlySteps.STEP_SAVE_ANALYTICS, "Analysis Failed: ${e.message}")
+            saveStepState(NightlySteps.STEP_SAVE_ANALYTICS, StepProgress.STATUS_ERROR, e.message)
         }
     }
 

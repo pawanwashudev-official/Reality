@@ -23,6 +23,8 @@ class NightlyWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         const val MODE_CREATION = "creation"
         const val MODE_ANALYSIS = "analysis"
         const val MODE_PLANNING = "planning"
+        const val MODE_SPECIFIC_STEP = "specific_step"
+        const val KEY_STEP_ID = "step_id"
     }
 
     override suspend fun doWork(): Result {
@@ -31,8 +33,6 @@ class NightlyWorker(context: Context, params: WorkerParameters) : CoroutineWorke
 
         return withContext(Dispatchers.IO) {
             try {
-                // Use a Silent Listener that just logs to Terminal
-                // This prevents UI callbacks from crashing invalid contexts
                 val silentListener = object : NightlyProtocolExecutor.NightlyProgressListener {
                     override fun onStepStarted(step: Int, stepName: String) {
                         TerminalLogger.log("WORKER: Step $step ($stepName) Started")
@@ -61,15 +61,30 @@ class NightlyWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                     override fun onComplete(diaryDocId: String?, diaryUrl: String?) {
                         TerminalLogger.log("WORKER: Phase Complete! Doc: $diaryDocId")
                     }
+
+                    override fun onStepLog(step: Int, logLine: String) {
+                        TerminalLogger.log("WORKER: Step $step Log - $logLine")
+                    }
                 }
 
-                // Instantiate the God Class safely
-                val executor = NightlyProtocolExecutor(applicationContext, LocalDate.now(), silentListener)
+                // Retrieve optional date parameter or default to today
+                val dateStr = inputData.getString("date")
+                val date = if (dateStr != null) LocalDate.parse(dateStr) else LocalDate.now()
+
+                val executor = NightlyProtocolExecutor(applicationContext, date, silentListener)
 
                 when (mode) {
                     MODE_CREATION -> executor.startCreationPhase()
                     MODE_ANALYSIS -> executor.finishAnalysisPhase()
                     MODE_PLANNING -> executor.executePlanningPhase()
+                    MODE_SPECIFIC_STEP -> {
+                        val stepId = inputData.getInt(KEY_STEP_ID, -1)
+                        if (stepId != -1) {
+                            executor.executeSpecificStep(stepId)
+                        } else {
+                            throw IllegalArgumentException("Specific step mode requires a valid step_id")
+                        }
+                    }
                 }
 
                 Result.success()

@@ -188,13 +188,6 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         // Don't strip structural elements aggressively before feeding it to AI, only the ones that might break AI parsing.
         val cleanPlanContent = planContent.trim()
 
-
-        
-
-
-
-
-        
         // Load custom or default prompt
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_plan_prompt", null)
@@ -209,12 +202,12 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
             ""
         }
 
-        val systemPrompt = customPrompt?.replace("{plan_content}", planContent)
+        val systemPrompt = customPrompt?.replace("{plan_content}", "")
             ?.replace("{list_context}", listsContext)
-            ?: getDefaultPlanPrompt(cleanPlanContent, taskListConfigs)
+            ?: getDefaultPlanPrompt(taskListConfigs)
             
         TerminalLogger.log("Nightly AI: Plan prompt built, calling AI Worker...")
-        val userMessage = "Extract my tasks and plan based on the document provided in the system prompt. Return ONLY valid raw JSON format without markdown wrapping. Do not include any reasoning blocks or markdown code block formatting.\n\n[PLAN CONTENT FALLBACK]\n$cleanPlanContent"
+        val userMessage = "Extract my tasks and plan based on the following plan document. Return ONLY valid raw JSON format without markdown wrapping. Do not include any reasoning blocks or markdown code block formatting.\n\n[PLAN DOCUMENT]\n$cleanPlanContent"
         val response = callAIWorker(context, userMessage, systemPrompt, modelString)
         TerminalLogger.log("Nightly AI Response: ${response.take(100)}...")
         
@@ -398,7 +391,7 @@ OUTPUT FORMAT:
         """.trimIndent()
     }
 
-    fun getDefaultPlanPrompt(planContent: String, taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig> = emptyList()): String {
+    fun getDefaultPlanPrompt(taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig> = emptyList()): String {
         val listsContext = if (taskListConfigs.isNotEmpty()) {
             val details = taskListConfigs.joinToString("\n") { 
                 "- List Name: \"${it.displayName}\" (ID: ${it.googleListId})\n  Description: ${it.description}" 
@@ -412,15 +405,7 @@ OUTPUT FORMAT:
             .replace("{list_context}", listsContext)
     }
 
-    
-    
-    
-    
-
-
-
-
-        private fun callAIWorker(context: Context, prompt: String, sysPrompt: String? = null, modelString: String? = null): String {
+    private fun callAIWorker(context: Context, prompt: String, sysPrompt: String? = null, modelString: String? = null): String {
                 val apiUrl = com.neubofy.reality.BuildConfig.AI_URL.removeSuffix("/")
         if (apiUrl.isBlank()) throw Exception("AI endpoint is not configured (AI_URL is missing in build).")
 
@@ -494,12 +479,6 @@ OUTPUT FORMAT:
     ): AnalysisResult = withContext(Dispatchers.IO) {
         
         TerminalLogger.log("Nightly AI: Analyzing reflection with model: $modelString")
-        
-
-            ?: throw IllegalStateException("Invalid model configuration")
-        
-
-
         
         val systemPromptStr = buildAnalysisPrompt(context, userIntroduction)
         val userMessage = "Analyze my reflection strictly and return ONLY the JSON object format.\n\n[[DIARY_START]]\n$diaryContent\n[[DIARY_END]]"
@@ -592,48 +571,6 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         
         // Ensure we return at most 5 questions
         return questions.take(5)
-    }
-
-    suspend fun normalizeTasks(
-        context: Context,
-        modelString: String,
-        tasksJson: String,
-        targetDate: String,
-        taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig>
-    ): String = withContext(Dispatchers.IO) {
-        val listsContext = taskListConfigs.joinToString("\n") {
-            "List: ${it.displayName} (ID: ${it.googleListId}), Description: ${it.description}"
-        }
-
-        val prompt = """
-            You are a rigorous task management AI.
-            Review the following list of pending tasks and normalize them based on the rules below.
-
-            [Target Date for Execution]: $targetDate
-
-            [Available Lists Context]
-            $listsContext
-
-            [RULES]
-            1. Consolidate absolute duplicates.
-            2. If a task title is extremely vague (e.g. "do thing"), correct it into an actionable statement.
-            3. Delete tasks that are obviously just tests/spam (e.g., "test", "asdf").
-            4. **List Relocation**: If a task clearly belongs in a specific list based on the provided [Available Lists Context] (e.g., a "Buy Milk" task in a "Work" list, move it to "Groceries" list).
-
-            [OUTPUT]
-            Return ONLY raw JSON with the following structure:
-            {
-              "delete_ids": ["task_id_1", "task_id_2"],
-              "readd_tasks": [
-                 { "title": "Corrected Actionable Title", "notes": "original notes", "list_id": "target_list_id", "start_time": "HH:mm" }
-              ]
-            }
-            - "delete_ids" contains the IDs of tasks that should be removed (duplicates, spam, OR tasks that need to be moved to a different list).
-            - "readd_tasks" contains new tasks that should be created. If a task was moved or its title was heavily modified, add it here with its new `list_id`. If `start_time` is missing or unknown, set it to "null".
-            Do not include markdown blocks or think tags. Return JSON ONLY.
-        """.trimIndent()
-
-        callAIWorker(context, "Analyze and normalize this JSON array of tasks. Return ONLY valid raw JSON format without markdown wrapping. Do not include any reasoning blocks or markdown code block formatting.", prompt + "\n\n[TASKS]\n$tasksJson", modelString)
     }
 
     suspend fun generatePlanSuggestions(

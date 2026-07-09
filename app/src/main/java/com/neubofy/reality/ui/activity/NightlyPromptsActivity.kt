@@ -80,7 +80,6 @@ class NightlyPromptsActivity : BaseActivity() {
                 "custom_plan_prompt",
                 NightlyAIHelper.getDefaultPlanPromptTemplate(),
                 listOf(
-                     "{plan_content}" to "Raw Plan Text",
                      "{list_context}" to "Available Task Lists"
                 )
             )
@@ -99,9 +98,7 @@ class NightlyPromptsActivity : BaseActivity() {
                     "{total_planned}" to "Planned Minutes",
                     "{tasks_done}" to "Tasks Completed Count",
                     "{xp_earned}" to "XP Earned",
-                    "{level}" to "User Level",
-                    "{reflection_content}" to "Diary Text",
-                    "{plan_content}" to "Plan Text"
+                    "{level}" to "User Level"
                 )
             )
         }

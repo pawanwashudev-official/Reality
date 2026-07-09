@@ -66,17 +66,25 @@ class NightlyProtocolExecutor(
         get() = phaseData.generatedQuestions
     
     companion object {
+        // 6-Step Protocol Constants
+        const val STEP_FETCH_ANALYTICS = NightlySteps.STEP_FETCH_ANALYTICS
+        const val STEP_CREATE_DIARY = NightlySteps.STEP_CREATE_DIARY
+        const val STEP_SAVE_ANALYTICS = NightlySteps.STEP_SAVE_ANALYTICS
+        const val STEP_CREATE_PLAN = NightlySteps.STEP_CREATE_PLAN
+        const val STEP_APPLY_PLAN = NightlySteps.STEP_APPLY_PLAN
+        const val STEP_GENERATE_REPORT = NightlySteps.STEP_GENERATE_REPORT
+
         // 13-Step Protocol Constants
         const val STEP_FETCH_TASKS = NightlySteps.STEP_FETCH_TASKS
         const val STEP_FETCH_SESSIONS = NightlySteps.STEP_FETCH_SESSIONS
         const val STEP_CALC_SCREEN_TIME = NightlySteps.STEP_CALC_SCREEN_TIME
         const val STEP_GENERATE_QUESTIONS = NightlySteps.STEP_GENERATE_QUESTIONS
-        const val STEP_CREATE_DIARY = NightlySteps.STEP_CREATE_DIARY
+        const val STEP_CREATE_DIARY_COMPAT = NightlySteps.STEP_CREATE_DIARY
         const val STEP_ANALYZE_REFLECTION = NightlySteps.STEP_ANALYZE_REFLECTION
         const val STEP_FINALIZE_XP = NightlySteps.STEP_FINALIZE_XP
         const val STEP_CREATE_PLAN_DOC = NightlySteps.STEP_CREATE_PLAN_DOC
         const val STEP_GENERATE_PLAN = NightlySteps.STEP_GENERATE_PLAN
-        const val STEP_GENERATE_REPORT = NightlySteps.STEP_GENERATE_REPORT
+        const val STEP_GENERATE_REPORT_COMPAT = NightlySteps.STEP_GENERATE_REPORT
         const val STEP_GENERATE_PDF = NightlySteps.STEP_GENERATE_PDF
         const val STEP_BACKUP_SHEET = NightlySteps.STEP_BACKUP_SHEET
         
@@ -234,7 +242,7 @@ class NightlyProtocolExecutor(
         }
     }
     
-    // --- Phase 1: Creation (Steps 1-5) ---
+    // --- Phase 1: Creation (Steps 1-2) ---
     
     suspend fun startCreationPhase() {
         cleanupOldEntries(context, diaryDate)
@@ -243,20 +251,21 @@ class NightlyProtocolExecutor(
             setProtocolState(STATE_CREATING)
             nightlyStartTime = System.currentTimeMillis()
             
-            // Step 1: Fetch Tasks
-            phaseData.step1_fetchTasks()
+            // Step 1: Fetch Analytics
+            if (NightlyRepository.isStepEnabled(context, STEP_FETCH_ANALYTICS)) {
+                phaseData.step1_fetchAnalytics()
+            } else {
+                Companion.saveStepState(context, diaryDate, STEP_FETCH_ANALYTICS, StepProgress.STATUS_SKIPPED, "Step disabled")
+                listener.onStepSkipped(STEP_FETCH_ANALYTICS, "Fetch Analytics", "Disabled in settings")
+            }
             
-            // Step 2: Fetch Sessions & Calendar
-            phaseData.step2_fetchSessions()
-            
-            // Step 3: Calculate Screen Time & Health
-            phaseData.step3_calcScreenTime()
-            
-            // Step 4: Generate AI Questions (ALWAYS uses AI - no fallback)
-            phaseData.step4_generateQuestions()
-            
-            // Step 5: Create Diary Document
-            phaseData.step5_createDiary()
+            // Step 2: Create Diary Document
+            if (NightlyRepository.isStepEnabled(context, STEP_CREATE_DIARY)) {
+                phaseData.step2_createDiary()
+            } else {
+                Companion.saveStepState(context, diaryDate, STEP_CREATE_DIARY, StepProgress.STATUS_SKIPPED, "Step disabled")
+                listener.onStepSkipped(STEP_CREATE_DIARY, "Create Diary Document", "Disabled in settings")
+            }
             
             // Update internal state
             daySummary = phaseData.daySummary
@@ -271,7 +280,7 @@ class NightlyProtocolExecutor(
         }
     }
     
-    // --- Phase 2: Analysis (Steps 6-7) ---
+    // --- Phase 2: Analysis (Step 3) ---
     
     suspend fun finishAnalysisPhase() {
         try {
@@ -282,68 +291,65 @@ class NightlyProtocolExecutor(
             
             if (diaryDocId == null) {
                 if (!checkDiaryExists()) {
-                     listener.onError(STEP_ANALYZE_REFLECTION, "Diary document not found")
+                     listener.onError(STEP_SAVE_ANALYTICS, "Diary document not found")
                      setProtocolState(STATE_IDLE)
                      return
                 }
             }
             
-            // Check if XP calculation is already complete (entire phase done)
-            val xpState = Companion.loadStepState(context, diaryDate, STEP_FINALIZE_XP)
-            if (xpState.status == com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED) {
-                // Analysis phase already completed for this date
-                listener.onStepSkipped(STEP_ANALYZE_REFLECTION, "Read Diary", "Skipped (Already analyzed)")
-                listener.onStepSkipped(STEP_FINALIZE_XP, "AI Analysis", "Skipped (Already completed)")
-                listener.onStepCompleted(STEP_FINALIZE_XP, "XP Calculated", xpState.details)
-                setProtocolState(STATE_COMPLETE)
+            // Check if analysis is already complete
+            val state = Companion.loadStepState(context, diaryDate, STEP_SAVE_ANALYTICS)
+            if (state.status == com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED) {
+                listener.onStepSkipped(STEP_SAVE_ANALYTICS, "Save Today Analytics", "Skipped (Already completed)")
+                setProtocolState(STATE_PLANNING_READY)
                 listener.onComplete(diaryDocId, diaryDocId?.let { getDiaryUrl(it) })
                 return
             }
             
-            // Step 6: AI Analyze Reflection
-            phaseAnalysis.step6_analyzeReflection()
-            
-            // Step 7: Finalize XP
-            phaseAnalysis.step7_finalizeXp()
+            // Step 3: Save Today Analytics
+            if (NightlyRepository.isStepEnabled(context, STEP_SAVE_ANALYTICS)) {
+                phaseAnalysis.step3_saveAnalytics()
+            } else {
+                Companion.saveStepState(context, diaryDate, STEP_SAVE_ANALYTICS, StepProgress.STATUS_SKIPPED, "Step disabled")
+                listener.onStepSkipped(STEP_SAVE_ANALYTICS, "Save Today Analytics", "Disabled in settings")
+            }
             
             // --- BREAK: End of Phase 2 ---
             setProtocolState(STATE_PLANNING_READY)
-            listener.onStepCompleted(STEP_FINALIZE_XP, "Analysis Complete", "Ready for Planning")
+            listener.onStepCompleted(STEP_SAVE_ANALYTICS, "Analysis Complete", "Ready for Planning")
             
         } catch (e: Exception) {
             handleError(e)
         }
     }
 
-    // --- Phase 3: Planning (Steps 8-13) ---
+    // --- Phase 3 & 4: Planning & Report (Steps 4-6) ---
     
     suspend fun executePlanningPhase() {
         try {
-            // Step 8: Create Plan Doc
-            phasePlanning.step8_createPlanDoc()
+            // Step 4: Create Plan Document
+            if (NightlyRepository.isStepEnabled(context, STEP_CREATE_PLAN)) {
+                phasePlanning.step4_createPlan()
+            } else {
+                Companion.saveStepState(context, diaryDate, STEP_CREATE_PLAN, StepProgress.STATUS_SKIPPED, "Step disabled")
+                listener.onStepSkipped(STEP_CREATE_PLAN, "Create Plan Document", "Disabled in settings")
+            }
             
-            // Step 9: AI Parse Plan to JSON
-            phasePlanning.step9_generatePlan()
+            // Step 5: Apply Plan
+            if (NightlyRepository.isStepEnabled(context, STEP_APPLY_PLAN)) {
+                phasePlanning.step5_applyPlan()
+            } else {
+                Companion.saveStepState(context, diaryDate, STEP_APPLY_PLAN, StepProgress.STATUS_SKIPPED, "Step disabled")
+                listener.onStepSkipped(STEP_APPLY_PLAN, "Apply Plan", "Disabled in settings")
+            }
             
-            // Step 10: Process Plan to Tasks & Calendar
-            
-            // Step 11: Generate AI Report
-            phasePlanning.step11_generateReport()
-            
-            // Step 12: Generate PDF
-            phasePlanning.step12_generatePdf()
-
-            // Step 13: Set Wake-up Alarm
-            phasePlanning.step13_setAlarm()
-
-            // Step 14: AI Task Cleanup (Normalize)
-            phasePlanning.step14_normalizeTasks()
-
-            // Step 15: Update Distraction
-            phasePlanning.step15_updateDistraction()
-
-            // Step 16: Backup to sheet
-            phasePlanning.step16_backupToSheet()
+            // Step 6: Report
+            if (NightlyRepository.isStepEnabled(context, STEP_GENERATE_REPORT)) {
+                phasePlanning.step6_generateReport()
+            } else {
+                Companion.saveStepState(context, diaryDate, STEP_GENERATE_REPORT, StepProgress.STATUS_SKIPPED, "Step disabled")
+                listener.onStepSkipped(STEP_GENERATE_REPORT, "Report & Finalize", "Disabled in settings")
+            }
             
             setProtocolState(STATE_COMPLETE)
             diaryDocId = NightlyRepository.getDiaryDocId(context, diaryDate)
@@ -358,21 +364,12 @@ class NightlyProtocolExecutor(
     
     suspend fun executeSpecificStep(step: Int) {
         when (step) {
-            STEP_FETCH_TASKS -> phaseData.step1_fetchTasks()
-            STEP_FETCH_SESSIONS -> phaseData.step2_fetchSessions()
-            STEP_CALC_SCREEN_TIME -> phaseData.step3_calcScreenTime()
-            STEP_GENERATE_QUESTIONS -> phaseData.step4_generateQuestions()
-            STEP_CREATE_DIARY -> phaseData.step5_createDiary()
-            STEP_ANALYZE_REFLECTION -> phaseAnalysis.step6_analyzeReflection()
-            STEP_FINALIZE_XP -> phaseAnalysis.step7_finalizeXp()
-            STEP_CREATE_PLAN_DOC -> phasePlanning.step8_createPlanDoc()
-            STEP_GENERATE_PLAN -> phasePlanning.step9_generatePlan()
-            STEP_GENERATE_REPORT -> phasePlanning.step11_generateReport()
-            STEP_GENERATE_PDF -> phasePlanning.step12_generatePdf()
-            NightlySteps.STEP_SET_ALARM -> phasePlanning.step13_setAlarm()
-            NightlySteps.STEP_NORMALIZE_TASKS -> phasePlanning.step14_normalizeTasks()
-            NightlySteps.STEP_UPDATE_DISTRACTION -> phasePlanning.step15_updateDistraction()
-            STEP_BACKUP_SHEET -> phasePlanning.step16_backupToSheet()
+            STEP_FETCH_ANALYTICS -> phaseData.step1_fetchAnalytics()
+            STEP_CREATE_DIARY -> phaseData.step2_createDiary()
+            STEP_SAVE_ANALYTICS -> phaseAnalysis.step3_saveAnalytics()
+            STEP_CREATE_PLAN -> phasePlanning.step4_createPlan()
+            STEP_APPLY_PLAN -> phasePlanning.step5_applyPlan()
+            STEP_GENERATE_REPORT -> phasePlanning.step6_generateReport()
             else -> throw IllegalArgumentException("Unknown step: $step")
         }
     }
