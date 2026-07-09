@@ -76,7 +76,8 @@ android {
             val keyPass = localProperties.getProperty("KEY_PASSWORD")
             
             if (keystoreFile != null && keystorePass != null) {
-                storeFile = file("${rootProject.projectDir}/$keystoreFile")
+                val ksFile = File(keystoreFile)
+                storeFile = if (ksFile.isAbsolute) ksFile else file("${rootProject.projectDir}/$keystoreFile")
                 storePassword = keystorePass
                 keyAlias = keyAliasName ?: "reality_key"
                 keyPassword = keyPass ?: keystorePass

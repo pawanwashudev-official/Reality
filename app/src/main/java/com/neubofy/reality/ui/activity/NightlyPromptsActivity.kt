@@ -47,36 +47,38 @@ class NightlyPromptsActivity : BaseActivity() {
 
         binding.cardReflectionPrompt.setOnClickListener {
             launchEditor(
-                "Reflection Questions",
+                "Reflection Questions (Step 2: Create Diary)",
                 "custom_ai_prompt",
-                NightlyAIHelper.getDefaultQuestionsPromptTemplate(), // Need to implement/expose this in Helper
+                NightlyAIHelper.getDefaultQuestionsPromptTemplate(),
                 listOf(
-                    "{user_intro}" to "User Intro",
+                    "{user_intro}" to "User Introduction",
                     "{date}" to "Current Date",
                     "{calendar}" to "Calendar Events",
-                    "{tasks_due}" to "Tasks Due",
+                    "{tasks_due}" to "Tasks Due Today",
                     "{tasks_completed}" to "Completed Tasks",
                     "{sessions}" to "Tapasya Sessions",
-                    "{stats}" to "Statistics"
+                    "{health}" to "Digital Wellbeing Data",
+                    "{stats}" to "Day Statistics",
+                    "{report}" to "Previous Day AI Report"
                 )
             )
         }
 
         binding.cardAnalyzerPrompt.setOnClickListener {
              launchEditor(
-                "Reflection Grader",
+                "Reflection Grader (Step 3: Save Analytics)",
                 "custom_analyzer_prompt",
                 NightlyAIHelper.getDefaultAnalyzerPromptTemplate(),
                 listOf(
-                    "{user_intro}" to "User Intro",
-                    "{diary_content}" to "Diary Text"
+                    "{user_intro}" to "User Introduction",
+                    "{diary_content}" to "Full Diary Text"
                 )
             )
         }
 
         binding.cardPlanPrompt.setOnClickListener {
              launchEditor(
-                "Plan Extraction",
+                "Plan Extraction (Step 5: Apply Plan)",
                 "custom_plan_prompt",
                 NightlyAIHelper.getDefaultPlanPromptTemplate(),
                 listOf(
@@ -87,42 +89,45 @@ class NightlyPromptsActivity : BaseActivity() {
 
         binding.cardReportPrompt.setOnClickListener {
              launchEditor(
-                "Report Generator",
+                "Report Generator (Step 6: Report)",
                 "custom_report_prompt",
                 NightlyAIHelper.getDefaultReportPromptTemplate(),
                 listOf(
-                    "{user_intro}" to "User Intro",
+                    "{user_intro}" to "User Introduction",
                     "{date}" to "Date",
                     "{efficiency}" to "Efficiency %",
                     "{total_effective}" to "Effective Minutes",
                     "{total_planned}" to "Planned Minutes",
                     "{tasks_done}" to "Tasks Completed Count",
                     "{xp_earned}" to "XP Earned",
-                    "{level}" to "User Level"
+                    "{level}" to "User Level",
+                    "{reflection_content}" to "User Reflection Text",
+                    "{plan_content}" to "Tomorrow's Plan Text"
                 )
             )
         }
 
         binding.cardDiaryTemplate.setOnClickListener {
             launchEditor(
-                "Diary Template",
+                "Diary Template (Step 2: Create Diary)",
                 "template_diary",
                 com.neubofy.reality.data.NightlyProtocolExecutor.DEFAULT_DIARY_TEMPLATE,
                 listOf(
                     "{date}" to "Current Date",
-                    "{data}" to "Usage Stats Block",
-                    "{questions}" to "AI Generated Questions"
+                    "{data}" to "Day Summary & Usage Stats",
+                    "{stats}" to "Statistics Block",
+                    "{questions}" to "AI Generated Reflection Questions"
                 )
             )
         }
 
         binding.cardPlanTemplate.setOnClickListener {
             launchEditor(
-                "Plan Template",
+                "Plan Template (Step 4: Create Plan)",
                 "template_plan",
                 com.neubofy.reality.data.NightlyProtocolExecutor.DEFAULT_PLAN_TEMPLATE,
                 listOf(
-                    // No specific placeholders used in default plan template currently, but user can add text
+                    // User fills this template manually; no auto-replaced placeholders
                 )
             )
         }

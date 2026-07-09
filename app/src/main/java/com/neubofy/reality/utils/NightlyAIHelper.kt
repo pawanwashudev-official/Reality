@@ -39,22 +39,26 @@ object NightlyAIHelper {
         
         TerminalLogger.log("Nightly AI: Generating questions with model: $modelString")
         
-        
+        val (systemPrompt, userPrompt) = buildSeparatedPrompts(context, userIntroduction, daySummary, healthData, previousReport)
+        TerminalLogger.log("Nightly AI: Prompts built (system + user), calling AI Worker...")
 
-
-
-
-        
-        val prompt = buildPrompt(context, userIntroduction, daySummary, healthData, previousReport)
-        TerminalLogger.log("Nightly AI: Prompt built, calling AI Worker...")
-
-        val response = callAIWorker(context, "Analyze my day and give me questions based on the system instructions.", prompt, modelString)
+        val response = callAIWorker(context, userPrompt, systemPrompt, modelString)
         
         TerminalLogger.log("Nightly AI: Response received, parsing questions...")
         parseQuestions(response)
     }
     
-    private fun buildPrompt(context: Context, userIntro: String, summary: DaySummary, healthData: String, previousReport: String): String {
+    /**
+     * Build separated system prompt and user prompt for question generation.
+     * System prompt = role + instructions (editable by user)
+     * User prompt = actual day data (dynamic, injected at runtime)
+     */
+    /**
+     * Build separated system prompt and user prompt for question generation.
+     * System prompt = template with placeholder tags replaced by references to the user message
+     * User prompt = actual dynamic day data under labeled sections
+     */
+    private fun buildSeparatedPrompts(context: Context, userIntro: String, summary: DaySummary, healthData: String, previousReport: String): Pair<String, String> {
         val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
         
         // Calendar events from device
@@ -106,71 +110,53 @@ object NightlyAIHelper {
 - Tasks: ${summary.tasksCompleted.size} completed, ${summary.tasksDue.size} pending
 - Efficiency: $efficiency%"""
         
-        // Try to get custom prompt from SharedPreferences
+        // --- Build SYSTEM PROMPT (instructions) ---
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_ai_prompt", null)
+        val template = customPrompt ?: getDefaultQuestionsPromptTemplate()
         
-        val userIntroStr = if (userIntro.isNotEmpty()) "About the user:\n$userIntro" else ""
-        
-        return if (customPrompt != null) {
-            // Use custom prompt with placeholder replacement
-            customPrompt
-                .replace("{user_intro}", userIntroStr)
-                .replace("{date}", summary.date.format(dateFormatter))
-                .replace("{calendar}", calendarList)
-                .replace("{tasks_due}", tasksDueList)
-                .replace("{tasks_completed}", tasksCompletedList)
-                .replace("{sessions}", sessionsList)
-                .replace("{health}", healthData)
-                .replace("{stats}", statsStr)
-                .replace("{report}", previousReport)
-        } else {
-            // Use default prompt with previous day report
-            """You are a master productivity analyst and life coach. Your goal is to help the user identify patterns of failure and opportunities for growth.
+        val systemPrompt = template
+            .replace("{user_intro}", "[See USER INTRODUCTION in user message]")
+            .replace("{date}", "[See CURRENT DATE in user message]")
+            .replace("{calendar}", "[See SCHEDULED CALENDAR EVENTS in user message]")
+            .replace("{tasks_due}", "[See TASKS DUE TODAY in user message]")
+            .replace("{tasks_completed}", "[See TASKS COMPLETED TODAY in user message]")
+            .replace("{sessions}", "[See STUDY/WORK SESSIONS in user message]")
+            .replace("{health}", "[See DIGITAL WELLBEING in user message]")
+            .replace("{stats}", "[See PERFORMANCE STATISTICS in user message]")
+            .replace("{report}", "[See PREVIOUS DAY AI REPORT in user message]")
 
-$userIntroStr
+        // --- Build USER PROMPT (actual dynamic day data) ---
+        val userPrompt = """Here is my complete day data for today. Analyze it and generate my 5 reflection questions.
 
-Today is ${summary.date.format(dateFormatter)}.
+[USER INTRODUCTION]
+$userIntro
 
-📅 SCHEDULED CALENDAR EVENTS:
+[CURRENT DATE]
+${summary.date.format(dateFormatter)}
+
+[SCHEDULED CALENDAR EVENTS]
 $calendarList
 
-📋 TASKS PLANNED FOR TODAY:
+[TASKS DUE TODAY]
 $tasksDueList
 
-✅ TASKS COMPLETED TODAY:
+[TASKS COMPLETED TODAY]
 $tasksCompletedList
 
-⏱️ STUDY/WORK SESSIONS (Tapasya):
+[STUDY/WORK SESSIONS]
 $sessionsList
 
-📱 DIGITAL WELLBEING (Health & Previous Day Comparison):
+[DIGITAL WELLBEING]
 $healthData
 
-📊 PERFORMANCE STATISTICS:
+[PERFORMANCE STATISTICS]
 $statsStr
 
-📝 PREVIOUS DAY AI REPORT:
-$previousReport
+[PREVIOUS DAY AI REPORT]
+$previousReport"""
 
----
-[INSTRUCTIONS]
-Analyze the data above deeply. Look for:
-1. Gaps between what was planned (Calendar/Tasks) and what was actually achieved (Completed Tasks/Tapasya Sessions).
-2. Signs of procrastination or distraction (High phone usage, low Reality Ratio, missed tasks).
-3. Inconsistencies between health habits (Sleep/Steps) and work performance.
-4. Patterns or recurring issues identified in the previous day's report.
-
-Generate EXACTLY 5 high-impact, analytical reflection questions.
-These questions must:
-- Challenge the user to confront their specific mistakes today (e.g., "Why were these 3 tasks ignored despite being planned?").
-- Ask the "WHY" behind failures to find root causes (burnout, lack of priority, phone addiction).
-- Reference the previous day's report if available to highlight recurring patterns or improvements.
-- Force the user to propose a CONCRETE strategy to avoid repeating today's mistakes tomorrow.
-
-Be direct, analytical, and uncompromising but constructive. Avoid generic fluff.
-Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
-        }
+        return Pair(systemPrompt, userPrompt)
     }
     
     /**
@@ -185,29 +171,35 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
         
         TerminalLogger.log("Nightly AI: Analyzing plan with model: $modelString")
         
-        // Don't strip structural elements aggressively before feeding it to AI, only the ones that might break AI parsing.
         val cleanPlanContent = planContent.trim()
 
-        // Load custom or default prompt
+        // Load custom or default prompt template
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_plan_prompt", null)
+        val template = customPrompt ?: getDefaultPlanPromptTemplate()
         
-        // Build List Context
+        val systemPrompt = template
+            .replace("{list_context}", "[See AVAILABLE TASK LISTS in user message]")
+            .replace("{plan_content}", "[See PLAN CONTENT in user message]")
+        
+        // Build Dynamic User message
         val listsContext = if (taskListConfigs.isNotEmpty()) {
-            val details = taskListConfigs.joinToString("\n") { 
+            taskListConfigs.joinToString("\n") { 
                 "Task List Goal: \"${it.description}\" -> USE ID: ${it.googleListId}" 
             }
-            "\n[CRITICAL: AVAILABLE TASK LISTS]\n$details\n"
         } else {
-            ""
+            "No task lists available. Use default list ID: @default"
         }
 
-        val systemPrompt = customPrompt?.replace("{plan_content}", "")
-            ?.replace("{list_context}", listsContext)
-            ?: getDefaultPlanPrompt(taskListConfigs)
-            
+        val userMessage = """Please extract the tasks and events from my plan document.
+
+[AVAILABLE TASK LISTS]
+$listsContext
+
+[PLAN CONTENT]
+$cleanPlanContent"""
+
         TerminalLogger.log("Nightly AI: Plan prompt built, calling AI Worker...")
-        val userMessage = "Extract my tasks and plan based on the following plan document. Return ONLY valid raw JSON format without markdown wrapping. Do not include any reasoning blocks or markdown code block formatting.\n\n[PLAN DOCUMENT]\n$cleanPlanContent"
         val response = callAIWorker(context, userMessage, systemPrompt, modelString)
         TerminalLogger.log("Nightly AI Response: ${response.take(100)}...")
         
@@ -480,47 +472,28 @@ OUTPUT FORMAT:
         
         TerminalLogger.log("Nightly AI: Analyzing reflection with model: $modelString")
         
-        val systemPromptStr = buildAnalysisPrompt(context, userIntroduction)
-        val userMessage = "Analyze my reflection strictly and return ONLY the JSON object format.\n\n[[DIARY_START]]\n$diaryContent\n[[DIARY_END]]"
+        val systemPromptStr = buildAnalysisPrompt(context)
+        val userMessage = """Please evaluate my reflection.
+
+[USER INTRODUCTION]
+$userIntroduction
+
+[DIARY CONTENT]
+$diaryContent"""
         val response = callAIWorker(context, userMessage, systemPromptStr, modelString)
         
         parseAnalysisResponse(response)
     }
 
-    private fun buildAnalysisPrompt(context: Context, userIntro: String): String {
+    private fun buildAnalysisPrompt(context: Context): String {
         // Try to get custom analyzer prompt
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_analyzer_prompt", null)
+        val template = customPrompt ?: getDefaultAnalyzerPromptTemplate()
         
-        val userIntroStr = if (userIntro.isNotEmpty()) "About the user:\n$userIntro" else ""
-        
-        val defaultSystemPrompt = """You are a wise and strict mentor reviewing a student's nightly reflection.
-Your goal is to ensure they are taking the process seriously and actually reflecting, not just going through the motions.
-
-$userIntroStr
-
-EVALUATION CRITERIA:
-1. DEPTH: Did they answer the questions with thought? (One word answers = Fail)
-2. HONESTY: Does it seem genuine?
-3. COMPLETENESS: Did they complete the reflection?
-
-OUTPUT REQUIREMENTS:
-You must output a single JSON object. Do not include markdown formatting like ```json.
-{
-  "xp": (integer 0-500, score for quality of reflection),
-  "satisfied": (boolean, true if reflection is good enough to accept, false if lazy/incomplete),
-  "feedback": (string, 1-2 sentence feedback. If satisfied, praise insight. If false, explain why and ask them to add more.),
-  "qa": [
-    { "q": "Question 1 text", "a": "Answer 1 text" }
-  ]
-}
-Include exactly the questions asked and the user's answers extracted strictly from the DIARY in the 'qa' array."""
-
-        return if (customPrompt != null) {
-            customPrompt.replace("{user_intro}", userIntroStr)
-        } else {
-            defaultSystemPrompt
-        }
+        return template
+            .replace("{user_intro}", "[See USER INTRODUCTION in user message]")
+            .replace("{diary_content}", "[See DIARY CONTENT in user message]")
     }
 
     private fun parseAnalysisResponse(response: String): AnalysisResult {
@@ -582,14 +555,24 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         
         TerminalLogger.log("Nightly AI: Generating plan suggestions...")
         
-
-            ?: throw IllegalStateException("Invalid model configuration")
-        
-
-
-        
         val systemPromptStr = buildPlanPrompt(context, userIntro, summary)
-        val response = callAIWorker(context, "Suggest a high-level plan for tomorrow based on my pending tasks and context. Output clean markdown.", systemPromptStr, modelString)
+        
+        // Separate user data into user message
+        val pendingTasks = if (summary.tasksDue.isEmpty()) {
+            "No overdue tasks."
+        } else {
+            summary.tasksDue.joinToString("\n") { "- $it" }
+        }
+        val userMessage = """Based on my current situation, suggest a high-level plan for tomorrow. Output clean markdown.
+
+My pending/overdue tasks:
+$pendingTasks
+
+Today's efficiency: ${if (summary.totalPlannedMinutes > 0) (summary.totalEffectiveMinutes * 100 / summary.totalPlannedMinutes) else 0}%
+Effective study time: ${summary.totalEffectiveMinutes} minutes
+Tasks completed today: ${summary.tasksCompleted.size}"""
+        
+        val response = callAIWorker(context, userMessage, systemPromptStr, modelString)
         
         // Return raw response (Markdown expected)
         response.trim()
@@ -651,95 +634,63 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         
         TerminalLogger.log("Nightly AI: Generating report summary...")
         
-
-            ?: throw IllegalStateException("Invalid model configuration")
-        
-
-
-        
-        // Load custom or default prompt
+        // Load custom or default prompt template
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_report_prompt", null)
+        val template = customPrompt ?: getDefaultReportPromptTemplate()
         
-        val systemPrompt = if (customPrompt != null) {
-            // Replace placeholders in custom prompt
-            val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
-            val totalPlanned = summary.totalPlannedMinutes
-            val totalEffective = summary.totalEffectiveMinutes
-            val efficiency = if (totalPlanned > 0) (totalEffective * 100 / totalPlanned) else 0
-            
-            customPrompt
-                .replace("{user_intro}", userIntro)
-                .replace("{date}", summary.date.format(dateFormatter))
-                .replace("{efficiency}", "$efficiency%")
-                .replace("{total_effective}", "$totalEffective mins")
-                .replace("{total_planned}", "$totalPlanned mins")
-                .replace("{tasks_done}", "${summary.tasksCompleted.size}")
-                .replace("{xp_earned}", "${xpStats?.totalDailyXP ?: 0}")
-                .replace("{level}", "${xpStats?.level ?: 1}")
-        } else {
-            buildReportPrompt(context, userIntro, summary, xpStats)
-        }
-        
-        val userMessage = "Generate my daily report summary based on the provided metadata, diary and plan.\n\n[PRIMARY SOURCE: DIARY DOCUMENT]\n$reflectionContent\n\n[PRIMARY SOURCE: PLAN FOR TOMORROW]\n$planContent"
-        val response = callAIWorker(context, userMessage, systemPrompt, modelString)
-        response.trim()
-    }
+        val systemPrompt = template
+            .replace("{user_intro}", "[See USER INTRODUCTION in user message]")
+            .replace("{date}", "[See REPORT DATE in user message]")
+            .replace("{efficiency}", "[See EFFICIENCY in user message]")
+            .replace("{total_effective}", "[See TOTAL EFFECTIVE MINUTES in user message]")
+            .replace("{total_planned}", "[See TOTAL PLANNED MINUTES in user message]")
+            .replace("{tasks_done}", "[See TASKS COMPLETED COUNT in user message]")
+            .replace("{xp_earned}", "[See XP EARNED in user message]")
+            .replace("{level}", "[See USER LEVEL in user message]")
+            .replace("{reflection_content}", "[See USER DIARY REFLECTION in user message]")
+            .replace("{plan_content}", "[See TOMORROW'S PLAN CONTENT in user message]")
 
-    private fun buildReportPrompt(
-        context: Context, 
-        userIntro: String, 
-        summary: DaySummary,
-        xpStats: com.neubofy.reality.utils.XPManager.XPBreakdown?
-    ): String {
+        // User prompt contains all dynamic day data
         val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
-        
-        // Extract stats
         val totalPlanned = summary.totalPlannedMinutes
         val totalEffective = summary.totalEffectiveMinutes
         val efficiency = if (totalPlanned > 0) (totalEffective * 100 / totalPlanned) else 0
-        val tasksDone = summary.tasksCompleted.size
         
-        val xpEarned = xpStats?.totalDailyXP ?: 0
-        val level = xpStats?.level ?: 1
-        
-        val userIntroStr = if (userIntro.isNotEmpty()) "About the user: $userIntro" else ""
-        
-        // Structured Metadata as JSON-like block for AI
-        val metadata = """
-        {
-          "date": "${summary.date}",
-          "stats": {
-            "efficiency_percent": $efficiency,
-            "effective_minutes": $totalEffective,
-            "planned_minutes": $totalPlanned,
-            "tasks_completed": $tasksDone,
-            "xp_earned": $xpEarned,
-            "current_level": $level
-          },
-          "user_context": "${userIntro.replace("\"", "\\\"")}"
-        }
-        """.trimIndent()
-        
-        return """
-            You are a professional executive coach and performance analyst.
-            
-            [SYSTEM METADATA]
-            $metadata
-            
-            INSTRUCTIONS:
-            Perform a deep analysis of the user's day based on the provided JSON metadata and the full text of their Diary and Plan.
-            1. **Daily Briefing**: Provide a concise summary of the day's achievements and challenges.
-            2. **Deep Insights**: Analyze the user's reflection. Identify patterns, wins, or recurring blockers.
-            3. **Plan Critique**: Analyze the plan for tomorrow. Evaluate its feasibility based on today's metrics ($efficiency% efficiency).
-            4. **Level Up**: Provide a motivational comment regarding their current level ($level) and today's XP ($xpEarned).
-            5. **Final Verdict**: Assign a "Theme of the Day" and a one-sentence "Coach's Directive".
+        val userMessage = """Please generate my daily report summary based on the following dynamic data:
 
-            OUTPUT FORMAT:
-            - Use clean, professional Markdown.
-            - Do NOT include any meta-talk like "As an AI..." or "Here is your analysis...".
-            - Be direct, insightful, and encouraging.
-            - **Length Constraint**: Ensure the entire report is comprehensive but remains under 7,000 characters.
-        """.trimIndent()
+[USER INTRODUCTION]
+$userIntro
+
+[REPORT DATE]
+${summary.date.format(dateFormatter)}
+
+[EFFICIENCY]
+$efficiency%
+
+[TOTAL EFFECTIVE MINUTES]
+$totalEffective mins
+
+[TOTAL PLANNED MINUTES]
+$totalPlanned mins
+
+[TASKS COMPLETED COUNT]
+${summary.tasksCompleted.size}
+
+[XP EARNED]
+${xpStats?.totalDailyXP ?: 0}
+
+[USER LEVEL]
+${xpStats?.level ?: 1}
+
+[USER DIARY REFLECTION]
+$reflectionContent
+
+[TOMORROW'S PLAN CONTENT]
+$planContent"""
+
+        val response = callAIWorker(context, userMessage, systemPrompt, modelString)
+        response.trim()
     }
 }
+

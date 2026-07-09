@@ -91,47 +91,68 @@ class AISettingsActivity : BaseActivity() {
     }
 
     private fun setupModelSpinners() {
-        val models = listOf(
-            "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
-            "@cf/qwen/qwen2.5-coder-32b-instruct",
-            "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-            "@cf/openai/gpt-oss-120b",
-            "@cf/openai/gpt-oss-20b",
-            "@cf/meta/llama-4-scout-17b-16e-instruct",
-            "@cf/mistralai/mistral-small-3.1-24b-instruct",
-            "@cf/qwen/qwq-32b"
-        )
+        lifecycleScope.launch {
+            val models = fetchModelsFromWorker()
+            
+            val adapter = ArrayAdapter(this@AISettingsActivity, android.R.layout.simple_spinner_item, models)
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
 
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, models)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            binding.spinnerChatModel.adapter = adapter
+            binding.spinnerNightlyModel.adapter = adapter
 
-        binding.spinnerChatModel.adapter = adapter
-        binding.spinnerNightlyModel.adapter = adapter
+            val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
+            val savedChatModel = prefs.getString("chat_model", "@cf/openai/gpt-oss-120b")
+            val savedNightlyModel = prefs.getString("nightly_model", "@cf/openai/gpt-oss-120b")
 
-        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
-        val savedChatModel = prefs.getString("chat_model", "@cf/openai/gpt-oss-120b")
-        val savedNightlyModel = prefs.getString("nightly_model", "@cf/openai/gpt-oss-120b")
+            val chatModelIndex = models.indexOf(savedChatModel).takeIf { it >= 0 } ?: 0
+            val nightlyModelIndex = models.indexOf(savedNightlyModel).takeIf { it >= 0 } ?: 0
 
-        val chatModelIndex = models.indexOf(savedChatModel).takeIf { it >= 0 } ?: 0
-        val nightlyModelIndex = models.indexOf(savedNightlyModel).takeIf { it >= 0 } ?: 0
+            binding.spinnerChatModel.setSelection(chatModelIndex)
+            binding.spinnerNightlyModel.setSelection(nightlyModelIndex)
 
-        binding.spinnerChatModel.setSelection(chatModelIndex)
-        binding.spinnerNightlyModel.setSelection(nightlyModelIndex)
-
-        binding.spinnerChatModel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                prefs.edit().putString("chat_model", models[position]).apply()
+            binding.spinnerChatModel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    prefs.edit().putString("chat_model", models[position]).apply()
+                }
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
             }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
 
-        binding.spinnerNightlyModel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                prefs.edit().putString("nightly_model", models[position]).apply()
+            binding.spinnerNightlyModel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    prefs.edit().putString("nightly_model", models[position]).apply()
+                }
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
             }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+    }
 
+    private suspend fun fetchModelsFromWorker(): List<String> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val fallbackModels = listOf("@cf/openai/gpt-oss-120b", "@cf/openai/gpt-oss-20b")
+        val apiUrl = com.neubofy.reality.BuildConfig.AI_URL.removeSuffix("/")
+        if (apiUrl.isBlank()) return@withContext fallbackModels
+
+        try {
+            val url = java.net.URL(apiUrl)
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.connectTimeout = 5000
+            conn.readTimeout = 5000
+            conn.setRequestProperty("Accept", "application/json")
+
+            if (conn.responseCode == 200) {
+                val response = conn.inputStream.bufferedReader().use { it.readText() }
+                val json = org.json.JSONObject(response)
+                val array = json.getJSONArray("models")
+                val list = mutableListOf<String>()
+                for (i in 0 until array.length()) {
+                    list.add(array.getString(i))
+                }
+                if (list.isNotEmpty()) return@withContext list
+            }
+        } catch (e: Exception) {
+            com.neubofy.reality.utils.TerminalLogger.log("Failed to fetch models from worker: ${e.message}")
+        }
+        return@withContext fallbackModels
     }
 
 
