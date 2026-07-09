@@ -66,7 +66,7 @@ class NightlyProtocolExecutor(
         get() = phaseData.generatedQuestions
     
     companion object {
-        // 13-Step Protocol Constants
+        // 12-Step Protocol Constants
         const val STEP_FETCH_TASKS = NightlySteps.STEP_FETCH_TASKS
         const val STEP_FETCH_SESSIONS = NightlySteps.STEP_FETCH_SESSIONS
         const val STEP_CALC_SCREEN_TIME = NightlySteps.STEP_CALC_SCREEN_TIME
@@ -325,25 +325,14 @@ class NightlyProtocolExecutor(
             // Step 9: AI Parse Plan to JSON
             phasePlanning.step9_generatePlan()
             
-            // Step 10: Process Plan to Tasks & Calendar
+            // Step 10: Generate AI Report
+            phasePlanning.step10_generateReport()
             
-            // Step 11: Generate AI Report
-            phasePlanning.step11_generateReport()
+            // Step 11: Generate PDF
+            phasePlanning.step11_generatePdf()
             
-            // Step 12: Generate PDF
-            phasePlanning.step12_generatePdf()
-            
-            // Step 13: Set Wake-up Alarm
-            phasePlanning.step13_setAlarm()
-
-            // Step 14: AI Task Cleanup (Normalize)
-            phasePlanning.step14_normalizeTasks()
-
-            // Step 15: Update Distraction
-            phasePlanning.step15_updateDistraction()
-
-            // Step 16: Backup to sheet
-            phasePlanning.step16_backupToSheet()
+            // Step 12: Backup to sheet
+            phasePlanning.step12_backupToSheet()
             
             setProtocolState(STATE_COMPLETE)
             diaryDocId = NightlyRepository.getDiaryDocId(context, diaryDate)
@@ -367,12 +356,9 @@ class NightlyProtocolExecutor(
             STEP_FINALIZE_XP -> phaseAnalysis.step7_finalizeXp()
             STEP_CREATE_PLAN_DOC -> phasePlanning.step8_createPlanDoc()
             STEP_GENERATE_PLAN -> phasePlanning.step9_generatePlan()
-            STEP_GENERATE_REPORT -> phasePlanning.step11_generateReport()
-            STEP_GENERATE_PDF -> phasePlanning.step12_generatePdf()
-            NightlySteps.STEP_SET_ALARM -> phasePlanning.step13_setAlarm()
-            NightlySteps.STEP_NORMALIZE_TASKS -> phasePlanning.step14_normalizeTasks()
-            NightlySteps.STEP_UPDATE_DISTRACTION -> phasePlanning.step15_updateDistraction()
-            STEP_BACKUP_SHEET -> phasePlanning.step16_backupToSheet()
+            STEP_GENERATE_REPORT -> phasePlanning.step10_generateReport()
+            STEP_GENERATE_PDF -> phasePlanning.step11_generatePdf()
+            STEP_BACKUP_SHEET -> phasePlanning.step12_backupToSheet()
             else -> throw IllegalArgumentException("Unknown step: $step")
         }
     }

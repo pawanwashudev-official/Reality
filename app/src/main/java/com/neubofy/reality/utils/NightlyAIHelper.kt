@@ -45,10 +45,10 @@ object NightlyAIHelper {
 
 
         
-        val prompt = buildPrompt(context, userIntroduction, daySummary, healthData, previousReport)
+        val systemPrompt = buildPrompt(context, userIntroduction, daySummary, healthData, previousReport)
         TerminalLogger.log("Nightly AI: Prompt built, calling AI Worker...")
 
-        val response = callAIWorker(context, "Analyze my day and give me questions based on the system instructions.", prompt, modelString)
+        val response = callAIWorker(context, "Analyze my day and give me questions based on the system instructions.", systemPrompt, modelString)
         
         TerminalLogger.log("Nightly AI: Response received, parsing questions...")
         parseQuestions(response)
@@ -209,9 +209,8 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
             ""
         }
 
-        val systemPrompt = customPrompt?.replace("{plan_content}", planContent)
-            ?.replace("{list_context}", listsContext)
-            ?: getDefaultPlanPrompt(cleanPlanContent, taskListConfigs)
+        val systemPrompt = customPrompt?.replace("{list_context}", listsContext)
+            ?: getDefaultPlanPrompt(taskListConfigs)
             
         TerminalLogger.log("Nightly AI: Plan prompt built, calling AI Worker...")
         val userMessage = "Extract my tasks and plan based on the document provided in the system prompt. Return ONLY valid raw JSON format without markdown wrapping. Do not include any reasoning blocks or markdown code block formatting.\n\n[PLAN CONTENT FALLBACK]\n$cleanPlanContent"
@@ -398,7 +397,7 @@ OUTPUT FORMAT:
         """.trimIndent()
     }
 
-    fun getDefaultPlanPrompt(planContent: String, taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig> = emptyList()): String {
+    fun getDefaultPlanPrompt(taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig> = emptyList()): String {
         val listsContext = if (taskListConfigs.isNotEmpty()) {
             val details = taskListConfigs.joinToString("\n") { 
                 "- List Name: \"${it.displayName}\" (ID: ${it.googleListId})\n  Description: ${it.description}" 
@@ -730,7 +729,7 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_report_prompt", null)
         
-        val prompt = if (customPrompt != null) {
+        val systemPrompt = if (customPrompt != null) {
             // Replace placeholders in custom prompt
             val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
             val totalPlanned = summary.totalPlannedMinutes
@@ -752,7 +751,7 @@ Include exactly the questions asked and the user's answers extracted strictly fr
             buildReportPrompt(context, userIntro, summary, xpStats, reflectionContent, planContent)
         }
         
-        val response = callAIWorker(context, "Generate my daily report summary based on the provided metadata, diary and plan.", prompt, modelString)
+        val response = callAIWorker(context, "Generate my daily report summary based on the provided metadata, diary and plan.", systemPrompt, modelString)
         response.trim()
     }
 
