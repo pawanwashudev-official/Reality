@@ -214,7 +214,8 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
             ?: getDefaultPlanPrompt(cleanPlanContent, taskListConfigs)
             
         TerminalLogger.log("Nightly AI: Plan prompt built, calling AI Worker...")
-        val response = callAIWorker(context, "Extract my tasks and plan based on the document provided in the system prompt. Return ONLY valid raw JSON format without markdown wrapping. Do not include any reasoning blocks or markdown code block formatting.", systemPrompt, modelString)
+        val userMessage = "Extract my tasks and plan based on the document provided in the system prompt. Return ONLY valid raw JSON format without markdown wrapping. Do not include any reasoning blocks or markdown code block formatting.\n\n[PLAN CONTENT FALLBACK]\n$cleanPlanContent"
+        val response = callAIWorker(context, userMessage, systemPrompt, modelString)
         
         response
     }

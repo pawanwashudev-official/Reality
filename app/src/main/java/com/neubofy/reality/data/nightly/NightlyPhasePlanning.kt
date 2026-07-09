@@ -272,7 +272,14 @@ class NightlyPhasePlanning(
 
                 if (tasks.length() == 0 && events.length() == 0) {
                     val errorDetails = "Could not extract tasks or events from your plan. Please write clearer items with times. (Extracted JSON: $jsonStr, Raw response: $cleanResponse, Plan Length: ${planContent.length})"
-                    saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails)
+
+                    val failureJson = org.json.JSONObject().apply {
+                        put("error", errorDetails)
+                        put("rawResponse", aiResponse)
+                        put("sanitizedJson", jsonStr)
+                    }.toString()
+
+                    saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, errorDetails, failureJson)
                     listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
                     return
                 }
@@ -529,8 +536,11 @@ class NightlyPhasePlanning(
                 listener.onError(NightlySteps.STEP_GENERATE_PLAN, errorDetails)
             }
         } catch (e: Exception) {
+            val failureJson = org.json.JSONObject().apply {
+                put("error", e.message)
+            }.toString()
             listener.onError(NightlySteps.STEP_GENERATE_PLAN, "AI Plan Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, e.message)
+            saveStepState(NightlySteps.STEP_GENERATE_PLAN, StepProgress.STATUS_ERROR, e.message, failureJson)
         }
     }
 
@@ -991,7 +1001,10 @@ class NightlyPhasePlanning(
             
         } catch (e: Exception) {
             TerminalLogger.log("Nightly Step 14 Failed: ${e.message}")
-            saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_ERROR, e.message)
+            val failureJson = org.json.JSONObject().apply {
+                put("error", e.message)
+            }.toString()
+            saveStepState(NightlySteps.STEP_NORMALIZE_TASKS, StepProgress.STATUS_ERROR, e.message, failureJson)
             listener.onError(NightlySteps.STEP_NORMALIZE_TASKS, "Cleanup Failed: ${e.message}")
         }
     }
