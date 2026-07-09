@@ -501,13 +501,14 @@ OUTPUT FORMAT:
 
 
         
-        val systemPromptStr = buildAnalysisPrompt(context, userIntroduction, diaryContent)
-        val response = callAIWorker(context, "Analyze my reflection strictly and return ONLY the JSON object format.", systemPromptStr, modelString)
+        val systemPromptStr = buildAnalysisPrompt(context, userIntroduction)
+        val userMessage = "Analyze my reflection strictly and return ONLY the JSON object format.\n\n[[DIARY_START]]\n$diaryContent\n[[DIARY_END]]"
+        val response = callAIWorker(context, userMessage, systemPromptStr, modelString)
         
         parseAnalysisResponse(response)
     }
 
-    private fun buildAnalysisPrompt(context: Context, userIntro: String, diaryContent: String): String {
+    private fun buildAnalysisPrompt(context: Context, userIntro: String): String {
         // Try to get custom analyzer prompt
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_analyzer_prompt", null)
@@ -518,12 +519,6 @@ OUTPUT FORMAT:
 Your goal is to ensure they are taking the process seriously and actually reflecting, not just going through the motions.
 
 $userIntroStr
-
-Analyze the following Nightly Reflection Diary:
-
-[[DIARY_START]]
-$diaryContent
-[[DIARY_END]]
 
 EVALUATION CRITERIA:
 1. DEPTH: Did they answer the questions with thought? (One word answers = Fail)
@@ -544,7 +539,6 @@ Include exactly the questions asked and the user's answers extracted strictly fr
 
         return if (customPrompt != null) {
             customPrompt.replace("{user_intro}", userIntroStr)
-                .replace("{diary_content}", diaryContent)
         } else {
             defaultSystemPrompt
         }
@@ -730,7 +724,7 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val customPrompt = prefs.getString("custom_report_prompt", null)
         
-        val prompt = if (customPrompt != null) {
+        val systemPrompt = if (customPrompt != null) {
             // Replace placeholders in custom prompt
             val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
             val totalPlanned = summary.totalPlannedMinutes
@@ -746,13 +740,12 @@ Include exactly the questions asked and the user's answers extracted strictly fr
                 .replace("{tasks_done}", "${summary.tasksCompleted.size}")
                 .replace("{xp_earned}", "${xpStats?.totalDailyXP ?: 0}")
                 .replace("{level}", "${xpStats?.level ?: 1}")
-                .replace("{reflection_content}", reflectionContent.take(8000))
-                .replace("{plan_content}", planContent.take(8000))
         } else {
-            buildReportPrompt(context, userIntro, summary, xpStats, reflectionContent, planContent)
+            buildReportPrompt(context, userIntro, summary, xpStats)
         }
         
-        val response = callAIWorker(context, "Generate my daily report summary based on the provided metadata, diary and plan.", prompt, modelString)
+        val userMessage = "Generate my daily report summary based on the provided metadata, diary and plan.\n\n[PRIMARY SOURCE: DIARY DOCUMENT]\n$reflectionContent\n\n[PRIMARY SOURCE: PLAN FOR TOMORROW]\n$planContent"
+        val response = callAIWorker(context, userMessage, systemPrompt, modelString)
         response.trim()
     }
 
@@ -760,9 +753,7 @@ Include exactly the questions asked and the user's answers extracted strictly fr
         context: Context, 
         userIntro: String, 
         summary: DaySummary,
-        xpStats: com.neubofy.reality.utils.XPManager.XPBreakdown?,
-        reflectionContent: String,
-        planContent: String
+        xpStats: com.neubofy.reality.utils.XPManager.XPBreakdown?
     ): String {
         val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM d")
         
@@ -798,19 +789,6 @@ Include exactly the questions asked and the user's answers extracted strictly fr
             
             [SYSTEM METADATA]
             $metadata
-            
-            [PRIMARY SOURCE: DIARY DOCUMENT]
-            The following is the full text extracted from the user's diary document (including any tables or lists). 
-            Analyze this deeply:
-            ---
-            $reflectionContent
-            ---
-            
-            [PRIMARY SOURCE: PLAN FOR TOMORROW]
-            The following is the text extracted from the user's planning document for tomorrow:
-            ---
-            $planContent
-            ---
             
             INSTRUCTIONS:
             Perform a deep analysis of the user's day based on the provided JSON metadata and the full text of their Diary and Plan.
