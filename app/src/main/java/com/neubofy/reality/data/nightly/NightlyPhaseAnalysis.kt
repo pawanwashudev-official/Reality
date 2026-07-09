@@ -152,13 +152,13 @@ class NightlyPhaseAnalysis(
 
                 val totalDue = j1.optInt("pendingCount", 0) + j1.optInt("completedCount", 0)
                 val totalComp = j1.optInt("completedCount", 0)
-                rowValues.add("$totalComp/$totalDue Completed")
+                rowValues.add(totalComp.toString())
+                rowValues.add(totalDue.toString())
 
+                rowValues.add(j1.optInt("plannedEventCount", 0).toString())
                 rowValues.add(j1.optInt("sessionCount", 0).toString())
-                rowValues.add(j1.optInt("effectiveMinutes", 0).toString())
-                rowValues.add(j1.optInt("usedMinutes", 0).toString())
-                rowValues.add(j1.optInt("limitMinutes", 60).toString())
-                rowValues.add(result.feedback)
+                rowValues.add(j1.optLong("steps", 0L).toString())
+                rowValues.add(j1.optString("sleepInfo", "N/A"))
 
                 rowValues.add(finalStats.tapasyaXP.toString())
                 rowValues.add(finalStats.taskXP.toString())
@@ -168,8 +168,7 @@ class NightlyPhaseAnalysis(
                 rowValues.add(finalStats.totalDailyXP.toString())
                 rowValues.add(finalStats.level.toString())
                 rowValues.add(finalStats.streak.toString())
-                rowValues.add("https://docs.google.com/document/d/${diaryDocId ?: ""}") // Diary doc url
-                rowValues.add("") // Report link placeholder (runs in step 6)
+                rowValues.add(result.feedback)
 
                 sheetSuccess = withContext(Dispatchers.IO) {
                     try {

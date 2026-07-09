@@ -187,11 +187,7 @@
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />
 
-        <activity
-            android:name=".ui.activity.SupportUsActivity"
-            android:exported="false"
-            android:theme="@style/Theme.Reality"
-            android:screenOrientation="portrait" />
+
 
         <activity
             android:name=".ui.activity.ReminderActivity"

@@ -178,17 +178,20 @@ $previousReport"""
         val customPrompt = prefs.getString("custom_plan_prompt", null)
         val template = customPrompt ?: getDefaultPlanPromptTemplate()
         
-        val systemPrompt = template
-            .replace("{list_context}", "[See AVAILABLE TASK LISTS in user message]")
-            .replace("{plan_content}", "[See PLAN CONTENT in user message]")
-        
-        // Build Dynamic User message
         val listsContext = if (taskListConfigs.isNotEmpty()) {
             taskListConfigs.joinToString("\n") { 
                 "Task List Goal: \"${it.description}\" -> USE ID: ${it.googleListId}" 
             }
         } else {
             "No task lists available. Use default list ID: @default"
+        }
+
+        var systemPrompt = template
+        if (systemPrompt.contains("{list_context}")) {
+            systemPrompt = systemPrompt.replace("{list_context}", listsContext)
+        }
+        if (systemPrompt.contains("{plan_content}")) {
+            systemPrompt = systemPrompt.replace("{plan_content}", cleanPlanContent)
         }
 
         val userMessage = """Please extract the tasks and events from my plan document.
@@ -210,40 +213,14 @@ $cleanPlanContent"""
 
     fun getDefaultQuestionsPromptTemplate(): String {
         return """You are a supportive but honest personal productivity coach.
-
-{user_intro}
-
-Today is {date}.
-
-📅 SCHEDULED CALENDAR EVENTS:
-{calendar}
-
-📋 TASKS DUE TODAY:
-{tasks_due}
-
-✅ TASKS COMPLETED TODAY:
-{tasks_completed}
-
-⏱️ STUDY/WORK SESSIONS (Tapasya):
-{sessions}
-
-📱 DIGITAL WELLBEING (Health):
-{health}
-
-📊 STATISTICS:
-{stats}
-
-📝 PREVIOUS DAY AI REPORT:
-{report}
-
-Based on this comprehensive data, generate EXACTLY 5 personalized reflection questions.
+Analyze the user's day data provided in the user message, and generate EXACTLY 5 personalized reflection questions to help them reflect on their day.
 
 Guidelines:
-1. If there's a gap between planned and actual, ask about what happened (gently but directly)
-2. If they completed many tasks, acknowledge and ask what helped them succeed
-3. If tasks are pending, ask about priorities and blockers
-4. Reference patterns from the previous day's report if available
-5. Help them plan improvements for tomorrow
+1. If there's a gap between planned and actual, ask about what happened (gently but directly).
+2. If they completed many tasks, acknowledge and ask what helped them succeed.
+3. If tasks are pending, ask about priorities and blockers.
+4. Reference patterns from the previous day's report if available.
+5. Help them plan improvements for tomorrow.
 
 Be warm and supportive, but also honest. Don't sugarcoat if they underperformed.
 If no plan was set, ask about setting intentions.
@@ -253,16 +230,8 @@ Return ONLY the 5 questions, numbered 1-5, one per line. No other text."""
     }
 
     fun getDefaultAnalyzerPromptTemplate(): String {
-        return """You are a wise and strict mentor reviewing a student's nightly reflection.
+        return """You are a wise and strict mentor reviewing a student's nightly reflection diary.
 Your goal is to ensure they are taking the process seriously and actually reflecting, not just going through the motions.
-
-{user_intro}
-
-Analyze the following Nightly Reflection Diary:
-
-[[DIARY_START]]
-{diary_content}
-[[DIARY_END]]
 
 EVALUATION CRITERIA:
 1. DEPTH: Did they answer the questions with thought? (One word answers = Fail)
@@ -279,23 +248,7 @@ You must output a single JSON object. Do not include markdown formatting like ``
     }
 
     fun getDefaultReportPromptTemplate(): String {
-        return """You are a professional executive coach generating a daily progress report.
-
-About the user: {user_intro}
-
-DATE: {date}
-
-[DATA SUMMARY]
-- Efficiency: {efficiency} ({total_effective} / {total_planned})
-- Tasks Completed: {tasks_done}
-- XP Earned Today: {xp_earned}
-- Current Level: {level}
-
-[USER REFLECTION]
-{reflection_content}
-
-[TOMORROW'S Plan]
-{plan_content}
+        return """You are a professional executive coach generating a daily progress report based on the user's statistics, reflection diary, and plan for tomorrow.
 
 INSTRUCTIONS:
 1. Summarize the day's achievements.
@@ -313,74 +266,70 @@ OUTPUT FORMAT:
      * Use {plan_content} and {list_context} as placeholders.
      */
     fun getDefaultPlanPromptTemplate(): String {
-        return """
-            You are an advanced productivity extraction AI. 
-            Analyze the user's "Plan for Tomorrow" and extract actionable items with extreme precision.
-            
-            {list_context}
-            
-            [STRICT EXTRACTION RULES]
-            1. TASKS:
-               - Extract ONLY actionable task mentions that are explicitly listed.
-               - NEGATIVE CONSTRAINT: Do NOT infer or "hallucinate" tasks that are not clearly written.
-               - TITLE: Clean title only.
-               - CATEGORIZATION: Map each task to the most relevant "taskListId" from the [AVAILABLE TASK LISTS].
-               - CRITICAL: You MUST use one of the "ID"s provided (e.g. "MTIzNDU..."). Do NOT use names or labels.
-               - SELECTION LOGIC: If a task matches a specific list description, use that ID. Only use "@default" if NO other list matches.
-               - DISTRIBUTE tasks wisely across specialized lists.
-               - DUE TIME: If a specific time is mentioned (e.g., "14:00 Finish report"), extract it as "startTime" in STRICT 24-hour HH:mm format. 
-            
-            2. CALENDAR EVENTS: 
-               - ONLY extract productive/focused study or work sessions.
-               - NEGATIVE CONSTRAINT: DO NOT extract Sleep, Travel, Commute, Relax, Eating, Gym, or Leisure activities as events.
-               - TIME: Must have both "startTime" and "endTime" in STRICT 24-hour HH:mm format.
-            
-            4. WAKE UP TIME: (Constraint: AI Decision)
-               - Based on the plan's first activity, determine the optimal "wakeupTime" (STRICT 24-hour HH:mm).
-               - If the plan starts at 06:00, wake up might be 05:30.
-               - IMPORTANT: If no clear start time is found, return empty string "".
-             
-             5. SLEEP START TIME: (Constraint: AI Decision)
-                - Determine the planned "sleepStartTime" (STRICT 24-hour HH:mm).
-                - Look for "Sleep", "Bed", "Wind down" at the end of the plan.
-                - If not explicitly stated, infer a reasonable time (e.g. 23:00) based on the day's intensity.
-             
-             6. MENTORSHIP (Short Advice):
-               - Provide a 2-3 sentence punchy piece of advice for the user to succeed tomorrow.
-               - Focus on mindset, energy, or specific focus from the plan.
-             
-             7. DISTRACTION TIME: (AI Decision based on day intensity)
-               - Determine a reasonable "distractionTimeMinutes" (integer, 0-120) for allowed non-productive app usage.
-               - LOGIC: Heavy work days with many tasks = lower distraction time (30-45 min).
-               - Light days or rest days = higher allowed distraction (60-90 min).
-               - If explicitly mentioned in plan (e.g. "1 hour break for social media"), use that value.
-               - Default to 60 if unclear.
-            
-            [JSON OUTPUT FORMAT]
-            (CRITICAL: Output EXACTLY this JSON structure. NO MARKDOWN. NO PREAMBLE. NO OTHER TEXT)
-            {
-              "wakeupTime": "HH:mm or empty",
-              "sleepStartTime": "HH:mm or empty",
-              "distractionTimeMinutes": 60,
-              "mentorship": "Your advice string here",
-              "tasks": [
-                {
-                  "title": "Clean task title",
-                  "startTime": "HH:mm or null",
-                  "taskListId": "EXACT_ID_FROM_CONTEXT",
-                  "notes": "Details"
-                }
-              ],
-              "events": [
-                {
-                  "title": "Productive Session Title",
-                  "startTime": "HH:mm",
-                  "endTime": "HH:mm",
-                  "description": "Details"
-                }
-              ]
-            }
-        """.trimIndent()
+        return """You are an advanced productivity extraction AI. 
+Analyze the user's "Plan for Tomorrow" and extract actionable items with extreme precision.
+
+[STRICT EXTRACTION RULES]
+1. TASKS:
+   - Extract ONLY actionable task mentions that are explicitly listed.
+   - NEGATIVE CONSTRAINT: Do NOT infer or "hallucinate" tasks that are not clearly written.
+   - TITLE: Clean title only.
+   - CATEGORIZATION: Map each task to the most relevant "taskListId" from the [AVAILABLE TASK LISTS].
+   - CRITICAL: You MUST use one of the "ID"s provided (e.g. "MTIzNDU..."). Do NOT use names or labels.
+   - SELECTION LOGIC: If a task matches a specific list description, use that ID. Only use "@default" if NO other list matches.
+   - DISTRIBUTE tasks wisely across specialized lists.
+   - DUE TIME: If a specific time is mentioned (e.g., "14:00 Finish report"), extract it as "startTime" in STRICT 24-hour HH:mm format. 
+
+2. CALENDAR EVENTS: 
+   - ONLY extract productive/focused study or work sessions.
+   - NEGATIVE CONSTRAINT: DO NOT extract Sleep, Travel, Commute, Relax, Eating, Gym, or Leisure activities as events.
+   - TIME: Must have both "startTime" and "endTime" in STRICT 24-hour HH:mm format.
+
+4. WAKE UP TIME: (Constraint: AI Decision)
+   - Based on the plan's first activity, determine the optimal "wakeupTime" (STRICT 24-hour HH:mm).
+   - If the plan starts at 06:00, wake up might be 05:30.
+   - IMPORTANT: If no clear start time is found, return empty string "".
+ 
+ 5. SLEEP START TIME: (Constraint: AI Decision)
+    - Determine the planned "sleepStartTime" (STRICT 24-hour HH:mm).
+    - Look for "Sleep", "Bed", "Wind down" at the end of the plan.
+    - If not explicitly stated, infer a reasonable time (e.g. 23:00) based on the day's intensity.
+ 
+ 6. MENTORSHIP (Short Advice):
+   - Provide a 2-3 sentence punchy piece of advice for the user to succeed tomorrow.
+   - Focus on mindset, energy, or specific focus from the plan.
+ 
+ 7. DISTRACTION TIME: (AI Decision based on day intensity)
+   - Determine a reasonable "distractionTimeMinutes" (integer, 0-120) for allowed non-productive app usage.
+   - LOGIC: Heavy work days with many tasks = lower distraction time (30-45 min).
+   - Light days or rest days = higher allowed distraction (60-90 min).
+   - If explicitly mentioned in plan (e.g. "1 hour break for social media"), use that value.
+   - Default to 60 if unclear.
+
+[JSON OUTPUT FORMAT]
+(CRITICAL: Output EXACTLY this JSON structure. NO MARKDOWN. NO PREAMBLE. NO OTHER TEXT)
+{
+  "wakeupTime": "HH:mm or empty",
+  "sleepStartTime": "HH:mm or empty",
+  "distractionTimeMinutes": 60,
+  "mentorship": "Your advice string here",
+  "tasks": [
+    {
+      "title": "Clean task title",
+      "startTime": "HH:mm or null",
+      "taskListId": "EXACT_ID_FROM_CONTEXT",
+      "notes": "Details"
+    }
+  ],
+  "events": [
+    {
+      "title": "Productive Session Title",
+      "startTime": "HH:mm",
+      "endTime": "HH:mm",
+      "description": "Details"
+    }
+  ]
+}"""
     }
 
     fun getDefaultPlanPrompt(taskListConfigs: List<com.neubofy.reality.data.db.TaskListConfig> = emptyList()): String {
@@ -428,7 +377,7 @@ OUTPUT FORMAT:
                 })
             })
             put("temperature", 0.7)
-            // Cloudflare has strict token limits, we rely on defaults
+            put("max_tokens", 4096)
         }
         
         conn.outputStream.bufferedWriter().use { it.write(requestBody.toString()) }
@@ -439,7 +388,14 @@ OUTPUT FORMAT:
         }
         
         val response = conn.inputStream.bufferedReader().readText()
-        val jsonResponse = JSONObject(response)
+        var jsonResponse = JSONObject(response)
+        
+        if (jsonResponse.has("result")) {
+            val resultObj = jsonResponse.optJSONObject("result")
+            if (resultObj != null) {
+                jsonResponse = resultObj
+            }
+        }
         
         return if (jsonResponse.has("response")) {
             jsonResponse.getString("response")
@@ -449,7 +405,14 @@ OUTPUT FORMAT:
                 .getJSONObject("message")
                 .getString("content")
         } else {
-            jsonResponse.toString() // Fallback
+            val rawResponse = jsonResponse.toString()
+            if (rawResponse.startsWith("\"") && rawResponse.endsWith("\"")) {
+                try {
+                    org.json.JSONTokener(rawResponse).nextValue() as? String ?: rawResponse
+                } catch (_: Exception) { rawResponse }
+            } else {
+                rawResponse
+            }
         }
     }
     

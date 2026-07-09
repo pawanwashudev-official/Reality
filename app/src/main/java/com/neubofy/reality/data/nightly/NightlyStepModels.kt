@@ -72,8 +72,8 @@ object NightlySteps {
     const val PREFS_NAME = "nightly_prefs"
 
     // Templates
-    const val DEFAULT_DIARY_TEMPLATE = "# 📔 Daily Reflection Diary - {date}\n\n## 📊 Day Summary Data\n{data}\n\n## 💡 Personalized Questions\n{questions}\n\n## ✍️ My Reflection\n(Write your answers here...)\n"
-    const val DEFAULT_PLAN_TEMPLATE = "# My Plan for Tomorrow\n\n## 🎯 Top Priorities\n- [ ] \n\n## 📅 Schedule\n- \n\n## 🚀 Tapasya Focus\n- \n"
+    const val DEFAULT_DIARY_TEMPLATE = "# 📔 Daily Reflection Diary - {date}\n\n## 📊 Performance & Day Summary Data\n{data}\n\n## 💡 Personalized Reflection Questions\n{questions}\n\n## ✍️ My Reflection & Learning\n(Please write your answers to the reflection questions below each prompt in Google Docs)\n"
+    const val DEFAULT_PLAN_TEMPLATE = "# Plan for Tomorrow\n\n## 🎯 Top Priorities\n- [ ] 08:30 Finish project documentation\n- [ ] 14:00 Team sync meeting\n- [ ] 18:00 Gym workout\n\n## 📅 Time-Blocked Schedule\n- 07:00 - 08:00 Wake up & Morning Routine\n- 08:30 - 12:00 Deep Work Focus Session\n- 12:00 - 13:00 Lunch & Rest\n- 13:30 - 17:00 Study Kotlin & Android Development\n- 17:30 - 19:00 Workout & Cardio\n- 22:30 Wind down & Sleep\n\n## 🚀 Tapasya Focus (Deep Study/Work Sessions)\n- 08:30 - 12:00 Coding (3.5 hours)\n- 13:30 - 17:00 Learning (3.5 hours)\n"
 
     // Key generators for date-specific storage
     fun getStateKey(date: LocalDate): String = "state_${date.format(DateTimeFormatter.ISO_LOCAL_DATE)}"

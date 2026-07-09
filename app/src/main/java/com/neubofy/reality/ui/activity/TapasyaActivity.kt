@@ -688,6 +688,39 @@ class TapasyaActivity : BaseActivity() {
                  }
              }
         }
+
+        // Block Distracting Apps Switch
+        var blockDistracting = prefs.getBoolean("block_distracting_in_tapasya", false)
+        sheetBinding.switchBlockDistracting.isChecked = blockDistracting
+        
+        sheetBinding.switchBlockDistracting.setOnClickListener {
+             val isAllowed = com.neubofy.reality.utils.StrictLockUtils.isModificationAllowedFor(
+                 this, 
+                 com.neubofy.reality.utils.StrictLockUtils.FeatureType.TAPASYA
+             )
+             if (!isAllowed) {
+                 sheetBinding.switchBlockDistracting.isChecked = blockDistracting // Revert
+                 android.widget.Toast.makeText(this, "Strict Mode prevents changing Tapasya App Blocker setting.", android.widget.Toast.LENGTH_SHORT).show()
+             } else {
+                 blockDistracting = sheetBinding.switchBlockDistracting.isChecked
+                 prefs.edit().putBoolean("block_distracting_in_tapasya", blockDistracting).apply()
+                 
+                 // If Tapasya is running, dynamically start/stop focus mode
+                 val state = TapasyaManager.getCurrentState(applicationContext)
+                 if (state.isRunning) {
+                     if (blockDistracting) {
+                         TapasyaManager.startFocusMode(applicationContext)
+                     } else {
+                         TapasyaManager.stopFocusMode(applicationContext)
+                     }
+                 }
+                 
+                 // Rebuild block cache immediately
+                 lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                     com.neubofy.reality.utils.BlockCache.rebuildBox(applicationContext)
+                 }
+             }
+        }
         
         sheetBinding.btnSaveSettings.setOnClickListener {
             saveSettings()
@@ -837,7 +870,9 @@ class TapasyaActivity : BaseActivity() {
     
     override fun onResume() {
         super.onResume()
-        com.neubofy.reality.utils.PermissionHelper.checkAndPromptForCore(this)
+        val prefs = getSharedPreferences("tapasya_prefs", MODE_PRIVATE)
+        val blockInTapasya = prefs.getBoolean("block_distracting_in_tapasya", false)
+        com.neubofy.reality.utils.PermissionHelper.checkAndPromptForCore(this, checkAccessibility = blockInTapasya)
         loadSessionsForSelectedDay()
     }
 }

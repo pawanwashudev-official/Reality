@@ -246,7 +246,17 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:text="Manage AI Prompts"
+                    android:text="Manage System Prompts"
+                    app:icon="@drawable/baseline_edit_24"
+                    app:iconGravity="textStart"
+                    android:layout_marginBottom="8dp"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_manage_templates"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:text="Manage Docs Templates"
                     app:icon="@drawable/baseline_edit_24"
                     app:iconGravity="textStart"/>
                     

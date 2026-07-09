@@ -369,6 +369,28 @@ class ReflectionSettingsActivity : BaseActivity() {
 
             Toast.makeText(this, "Screen time limit saved", Toast.LENGTH_SHORT).show()
         }
+
+        // Setup switch_block_after_limit
+        var blockAfterLimit = prefs.getBoolean("block_distracting_after_limit", true)
+        binding.switchBlockAfterLimit.isChecked = blockAfterLimit
+
+        binding.switchBlockAfterLimit.setOnClickListener {
+            val loader = SavedPreferencesLoader(this)
+            val strictData = loader.getStrictModeData()
+
+            if (strictData.isEnabled && strictData.isNightlyLimitLocked) {
+                binding.switchBlockAfterLimit.isChecked = blockAfterLimit // Revert
+                Toast.makeText(this, "Locked by Strict Mode", Toast.LENGTH_SHORT).show()
+            } else {
+                blockAfterLimit = binding.switchBlockAfterLimit.isChecked
+                prefs.edit().putBoolean("block_distracting_after_limit", blockAfterLimit).apply()
+                
+                // Rebuild block cache immediately
+                lifecycleScope.launch(Dispatchers.IO) {
+                    com.neubofy.reality.utils.BlockCache.rebuildBox(applicationContext)
+                }
+            }
+        }
         
         // Delete XP Data Button
         binding.btnDeleteXpData.setOnClickListener {

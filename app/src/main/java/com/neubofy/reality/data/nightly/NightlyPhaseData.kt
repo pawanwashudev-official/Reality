@@ -238,6 +238,7 @@ class NightlyPhaseData(
                     put("completedCount", fetchedTasks?.completedCount ?: 0)
                     put("sessionCount", daySummary?.completedSessions?.size ?: 0)
                     put("eventCount", daySummary?.calendarEvents?.size ?: 0)
+                    put("plannedEventCount", daySummary?.plannedEvents?.size ?: 0)
                     put("plannedMinutes", daySummary?.totalPlannedMinutes ?: 0)
                     put("effectiveMinutes", daySummary?.totalEffectiveMinutes ?: 0)
                     put("usedMinutes", screenTimeMinutes)

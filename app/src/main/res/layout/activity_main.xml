@@ -587,7 +587,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Focus Wall"
+                            android:text="distracting App"
                             android:textColor="?attr/colorPrimary"
         android:fontFamily="monospace"
                             android:textStyle="bold"

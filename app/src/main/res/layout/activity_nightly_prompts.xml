@@ -29,6 +29,7 @@
             android:contentDescription="Back"/>
 
         <TextView
+            android:id="@+id/tv_header_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -36,7 +37,7 @@
             android:textSize="22sp"
             android:textStyle="bold"
             android:textColor="?attr/colorPrimary"
-        android:fontFamily="monospace"
+            android:fontFamily="monospace"
             android:layout_marginStart="16dp"/>
     </LinearLayout>
 
@@ -54,6 +55,7 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/tv_prompts_subtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Customize how the AI thinks and writes."
@@ -161,7 +163,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Plan Extraction (Step 9)"
+                        android:text="Plan Extraction (Step 5)"
                         android:textStyle="bold"
                         android:textSize="16sp"
                         android:textColor="?attr/colorPrimary"
@@ -200,7 +202,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Report Generator (Step 10)"
+                        android:text="Report Generator (Step 6)"
                         android:textStyle="bold"
                         android:textSize="16sp"
                         android:textColor="?attr/colorPrimary"
@@ -256,6 +258,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <TextView
+                android:id="@+id/tv_templates_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Document Templates"

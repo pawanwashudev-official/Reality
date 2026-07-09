@@ -1137,7 +1137,7 @@ private fun useExistingSheet() {
         lifecycleScope.launch {
             try {
                 val files = com.neubofy.reality.google.GoogleDriveManager.listFilesInFolder(this@ProfileActivity, folderId, 50)
-                val targetSheet = files.firstOrNull { it.name == "Reality sheet" && it.mimeType == "application/vnd.google-apps.spreadsheet" && !it.trashed }
+                val targetSheet = files.firstOrNull { it.name == "Reality sheet" && it.mimeType == "application/vnd.google-apps.spreadsheet" }
 
                 withContext(Dispatchers.Main) {
                     if (targetSheet != null && targetSheet.id != null) {

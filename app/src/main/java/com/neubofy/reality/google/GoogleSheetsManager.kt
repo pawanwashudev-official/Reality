@@ -22,22 +22,21 @@ object GoogleSheetsManager {
 
     val REQUIRED_HEADERS = listOf(
         "Date",
-        "Step1_Tasks",
-        "Step2_SessionsCount",
-        "Step2_TotalMins",
-        "Step3_ScreenTime",
-        "Step3_Limit",
-        "Step6_Feedback",
-        "XP_Tapasya",
-        "XP_Task",
-        "XP_Session",
-        "XP_Distraction",
-        "XP_Reflection",
-        "XP_Total",
+        "Tasks Completed",
+        "Total Tasks",
+        "Planned Sessions",
+        "Tapasya Sessions",
+        "Steps",
+        "Sleep Info",
+        "XP Tapasya",
+        "XP Task",
+        "XP Session",
+        "XP Distraction",
+        "XP Reflection",
+        "XP Total",
         "Level",
         "Streak",
-        "Plan_Doc_Link",
-        "Report_PDF_Link"
+        "Diary Feedback"
     )
 
     suspend fun verifyAndCreateColumns(context: Context, spreadsheetId: String): Boolean = withContext(Dispatchers.IO) {

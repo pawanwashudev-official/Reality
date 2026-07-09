@@ -337,6 +337,43 @@
                         android:textStyle="italic"
                         android:layout_marginTop="4dp"/>
 
+                    <!-- Switch: Block Distractions after Limit -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="12dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Block After Limit"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textSize="14sp"
+                                android:textStyle="bold"/>
+                            
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Block distracting apps completely after daily limit is reached"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:textSize="11sp"/>
+                        </LinearLayout>
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/switch_block_after_limit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"/>
+                    </LinearLayout>
+
                     <com.google.android.material.progressindicator.LinearProgressIndicator
                         android:id="@+id/progress_limit"
                         android:layout_width="match_parent"

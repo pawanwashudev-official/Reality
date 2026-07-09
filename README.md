@@ -45,12 +45,14 @@ Reality features a military-grade blocking engine that operates locally via Andr
     *   **Loop Hole Closers**: Closes overlay attacks, intent hijacking, and ADB package manager commands.
     *   **Ratchet Logic**: Once Strict Mode is activated, it mathematically restricts you from turning it off without waiting out a timer or completing a severe cooldown/password penalty.
 
-### 2. **🌙 THE NIGHTLY PROTOCOL (AI-Powered Evening Ritual)**
-The cornerstone of Reality's intelligence. A fully autonomous 4-phase evening workflow designed to build discipline.
-*   **Phase 1: Data Collection (`NightlyPhaseData.kt`)**: Automatically pulls your screen-time via UsageStatsManager, syncs Google Tasks (what was pending vs. completed), fetches Google Calendar events, and queries Health Connect for your steps, calories, and sleep.
-*   **Phase 2: AI Reflection**: Instead of static journaling, the AI reads your raw data and generates dynamic, hard-hitting questions. *(e.g., "You scheduled 2 hours for studying but spent 4 hours on Instagram. What happened?")*
-*   **Phase 3: Planning (`NightlyPhasePlanning.kt`)**: Based on your reflection, the AI agent autonomously generates a structured schedule for the next day. It parses this into JSON, then **automatically creates Google Tasks, sets Google Calendar events, and establishes your morning Wakeup Alarm**.
-*   **Phase 4: Document Generation**: The system uses Google Docs API to create a beautifully formatted Daily Plan and Daily Report Document straight into your personal Google Drive.
+### 2. **🌙 THE NIGHTLY PROTOCOL (6 Unified Steps)**
+The cornerstone of Reality's intelligence. A fully autonomous 6-step evening workflow designed to build discipline.
+*   **Step 1: Fetch Analytics**: Gathers digital usage metrics, Google Tasks (what was pending vs. completed), Google Calendar events, and queries Health Connect for steps and sleep statistics.
+*   **Step 2: Create Diary**: AI reads today's raw usage/events metrics and generates hard-hitting reflection questions to check your discipline. Sets up your diary document inside Google Drive.
+*   **Step 3: Save Today Analytics (Reflection Grader)**: AI grades your diary responses, computes daily performance scores, and finalizes your XP delta.
+*   **Step 4: Create Plan**: Autonomously creates tomorrow's empty plan document layout inside your Google Drive.
+*   **Step 5: Apply Plan**: AI extracts tasks and events scheduled in your plan and enqueues them directly into Google Tasks/Calendar. Dynamically configures morning alarms.
+*   **Step 6: Report & Finalize**: Generates a professional progress report PDF, emails summary updates, and backs up raw execution logs to your Google Reality Sheet.
 *   **Data Privacy**: All data handling is Local-First. API calls to AI models only send sanitized contexts. No developer servers sit in the middle.
 
 ### 3. **⚡ TAPASYA (Neural Focus)**
@@ -106,7 +108,7 @@ Reality does not use a basic chatbot. It features a fully Agentic System operati
 
 ### Technology Stack
 ```
-Platform:       Android 26+ (API 26 to 35)
+Platform:       Android 26+ (API 26 to 36)
 Language:       Kotlin 100% (type-safe)
 UI Framework:   AndroidX + Material3
 Database:       Room ORM + SQLite
@@ -130,12 +132,8 @@ Parsing:        GSON, JSoup, Markwon
 | **Database** | Room | 2.5.2 | Local persistence |
 | **Background** | WorkManager | 2.8.1 | Scheduled tasks |
 | **UI** | Material3 | Latest | Design system |
-| | Lottie | 6.0.0 | Animations |
-| | Coil | 2.6.0 | Image loading |
 | **Markdown** | Markwon | 4.6.2 | Content rendering |
-| **PDF** | iText7 html2pdf | 4.0.5 | Report generation |
-| **QR Code** | ZXing + ML Kit | 3.5.3, 17.3.0 | QR scan/generate |
-| **Other** | JSoup | 1.17.2 | HTML parsing |
+| **JSoup** | JSoup | 1.17.2 | HTML parsing |
 
 ### Security Model
 | Layer | Implementation |
@@ -152,7 +150,7 @@ Parsing:        GSON, JSoup, Markwon
 
 - **GitHub**: https://github.com/pawanwashudev-official/Reality
 - **Website**: https://reality.neubofy.in
-- **Email**: founder@neubofy.in
+- **Email**: support@neubofy.in
 - **Telegram / WhatsApp**: @pawanwashudev
 - **Issues**: Report bugs on GitHub
 - **Contributing**: PRs welcome for features/improvements
@@ -165,9 +163,6 @@ This application is strictly source-available for review purposes only. We do no
 
 - **Developer**: Pawan Washudev (Neubofy)
 - **Status**: Active Development
-
-
-
 
 ### Secure Identity & Encryption
 Instead of relying on legacy client-side identifiers (like MD5) or manual user password management for backups, Reality employs a **Just-In-Time (JIT) secure edge architecture**:

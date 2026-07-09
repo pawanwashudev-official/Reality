@@ -106,13 +106,7 @@ class AboutActivity : BaseActivity() {
         // Privacy Policy
         binding.btnPrivacyPolicy.setOnClickListener { openUrl(PRIVACY_POLICY) }
         
-        // Support Us
-        binding.btnSupportUs.setOnClickListener {
-            startActivity(Intent(this, SupportUsActivity::class.java))
-        }
-        binding.cardSupportUs.setOnClickListener {
-            startActivity(Intent(this, SupportUsActivity::class.java))
-        }
+
 
         // Update Check
         binding.cardUpdate.setOnClickListener {

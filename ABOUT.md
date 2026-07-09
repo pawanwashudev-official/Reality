@@ -14,11 +14,14 @@ Reality operates locally via Android's AccessibilityService. Unlike basic blocke
 - Anti-Tamper detects clock manipulation.
 - Blocks settings access and system-level workarounds.
 
-### 🌙 The Nightly Protocol
-An autonomous AI-powered evening workflow to build discipline:
-- Pulls screen-time, tasks, health data.
-- AI reflects on your daily performance.
-- Automatically plans your next day and schedules alarms.
+### 🌙 The Nightly Protocol (6 Unified Steps)
+An autonomous, AI-powered evening workflow to build discipline:
+1. **Fetch Analytics**: Gathers digital usage, calendar events, focus sessions, and physical health/sleep metrics.
+2. **Create Diary**: Prompts you with personalized, AI-generated reflection questions and sets up your digital diary template.
+3. **Save Today Analytics**: Grades your evening reflection using AI, scores your day's performance, and finalizes your XP delta.
+4. **Create Plan**: Builds tomorrow's plan document layout inside Google Docs.
+5. **Apply Plan**: Extracts tasks and schedules them directly to Google Tasks and schedules tomorrow's alarms.
+6. **Report & Finalize**: Generates a professional progress report PDF and backs up logs to your Google Reality Sheet.
 
 ### ⚡ Tapasya (Neural Focus)
 A rigorous deep-work timer tracking "Effective Time" in 15-minute chunks, strictly penalizing digital distraction.
@@ -39,8 +42,6 @@ This application is strictly source-available for review purposes only. We do no
 Encountered a bug or have a feature request? You can easily report it!
 Use the **"Report an Issue"** button directly within the app (About page) to seamlessly create an issue on our GitHub repository.
 Alternatively, visit [Reality GitHub Issues](https://github.com/pawanwashudev-official/Reality/issues) to submit your feedback.
-
-
 
 ### Secure Identity & Encryption
 Instead of relying on legacy client-side identifiers (like MD5) or manual user password management for backups, Reality employs a **Just-In-Time (JIT) secure edge architecture**:

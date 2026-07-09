@@ -26,6 +26,7 @@ class NightlyPromptsActivity : BaseActivity() {
         setContentView(binding.root)
 
         setupInsets()
+        setupMode()
         setupListeners()
     }
 
@@ -39,6 +40,43 @@ class NightlyPromptsActivity : BaseActivity() {
                 binding.header.paddingBottom
             )
             insets
+        }
+    }
+
+    private fun setupMode() {
+        val mode = intent.getStringExtra("mode") ?: "prompts"
+        if (mode == "templates") {
+            binding.tvHeaderTitle.text = "Docs Templates"
+            binding.tvPromptsSubtitle.text = "Customize the Google Docs templates generated during the protocol."
+            
+            // Hide prompts
+            binding.cardReflectionPrompt.visibility = android.view.View.GONE
+            binding.cardAnalyzerPrompt.visibility = android.view.View.GONE
+            binding.cardPlanPrompt.visibility = android.view.View.GONE
+            binding.cardReportPrompt.visibility = android.view.View.GONE
+            binding.cardTaskNormalizePrompt.visibility = android.view.View.GONE
+            binding.btnAiSettings.visibility = android.view.View.GONE
+            
+            // Show templates
+            binding.tvTemplatesTitle.visibility = android.view.View.VISIBLE
+            binding.cardDiaryTemplate.visibility = android.view.View.VISIBLE
+            binding.cardPlanTemplate.visibility = android.view.View.VISIBLE
+        } else {
+            binding.tvHeaderTitle.text = "System Prompts"
+            binding.tvPromptsSubtitle.text = "Customize how the AI thinks and analyzes."
+            
+            // Show prompts
+            binding.cardReflectionPrompt.visibility = android.view.View.VISIBLE
+            binding.cardAnalyzerPrompt.visibility = android.view.View.VISIBLE
+            binding.cardPlanPrompt.visibility = android.view.View.VISIBLE
+            binding.cardReportPrompt.visibility = android.view.View.VISIBLE
+            binding.btnAiSettings.visibility = android.view.View.VISIBLE
+            
+            // Hide templates
+            binding.tvTemplatesTitle.visibility = android.view.View.GONE
+            binding.cardDiaryTemplate.visibility = android.view.View.GONE
+            binding.cardPlanTemplate.visibility = android.view.View.GONE
+            binding.cardTaskNormalizePrompt.visibility = android.view.View.GONE
         }
     }
 
@@ -73,7 +111,7 @@ class NightlyPromptsActivity : BaseActivity() {
                     "{user_intro}" to "User Introduction",
                     "{diary_content}" to "Full Diary Text"
                 )
-            )
+             )
         }
 
         binding.cardPlanPrompt.setOnClickListener {
@@ -81,10 +119,8 @@ class NightlyPromptsActivity : BaseActivity() {
                 "Plan Extraction (Step 5: Apply Plan)",
                 "custom_plan_prompt",
                 NightlyAIHelper.getDefaultPlanPromptTemplate(),
-                listOf(
-                     "{list_context}" to "Available Task Lists"
-                )
-            )
+                emptyList()
+             )
         }
 
         binding.cardReportPrompt.setOnClickListener {
@@ -104,7 +140,7 @@ class NightlyPromptsActivity : BaseActivity() {
                     "{reflection_content}" to "User Reflection Text",
                     "{plan_content}" to "Tomorrow's Plan Text"
                 )
-            )
+             )
         }
 
         binding.cardDiaryTemplate.setOnClickListener {

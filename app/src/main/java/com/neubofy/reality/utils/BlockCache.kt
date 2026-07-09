@@ -309,6 +309,33 @@ object BlockCache {
                     }
                 }
                 
+                // === STEP 5: Add distracting apps if daily screen time limit reached ===
+                val nightlyPrefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
+                val blockAfterLimit = nightlyPrefs.getBoolean("block_distracting_after_limit", true)
+                val limitMins = nightlyPrefs.getInt("screen_time_limit_minutes", 0)
+                
+                if (blockAfterLimit && limitMins > 0) {
+                    val distractionApps = focusData.selectedApps
+                    
+                    // Sum distracting app usage since midnight
+                    var totalDistractingUsageMs = 0L
+                    distractionApps.forEach { pkg ->
+                        if (pkg.isNotEmpty()) {
+                            totalDistractingUsageMs += usageMap[pkg] ?: 0L
+                        }
+                    }
+                    val totalDistractingMins = totalDistractingUsageMs / (60 * 1000L)
+                    
+                    if (totalDistractingMins >= limitMins) {
+                        val reason = "Daily Limit Reached (${totalDistractingMins}/${limitMins}m)"
+                        distractionApps.forEach { pkg ->
+                            if (pkg.isNotEmpty()) {
+                                addToBox(newBox, pkg, reason)
+                            }
+                        }
+                    }
+                }
+                
                 lastUpdateTime = System.currentTimeMillis()
                 
                 // === ATOMIC SWAP ===

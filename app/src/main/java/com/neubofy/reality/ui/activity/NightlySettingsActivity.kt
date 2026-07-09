@@ -114,7 +114,15 @@ class NightlySettingsActivity : BaseActivity() {
         
         // Manage Prompts Button (Navigation to new Dashboard)
         binding.btnManagePrompts.setOnClickListener {
-            startActivity(Intent(this, NightlyPromptsActivity::class.java))
+            startActivity(Intent(this, NightlyPromptsActivity::class.java).apply {
+                putExtra("mode", "prompts")
+            })
+        }
+
+        binding.btnManageTemplates.setOnClickListener {
+            startActivity(Intent(this, NightlyPromptsActivity::class.java).apply {
+                putExtra("mode", "templates")
+            })
         }
 
         // Step toggles change listeners
@@ -139,22 +147,23 @@ class NightlySettingsActivity : BaseActivity() {
 
         // Sub-permissions change listeners
         binding.switchPermTasks.setOnCheckedChangeListener { _, isChecked ->
-            NightlyRepository.setSubFeatureEnabled(this, "fetch_tasks", isChecked)
+            NightlyRepository.setSubFeatureEnabled(this, "collect_tasks", isChecked)
         }
         binding.switchPermCalendar.setOnCheckedChangeListener { _, isChecked ->
-            NightlyRepository.setSubFeatureEnabled(this, "fetch_calendar", isChecked)
+            NightlyRepository.setSubFeatureEnabled(this, "collect_calendar", isChecked)
         }
         binding.switchPermTapasya.setOnCheckedChangeListener { _, isChecked ->
-            NightlyRepository.setSubFeatureEnabled(this, "fetch_tapasya", isChecked)
+            NightlyRepository.setSubFeatureEnabled(this, "collect_tapasya", isChecked)
         }
         binding.switchPermDistraction.setOnCheckedChangeListener { _, isChecked ->
-            NightlyRepository.setSubFeatureEnabled(this, "fetch_distraction", isChecked)
+            NightlyRepository.setSubFeatureEnabled(this, "collect_distraction", isChecked)
         }
         binding.switchPermHealth.setOnCheckedChangeListener { _, isChecked ->
-            NightlyRepository.setSubFeatureEnabled(this, "fetch_health", isChecked)
+            NightlyRepository.setSubFeatureEnabled(this, "collect_health", isChecked)
+            NightlyRepository.setSubFeatureEnabled(this, "collect_sleep", isChecked)
         }
         binding.switchPermAiQuestions.setOnCheckedChangeListener { _, isChecked ->
-            NightlyRepository.setSubFeatureEnabled(this, "ai_reflection_questions", isChecked)
+            NightlyRepository.setSubFeatureEnabled(this, "include_ai_questions", isChecked)
         }
         binding.switchPermSaveSheet.setOnCheckedChangeListener { _, isChecked ->
             NightlyRepository.setSubFeatureEnabled(this, "save_to_reality_sheet", isChecked)
@@ -280,12 +289,12 @@ class NightlySettingsActivity : BaseActivity() {
         binding.switchStepReport.isChecked = NightlyRepository.isStepEnabled(this, NightlyProtocolExecutor.STEP_GENERATE_REPORT)
 
         // Load sub-permissions
-        binding.switchPermTasks.isChecked = NightlyRepository.isSubFeatureEnabled(this, "fetch_tasks")
-        binding.switchPermCalendar.isChecked = NightlyRepository.isSubFeatureEnabled(this, "fetch_calendar")
-        binding.switchPermTapasya.isChecked = NightlyRepository.isSubFeatureEnabled(this, "fetch_tapasya")
-        binding.switchPermDistraction.isChecked = NightlyRepository.isSubFeatureEnabled(this, "fetch_distraction")
-        binding.switchPermHealth.isChecked = NightlyRepository.isSubFeatureEnabled(this, "fetch_health")
-        binding.switchPermAiQuestions.isChecked = NightlyRepository.isSubFeatureEnabled(this, "ai_reflection_questions")
+        binding.switchPermTasks.isChecked = NightlyRepository.isSubFeatureEnabled(this, "collect_tasks")
+        binding.switchPermCalendar.isChecked = NightlyRepository.isSubFeatureEnabled(this, "collect_calendar")
+        binding.switchPermTapasya.isChecked = NightlyRepository.isSubFeatureEnabled(this, "collect_tapasya")
+        binding.switchPermDistraction.isChecked = NightlyRepository.isSubFeatureEnabled(this, "collect_distraction")
+        binding.switchPermHealth.isChecked = NightlyRepository.isSubFeatureEnabled(this, "collect_health")
+        binding.switchPermAiQuestions.isChecked = NightlyRepository.isSubFeatureEnabled(this, "include_ai_questions")
         binding.switchPermSaveSheet.isChecked = NightlyRepository.isSubFeatureEnabled(this, "save_to_reality_sheet")
         binding.switchPermApplyAlarm.isChecked = NightlyRepository.isSubFeatureEnabled(this, "apply_alarm")
         binding.switchPermApplyTasks.isChecked = NightlyRepository.isSubFeatureEnabled(this, "apply_tasks")

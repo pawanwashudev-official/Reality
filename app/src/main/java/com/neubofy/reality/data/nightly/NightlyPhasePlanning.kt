@@ -194,6 +194,7 @@ class NightlyPhasePlanning(
         saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_RUNNING, "Reading plan document...")
         NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_APPLY_PLAN, "Reading plan content from Google Doc...", listener)
 
+        var aiResponseForLog = ""
         try {
             val nightlyModel = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
             if (nightlyModel.isEmpty()) {
@@ -220,6 +221,7 @@ class NightlyPhasePlanning(
                 AppDatabase.getDatabase(context).taskListConfigDao().getAll()
             }
             val aiResponse = NightlyAIHelper.analyzePlan(context, nightlyModel, planContent, taskListConfigs)
+            aiResponseForLog = aiResponse
 
             val cleanResponse = aiResponse.replace(Regex("<think>.*?</think>", RegexOption.DOT_MATCHES_ALL), "").trim()
             var jsonStr = if (cleanResponse.contains("```json")) {
@@ -426,8 +428,10 @@ class NightlyPhasePlanning(
             listener.onStepCompleted(NightlySteps.STEP_APPLY_PLAN, "Plan Applied", details)
             saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_COMPLETED, details, resultJson)
         } catch (e: Exception) {
-            NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_APPLY_PLAN, "Failed to apply plan: ${e.message}", listener)
-            listener.onError(NightlySteps.STEP_APPLY_PLAN, "Failed to apply plan: ${e.message}")
+            val errMsg = "Failed to apply plan: ${e.message}."
+            val rawLog = if (aiResponseForLog.isNotEmpty()) " Raw AI response was: $aiResponseForLog" else ""
+            NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_APPLY_PLAN, errMsg + rawLog, listener)
+            listener.onError(NightlySteps.STEP_APPLY_PLAN, errMsg)
             saveStepState(NightlySteps.STEP_APPLY_PLAN, StepProgress.STATUS_ERROR, e.message)
         }
     }

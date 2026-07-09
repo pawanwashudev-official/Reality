@@ -70,52 +70,82 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
         updateDateDisplay()
     }
     
+    private var observersJob: kotlinx.coroutines.Job? = null
+
     private fun setupObservers() {
-        // Observe Steps (Real-time updates from Background Worker)
-        lifecycleScope.launch {
-            NightlyRepository.observeSteps(this@NightlyActivity, selectedDate).collectLatest { steps ->
-                steps.forEach { step ->
-                    val logs = mutableListOf<String>()
-                    if (!step.resultJson.isNullOrEmpty()) {
-                        try {
-                            val json = org.json.JSONObject(step.resultJson)
-                            val arr = json.optJSONArray("logs")
-                            if (arr != null) {
-                                for (i in 0 until arr.length()) {
-                                    logs.add(arr.getString(i))
+        observersJob?.cancel()
+        observersJob = lifecycleScope.launch {
+            // Observe Steps (Real-time updates from Background Worker)
+            launch {
+                NightlyRepository.observeSteps(this@NightlyActivity, selectedDate).collectLatest { steps ->
+                    steps.forEach { step ->
+                        val logs = mutableListOf<String>()
+                        if (!step.resultJson.isNullOrEmpty()) {
+                            try {
+                                val json = org.json.JSONObject(step.resultJson)
+                                val arr = json.optJSONArray("logs")
+                                if (arr != null) {
+                                    for (i in 0 until arr.length()) {
+                                        logs.add(arr.getString(i))
+                                    }
                                 }
-                            }
-                        } catch (_: Exception) {}
-                    }
+                            } catch (_: Exception) {}
+                        }
 
-                    val hasData = !step.resultJson.isNullOrEmpty()
-                    val realStatus = if (hasData) {
-                        com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED
-                    } else if (step.status == com.neubofy.reality.data.nightly.StepProgress.STATUS_RUNNING) {
-                        step.status
+                        val hasData = !step.resultJson.isNullOrEmpty()
+                        val realStatus = if (hasData) {
+                            com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED
+                        } else if (step.status == com.neubofy.reality.data.nightly.StepProgress.STATUS_RUNNING) {
+                            step.status
+                        } else {
+                            step.status
+                        }
+                        
+                        val statusText = when (realStatus) {
+                            com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED -> step.details ?: "Completed"
+                            com.neubofy.reality.data.nightly.StepProgress.STATUS_ERROR -> step.details ?: "Error"
+                            com.neubofy.reality.data.nightly.StepProgress.STATUS_SKIPPED -> "Skipped"
+                            com.neubofy.reality.data.nightly.StepProgress.STATUS_RUNNING -> step.details ?: "Running..."
+                            else -> "Not run yet"
+                        }
+                        
+                        stepAdapter.updateStep(step.stepId, realStatus, statusText, step.linkUrl, logs)
+                    }
+                    
+                    updateDependentSteps(steps.associateBy { it.stepId })
+
+                    // Aggregate and update the live log card text dynamically
+                    val allLogs = mutableListOf<String>()
+                    steps.sortedBy { it.stepId }.forEach { step ->
+                        if (!step.resultJson.isNullOrEmpty()) {
+                            try {
+                                val json = org.json.JSONObject(step.resultJson)
+                                val arr = json.optJSONArray("logs")
+                                if (arr != null) {
+                                    for (i in 0 until arr.length()) {
+                                        allLogs.add(arr.getString(i))
+                                    }
+                                }
+                            } catch (_: Exception) {}
+                        }
+                    }
+                    if (allLogs.isNotEmpty()) {
+                        binding.tvExecutionLog.text = allLogs.joinToString("\n")
+                        binding.tvExecutionLog.post {
+                            val scroll = binding.tvExecutionLog.parent as? androidx.core.widget.NestedScrollView
+                            scroll?.fullScroll(android.view.View.FOCUS_DOWN)
+                        }
                     } else {
-                        step.status
+                        binding.tvExecutionLog.text = "Ready to start..."
                     }
-                    
-                    val statusText = when (realStatus) {
-                        com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED -> step.details ?: "Completed"
-                        com.neubofy.reality.data.nightly.StepProgress.STATUS_ERROR -> step.details ?: "Error"
-                        com.neubofy.reality.data.nightly.StepProgress.STATUS_SKIPPED -> "Skipped"
-                        com.neubofy.reality.data.nightly.StepProgress.STATUS_RUNNING -> step.details ?: "Running..."
-                        else -> "Not run yet"
-                    }
-                    
-                    stepAdapter.updateStep(step.stepId, realStatus, statusText, step.linkUrl, logs)
                 }
-                
-                updateDependentSteps(steps.associateBy { it.stepId })
             }
-        }
 
-        // Observe Session Status
-        lifecycleScope.launch {
-            NightlyRepository.observeSessionStatus(this@NightlyActivity, selectedDate).collectLatest { status ->
-                updateStartButtonState(status)
+            // Observe Session Status
+            launch {
+                NightlyRepository.observeSessionStatus(this@NightlyActivity, selectedDate).collectLatest { status ->
+                    updateStartButtonState(status)
+                }
             }
         }
     }
@@ -137,17 +167,6 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
     }
 
     private fun updateStartButtonState(protocolState: Int) {
-        val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
-        val startTimeMinutes = prefs.getInt("nightly_start_time", 22 * 60)
-        val endTimeMinutes = prefs.getInt("nightly_end_time", 23 * 60 + 59)
-        val withinTimeWindow = isWithinTimeWindow(startTimeMinutes, endTimeMinutes)
-        
-        if (!withinTimeWindow) {
-            binding.btnStartNightly.isEnabled = false
-            binding.btnStartNightly.text = "Outside Window"
-            return
-        }
-
         binding.btnStartNightly.isEnabled = true
         when (protocolState) {
             NightlyProtocolExecutor.STATE_IDLE -> binding.btnStartNightly.text = "Start Nightly Protocol"
@@ -200,6 +219,7 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
         binding.btnNextDate.alpha = if (dateOffset < 0) 1.0f else 0.3f // Can only go forward up to today
         
         loadPersistentState()
+        setupObservers()
     }
     
     private fun setupInsets() {
@@ -261,8 +281,7 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
         val endTimeMinutes = prefs.getInt("nightly_end_time", 23 * 60 + 59)
         
         if (!isWithinTimeWindow(startTimeMinutes, endTimeMinutes)) {
-            Toast.makeText(this, "Steps can only run within the active time window (${formatTimeDisplay(startTimeMinutes)} - ${formatTimeDisplay(endTimeMinutes)})", Toast.LENGTH_LONG).show()
-            return
+            Toast.makeText(this, "Running outside recommended time window", Toast.LENGTH_SHORT).show()
         }
         
         isExecuting = true
@@ -532,18 +551,12 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
     
     private fun confirmDeleteAndRerun(step: Int, executorStep: Int) {
         val stepName = when (step) {
-            NightlyProtocolExecutor.STEP_FETCH_TASKS -> "Fetch Tasks"
-            NightlyProtocolExecutor.STEP_FETCH_SESSIONS -> "Fetch Sessions"
-            NightlyProtocolExecutor.STEP_CALC_SCREEN_TIME -> "Screen Time"
-            NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS -> "Generate Questions"
+            NightlyProtocolExecutor.STEP_FETCH_ANALYTICS -> "Fetch Analytics"
             NightlyProtocolExecutor.STEP_CREATE_DIARY -> "Create Diary"
-            NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION -> "Analyze Reflection"
-            NightlyProtocolExecutor.STEP_FINALIZE_XP -> "Finalize XP"
-            NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC -> "Create Plan Doc"
-            NightlyProtocolExecutor.STEP_GENERATE_PLAN -> "Generate Plan Suggestions"
-            NightlyProtocolExecutor.STEP_GENERATE_REPORT -> "Generate Report"
-            NightlyProtocolExecutor.STEP_GENERATE_PDF -> "Generate PDF"
-            NightlyProtocolExecutor.STEP_BACKUP_SHEET -> "Reality Sheet Backup"
+            NightlyProtocolExecutor.STEP_SAVE_ANALYTICS -> "Save Today Analytics"
+            NightlyProtocolExecutor.STEP_CREATE_PLAN -> "Create Plan"
+            NightlyProtocolExecutor.STEP_APPLY_PLAN -> "Apply Plan"
+            NightlyProtocolExecutor.STEP_GENERATE_REPORT -> "Report & Finalize"
             else -> "Step $step"
         }
         
@@ -561,12 +574,11 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
                     // Clear persistent Doc IDs if applicable
                     if (executorStep == NightlyProtocolExecutor.STEP_CREATE_DIARY) {
                         com.neubofy.reality.data.repository.NightlyRepository.clearDiaryDocId(this@NightlyActivity, selectedDate)
-                        // Also clear preferences for legacy support if needed
                         getSharedPreferences("nightly_prefs", MODE_PRIVATE).edit()
                             .remove(NightlyProtocolExecutor.getDiaryDocIdKey(selectedDate))
                             .apply()
                     }
-                    if (executorStep == NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC) {
+                    if (executorStep == NightlyProtocolExecutor.STEP_CREATE_PLAN) {
                          com.neubofy.reality.data.repository.NightlyRepository.clearPlanDocId(this@NightlyActivity, selectedDate)
                     }
 
@@ -591,46 +603,29 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
             val executor = NightlyProtocolExecutor(this@NightlyActivity, selectedDate, this@NightlyActivity)
             
             when (step) {
-                // Phase 1 & 2: Creation Phase (Dependencies: 1->2->3->4->5)
-                NightlyProtocolExecutor.STEP_FETCH_TASKS,
-                NightlyProtocolExecutor.STEP_FETCH_SESSIONS,
-                NightlyProtocolExecutor.STEP_CALC_SCREEN_TIME,
-                NightlyProtocolExecutor.STEP_GENERATE_QUESTIONS -> {
+                NightlyProtocolExecutor.STEP_FETCH_ANALYTICS -> {
                      Toast.makeText(this@NightlyActivity, "Restarting Data Collection...", Toast.LENGTH_SHORT).show()
-                     executor.executeSpecificStep(step) // Just run this step, don't force whole chain unless needed?
-                     // Actually, safer to just run specific step if user asked for specific step.
-                     // But dependencies might be missing? executeSpecificStep handles silent collection.
+                     executor.executeSpecificStep(step)
                 }
-                
                 NightlyProtocolExecutor.STEP_CREATE_DIARY -> {
                     NightlyProtocolExecutor.clearMemory(this@NightlyActivity)
                     Toast.makeText(this@NightlyActivity, "Re-creating Diary...", Toast.LENGTH_SHORT).show()
                     executor.executeSpecificStep(step)
                 }
-                
-                // Phase 2: Analysis/XP
-                NightlyProtocolExecutor.STEP_ANALYZE_REFLECTION -> {
+                NightlyProtocolExecutor.STEP_SAVE_ANALYTICS -> {
                     Toast.makeText(this@NightlyActivity, "Re-analyzing...", Toast.LENGTH_SHORT).show()
                     executor.executeSpecificStep(step)
                 }
-                NightlyProtocolExecutor.STEP_FINALIZE_XP -> {
-                    Toast.makeText(this@NightlyActivity, "Finalizing XP...", Toast.LENGTH_SHORT).show()
+                NightlyProtocolExecutor.STEP_CREATE_PLAN -> {
+                    Toast.makeText(this@NightlyActivity, "Re-creating Plan...", Toast.LENGTH_SHORT).show()
                     executor.executeSpecificStep(step)
                 }
-                // Phase 3: Planning
-                NightlyProtocolExecutor.STEP_CREATE_PLAN_DOC,
-                NightlyProtocolExecutor.STEP_GENERATE_PLAN,
-                
-                // Phase 4: Reporting
-                NightlyProtocolExecutor.STEP_GENERATE_REPORT,
-                NightlyProtocolExecutor.STEP_GENERATE_PDF,
-                NightlyProtocolExecutor.STEP_BACKUP_SHEET -> {
-                     val label = when (step) {
-                         NightlyProtocolExecutor.STEP_GENERATE_REPORT -> "Report"
-                         NightlyProtocolExecutor.STEP_GENERATE_PDF -> "PDF"
-                         else -> "Backup"
-                     }
-                     Toast.makeText(this@NightlyActivity, "Re-running $label...", Toast.LENGTH_SHORT).show()
+                NightlyProtocolExecutor.STEP_APPLY_PLAN -> {
+                    Toast.makeText(this@NightlyActivity, "Re-applying Plan...", Toast.LENGTH_SHORT).show()
+                    executor.executeSpecificStep(step)
+                }
+                NightlyProtocolExecutor.STEP_GENERATE_REPORT -> {
+                     Toast.makeText(this@NightlyActivity, "Re-running Report...", Toast.LENGTH_SHORT).show()
                      executor.executeSpecificStep(step)
                 }
             }
@@ -823,21 +818,12 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
             
             binding.tvSetupStatus.text = sb.toString()
             
-            // Button State Logic - ENFORCE WINDOW STRICTLY
-            val canStart = aiReady && driveReady && withinTimeWindow
+            // Button State Logic - Recommend window, but do not block user
+            val canStart = aiReady && driveReady
             val isPendingReflection = protocolState == NightlyProtocolExecutor.STATE_PENDING_REFLECTION
             
-            // STRICT MODE: If outside window, NO PROCESS allowed, even resume.
-            // Exception: If verification (Step 8) is pending? No, user said "no process".
-            
-            if (withinTimeWindow) {
-                binding.btnStartNightly.isEnabled = canStart || isPendingReflection
-                binding.tvSetupStatus.alpha = 1.0f
-            } else {
-                binding.btnStartNightly.isEnabled = false
-                binding.btnStartNightly.text = "Outside Window"
-                binding.tvSetupStatus.alpha = 0.5f // Dim status to indicate inactive
-            }
+            binding.btnStartNightly.isEnabled = canStart || isPendingReflection || protocolState != NightlyProtocolExecutor.STATE_COMPLETE
+            binding.tvSetupStatus.alpha = 1.0f
             
             when (protocolState) {
                 NightlyProtocolExecutor.STATE_IDLE -> {

@@ -74,8 +74,12 @@ object TapasyaManager {
             .putLong("last_updated", now)
             .apply()
         
-        // Enable focus mode
-        startFocusMode(ctx)
+        // Enable focus mode if blocker setting is enabled
+        val tapasyaPrefs = ctx.getSharedPreferences("tapasya_prefs", Context.MODE_PRIVATE)
+        val blockInTapasya = tapasyaPrefs.getBoolean("block_distracting_in_tapasya", false)
+        if (blockInTapasya) {
+            startFocusMode(ctx)
+        }
     }
 
     fun pauseSession(ctx: Context) {
@@ -314,7 +318,7 @@ object TapasyaManager {
     // FOCUS MODE
     // ========================
 
-    private fun startFocusMode(ctx: Context) {
+    fun startFocusMode(ctx: Context) {
         val prefs = SavedPreferencesLoader(ctx)
         val data = prefs.getFocusModeData()
         data.isTurnedOn = true
@@ -327,7 +331,7 @@ object TapasyaManager {
         })
     }
 
-    private fun stopFocusMode(ctx: Context) {
+    fun stopFocusMode(ctx: Context) {
         val prefs = SavedPreferencesLoader(ctx)
         val data = prefs.getFocusModeData()
         data.isTurnedOn = false

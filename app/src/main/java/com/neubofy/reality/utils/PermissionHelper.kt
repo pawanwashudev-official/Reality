@@ -11,9 +11,9 @@ import com.neubofy.reality.services.AppBlockerService
 
 object PermissionHelper {
 
-    fun checkAndPromptForCore(activity: Activity) {
+    fun checkAndPromptForCore(activity: Activity, checkAccessibility: Boolean = true) {
         // 1. Accessibility Service
-        if (!isAccessibilityServiceEnabled(activity, AppBlockerService::class.java)) {
+        if (checkAccessibility && !isAccessibilityServiceEnabled(activity, AppBlockerService::class.java)) {
             MaterialAlertDialogBuilder(activity)
                 .setTitle("Accessibility Required")
                 .setMessage("Reality needs Accessibility permission to block apps.\n\n1. Tap 'Enable'.\n2. Find 'Reality' or 'Installed Apps'.\n3. Turn ON 'Reality Blocker'.")
