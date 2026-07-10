@@ -65,7 +65,7 @@ export default function TermsOfService() {
 
               <section>
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">9. Contact Information</h2>
-                <p>If you have any questions about these Terms, please contact us at: <a href="mailto:founder@neubofy.in" className="text-blue-600 font-medium hover:underline">founder@neubofy.in</a></p>
+                <p>If you have any questions about these Terms, please contact us at: <a href="mailto:support@neubofy.in" className="text-blue-600 font-medium hover:underline">support@neubofy.in</a></p>
               </section>
             </div>
           </div>

@@ -38,7 +38,7 @@ class AboutActivity : BaseActivity() {
         const val WHATSAPP = "https://wa.me/pawanwashudev"
         const val ARRATAI = "https://arratai.com/@pawanwashudev"
         const val INSTAGRAM = "https://instagram.com/pawan_washudev"
-        const val EMAIL = "founder@neubofy.in"
+        const val EMAIL = "support@neubofy.in"
         const val PRIVACY_POLICY = "https://reality.neubofy.in/privacypolicy"
         const val WEBSITE = "https://reality.neubofy.in"
         const val NEUBOFY_TELEGRAM = "https://t.me/neubofy"

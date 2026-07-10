@@ -436,15 +436,11 @@ class ProfileActivity : BaseActivity() {
         val cardSecureIdentity = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_secure_identity)
         if (isSignedIn && email.isNotEmpty()) {
             val userId = com.neubofy.reality.utils.IdentityManager.getUserId(this)
-            val backupKey = com.neubofy.reality.utils.IdentityManager.getBackupPassword(this)
 
-            val tvBackupKey = findViewById<android.widget.TextView>(R.id.tv_backup_password)
             val tvUserId = findViewById<android.widget.TextView>(R.id.tv_user_id)
             val btnCopyId = findViewById<android.widget.ImageView>(R.id.btn_copy_id)
-            val btnCopyBackupKey = findViewById<android.widget.ImageView>(R.id.btn_copy_backup_key)
 
             tvUserId?.text = userId
-            tvBackupKey?.text = backupKey
             cardSecureIdentity?.visibility = View.VISIBLE
 
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
@@ -456,14 +452,6 @@ class ProfileActivity : BaseActivity() {
             }
             tvUserId?.setOnClickListener(copyIdAction)
             btnCopyId?.setOnClickListener(copyIdAction)
-
-            val copyBackupKeyAction = View.OnClickListener {
-                val clip = android.content.ClipData.newPlainText("Reality Backup Key", backupKey)
-                clipboard.setPrimaryClip(clip)
-                Toast.makeText(this, "Copied Backup Key", Toast.LENGTH_SHORT).show()
-            }
-            tvBackupKey?.setOnClickListener(copyBackupKeyAction)
-            btnCopyBackupKey?.setOnClickListener(copyBackupKeyAction)
         } else {
             cardSecureIdentity?.visibility = View.GONE
         }

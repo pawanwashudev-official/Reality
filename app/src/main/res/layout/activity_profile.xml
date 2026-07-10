@@ -470,7 +470,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Your unique identity and backup key are deterministically generated via Cloudflare."
+                        android:text="Your unique identity is deterministically generated via Cloudflare."
                         android:textSize="12sp"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:layout_marginBottom="12dp"/>
@@ -506,43 +506,6 @@
 
                         <ImageView
                             android:id="@+id/btn_copy_id"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:src="@drawable/baseline_content_copy_24"
-                            app:tint="?attr/colorOnSurfaceVariant"
-                            android:background="?attr/selectableItemBackgroundBorderless"/>
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Backup Key:"
-                        android:textStyle="bold"
-                        android:textSize="12sp"
-                        android:textColor="?attr/colorOnSurfaceVariant"/>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:background="@drawable/glass_card_bg"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="8dp"
-                        android:layout_marginTop="4dp">
-
-                        <TextView
-                            android:id="@+id/tv_backup_password"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:textIsSelectable="true"
-                            android:fontFamily="monospace"
-                            android:textSize="12sp"
-                            android:textColor="?attr/colorPrimary"/>
-
-                        <ImageView
-                            android:id="@+id/btn_copy_backup_key"
                             android:layout_width="20dp"
                             android:layout_height="20dp"
                             android:src="@drawable/baseline_content_copy_24"

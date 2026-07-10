@@ -179,7 +179,7 @@ export default function ShareCertificateModal({ isOpen, onClose, members }: Shar
                    <div className="text-right">
                      <p className="text-xs text-neural-cyan">Telegram: @pawanwashudev</p>
                      <p className="text-xs text-neural-cyan">WhatsApp: @pawanwashudev</p>
-                     <p className="text-xs text-gray-400">Email: founder@neubofy.in</p>
+                     <p className="text-xs text-gray-400">Email: support@neubofy.in</p>
                    </div>
                 </div>
               </div>

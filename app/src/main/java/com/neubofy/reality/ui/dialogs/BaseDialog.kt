@@ -12,7 +12,9 @@ open class BaseDialog(val savedPreferencesLoader: SavedPreferencesLoader? = null
     DialogFragment() {
     fun sendRefreshRequest(action: String) {
         val intent = Intent(action)
-        context?.sendBroadcast(intent)
+        context?.let {
+            androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(it).sendBroadcast(intent)
+        }
     }
 
 
