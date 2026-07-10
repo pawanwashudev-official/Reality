@@ -87,9 +87,6 @@ export default function RootLayout({
                 <div className="mb-8 border-t border-gray-800/50 pt-8 max-w-2xl mx-auto">
                     <p className="text-white font-medium mb-4">Need instant support? Contact us directly:</p>
                     <div className="flex flex-wrap justify-center gap-4 text-sm font-mono">
-                        <a href="mailto:founder@neubofy.in" className="flex items-center gap-2 bg-gray-900/50 px-4 py-2 rounded-full border border-gray-800 hover:border-neural-cyan hover:text-neural-cyan transition-all text-gray-300">
-                            Founder Email
-                        </a>
                         <a href="mailto:support@neubofy.in" className="flex items-center gap-2 bg-gray-900/50 px-4 py-2 rounded-full border border-gray-800 hover:border-neural-cyan hover:text-neural-cyan transition-all text-gray-300">
                             Support Email
                         </a>
