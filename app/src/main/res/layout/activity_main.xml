@@ -759,11 +759,12 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Bedtime -> Bedtime Time -->
+                <!-- Bedtime -> Bedtime peace session -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/card_bedtime"
                     android:layout_width="0dp"
-                    android:layout_height="80dp"
+                    android:layout_height="wrap_content"
+                    android:minHeight="80dp"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     app:cardCornerRadius="16dp"
@@ -786,16 +787,19 @@
                             app:tint="@color/accent_bedtime"/>
 
                         <LinearLayout
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:orientation="vertical"
                             android:layout_marginStart="12dp">
+
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="Bedtime Time"
+                                android:text="Bedtime peace session"
                                 android:textColor="?attr/colorPrimary"
-        android:fontFamily="monospace"
+                                android:fontFamily="monospace"
+                                android:maxLines="3"
                                 android:textStyle="bold"
                                 android:textSize="13sp"/>
                             <TextView
