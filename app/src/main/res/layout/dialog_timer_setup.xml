@@ -9,7 +9,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Select Lock Duration"
+        android:text="Select Lock Duration\n\nWARNING: You will not be able to change settings or bypass the block until this timer expires!\nThe exact unlock date and time will be calculated based on your selection."
         android:textSize="16sp"
         android:textStyle="bold"
         android:textColor="?attr/colorOnSurface" 
@@ -58,11 +58,23 @@
                 android:theme="@style/Theme.Reality"/>
         </LinearLayout>
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvExactUnlockTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Unlock Time: "
+        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+        android:textColor="?attr/colorPrimary"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="8dp"/>
     
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Strict Mode will be LOCKED until this time passes."
+        android:text="Strict Mode will be LOCKED until this time passes.\nMax: 365 days, 23 hours"
         android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="12sp"
         android:layout_marginTop="16dp" 

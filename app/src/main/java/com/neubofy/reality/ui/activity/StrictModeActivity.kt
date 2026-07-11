@@ -426,20 +426,36 @@ class StrictModeActivity : BaseActivity() {
         Toast.makeText(this, "Strict Mode Activated!", Toast.LENGTH_SHORT).show()
     }
     
+
     private fun showTimerSetupDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_timer_picker, null)
         val daysPicker = dialogView.findViewById<NumberPicker>(R.id.pickerDays)
         val hoursPicker = dialogView.findViewById<NumberPicker>(R.id.pickerHours)
+        val tvExactUnlockTime = dialogView.findViewById<android.widget.TextView>(R.id.tvExactUnlockTime)
         
         daysPicker.minValue = 0
-        daysPicker.maxValue = 20
+        daysPicker.maxValue = 365
         daysPicker.value = 1
         
         hoursPicker.minValue = 0
         hoursPicker.maxValue = 23
         hoursPicker.value = 0
         
+        val updateUnlockTime = {
+            val days = daysPicker.value
+            val hours = hoursPicker.value
+            val durationMs = (days * 24L * 60L * 60L * 1000L) + (hours * 60L * 60L * 1000L)
+            val unlockTime = System.currentTimeMillis() + durationMs
+            val formatter = java.text.SimpleDateFormat("MMM dd, yyyy hh:mm a", java.util.Locale.getDefault())
+            tvExactUnlockTime?.text = "Unlock Time: ${formatter.format(java.util.Date(unlockTime))}"
+        }
+
+        updateUnlockTime()
+        daysPicker.setOnValueChangedListener { _, _, _ -> updateUnlockTime() }
+        hoursPicker.setOnValueChangedListener { _, _, _ -> updateUnlockTime() }
+
         MaterialAlertDialogBuilder(this)
+
             .setTitle("Set Lock Duration")
             .setView(dialogView)
             .setPositiveButton("Activate") { _, _ ->

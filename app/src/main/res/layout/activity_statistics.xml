@@ -109,32 +109,6 @@
 
             </LinearLayout>
 
-            <!-- Chart Card -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/glass_card_bg"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="8dp"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="SCREEN TIME"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="11sp"
-                    android:letterSpacing="0.1" />
-
-                <com.github.mikephil.charting.charts.BarChart
-                    android:id="@+id/chartDaily"
-                    android:layout_width="match_parent"
-                    android:layout_height="220dp"
-                    android:layout_marginTop="12dp" />
-
-            </LinearLayout>
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

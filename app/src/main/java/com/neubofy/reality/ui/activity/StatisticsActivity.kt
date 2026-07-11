@@ -18,12 +18,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.github.mikephil.charting.charts.BarChart
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.data.BarData
-import com.github.mikephil.charting.data.BarDataSet
-import com.github.mikephil.charting.data.BarEntry
-import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.neubofy.reality.databinding.ActivityStatisticsBinding
 import com.neubofy.reality.databinding.ItemAppUsageBinding
 import java.text.SimpleDateFormat
@@ -110,7 +104,7 @@ class StatisticsActivity : BaseActivity() {
             val (usageData, todaysStatsMap, totalScreenTime) = data
             
             // 1. Chart
-            setupChart(binding.chartDaily, usageData)
+
             
             // 2. Weekly Avg
             val avgUsage = if (usageData.isNotEmpty()) usageData.map { it.second }.average().toLong() else 0L
@@ -228,67 +222,7 @@ class StatisticsActivity : BaseActivity() {
         return result
     }
     
-    private fun setupChart(chart: BarChart, data: List<Pair<String, Long>>) {
-        val entries = data.mapIndexed { index, pair ->
-            val hours = TimeUnit.MILLISECONDS.toMinutes(pair.second).toFloat() / 60f
-            BarEntry(index.toFloat(), hours)
-        }
-        
-        val colorOnSurface = resolveColor(com.google.android.material.R.attr.colorOnSurface)
-        val colorOnSurfaceVariant = resolveColor(com.google.android.material.R.attr.colorOnSurfaceVariant)
-        val colorOutlineVariant = resolveColor(com.google.android.material.R.attr.colorOutlineVariant)
-        val colorPrimary = resolveColor(com.google.android.material.R.attr.colorPrimary)
 
-        val dataSet = BarDataSet(entries, "Hours").apply {
-            color = colorPrimary
-            valueTextColor = colorOnSurface
-            valueTextSize = 10f
-            setDrawValues(false)
-        }
-        
-        val barData = BarData(dataSet).apply {
-            barWidth = 0.5f
-        }
-        
-        chart.apply {
-            this.data = barData
-            description.isEnabled = false
-            legend.isEnabled = false
-            setFitBars(true)
-            setScaleEnabled(false)
-            setTouchEnabled(false)
-            
-            // X-axis (days)
-            xAxis.apply {
-                position = XAxis.XAxisPosition.BOTTOM
-                valueFormatter = IndexAxisValueFormatter(data.map { it.first })
-                granularity = 1f
-                textColor = colorOnSurfaceVariant
-                setDrawGridLines(false)
-                setDrawAxisLine(false)
-            }
-            
-            // Y-axis (hours)
-            axisLeft.apply {
-                axisMinimum = 0f
-                granularity = 1f   // Show labels every hour
-                textColor = colorOnSurfaceVariant
-                setDrawGridLines(true)
-                gridColor = colorOutlineVariant
-                setDrawAxisLine(false)
-                valueFormatter = object : com.github.mikephil.charting.formatter.ValueFormatter() {
-                    override fun getFormattedValue(value: Float): String {
-                        return "${value.toInt()}h"
-                    }
-                }
-            }
-            axisRight.isEnabled = false
-            
-            setBackgroundColor(Color.TRANSPARENT)
-            animateY(800)
-            invalidate()
-        }
-    }
 
     private fun resolveColor(@androidx.annotation.AttrRes attr: Int): Int {
         val typedValue = android.util.TypedValue()
