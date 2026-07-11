@@ -351,7 +351,10 @@ Analyze the user's "Plan for Tomorrow" and extract actionable items with extreme
         val modelToUse = modelString ?: prefs.getString("nightly_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
         val meshKey = prefs.getString("mesh_api_key", "") ?: ""
 
-        val isMeshModel = !modelToUse.startsWith("@cf/") && meshKey.isNotEmpty()
+        val isMeshModel = !modelToUse.startsWith("@cf/")
+        if (isMeshModel && meshKey.isEmpty()) {
+            throw Exception("Mesh API Key is missing. Please add it in settings to use $modelToUse.")
+        }
 
         val apiUrl = if (isMeshModel) {
             "https://api.meshapi.ai/v1/chat/completions"

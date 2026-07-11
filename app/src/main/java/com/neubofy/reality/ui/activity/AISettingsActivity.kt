@@ -150,11 +150,21 @@ class AISettingsActivity : BaseActivity() {
                 }
             }
 
-            val displayModels = models.map { modelName ->
-                if (modelName.startsWith("@cf/")) "$modelName (Powered by Neubofy)" else "$modelName (Powered by Mesh API)"
+            val adapter = object : ArrayAdapter<String>(this@AISettingsActivity, android.R.layout.simple_spinner_item, models) {
+                override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                    val view = super.getView(position, convertView, parent) as android.widget.TextView
+                    val modelName = getItem(position) ?: ""
+                    view.text = if (modelName.startsWith("@cf/")) "$modelName (Powered by Neubofy)" else "$modelName (Powered by Mesh API)"
+                    return view
+                }
+
+                override fun getDropDownView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                    val view = super.getDropDownView(position, convertView, parent) as android.widget.TextView
+                    val modelName = getItem(position) ?: ""
+                    view.text = if (modelName.startsWith("@cf/")) "$modelName (Powered by Neubofy)" else "$modelName (Powered by Mesh API)"
+                    return view
+                }
             }
-            
-            val adapter = ArrayAdapter(this@AISettingsActivity, android.R.layout.simple_spinner_item, displayModels)
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
 
             binding.spinnerChatModel.adapter = adapter

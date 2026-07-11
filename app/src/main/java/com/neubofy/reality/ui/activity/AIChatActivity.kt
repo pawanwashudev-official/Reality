@@ -283,7 +283,10 @@ open class AIChatActivity : BaseActivity() {
                 val selectedModel = aiPrefs.getString("chat_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
                 val meshKey = aiPrefs.getString("mesh_api_key", "") ?: ""
 
-                val isMeshModel = !selectedModel.startsWith("@cf/") && meshKey.isNotEmpty()
+                val isMeshModel = !selectedModel.startsWith("@cf/")
+                if (isMeshModel && meshKey.isEmpty()) {
+                    return@withContext "You have selected a Mesh API model but haven't provided an API key. Please add your Mesh API key in settings."
+                }
 
                 val apiUrl = if (isMeshModel) {
                     "https://api.meshapi.ai/v1/chat/completions"
