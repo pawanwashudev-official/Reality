@@ -83,7 +83,7 @@
             android:id="@+id/cbAutoFocus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Auto Focus (Schedules)"
+            android:text="Schedule Focus (Schedules)"
             android:textSize="14sp"
             android:checked="true" />
 
