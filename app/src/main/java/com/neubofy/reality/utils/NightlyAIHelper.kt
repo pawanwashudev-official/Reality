@@ -347,7 +347,18 @@ Analyze the user's "Plan for Tomorrow" and extract actionable items with extreme
     }
 
     private fun callAIWorker(context: Context, prompt: String, sysPrompt: String? = null, modelString: String? = null): String {
-                val apiUrl = com.neubofy.reality.BuildConfig.AI_URL.removeSuffix("/")
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs")
+        val modelToUse = modelString ?: prefs.getString("nightly_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
+        val meshKey = prefs.getString("mesh_api_key", "") ?: ""
+
+        val isMeshModel = !modelToUse.startsWith("@cf/") && meshKey.isNotEmpty()
+
+        val apiUrl = if (isMeshModel) {
+            "https://api.meshapi.ai/v1/chat/completions"
+        } else {
+            com.neubofy.reality.BuildConfig.AI_URL.removeSuffix("/")
+        }
+
         if (apiUrl.isBlank()) throw Exception("AI endpoint is not configured (AI_URL is missing in build).")
 
         val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
@@ -357,13 +368,18 @@ Analyze the user's "Plan for Tomorrow" and extract actionable items with extreme
         val conn = url.openConnection() as java.net.HttpURLConnection
         conn.requestMethod = "POST"
         conn.setRequestProperty("Content-Type", "application/json")
+        if (isMeshModel) {
+            conn.setRequestProperty("Authorization", "Bearer $meshKey")
+        }
         conn.doOutput = true
         
                 val requestBody = JSONObject().apply {
-            put("userId", userId)
-            put("password", password)
-            put("requestCount", com.neubofy.reality.utils.IdentityManager.getAndIncrementDailyAICount(context))
-            put("model", modelString ?: com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs").getString("nightly_model", "@cf/openai/gpt-oss-120b"))
+            if (!isMeshModel) {
+                put("userId", userId)
+                put("password", password)
+                put("requestCount", com.neubofy.reality.utils.IdentityManager.getAndIncrementDailyAICount(context))
+            }
+            put("model", modelToUse)
             put("messages", JSONArray().apply {
                 if (sysPrompt != null) {
                     put(JSONObject().apply {
