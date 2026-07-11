@@ -445,11 +445,154 @@
                         android:id="@+id/spinner_nightly_model"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
+                        android:layout_marginBottom="16dp"
                         android:background="?attr/colorSurfaceVariant"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="end"
+                        android:layout_marginTop="8dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_add_custom_model"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Add Custom Model"
+                            android:textColor="?attr/colorPrimary"
+                            app:icon="@drawable/baseline_add_24"
+                            app:iconTint="?attr/colorPrimary"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_remove_custom_model"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Remove Model"
+                            android:textColor="?attr/colorError"
+                            app:icon="@drawable/baseline_delete_24"
+                            app:iconTint="?attr/colorError"
+                            android:visibility="gone"/>
+                    </LinearLayout>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- ==================== MESH API (BYOK) ==================== -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:strokeColor="?attr/colorPrimaryContainer"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="@android:color/transparent"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Mesh API (Bring Your Own Key)"
+                        android:textSize="14sp"
+                        android:textColor="?attr/colorPrimary"
+                        android:fontFamily="monospace"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Use any AI model by providing your Mesh API key. Your data stays completely private on your device, and is NOT used for training or advertising purposes. Access requires an internet connection."
+                        android:textSize="12sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_marginBottom="8dp"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="16dp">
+
+                        <TextView
+                            android:id="@+id/tv_mesh_get_key"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Get API Key"
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorSecondary"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="16dp"
+                            android:background="?attr/selectableItemBackground"/>
+
+                        <TextView
+                            android:id="@+id/tv_mesh_privacy"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Privacy Policy"
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorSecondary"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="16dp"
+                            android:background="?attr/selectableItemBackground"/>
+
+                        <TextView
+                            android:id="@+id/tv_mesh_tos"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Terms of Service"
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorSecondary"
+                            android:textStyle="bold"
+                            android:background="?attr/selectableItemBackground"/>
+                    </LinearLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_mesh_api_key"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Mesh API Key (sk-...)"
+                        app:endIconMode="password_toggle"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginBottom="8dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_mesh_api_key"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPassword"
+                            android:fontFamily="monospace"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="end">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_mesh_remove"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Remove"
+                            android:textColor="?attr/colorError"
+                            android:layout_marginEnd="8dp"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_mesh_save"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Save Key"/>
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

@@ -5,6 +5,10 @@ import android.widget.ArrayAdapter
 import android.view.View
 import android.widget.AdapterView
 import android.widget.Toast
+import android.widget.EditText
+import android.content.Intent
+import android.net.Uri
+import android.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.databinding.ActivityAiSettingsBinding
@@ -87,20 +91,85 @@ class AISettingsActivity : BaseActivity() {
         binding.recyclerToolToggles.adapter = toolToggleAdapter
         binding.recyclerToolToggles.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
 
+        setupMeshApiUI()
         setupModelSpinners()
+    }
+
+    private fun setupMeshApiUI() {
+        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "ai_prefs")
+        val savedMeshKey = prefs.getString("mesh_api_key", "")
+        if (!savedMeshKey.isNullOrEmpty()) {
+            binding.etMeshApiKey.setText(savedMeshKey)
+        }
+
+        binding.btnMeshSave.setOnClickListener {
+            val key = binding.etMeshApiKey.text.toString().trim()
+            prefs.edit().putString("mesh_api_key", key).apply()
+            Toast.makeText(this, "Mesh API Key saved successfully", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.btnMeshRemove.setOnClickListener {
+            binding.etMeshApiKey.setText("")
+            prefs.edit().remove("mesh_api_key").apply()
+            Toast.makeText(this, "Mesh API Key removed", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.tvMeshGetKey.setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://app.meshapi.ai/")))
+        }
+
+        binding.tvMeshPrivacy.setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://meshapi.ai/privacy")))
+        }
+
+        binding.tvMeshTos.setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://meshapi.ai/terms")))
+        }
     }
 
     private fun setupModelSpinners() {
         lifecycleScope.launch {
-            val models = fetchModelsFromWorker()
-            
-            val adapter = ArrayAdapter(this@AISettingsActivity, android.R.layout.simple_spinner_item, models)
+            val models = fetchModelsFromWorker().toMutableList()
+
+            // Add suggested Mesh API models
+            val meshModels = listOf("openai/gpt-4o", "anthropic/claude-3-5-sonnet")
+            for (m in meshModels) {
+                if (!models.contains(m)) models.add(m)
+            }
+
+            val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
+
+            // Add custom models user added
+            val customModelsStr = prefs.getString("custom_mesh_models", "")
+            if (!customModelsStr.isNullOrEmpty()) {
+                val customModels = customModelsStr.split(",")
+                for (m in customModels) {
+                    if (m.isNotEmpty() && !models.contains(m)) {
+                        models.add(m)
+                    }
+                }
+            }
+
+            val adapter = object : ArrayAdapter<String>(this@AISettingsActivity, android.R.layout.simple_spinner_item, models) {
+                override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                    val view = super.getView(position, convertView, parent) as android.widget.TextView
+                    val modelName = getItem(position) ?: ""
+                    view.text = if (modelName.startsWith("@cf/")) "$modelName (Powered by Neubofy)" else "$modelName (Powered by Mesh API)"
+                    return view
+                }
+
+                override fun getDropDownView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                    val view = super.getDropDownView(position, convertView, parent) as android.widget.TextView
+                    val modelName = getItem(position) ?: ""
+                    view.text = if (modelName.startsWith("@cf/")) "$modelName (Powered by Neubofy)" else "$modelName (Powered by Mesh API)"
+                    return view
+                }
+            }
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
 
             binding.spinnerChatModel.adapter = adapter
             binding.spinnerNightlyModel.adapter = adapter
 
-            val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@AISettingsActivity, "ai_prefs")
             val savedChatModel = prefs.getString("chat_model", "@cf/openai/gpt-oss-120b")
             val savedNightlyModel = prefs.getString("nightly_model", "@cf/openai/gpt-oss-120b")
 
@@ -122,6 +191,53 @@ class AISettingsActivity : BaseActivity() {
                     prefs.edit().putString("nightly_model", models[position]).apply()
                 }
                 override fun onNothingSelected(parent: AdapterView<*>?) {}
+            }
+
+            binding.btnAddCustomModel.setOnClickListener {
+                val input = EditText(this@AISettingsActivity)
+                input.hint = "e.g., openai/gpt-4"
+                AlertDialog.Builder(this@AISettingsActivity)
+                    .setTitle("Add Custom Mesh API Model")
+                    .setView(input)
+                    .setPositiveButton("Add") { _, _ ->
+                        val newModel = input.text.toString().trim()
+                        if (newModel.isNotEmpty()) {
+                            val currentCustoms = prefs.getString("custom_mesh_models", "") ?: ""
+                            val updatedCustoms = if (currentCustoms.isEmpty()) newModel else "$currentCustoms,$newModel"
+                            prefs.edit().putString("custom_mesh_models", updatedCustoms).apply()
+                            setupModelSpinners() // Refresh
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+
+            binding.btnRemoveCustomModel.visibility = View.VISIBLE
+            binding.btnRemoveCustomModel.setOnClickListener {
+                val currentCustomsStr = prefs.getString("custom_mesh_models", "") ?: ""
+                if (currentCustomsStr.isEmpty()) {
+                    Toast.makeText(this@AISettingsActivity, "No custom models to remove", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                val customModelsList = currentCustomsStr.split(",").filter { it.isNotEmpty() }.toTypedArray()
+                AlertDialog.Builder(this@AISettingsActivity)
+                    .setTitle("Remove Custom Model")
+                    .setItems(customModelsList) { _, which ->
+                        val modelToRemove = customModelsList[which]
+                        val newList = customModelsList.filter { it != modelToRemove }.joinToString(",")
+                        prefs.edit().putString("custom_mesh_models", newList).apply()
+
+                        // If selected model is being removed, reset to default
+                        if (prefs.getString("chat_model", "") == modelToRemove) {
+                            prefs.edit().putString("chat_model", "@cf/openai/gpt-oss-120b").apply()
+                        }
+                        if (prefs.getString("nightly_model", "") == modelToRemove) {
+                            prefs.edit().putString("nightly_model", "@cf/openai/gpt-oss-120b").apply()
+                        }
+
+                        setupModelSpinners()
+                    }
+                    .show()
             }
         }
     }

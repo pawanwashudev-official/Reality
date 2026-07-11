@@ -279,20 +279,35 @@ open class AIChatActivity : BaseActivity() {
             while (turnCount < maxTurns) {
                 turnCount++
 
+                val aiPrefs = com.neubofy.reality.utils.SecurePreferences.get(this@AIChatActivity, "ai_prefs")
+                val selectedModel = aiPrefs.getString("chat_model", "@cf/openai/gpt-oss-120b") ?: "@cf/openai/gpt-oss-120b"
+                val meshKey = aiPrefs.getString("mesh_api_key", "") ?: ""
+
+                val isMeshModel = !selectedModel.startsWith("@cf/")
+                if (isMeshModel && meshKey.isEmpty()) {
+                    return@withContext "You have selected a Mesh API model but haven't provided an API key. Please add your Mesh API key in settings."
+                }
+
+                val apiUrl = if (isMeshModel) {
+                    "https://api.meshapi.ai/v1/chat/completions"
+                } else {
+                    com.neubofy.reality.BuildConfig.AI_URL.removeSuffix("/")
+                }
+
                 // Construct API Request with Dynamic Tools
                 val jsonBody = org.json.JSONObject().apply {
-                    put("userId", com.neubofy.reality.utils.IdentityManager.getUserId(this@AIChatActivity))
-                    put("password", com.neubofy.reality.utils.IdentityManager.getBackupPassword(this@AIChatActivity))
-                    put("requestCount", com.neubofy.reality.utils.IdentityManager.getAndIncrementDailyAICount(this@AIChatActivity))
+                    if (!isMeshModel) {
+                        put("userId", com.neubofy.reality.utils.IdentityManager.getUserId(this@AIChatActivity))
+                        put("password", com.neubofy.reality.utils.IdentityManager.getBackupPassword(this@AIChatActivity))
+                        put("requestCount", com.neubofy.reality.utils.IdentityManager.getAndIncrementDailyAICount(this@AIChatActivity))
+                    }
                     put("messages", messagesJson)
                     // Dynamic schema loading: only send meta-tool + tools AI has asked for
                     put("tools", com.neubofy.reality.utils.ToolRegistry.buildToolsArray(this@AIChatActivity, requestedToolIds.toList()))
                     put("tool_choice", "auto")
-                    val aiPrefs = com.neubofy.reality.utils.SecurePreferences.get(this@AIChatActivity, "ai_prefs")
-                    put("model", aiPrefs.getString("chat_model", "@cf/openai/gpt-oss-120b"))
+                    put("model", selectedModel)
                 }
                 
-                val apiUrl = com.neubofy.reality.BuildConfig.AI_URL.removeSuffix("/")
                 if (apiUrl.isBlank()) throw Exception("AI endpoint is not configured (AI_URL is missing in build).")
                 
                 // Execute Request
@@ -301,6 +316,9 @@ open class AIChatActivity : BaseActivity() {
                 conn.connectTimeout = 45000 
                 conn.readTimeout = 45000
                 conn.setRequestProperty("Content-Type", "application/json")
+                if (isMeshModel) {
+                    conn.setRequestProperty("Authorization", "Bearer $meshKey")
+                }
                 conn.doOutput = true
                 
                 try {
