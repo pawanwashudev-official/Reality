@@ -147,7 +147,7 @@ class Constants {
         var blockInFocus: Boolean = true,       // Custom Focus Mode
         var blockInAutoFocus: Boolean = true,   // Scheduled Auto Focus
         var blockInBedtime: Boolean = true,     // Bedtime Mode
-        var blockInCalendar: Boolean = true     // Calendar Events
+        var blockInTapasya: Boolean = true      // Tapasya Mode
     )
     
     // Settings Page Learning - Device-specific class names

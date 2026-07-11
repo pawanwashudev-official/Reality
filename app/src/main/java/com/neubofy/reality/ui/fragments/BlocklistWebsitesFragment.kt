@@ -123,7 +123,7 @@ class BlocklistWebsitesFragment : Fragment() {
             val cbFocus: android.widget.CheckBox = itemView.findViewById(com.neubofy.reality.R.id.cbFocus)
             val cbAutoFocus: android.widget.CheckBox = itemView.findViewById(com.neubofy.reality.R.id.cbAutoFocus)
             val cbBedtime: android.widget.CheckBox = itemView.findViewById(com.neubofy.reality.R.id.cbBedtime)
-            val cbCalendar: android.widget.CheckBox = itemView.findViewById(com.neubofy.reality.R.id.cbCalendar)
+            val cbTapasya: android.widget.CheckBox = itemView.findViewById(com.neubofy.reality.R.id.cbTapasya)
         }
         
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -144,12 +144,12 @@ class BlocklistWebsitesFragment : Fragment() {
             holder.cbFocus.setOnCheckedChangeListener(null)
             holder.cbAutoFocus.setOnCheckedChangeListener(null)
             holder.cbBedtime.setOnCheckedChangeListener(null)
-            holder.cbCalendar.setOnCheckedChangeListener(null)
+            holder.cbTapasya.setOnCheckedChangeListener(null)
             
             holder.cbFocus.isChecked = config.blockInFocus
             holder.cbAutoFocus.isChecked = config.blockInAutoFocus
             holder.cbBedtime.isChecked = config.blockInBedtime
-            holder.cbCalendar.isChecked = config.blockInCalendar
+            holder.cbTapasya.isChecked = config.blockInTapasya
             
             // Mode checkbox listeners
             val modeChangeListener = { _: android.widget.CompoundButton, _: Boolean ->
@@ -158,7 +158,7 @@ class BlocklistWebsitesFragment : Fragment() {
                     blockInFocus = holder.cbFocus.isChecked,
                     blockInAutoFocus = holder.cbAutoFocus.isChecked,
                     blockInBedtime = holder.cbBedtime.isChecked,
-                    blockInCalendar = holder.cbCalendar.isChecked
+                    blockInTapasya = holder.cbTapasya.isChecked
                 )
                 prefs.updateBlockedAppConfig(updatedConfig)
                 onConfigChanged()
@@ -166,7 +166,7 @@ class BlocklistWebsitesFragment : Fragment() {
             holder.cbFocus.setOnCheckedChangeListener(modeChangeListener)
             holder.cbAutoFocus.setOnCheckedChangeListener(modeChangeListener)
             holder.cbBedtime.setOnCheckedChangeListener(modeChangeListener)
-            holder.cbCalendar.setOnCheckedChangeListener(modeChangeListener)
+            holder.cbTapasya.setOnCheckedChangeListener(modeChangeListener)
             
             // Expand button
             holder.btnExpand.setOnClickListener {

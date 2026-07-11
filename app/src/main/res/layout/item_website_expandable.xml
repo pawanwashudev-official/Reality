@@ -98,10 +98,10 @@
             android:checked="true" />
 
         <CheckBox
-            android:id="@+id/cbCalendar"
+            android:id="@+id/cbTapasya"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Calendar Events"
+            android:text="Tapasya"
             android:textSize="14sp"
             android:checked="true" />
 
