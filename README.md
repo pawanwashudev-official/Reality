@@ -151,7 +151,7 @@ Parsing:        GSON, JSoup, Markwon
 - **GitHub**: https://github.com/pawanwashudev-official/Reality
 - **Website**: https://reality.neubofy.in
 - **Email**: support@neubofy.in
-- **Telegram / WhatsApp**: @pawanwashudev
+- **Telegram / WhatsApp / Instagram / LinkedIn**: @pawanwashudev
 - **Issues**: Report bugs on GitHub
 - **Contributing**: PRs welcome for features/improvements
 

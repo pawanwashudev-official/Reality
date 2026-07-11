@@ -37,7 +37,8 @@ class AboutActivity : BaseActivity() {
         const val TELEGRAM = "https://t.me/pawanwashudev"
         const val WHATSAPP = "https://wa.me/pawanwashudev"
         const val ARRATAI = "https://arratai.com/@pawanwashudev"
-        const val INSTAGRAM = "https://instagram.com/pawan_washudev"
+        const val INSTAGRAM = "https://instagram.com/pawanwashudev"
+        const val LINKEDIN = "https://linkedin.com/in/pawanwashudev"
         const val EMAIL = "support@neubofy.in"
         const val PRIVACY_POLICY = "https://reality.neubofy.in/privacypolicy"
         const val WEBSITE = "https://reality.neubofy.in"
@@ -76,6 +77,12 @@ class AboutActivity : BaseActivity() {
 
         // WhatsApp
         binding.btnWhatsapp.setOnClickListener { openUrl(WHATSAPP) }
+
+        // Instagram
+        binding.btnInstagram.setOnClickListener { openUrl(INSTAGRAM) }
+
+        // LinkedIn
+        binding.btnLinkedin.setOnClickListener { openUrl(LINKEDIN) }
 
         // Neubofy Telegram
         // binding.btnNeubofyTelegram.setOnClickListener { openUrl(NEUBOFY_TELEGRAM) }
