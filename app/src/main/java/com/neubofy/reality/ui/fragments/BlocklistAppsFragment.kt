@@ -173,7 +173,7 @@ class BlocklistAppsFragment : Fragment() {
         val cbFocus: CheckBox = v.findViewById(R.id.cbFocus)
         val cbAutoFocus: CheckBox = v.findViewById(R.id.cbAutoFocus)
         val cbBedtime: CheckBox = v.findViewById(R.id.cbBedtime)
-        val cbCalendar: CheckBox = v.findViewById(R.id.cbCalendar)
+        val cbTapasya: CheckBox = v.findViewById(R.id.cbTapasya)
     }
 
     inner class ApplicationAdapter(
@@ -221,12 +221,12 @@ class BlocklistAppsFragment : Fragment() {
             holder.cbFocus.setOnCheckedChangeListener(null)
             holder.cbAutoFocus.setOnCheckedChangeListener(null)
             holder.cbBedtime.setOnCheckedChangeListener(null)
-            holder.cbCalendar.setOnCheckedChangeListener(null)
+            holder.cbTapasya.setOnCheckedChangeListener(null)
             
             holder.cbFocus.isChecked = config.blockInFocus
             holder.cbAutoFocus.isChecked = config.blockInAutoFocus
             holder.cbBedtime.isChecked = config.blockInBedtime
-            holder.cbCalendar.isChecked = config.blockInCalendar
+            holder.cbTapasya.isChecked = config.blockInTapasya
             
             // Mode checkbox listeners - save immediately AND refresh service
             val modeChangeListener = object : android.widget.CompoundButton.OnCheckedChangeListener {
@@ -243,7 +243,7 @@ class BlocklistAppsFragment : Fragment() {
                             blockInFocus = holder.cbFocus.isChecked,
                             blockInAutoFocus = holder.cbAutoFocus.isChecked,
                             blockInBedtime = holder.cbBedtime.isChecked,
-                            blockInCalendar = holder.cbCalendar.isChecked
+                            blockInTapasya = holder.cbTapasya.isChecked
                         )
                         savedPreferencesLoader.updateBlockedAppConfig(updatedConfig)
                         onConfigChanged() // Trigger refresh
@@ -254,7 +254,7 @@ class BlocklistAppsFragment : Fragment() {
             holder.cbFocus.setOnCheckedChangeListener(modeChangeListener)
             holder.cbAutoFocus.setOnCheckedChangeListener(modeChangeListener)
             holder.cbBedtime.setOnCheckedChangeListener(modeChangeListener)
-            holder.cbCalendar.setOnCheckedChangeListener(modeChangeListener)
+            holder.cbTapasya.setOnCheckedChangeListener(modeChangeListener)
 
             // Expand button click
             holder.btnExpand.setOnClickListener {

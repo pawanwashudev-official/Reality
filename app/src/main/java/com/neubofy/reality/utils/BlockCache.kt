@@ -189,7 +189,9 @@ object BlockCache {
                 val schedules = prefs.loadAutoFocusHoursList()
                 val calendarEvents = db.calendarEventDao().getCurrentEvents(now)
                 
-                val isFocusActive = focusData.isTurnedOn && focusData.endTime > now
+                val isFocusActiveRaw = focusData.isTurnedOn && focusData.endTime > now
+                val isTapasyaActive = isFocusActiveRaw && focusData.isTapasyaTriggered
+                val isManualFocusActive = isFocusActiveRaw && !focusData.isTapasyaTriggered
                 
                 // AUTO-CLEANUP: If Focus Mode expired, reset the flag
                 if (focusData.isTurnedOn && focusData.endTime <= now) {
@@ -202,7 +204,7 @@ object BlockCache {
                 val isScheduleActive = isAnyScheduleActive(schedules, currentMins, currentDay)
                 val isCalendarEventActive = calendarEvents.isNotEmpty()
                 
-                isAnyBlockingModeActive = isFocusActive || isBedtimeActive || 
+                isAnyBlockingModeActive = isFocusActiveRaw || isBedtimeActive ||
                                           isScheduleActive || isCalendarEventActive
                 isBedtimeCurrentlyActive = isBedtimeActive
                 
@@ -220,40 +222,24 @@ object BlockCache {
                     val appConfigs = prefs.loadBlockedAppConfigs()
                     val configMap = appConfigs.associateBy { it.packageName }
                     
-                    // Determine active mode for filtering
-                    val activeMode = when {
-                        isFocusActive -> "FOCUS"
-                        isBedtimeActive -> "BEDTIME"
-                        isScheduleActive -> "AUTO_FOCUS"
-                        isCalendarEventActive -> "CALENDAR"
-                        else -> "NONE"
-                    }
-                    
-                    // Determine reason
-                    val reason = when (activeMode) {
-                        "FOCUS" -> "Focus Mode"
-                        "BEDTIME" -> "Bedtime Mode"
-                        "AUTO_FOCUS" -> "Scheduled Block"
-                        "CALENDAR" -> "Calendar Event"
-                        else -> "Blocked"
-                    }
-                    
                     if (modeType == com.neubofy.reality.Constants.FOCUS_MODE_BLOCK_SELECTED) {
                         // Block selected apps (with per-app mode filtering)
                         blocklist.forEach { pkg ->
                             if (pkg.isNotEmpty()) {
-                                // Check if this app should be blocked for the current mode
                                 val config = configMap[pkg] ?: com.neubofy.reality.Constants.BlockedAppConfig(pkg)
-                                val shouldBlock = when (activeMode) {
-                                    "FOCUS" -> config.blockInFocus
-                                    "BEDTIME" -> config.blockInBedtime
-                                    "AUTO_FOCUS" -> config.blockInAutoFocus
-                                    "CALENDAR" -> config.blockInCalendar
-                                    else -> true
-                                }
                                 
-                                if (shouldBlock) {
-                                    addToBox(newBox, pkg, reason)
+                                // Check all active modes independently
+                                if (isTapasyaActive && config.blockInTapasya) {
+                                    addToBox(newBox, pkg, "Tapasya Mode")
+                                }
+                                if (isManualFocusActive && config.blockInFocus) {
+                                    addToBox(newBox, pkg, "Focus Mode")
+                                }
+                                if (isBedtimeActive && config.blockInBedtime) {
+                                    addToBox(newBox, pkg, "Bedtime Mode")
+                                }
+                                if ((isScheduleActive || isCalendarEventActive) && config.blockInAutoFocus) {
+                                    addToBox(newBox, pkg, "Scheduled Block")
                                 }
                             }
                         }
