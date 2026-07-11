@@ -193,8 +193,12 @@ object TapasyaManager {
             }
         }
         
-        // Stop focus mode
-        stopFocusMode(ctx)
+// Stop focus mode if it was enabled
+        val tapasyaPrefs = ctx.getSharedPreferences("tapasya_prefs", Context.MODE_PRIVATE)
+        val blockInTapasya = tapasyaPrefs.getBoolean("block_distracting_in_tapasya", false)
+        if (blockInTapasya) {
+            stopFocusMode(ctx)
+        }
         
         // Clear state
         prefs.edit().clear().apply()
@@ -209,7 +213,11 @@ object TapasyaManager {
         val prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (!prefs.getBoolean("is_active", false)) return
         
-        stopFocusMode(ctx)
+        val tapasyaPrefs = ctx.getSharedPreferences("tapasya_prefs", Context.MODE_PRIVATE)
+        val blockInTapasya = tapasyaPrefs.getBoolean("block_distracting_in_tapasya", false)
+        if (blockInTapasya) {
+            stopFocusMode(ctx)
+        }
         prefs.edit().clear().apply()
     }
 
