@@ -549,6 +549,56 @@
                                 android:layout_marginStart="16dp"/>
                         </LinearLayout>
 
+                        <!-- Instagram -->
+                        <LinearLayout
+                            android:id="@+id/btn_instagram"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?selectableItemBackground"
+                            android:padding="16dp">
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_language_24"
+                                app:tint="?attr/colorOnSurface"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Instagram Support"
+                                android:textSize="16sp"
+                                android:textColor="?attr/colorOnSurface"
+                                android:layout_marginStart="16dp"/>
+                        </LinearLayout>
+
+                        <!-- LinkedIn -->
+                        <LinearLayout
+                            android:id="@+id/btn_linkedin"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?selectableItemBackground"
+                            android:padding="16dp">
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_language_24"
+                                app:tint="?attr/colorOnSurface"/>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="LinkedIn Support"
+                                android:textSize="16sp"
+                                android:textColor="?attr/colorOnSurface"
+                                android:layout_marginStart="16dp"/>
+                        </LinearLayout>
+
                     </LinearLayout>
 
                 </LinearLayout>
