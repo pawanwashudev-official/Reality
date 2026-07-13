@@ -206,7 +206,11 @@ export default {
           ).bind(userId).first();
 
           if (!row) {
-            return new Response(JSON.stringify({ status: "NOT_FOUND" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+            await env.DB.prepare(`
+              INSERT INTO "Reality Elite members management" (userId, date, status)
+              VALUES (?, ?, ?)
+            `).bind(userId, new Date().toISOString(), "P").run();
+            return new Response(JSON.stringify({ status: "PENDING" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
           }
 
           if (row.userId === userId && row.status === "V") {
