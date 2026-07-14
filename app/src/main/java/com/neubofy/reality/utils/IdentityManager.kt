@@ -99,7 +99,7 @@ object IdentityManager {
 
                         if (status == "V") {
                             // User is fully verified
-                            FeatureManager.enableRealityProFeatures(context)
+                            FeatureManager(context).setRealityProEnabled(true)
 
                             // If we have expiryDate, try to parse it
                             if (expiryDate.isNotEmpty() && expiryDate != "null") {
@@ -122,7 +122,7 @@ object IdentityManager {
                             }
                         } else {
                             // Reset local verification if not verified
-                            FeatureManager.disableRealityProFeatures(context)
+                            FeatureManager(context).setRealityProEnabled(false)
                         }
 
                         editor.apply()
