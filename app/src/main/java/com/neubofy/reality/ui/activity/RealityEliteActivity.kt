@@ -231,8 +231,13 @@ class RealityEliteActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
-        GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityEliteActivity.applicationContext) }
         updateStateUI()
+        lifecycleScope.launch {
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityEliteActivity.applicationContext)
+            }
+            updateStateUI()
+        }
     }
 
     private fun updateStateUI() {

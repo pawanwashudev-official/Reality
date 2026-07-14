@@ -89,9 +89,12 @@ object IdentityManager {
                             apply()
                         }
 
+                        val featuresPrefs = SecurePreferences.get(context, "reality_features")
+                        val featuresEditor = featuresPrefs.edit()
+
                         val proPrefs = SecurePreferences.get(context, "reality_pro_prefs")
-                        val editor = proPrefs.edit()
-                        editor.putBoolean("is_registered_for_$userId", true)
+                        val proEditor = proPrefs.edit()
+                        proEditor.putBoolean("is_registered_for_$userId", true)
 
                         // Parse status and update features locally to avoid multiple requests
                         val status = responseJson.optString("status")
@@ -99,7 +102,7 @@ object IdentityManager {
 
                         if (status == "V") {
                             // User is fully verified
-                            FeatureManager(context).setRealityProEnabled(true)
+                            featuresEditor.putBoolean("feature_reality_pro", true)
 
                             // If we have expiryDate, try to parse it
                             if (expiryDate.isNotEmpty() && expiryDate != "null") {
@@ -113,8 +116,8 @@ object IdentityManager {
                                         val durationMs = (365L / 12) * months * 24 * 60 * 60 * 1000
                                         val startTime = expiryUnix - durationMs
 
-                                        editor.putLong("feature_reality_pro_start_time_$userId", startTime)
-                                        editor.putLong("feature_reality_pro_end_time_$userId", expiryUnix)
+                                        featuresEditor.putLong("feature_reality_pro_start_time_$userId", startTime)
+                                        featuresEditor.putLong("feature_reality_pro_verified_until_$userId", expiryUnix)
                                     }
                                 } catch (e: Exception) {
                                     e.printStackTrace()
@@ -122,10 +125,13 @@ object IdentityManager {
                             }
                         } else {
                             // Reset local verification if not verified
-                            FeatureManager(context).setRealityProEnabled(false)
+                            featuresEditor.putBoolean("feature_reality_pro", false)
+                            featuresEditor.remove("feature_reality_pro_start_time_$userId")
+                            featuresEditor.remove("feature_reality_pro_verified_until_$userId")
                         }
 
-                        editor.apply()
+                        featuresEditor.apply()
+                        proEditor.apply()
                     }
                 }
             } catch (e: Exception) {

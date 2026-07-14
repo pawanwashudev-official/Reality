@@ -345,9 +345,9 @@ export default {
             }
 
             await env.DB.prepare(`
-              INSERT INTO "Reality Elite members management" (userId, date, status)
-              VALUES (?, ?, ?)
-            `).bind(userId, new Date().toISOString(), "P").run();
+              INSERT INTO "Reality Elite members management" (userId, date)
+              VALUES (?, ?)
+            `).bind(userId, new Date().toISOString()).run();
 
              return new Response(
               JSON.stringify({ status: "SUCCESS" }),
