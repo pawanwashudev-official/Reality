@@ -41,9 +41,11 @@ import com.neubofy.reality.ui.dialogs.StartFocusMode
 import com.neubofy.reality.ui.fragments.anti_uninstall.ChooseModeFragment
 import com.neubofy.reality.utils.SavedPreferencesLoader
 import kotlinx.coroutines.*
-import com.neubofy.reality.utils.FocusStatusManager
-import com.neubofy.reality.utils.FocusType
+import com.neubofy.reality.utils.BlockerStatusManager
+import com.neubofy.reality.utils.BlockerStatus
+import com.neubofy.reality.utils.BlockerType
 import com.neubofy.reality.utils.TimeTools
+import android.widget.ImageView
 import com.neubofy.reality.utils.ThemeManager
 import java.time.LocalDate
 import java.time.Instant
@@ -80,7 +82,7 @@ class MainActivity : BaseActivity() {
     private var isDeviceAdminOn = false
     private var isAntiUninstallOn = false
     private var statusUpdaterJob: Job? = null
-    private var currentFocusStatus: com.neubofy.reality.utils.FocusStatus? = null
+    private var currentBlockerStatus: BlockerStatus? = null
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -117,7 +119,7 @@ class MainActivity : BaseActivity() {
         options = ActivityOptionsCompat.makeCustomAnimation(this, R.anim.fade_in, R.anim.fade_out)
         setupActivityLaunchers()
         setupClickListeners()
-        setupBottomNavigation()
+        setupAiChatFab()
         // logAppSignature() - masked as per user request
 
         // Startup permission check removed as per user request. 
@@ -187,26 +189,18 @@ class MainActivity : BaseActivity() {
 
         // AI
         binding.fabAiChat.visibility = if (featureManager.isAiEnabled()) android.view.View.VISIBLE else android.view.View.GONE
-
-        // Bottom Navigation
-        val menu = binding.bottomNavigation.menu
-        menu.findItem(R.id.nav_tasks)?.isVisible = isRealityProEnabled
-        menu.findItem(R.id.nav_calendar)?.isVisible = isRealityProEnabled
-        menu.findItem(R.id.nav_nightly)?.isVisible = isRealityProEnabled
-        menu.findItem(R.id.nav_tapasya)?.isVisible = featureManager.isTapasyaEnabled()
-
-        if (!isRealityProEnabled && !featureManager.isTapasyaEnabled()) {
-            binding.bottomNavigation.visibility = android.view.View.GONE
-        } else {
-            binding.bottomNavigation.visibility = android.view.View.VISIBLE
-        }
+        
+        // Tapasya Home Card
+        binding.cardTapasyaHome.visibility = if (featureManager.isTapasyaEnabled()) android.view.View.VISIBLE else android.view.View.GONE
     }
 
     // New Staggered Animation Logic
     private fun startStaggeredAnimation() {
         val viewsToAnimate = listOf(
             binding.cardReflection,
-            binding.cardFocusMode,
+            binding.cardTapasyaHome,
+            binding.cardNightlyHome,
+            binding.cardBlockerMode,
             binding.cardUsageLimit,
             binding.blocklistCard,
             binding.cardAppLimits,
@@ -308,83 +302,278 @@ class MainActivity : BaseActivity() {
         statusUpdaterJob?.cancel()
         statusUpdaterJob = scope.launch {
             while (isActive) {
-                updateFocusStatus()
-                
-                // SMART POLLING: Wait until the start of the next minute
-                val now = System.currentTimeMillis()
-                val millisPassedInCurrentMinute = now % 60000
-                val millisToNextMinute = 60000 - millisPassedInCurrentMinute
-                
-                // Add tiny buffer (50ms) to ensure we seek into the next minute
-                delay(millisToNextMinute + 50)
+                updateBlockerStatus()
+                updateTapasyaStatus()
+                updateNightlyStatus()
+                delay(500)
             }
         }
     }
 
-    private suspend fun updateFocusStatus() {
+    private suspend fun updateBlockerStatus() {
         val status = withContext(Dispatchers.IO) {
-            FocusStatusManager(this@MainActivity).getCurrentStatus()
+            BlockerStatusManager(this@MainActivity).getCurrentStatus()
         }
-        currentFocusStatus = status
+        currentBlockerStatus = status
         
         withContext(Dispatchers.Main) {
              if (status.isActive) {
-                 val remaining = status.endTime - com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this@MainActivity)
-                 binding.tvFocusCardTitle.text = status.title
+                  val remaining = status.endTime - com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this@MainActivity)
+                  binding.tvBlockerCardTitle.text = status.title
 
-                 // Breathing Glow Animation
-                 val colorFrom = getColor(R.color.accent_focus)
-                 val colorTo = getColor(R.color.white)
-                 val anim = android.animation.ObjectAnimator.ofArgb(
-                     binding.cardFocusMode, 
-                     "strokeColor", 
-                     colorFrom, 
-                     colorTo
-                 )
-                 anim.duration = 1500
-                 anim.repeatMode = android.animation.ValueAnimator.REVERSE
-                 anim.repeatCount = android.animation.ValueAnimator.INFINITE
-                 anim.start()
-                 // Note: Ideally store reference to cancel, but simple start is okay for this loop interval
-                 
-                 // Check if Tapasya is running
-                 val data = savedPreferencesLoader.getFocusModeData()
-                 if (data.isTapasyaTriggered) {
-                     binding.tvFocusCardStatus.text = "Active until stopped"
-                 } else if (remaining > 60_000) {
-                     // Minute-only precision
-                     val mins = (remaining / 60000) + 1 // Ceiling
-                     binding.tvFocusCardStatus.text = "Ends in ~ $mins min"
-                 } else if (remaining > 0) {
-                     binding.tvFocusCardStatus.text = "Ends in < 1 min"
-                 } else {
-                     binding.tvFocusCardStatus.text = "Completing..."
-                 }
-                 
-                 // Button Text
-                 if (status.type == FocusType.MANUAL_FOCUS) {
-                     val data = savedPreferencesLoader.getFocusModeData()
-                     if (data.isTapasyaTriggered) {
-                         binding.focusMode.text = "Tapasya Running"
-                         binding.focusMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.purple_500)) // Use a distinct color
-                     } else {
-                         binding.focusMode.text = "Stop Session"
-                         binding.focusMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.error_color))
-                     }
-                 } else {
-                     binding.focusMode.text = "Locked by Schedule"
-                     binding.focusMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.gray_dark))
-                 }
+                  // Breathing Glow Animation
+                  val colorFrom = getColor(R.color.accent_focus)
+                  val colorTo = getColor(R.color.white)
+                  val anim = android.animation.ObjectAnimator.ofArgb(
+                      binding.cardBlockerMode, 
+                      "strokeColor", 
+                      colorFrom, 
+                      colorTo
+                  )
+                  anim.duration = 1500
+                  anim.repeatMode = android.animation.ValueAnimator.REVERSE
+                  anim.repeatCount = android.animation.ValueAnimator.INFINITE
+                  anim.start()
+                  
+                  // Check if Tapasya is running
+                  val data = savedPreferencesLoader.getFocusModeData()
+                  if (data.isTapasyaTriggered) {
+                      binding.tvBlockerCardStatus.text = "Active until stopped"
+                  } else if (remaining > 60_000) {
+                      // Minute-only precision
+                      val mins = (remaining / 60000) + 1 // Ceiling
+                      binding.tvBlockerCardStatus.text = "Ends in ~ $mins min"
+                  } else if (remaining > 0) {
+                      binding.tvBlockerCardStatus.text = "Ends in < 1 min"
+                  } else {
+                      binding.tvBlockerCardStatus.text = "Completing..."
+                  }
+                  
+                  // Button Text
+                  if (status.type == BlockerType.MANUAL_BLOCKER) {
+                      val data = savedPreferencesLoader.getFocusModeData()
+                      if (data.isTapasyaTriggered) {
+                          binding.blockerMode.text = "Tapasya Running"
+                          binding.blockerMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.purple_500))
+                      } else {
+                          binding.blockerMode.text = "Stop Session"
+                          binding.blockerMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.error_color))
+                      }
+                  } else {
+                      binding.blockerMode.text = "Locked by Schedule"
+                      binding.blockerMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.gray_dark))
+                  }
              } else {
-                 binding.tvFocusCardTitle.text = "Focus Session"
-                 binding.tvFocusCardStatus.text = "Ready to Start"
-                 binding.focusMode.text = "Start Focusing"
-                 binding.focusMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.teal_200))
+                  binding.tvBlockerCardTitle.text = "Blocker Session"
+                  binding.tvBlockerCardStatus.text = "Ready to Start"
+                  binding.blockerMode.text = "Start Blocker"
+                  binding.blockerMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.teal_200))
              }
-             
-             // Sync widget with current status
-             // com.neubofy.reality.widget.FocusWidgetProvider.updateAllWidgets(this@MainActivity) // REMOVED
         }
+    }
+
+    private fun updateTapasyaStatus() {
+        val featureManager = com.neubofy.reality.utils.FeatureManager(this)
+        if (!featureManager.isTapasyaEnabled()) {
+            binding.cardTapasyaHome.visibility = android.view.View.GONE
+            return
+        }
+        binding.cardTapasyaHome.visibility = android.view.View.VISIBLE
+        
+        val state = com.neubofy.reality.services.TapasyaManager.getCurrentState(this)
+        if (state.isSessionActive) {
+            val statusText = if (state.isPaused) "Paused" else "Running"
+            binding.tvTapasyaTime.text = "$statusText: ${com.neubofy.reality.services.TapasyaManager.formatTime(state.elapsedTimeMs)}"
+            
+            binding.btnTapasyaActionPrimary.text = if (state.isPaused) "Resume" else "Pause"
+            binding.btnTapasyaActionSecondary.visibility = android.view.View.VISIBLE
+            binding.btnTapasyaActionSecondary.text = "Stop"
+        } else {
+            binding.tvTapasyaTime.text = "Inactive"
+            binding.btnTapasyaActionPrimary.text = "Start"
+            binding.btnTapasyaActionSecondary.visibility = android.view.View.GONE
+        }
+    }
+
+    private fun updateNightlyStatus() {
+        val featureManager = com.neubofy.reality.utils.FeatureManager(this)
+        if (!featureManager.isRealityProEnabled()) {
+            binding.cardNightlyHome.visibility = android.view.View.GONE
+            return
+        }
+        
+        val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
+        val startMin = prefs.getInt("nightly_start_time", 22 * 60)
+        val endMin = prefs.getInt("nightly_end_time", 23 * 60 + 59)
+        val calendar = java.util.Calendar.getInstance()
+        val currentMins = calendar.get(java.util.Calendar.HOUR_OF_DAY) * 60 + calendar.get(java.util.Calendar.MINUTE)
+        
+        val isInNightlyWindow = if (startMin < endMin) {
+            currentMins in startMin..endMin
+        } else {
+            currentMins >= startMin || currentMins <= endMin
+        }
+        
+        if (!isInNightlyWindow) {
+            binding.cardNightlyHome.visibility = android.view.View.GONE
+            return
+        }
+        binding.cardNightlyHome.visibility = android.view.View.VISIBLE
+        
+        val date = java.time.LocalDate.now()
+        val protocolState = prefs.getInt("protocol_state", com.neubofy.reality.data.NightlyProtocolExecutor.STATE_IDLE)
+        
+        binding.btnNightlyRun.isEnabled = true
+        when (protocolState) {
+            com.neubofy.reality.data.NightlyProtocolExecutor.STATE_IDLE -> binding.btnNightlyRun.text = "Start Nightly"
+            com.neubofy.reality.data.NightlyProtocolExecutor.STATE_CREATING -> {
+                binding.btnNightlyRun.text = "Creating Diary..."
+                binding.btnNightlyRun.isEnabled = false
+            }
+            com.neubofy.reality.data.NightlyProtocolExecutor.STATE_PENDING_REFLECTION -> binding.btnNightlyRun.text = "Analyze Day"
+            com.neubofy.reality.data.NightlyProtocolExecutor.STATE_ANALYZING -> {
+                binding.btnNightlyRun.text = "Analyzing..."
+                binding.btnNightlyRun.isEnabled = false
+            }
+            com.neubofy.reality.data.NightlyProtocolExecutor.STATE_PLANNING_READY -> binding.btnNightlyRun.text = "Create Plan"
+            com.neubofy.reality.data.NightlyProtocolExecutor.STATE_COMPLETE -> {
+                binding.btnNightlyRun.text = "Review Complete"
+                binding.btnNightlyRun.isEnabled = false
+            }
+        }
+        
+        scope.launch {
+            val todayStr = date.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+            val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(this@MainActivity)
+            val todaySteps = withContext(Dispatchers.IO) {
+                db.nightlyDao().getSteps(todayStr)
+            }
+            val stepMap = todaySteps.associateBy { it.stepId }
+            
+            withContext(Dispatchers.Main) {
+                updateStepDot(binding.dotStep1, stepMap[1])
+                updateStepDot(binding.dotStep2, stepMap[2])
+                updateStepDot(binding.dotStep3, stepMap[3])
+                updateStepDot(binding.dotStep4, stepMap[4])
+                updateStepDot(binding.dotStep5, stepMap[5])
+                updateStepDot(binding.dotStep6, stepMap[6])
+            }
+            
+            val diaryId = withContext(Dispatchers.IO) {
+                com.neubofy.reality.data.repository.NightlyRepository.getDiaryDocId(this@MainActivity, date)
+            }
+            val planId = withContext(Dispatchers.IO) {
+                com.neubofy.reality.data.repository.NightlyRepository.getPlanDocId(this@MainActivity, date)
+            }
+            val reportId = withContext(Dispatchers.IO) {
+                com.neubofy.reality.data.repository.NightlyRepository.getReportPdfId(this@MainActivity, date)
+            }
+            
+            withContext(Dispatchers.Main) {
+                if (diaryId != null || planId != null || reportId != null) {
+                    binding.nightlyDocsRow.visibility = android.view.View.VISIBLE
+                    binding.btnNightlyOpenDiary.visibility = if (diaryId != null) android.view.View.VISIBLE else android.view.View.GONE
+                    binding.btnNightlyOpenPlan.visibility = if (planId != null) android.view.View.VISIBLE else android.view.View.GONE
+                    binding.btnNightlyOpenReport.visibility = if (reportId != null) android.view.View.VISIBLE else android.view.View.GONE
+                    
+                    binding.btnNightlyOpenDiary.setOnClickListener {
+                        val url = "https://docs.google.com/document/d/$diaryId/edit"
+                        startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+                    }
+                    binding.btnNightlyOpenPlan.setOnClickListener {
+                        val intent = Intent(this@MainActivity, NightlyPlanActivity::class.java)
+                        intent.putExtra("date", date)
+                        startActivity(intent)
+                    }
+                    binding.btnNightlyOpenReport.setOnClickListener {
+                        val intent = Intent(this@MainActivity, NightlyReportActivity::class.java)
+                        intent.putExtra("date", date.toString())
+                        startActivity(intent)
+                    }
+                } else {
+                    binding.nightlyDocsRow.visibility = android.view.View.GONE
+                }
+            }
+        }
+    }
+
+    private fun updateStepDot(dotView: ImageView, step: com.neubofy.reality.data.db.NightlyStep?) {
+        val status = step?.status ?: com.neubofy.reality.data.nightly.StepProgress.STATUS_PENDING
+        val hasData = step != null && !step.resultJson.isNullOrEmpty()
+        val realStatus = if (hasData) {
+            com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED
+        } else status
+        
+        when (realStatus) {
+            com.neubofy.reality.data.nightly.StepProgress.STATUS_COMPLETED -> {
+                dotView.setImageResource(R.drawable.baseline_check_circle_24)
+                dotView.imageTintList = android.content.res.ColorStateList.valueOf(getColor(android.R.color.holo_green_light))
+            }
+            com.neubofy.reality.data.nightly.StepProgress.STATUS_RUNNING -> {
+                dotView.setImageResource(R.drawable.baseline_sync_24)
+                dotView.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.accent_focus))
+            }
+            com.neubofy.reality.data.nightly.StepProgress.STATUS_ERROR -> {
+                dotView.setImageResource(R.drawable.baseline_error_24)
+                dotView.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.error_color))
+            }
+            else -> {
+                dotView.setImageResource(R.drawable.baseline_radio_button_unchecked_24)
+                dotView.imageTintList = android.content.res.ColorStateList.valueOf(getColor(android.R.color.darker_gray))
+            }
+        }
+    }
+
+    private fun startNightlyProtocol() {
+        if (!com.neubofy.reality.google.GoogleAuthManager.hasRequiredPermissions(this)) {
+            Toast.makeText(this, "Google connection required. Open Nightly page to authorize.", Toast.LENGTH_LONG).show()
+            return
+        }
+        val inputData = androidx.work.Data.Builder()
+            .putString(com.neubofy.reality.workers.NightlyWorker.KEY_MODE, com.neubofy.reality.workers.NightlyWorker.MODE_CREATION)
+            .build()
+        val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.neubofy.reality.workers.NightlyWorker>()
+            .setInputData(inputData)
+            .addTag("nightly")
+            .build()
+        androidx.work.WorkManager.getInstance(this).enqueueUniqueWork(
+            "nightly_creation",
+            androidx.work.ExistingWorkPolicy.REPLACE,
+            workRequest
+        )
+        Toast.makeText(this, "Started Nightly Protocol", Toast.LENGTH_SHORT).show()
+    }
+    
+    private fun analyzeDay() {
+        val inputData = androidx.work.Data.Builder()
+            .putString(com.neubofy.reality.workers.NightlyWorker.KEY_MODE, com.neubofy.reality.workers.NightlyWorker.MODE_ANALYSIS)
+            .build()
+        val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.neubofy.reality.workers.NightlyWorker>()
+            .setInputData(inputData)
+            .addTag("nightly")
+            .build()
+        androidx.work.WorkManager.getInstance(this).enqueueUniqueWork(
+            "nightly_analysis",
+            androidx.work.ExistingWorkPolicy.REPLACE,
+            workRequest
+        )
+        Toast.makeText(this, "Analyzing Day...", Toast.LENGTH_SHORT).show()
+    }
+    
+    private fun processPlan() {
+        val inputData = androidx.work.Data.Builder()
+            .putString(com.neubofy.reality.workers.NightlyWorker.KEY_MODE, com.neubofy.reality.workers.NightlyWorker.MODE_PLANNING)
+            .build()
+        val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.neubofy.reality.workers.NightlyWorker>()
+            .setInputData(inputData)
+            .addTag("nightly")
+            .build()
+        androidx.work.WorkManager.getInstance(this).enqueueUniqueWork(
+            "nightly_planning",
+            androidx.work.ExistingWorkPolicy.REPLACE,
+            workRequest
+        )
+        Toast.makeText(this, "Creating Plan...", Toast.LENGTH_SHORT).show()
     }
 
 
@@ -471,6 +660,7 @@ class MainActivity : BaseActivity() {
             popup.menu.add(0, 6, 1, "🎨 Appearance")
             if (featureManager.isRealityProEnabled()) {
                 popup.menu.add(0, 7, 2, "☁️ Backup & Restore")
+                popup.menu.add(0, 9, 5, "🌙 Nightly Protocol")
             }
             popup.menu.add(0, 3, 3, "📱 About Reality")
             popup.menu.add(0, 8, 4, "⏰ Sleep & Alarm")
@@ -480,6 +670,10 @@ class MainActivity : BaseActivity() {
                 when (item.itemId) {
                     8 -> {
                         startActivity(Intent(this, SmartSleepActivity::class.java))
+                        true
+                    }
+                    9 -> {
+                        startActivity(Intent(this, NightlyActivity::class.java))
                         true
                     }
                     1 -> {
@@ -513,11 +707,6 @@ class MainActivity : BaseActivity() {
             popup.show()
         }
         
-        // Settings Button (Header)
-        binding.btnActiveBlocks.setOnClickListener {
-            startActivity(Intent(this, ActiveBlocksActivity::class.java))
-        }
-        
         binding.btnReminders.setOnClickListener {
             startActivity(Intent(this, ReminderActivity::class.java))
         }
@@ -548,12 +737,66 @@ class MainActivity : BaseActivity() {
             com.neubofy.reality.utils.TerminalLogger.clear()
         }
 
-        // Focus Mode Button - FIXED
-        binding.focusMode.setOnClickListener {
-            val status = currentFocusStatus
+        // Blocker details button
+        binding.btnBlockerDetails.setOnClickListener {
+            startActivity(Intent(this, BlockerDetailsActivity::class.java))
+        }
+
+        // Tapasya Home Card Actions
+        binding.btnTapasyaViewPage.setOnClickListener {
+            startActivity(Intent(this, TapasyaActivity::class.java))
+        }
+        
+        binding.btnTapasyaActionPrimary.setOnClickListener {
+            val state = com.neubofy.reality.services.TapasyaManager.getCurrentState(this)
+            if (state.isSessionActive) {
+                if (state.isPaused) {
+                    com.neubofy.reality.services.TapasyaManager.resumeSession(this)
+                } else {
+                    com.neubofy.reality.services.TapasyaManager.pauseSession(this)
+                }
+            } else {
+                val tapasyaPrefs = getSharedPreferences("tapasya_prefs", MODE_PRIVATE)
+                val targetMins = tapasyaPrefs.getInt("target_time_mins", 60)
+                val pauseMins = tapasyaPrefs.getInt("pause_limit_mins", 15)
+                com.neubofy.reality.services.TapasyaManager.startSession(this, "Tapasya", targetMins * 60 * 1000L, pauseMins * 60 * 1000L)
+                Toast.makeText(this, "Tapasya Session Started", Toast.LENGTH_SHORT).show()
+            }
+            updateTapasyaStatus()
+        }
+        
+        binding.btnTapasyaActionSecondary.setOnClickListener {
+            val state = com.neubofy.reality.services.TapasyaManager.getCurrentState(this)
+            if (state.isSessionActive) {
+                com.neubofy.reality.services.TapasyaManager.stopSession(this, wasAutoStopped = false)
+                Toast.makeText(this, "Tapasya Session Stopped", Toast.LENGTH_SHORT).show()
+            }
+            updateTapasyaStatus()
+        }
+
+        // Nightly Home Card Actions
+        binding.btnNightlyViewPage.setOnClickListener {
+            startActivity(Intent(this, NightlyActivity::class.java))
+        }
+        
+        binding.btnNightlyRun.setOnClickListener {
+            val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
+            val currentState = prefs.getInt("protocol_state", com.neubofy.reality.data.NightlyProtocolExecutor.STATE_IDLE)
+            if (currentState == com.neubofy.reality.data.NightlyProtocolExecutor.STATE_PENDING_REFLECTION) {
+                analyzeDay()
+            } else if (currentState == com.neubofy.reality.data.NightlyProtocolExecutor.STATE_PLANNING_READY) {
+                processPlan()
+            } else {
+                startNightlyProtocol()
+            }
+        }
+
+        // Blocker Mode Button - FIXED
+        binding.blockerMode.setOnClickListener {
+            val status = currentBlockerStatus
             if (status != null && status.isActive) {
                 // Stop Session
-                if (status.type == FocusType.MANUAL_FOCUS) {
+                if (status.type == BlockerType.MANUAL_BLOCKER) {
                     val data = savedPreferencesLoader.getFocusModeData()
                     
                     // Tapasya Guard
@@ -565,9 +808,9 @@ class MainActivity : BaseActivity() {
                     data.isTurnedOn = false
                     savedPreferencesLoader.saveFocusModeData(data)
                     sendRefreshRequest(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE)
-                    Toast.makeText(this, "Focus Session Stopped", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Blocker Session Stopped", Toast.LENGTH_SHORT).show()
                     // Force UI Update
-                    scope.launch { updateFocusStatus() }
+                    scope.launch { updateBlockerStatus() }
                 } else {
                     Toast.makeText(this, "Cannot stop scheduled session", Toast.LENGTH_SHORT).show()
                 }
@@ -575,60 +818,13 @@ class MainActivity : BaseActivity() {
                 // Start Session
                 StartFocusMode(savedPreferencesLoader) {
                     // Refresh triggered by dialog
-                    scope.launch { updateFocusStatus() }
+                    scope.launch { updateBlockerStatus() }
                 }.show(supportFragmentManager, "StartFocusMode")
             }
         }
         
     }
 
-    private fun setupBottomNavigation() {
-        binding.bottomNavigation.selectedItemId = R.id.nav_home
-        
-        binding.bottomNavigation.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home -> true
-                R.id.nav_tasks -> {
-                    // Open Google Tasks App
-                    val launchIntent = packageManager.getLaunchIntentForPackage("com.google.android.apps.tasks")
-                    if (launchIntent != null) {
-                        startActivity(launchIntent)
-                    } else {
-                        // Redirect to Play Store or show toast
-                        Toast.makeText(this, "Google Tasks not installed", Toast.LENGTH_SHORT).show()
-                    }
-                    false // Don't select
-                }
-                R.id.nav_calendar -> {
-                     // Open Google Calendar App
-                    val launchIntent = packageManager.getLaunchIntentForPackage("com.google.android.calendar")
-                    if (launchIntent != null) {
-                        startActivity(launchIntent)
-                    } else {
-                        Toast.makeText(this, "Google Calendar not installed", Toast.LENGTH_SHORT).show()
-                    }
-                    false
-                }
-                R.id.nav_nightly -> {
-                    val intent = Intent(this, NightlyActivity::class.java)
-                    intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-                    startActivity(intent)
-                    false // Don't select, let NightlyActivity handle its own nav
-                }
-                R.id.nav_tapasya -> {
-                    val intent = Intent(this, TapasyaActivity::class.java)
-                    intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-                    startActivity(intent)
-                    false
-                }
-                else -> false
-            }
-        }
-        
-        // Setup AI Chat FAB
-        setupAiChatFab()
-    }
-    
     @SuppressLint("ClickableViewAccessibility")
     private fun setupAiChatFab() {
         var dX = 0f
@@ -1067,9 +1263,9 @@ class MainActivity : BaseActivity() {
 
     private suspend fun isBlockingActive(): Boolean {
         // 1. Check Main Blocking Modes (Focus, Schedule, Calendar, Bedtime)
-        // using FocusStatusManager which simplifies and includes Calendar (Fixing missing check)
-        val focusStatus = com.neubofy.reality.utils.FocusStatusManager(this).getCurrentStatus()
-        if (focusStatus.isActive) return true
+        // using BlockerStatusManager which simplifies and includes Calendar (Fixing missing check)
+        val blockerStatus = com.neubofy.reality.utils.BlockerStatusManager(this).getCurrentStatus()
+        if (blockerStatus.isActive) return true
         
         // 2. Check DB Limits / Groups (Time-based active periods)
         val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(applicationContext)
@@ -1091,7 +1287,9 @@ class MainActivity : BaseActivity() {
     private fun updateThemeVisuals() {
         val cards = listOf(
             binding.cardEmergency,
-            binding.cardFocusMode,
+            binding.cardTapasyaHome,
+            binding.cardNightlyHome,
+            binding.cardBlockerMode,
             binding.cardUsageLimit,
             binding.blocklistCard,
             binding.cardAppLimits,

@@ -4,22 +4,22 @@ import android.content.Context
 import com.neubofy.reality.data.db.AppDatabase
 import java.util.Calendar
 
-data class FocusStatus(
+data class BlockerStatus(
     val isActive: Boolean,
-    val type: FocusType,
+    val type: BlockerType,
     val endTime: Long,
     val title: String
 )
 
-enum class FocusType {
-    NONE, MANUAL_FOCUS, SCHEDULE, CALENDAR, BEDTIME
+enum class BlockerType {
+    NONE, MANUAL_BLOCKER, SCHEDULE, CALENDAR, BEDTIME
 }
 
-class FocusStatusManager(private val context: Context) {
+class BlockerStatusManager(private val context: Context) {
     private val prefs = SavedPreferencesLoader(context)
     private val db = AppDatabase.getDatabase(context)
 
-    suspend fun getCurrentStatus(): FocusStatus {
+    suspend fun getCurrentStatus(): BlockerStatus {
         val now = System.currentTimeMillis()
         val cal = Calendar.getInstance()
         val currentMins = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
@@ -38,7 +38,7 @@ class FocusStatusManager(private val context: Context) {
                     isBedtimeActive = true
                     bedEndTimeMs = getTimeToday(end)
                 }
-            } else {
+            } else if (start > end) {
                 // Spans midnight e.g. 22:00 to 07:00
                 if (currentMins >= start) {
                     isBedtimeActive = true
@@ -50,19 +50,19 @@ class FocusStatusManager(private val context: Context) {
             }
             
             if (isBedtimeActive) {
-                return FocusStatus(true, FocusType.BEDTIME, bedEndTimeMs, "Bedtime Mode")
+                return BlockerStatus(true, BlockerType.BEDTIME, bedEndTimeMs, "Bedtime Mode")
             }
         }
 
-        // 2. Manual Focus (User overridden priority)
-        val focus = prefs.getFocusModeData()
-        if (focus.isTurnedOn) {
-            if (focus.endTime > now) {
-                return FocusStatus(true, FocusType.MANUAL_FOCUS, focus.endTime, "Focus Session")
+        // 2. Manual Blocker (User overridden priority)
+        val blocker = prefs.getFocusModeData()
+        if (blocker.isTurnedOn) {
+            if (blocker.endTime > now) {
+                return BlockerStatus(true, BlockerType.MANUAL_BLOCKER, blocker.endTime, "Blocker Session")
             } else {
-                 // Clean up expired focus (Optional, but good for consistency)
-                 focus.isTurnedOn = false
-                 prefs.saveFocusModeData(focus)
+                 // Clean up expired blocker
+                 blocker.isTurnedOn = false
+                 prefs.saveFocusModeData(blocker)
             }
         }
         
@@ -70,7 +70,7 @@ class FocusStatusManager(private val context: Context) {
         val events = db.calendarEventDao().getCurrentEvents(now)
         if (events.isNotEmpty()) {
             val event = events.first()
-            return FocusStatus(true, FocusType.CALENDAR, event.endTime, event.title)
+            return BlockerStatus(true, BlockerType.CALENDAR, event.endTime, event.title)
         }
 
         // 4. Manual Schedules
@@ -89,7 +89,7 @@ class FocusStatusManager(private val context: Context) {
                         isScheduleActive = true
                         schedEndTimeMs = getTimeToday(end)
                     }
-                } else {
+                } else if (start > end) {
                     if (currentMins >= start) {
                         isScheduleActive = true
                         schedEndTimeMs = getTimeTomorrow(end)
@@ -100,12 +100,12 @@ class FocusStatusManager(private val context: Context) {
                 }
                 
                 if (isScheduleActive) {
-                    return FocusStatus(true, FocusType.SCHEDULE, schedEndTimeMs, item.title)
+                    return BlockerStatus(true, BlockerType.SCHEDULE, schedEndTimeMs, item.title)
                 }
             }
         }
 
-        return FocusStatus(false, FocusType.NONE, 0, "")
+        return BlockerStatus(false, BlockerType.NONE, 0, "")
     }
     
     private fun getTimeToday(minutes: Int): Long {

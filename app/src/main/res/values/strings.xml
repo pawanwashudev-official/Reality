@@ -2,13 +2,13 @@
     <string name="support_email">support@neubofy.in</string>
     <string name="official_website">https://reality.neubofy.in</string>
     <string name="app_name" translatable="false">Reality</string>
-    <string name="focus_mode">Focus Mode</string>
+    <string name="focus_mode">Blocker</string>
     <string name="app_blocker">App Blocker</string>
     <string name="anti_uninstall">Armored Strict Mode</string>
     <string name="disabled">Disabled</string>
     <string name="select_pinned_apps">Select pinned apps</string>
     <string name="select_blocked_apps">Select blocked apps</string>
-    <string name="start_focus_mode">Start focus mode</string>
+    <string name="start_focus_mode">Start blocker</string>
     <string name="warning_general_settings">Enable General Accessibility Service to access this option</string>
     <string name="manage_warning_screen">Manage Warning Screen</string>
     <string name="warning_app_blocker_settings">Enable App Blocker Accessibility Service to manage app blocking</string>

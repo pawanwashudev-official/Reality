@@ -196,7 +196,7 @@
             android:screenOrientation="portrait" />
 
         <activity
-            android:name=".ui.activity.ActiveBlocksActivity"
+            android:name=".ui.activity.BlockerDetailsActivity"
             android:exported="false"
             android:theme="@style/Theme.Reality"
             android:screenOrientation="portrait" />

@@ -50,6 +50,11 @@ class BedtimeActivity : BaseActivity() {
             bedtimeData.isEnabled = isChecked
             prefsLoader.saveBedtimeData(bedtimeData)
             updateUI()
+            
+            // Notify blocker service immediately
+            val intent = Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE)
+            intent.setPackage(packageName)
+            sendBroadcast(intent)
         }
         
         binding.btnStartTime.setOnClickListener {
@@ -151,6 +156,11 @@ class BedtimeActivity : BaseActivity() {
             }
             prefsLoader.saveBedtimeData(bedtimeData)
             updateUI()
+            
+            // Notify blocker service immediately
+            val intent = Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE)
+            intent.setPackage(packageName)
+            sendBroadcast(intent)
         }
         
         picker.show(supportFragmentManager, "TIME_PICKER")

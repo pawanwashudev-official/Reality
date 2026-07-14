@@ -50,17 +50,6 @@
         </LinearLayout>
 
         <ImageView
-            android:id="@+id/btn_active_blocks"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:padding="8dp"
-            android:src="@drawable/baseline_shield_24"
-            app:tint="?attr/colorOnSurface"
-            android:background="@drawable/rounded_button_bg"
-            android:layout_marginEnd="12dp"
-            android:contentDescription="Active Blocks"/>
-
-        <ImageView
             android:id="@+id/btn_reminders"
             android:layout_width="40dp"
             android:layout_height="40dp"
@@ -95,7 +84,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintTop_toBottomOf="@id/header"
-        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        app:layout_constraintBottom_toBottomOf="parent"
         android:paddingHorizontal="16dp"
         android:clipToPadding="false">
 
@@ -357,6 +346,260 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Tapasya Home Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_tapasya_home"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="@dimen/corner_radius_large"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
+                app:strokeWidth="1dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:id="@+id/iv_tapasya_status"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@drawable/baseline_schedule_24"
+                            app:tint="?attr/colorPrimary" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Tapasya"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:textSize="12sp"
+                                android:letterSpacing="0.05"/>
+
+                            <TextView
+                                android:id="@+id/tv_tapasya_time"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Inactive"
+                                android:textColor="?attr/colorPrimary"
+                                android:fontFamily="monospace"
+                                android:textSize="20sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp"/>
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_tapasya_view_page"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="View Page ↗"
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorPrimary" />
+                    </LinearLayout>
+
+                    <!-- Control Buttons Row -->
+                    <LinearLayout
+                        android:id="@+id/tapasya_controls_row"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:layout_marginTop="16dp"
+                        android:weightSum="2">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_tapasya_action_primary"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            android:text="Start"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="24dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_tapasya_action_secondary"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            android:text="Pause"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="24dp"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Nightly Protocol Home Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_nightly_home"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="@dimen/corner_radius_large"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:strokeColor="?attr/colorPrimaryContainer"
+                app:strokeWidth="1dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@drawable/baseline_bedtime_24"
+                            app:tint="?attr/colorPrimary" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Nightly Protocol"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:textSize="12sp"
+                                android:letterSpacing="0.05"/>
+
+                            <TextView
+                                android:id="@+id/tv_nightly_status"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Ready to Start"
+                                android:textColor="?attr/colorPrimary"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp"/>
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_nightly_view_page"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="View Page ↗"
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorPrimary" />
+                    </LinearLayout>
+
+                    <!-- Steps Horizontal Track Indicator -->
+                    <LinearLayout
+                        android:id="@+id/nightly_steps_track"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:layout_marginTop="16dp"
+                        android:weightSum="6">
+                        
+                        <ImageView android:id="@+id/dot_step_1" android:layout_width="16dp" android:layout_height="16dp" android:layout_weight="1" android:src="@drawable/baseline_radio_button_unchecked_24" app:tint="?attr/colorOnSurfaceVariant" />
+                        <ImageView android:id="@+id/dot_step_2" android:layout_width="16dp" android:layout_height="16dp" android:layout_weight="1" android:src="@drawable/baseline_radio_button_unchecked_24" app:tint="?attr/colorOnSurfaceVariant" />
+                        <ImageView android:id="@+id/dot_step_3" android:layout_width="16dp" android:layout_height="16dp" android:layout_weight="1" android:src="@drawable/baseline_radio_button_unchecked_24" app:tint="?attr/colorOnSurfaceVariant" />
+                        <ImageView android:id="@+id/dot_step_4" android:layout_width="16dp" android:layout_height="16dp" android:layout_weight="1" android:src="@drawable/baseline_radio_button_unchecked_24" app:tint="?attr/colorOnSurfaceVariant" />
+                        <ImageView android:id="@+id/dot_step_5" android:layout_width="16dp" android:layout_height="16dp" android:layout_weight="1" android:src="@drawable/baseline_radio_button_unchecked_24" app:tint="?attr/colorOnSurfaceVariant" />
+                        <ImageView android:id="@+id/dot_step_6" android:layout_width="16dp" android:layout_height="16dp" android:layout_weight="1" android:src="@drawable/baseline_radio_button_unchecked_24" app:tint="?attr/colorOnSurfaceVariant" />
+                    </LinearLayout>
+
+                    <!-- Main Action buttons row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:layout_marginTop="16dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_nightly_run"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:text="Start Nightly"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="24dp" />
+                    </LinearLayout>
+
+                    <!-- Document view actions (shown when created) -->
+                    <LinearLayout
+                        android:id="@+id/nightly_docs_row"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:layout_marginTop="8dp"
+                        android:visibility="gone"
+                        tools:visibility="visible">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_nightly_open_diary"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📖 Diary"
+                            android:textSize="12sp"
+                            android:visibility="gone"
+                            tools:visibility="visible"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_nightly_open_plan"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📅 Plan"
+                            android:textSize="12sp"
+                            android:visibility="gone"
+                            tools:visibility="visible"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_nightly_open_report"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📊 Report"
+                            android:textSize="12sp"
+                            android:visibility="gone"
+                            tools:visibility="visible"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Emergency Card (Conditional) -->
                         <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_emergency"
@@ -427,9 +670,9 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Focus Status / Start Focus -->
+            <!-- Blocker Status / Start Blocker -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardFocusMode"
+                android:id="@+id/cardBlockerMode"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -459,16 +702,16 @@
                             android:orientation="vertical">
                             
                             <TextView
-                                android:id="@+id/tv_focus_card_title"
+                                android:id="@+id/tv_blocker_card_title"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Focus Session"
+                                android:text="Blocker Session"
                                 android:textColor="?attr/colorOnSurfaceVariant"
                                 android:textSize="14sp"
                                 android:letterSpacing="0.05"/>
 
                             <TextView
-                                android:id="@+id/tv_focus_card_status"
+                                android:id="@+id/tv_blocker_card_status"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Ready to Start"
@@ -491,16 +734,27 @@
                     </LinearLayout>
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/focusMode"
+                        android:id="@+id/blockerMode"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
-                        android:text="Start Focusing"
+                        android:text="Start Blocker"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="@color/black"
                         app:backgroundTint="@color/accent_focus"
                         app:cornerRadius="28dp"
                         android:layout_marginTop="24dp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_blocker_details"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="View Details"
+                        android:textSize="14sp"
+                        android:textColor="?attr/colorPrimary"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="8dp"/>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -898,21 +1152,8 @@
         app:tint="@android:color/white"
         app:backgroundTint="?attr/colorPrimary"
         app:fabSize="normal"
-        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:contentDescription="AI Chat"/>
-
-    <!-- Bottom Navigation -->
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottom_navigation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="64dp"
-        android:layout_gravity="bottom"
-        android:background="@drawable/glass_card_bg"
-        app:menu="@menu/bottom_nav_menu"
-        app:labelVisibilityMode="unlabeled"
-        app:elevation="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

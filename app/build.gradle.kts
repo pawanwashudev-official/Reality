@@ -87,10 +87,12 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             
-            // Only use release signing if credentials are available
+            // Only use release signing if credentials are available, otherwise fall back to debug signing
             val releaseConfig = signingConfigs.findByName("release")
             if (releaseConfig?.storeFile?.exists() == true) {
                 signingConfig = releaseConfig
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
             }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

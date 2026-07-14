@@ -435,9 +435,11 @@ object BlockCache {
         
         return if (start < end) {
             currentMins in start until end
-        } else {
+        } else if (start > end) {
             // Spans midnight
             currentMins >= start || currentMins < end
+        } else {
+            false
         }
     }
     
@@ -448,18 +450,20 @@ object BlockCache {
     ): Boolean {
         for (item in schedules) {
             val runsToday = item.repeatDays.isEmpty() || item.repeatDays.contains(currentDay)
-            if (!runsToday) continue
-            
-            val start = item.startTimeInMins
-            val end = item.endTimeInMins
-            
-            val isActive = if (start <= end) {
-                currentMins in start until end
-            } else {
-                currentMins >= start || currentMins < end
+            if (runsToday) {
+                val start = item.startTimeInMins
+                val end = item.endTimeInMins
+                
+                if (start < end) {
+                    if (currentMins in start until end) {
+                        return true
+                    }
+                } else if (start > end) {
+                    if (currentMins >= start || currentMins < end) {
+                        return true
+                    }
+                }
             }
-            
-            if (isActive) return true
         }
         return false
     }
