@@ -354,7 +354,13 @@ class MainActivity : BaseActivity() {
                   } else if (remaining > 60_000) {
                       // Minute-only precision
                       val mins = (remaining / 60000) + 1 // Ceiling
-                      binding.tvBlockerCardStatus.text = "Ends in ~ $mins min"
+                      if (mins >= 60) {
+                          val h = mins / 60
+                          val m = mins % 60
+                          binding.tvBlockerCardStatus.text = "Ends in ~ ${h}h ${m}m"
+                      } else {
+                          binding.tvBlockerCardStatus.text = "Ends in ~ $mins min"
+                      }
                   } else if (remaining > 0) {
                       binding.tvBlockerCardStatus.text = "Ends in < 1 min"
                   } else {
