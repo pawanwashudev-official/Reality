@@ -87,12 +87,10 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             
-            // Only use release signing if credentials are available, otherwise fall back to debug signing
+            // Only use release signing if credentials are available
             val releaseConfig = signingConfigs.findByName("release")
             if (releaseConfig?.storeFile?.exists() == true) {
                 signingConfig = releaseConfig
-            } else {
-                signingConfig = signingConfigs.getByName("debug")
             }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -114,11 +112,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "11"
     }
     buildFeatures {
         viewBinding = true

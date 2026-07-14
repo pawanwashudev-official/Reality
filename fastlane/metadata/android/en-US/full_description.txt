@@ -1,7 +1,7 @@
 **The World’s Most Advanced & Secure Digital Detox Tool.**  
 **100% Private. Military-Grade Blocking. Super Optimized.**
 
-Reality is not just an app blocker; it is an intelligent, unbreakable shield against digital distractions. Built with a "Privacy First" architecture, Reality operates entirely offline. We don't know who you are, and we don't want to. Your data never leaves your device.
+Reality is not just an app blocker; it is an intelligent, unbreakable shield against digital distractions. Built with a "Privacy First" architecture, Reality stores everything securely on your device.
 
 If you are tired of weak blockers that are easy to bypass, welcome to **Reality**.
 
@@ -16,7 +16,7 @@ Reality features the industry's most robust "Strict Mode." Once active, it is im
 
 ### 🔒 100% PRIVACY & SAFETY
 *   **No Accounts, No Sign-up:** We do not know your name. We do not know your email. You are anonymous.
-*   **Offline by Design:** The app functions perfectly without internet access. No data mining, no tracking scripts.
+*   **Secure by Design:** Built with privacy-first principles. No data mining, no tracking scripts.
 *   **Safe & Secure:** Built with standard Android security protocols. No "root" required.
 
 ### ⚡ SUPER OPTIMIZED PERFORMANCE

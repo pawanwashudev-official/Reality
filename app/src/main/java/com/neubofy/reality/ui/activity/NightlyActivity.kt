@@ -390,20 +390,22 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
         binding.btnStartNightly.setOnClickListener {
             if (isExecuting) return@setOnClickListener
             
-            val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
-            val currentState = prefs.getInt("protocol_state", NightlyProtocolExecutor.STATE_IDLE)
-            
-            if (currentState == NightlyProtocolExecutor.STATE_PENDING_REFLECTION) {
-                // Analysis Phase
-                analyzeDay()
-            } else if (currentState == NightlyProtocolExecutor.STATE_PLANNING_READY) {
-                // Planning Phase
-                 processPlan()
-            } else {
-                // Creation Phase
-                 if (checkApiIntegrity()) {
-                    startNightlyProtocol()
-                 }
+            com.neubofy.reality.utils.NetworkUtils.checkInternetAndShowDialog(this) {
+                val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
+                val currentState = prefs.getInt("protocol_state", NightlyProtocolExecutor.STATE_IDLE)
+                
+                if (currentState == NightlyProtocolExecutor.STATE_PENDING_REFLECTION) {
+                    // Analysis Phase
+                    analyzeDay()
+                } else if (currentState == NightlyProtocolExecutor.STATE_PLANNING_READY) {
+                    // Planning Phase
+                     processPlan()
+                } else {
+                    // Creation Phase
+                     if (checkApiIntegrity()) {
+                        startNightlyProtocol()
+                     }
+                }
             }
         }
         

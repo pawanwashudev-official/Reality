@@ -82,6 +82,8 @@ class MainActivity : BaseActivity() {
     private var isDeviceAdminOn = false
     private var isAntiUninstallOn = false
     private var statusUpdaterJob: Job? = null
+    private var nightlyStepsJob: Job? = null
+    private var nightlySessionJob: Job? = null
     private var currentBlockerStatus: BlockerStatus? = null
 
     private val notificationPermissionLauncher =
@@ -110,13 +112,16 @@ class MainActivity : BaseActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+
+        // Apply status bar inset only to header — matches standard separation on other pages
+        ViewCompat.setOnApplyWindowInsetsListener(binding.header) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            v.setPadding(v.paddingLeft, systemBars.top, v.paddingRight, v.paddingBottom)
             insets
         }
 
         options = ActivityOptionsCompat.makeCustomAnimation(this, R.anim.fade_in, R.anim.fade_out)
+
         setupActivityLaunchers()
         setupClickListeners()
         setupAiChatFab()
@@ -162,6 +167,7 @@ class MainActivity : BaseActivity() {
         
         loadStatistics()
         startStatusUpdater()
+        startNightlyFlowObservers()
         updateGreeting()
         updateThemeVisuals()
         updateTerminalLogVisibility()
@@ -296,15 +302,21 @@ class MainActivity : BaseActivity() {
     override fun onPause() {
         super.onPause()
         statusUpdaterJob?.cancel()
+        nightlyStepsJob?.cancel()
+        nightlySessionJob?.cancel()
     }
 
     private fun startStatusUpdater() {
         statusUpdaterJob?.cancel()
         statusUpdaterJob = scope.launch {
+            var counter = 0
             while (isActive) {
-                updateBlockerStatus()
                 updateTapasyaStatus()
-                updateNightlyStatus()
+                if (counter % 4 == 0) {
+                    updateBlockerStatus()
+                    checkNightlyTimeWindow()
+                }
+                counter++
                 delay(500)
             }
         }
@@ -395,7 +407,98 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun updateNightlyStatus() {
+    private fun startNightlyFlowObservers() {
+        nightlyStepsJob?.cancel()
+        nightlySessionJob?.cancel()
+        
+        val date = java.time.LocalDate.now()
+        val todayStr = date.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+        val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(this)
+        
+        nightlyStepsJob = scope.launch {
+            db.nightlyDao().observeSteps(todayStr).collect { steps ->
+                val stepMap = steps.associateBy { it.stepId }
+                withContext(Dispatchers.Main) {
+                    updateStepDot(binding.dotStep1, stepMap[1])
+                    updateStepDot(binding.dotStep2, stepMap[2])
+                    updateStepDot(binding.dotStep3, stepMap[3])
+                    updateStepDot(binding.dotStep4, stepMap[4])
+                    updateStepDot(binding.dotStep5, stepMap[5])
+                    updateStepDot(binding.dotStep6, stepMap[6])
+                }
+            }
+        }
+        
+        nightlySessionJob = scope.launch {
+            db.nightlyDao().observeSession(todayStr).collect { session ->
+                updateNightlyCardData(date)
+            }
+        }
+    }
+
+    private suspend fun updateNightlyCardData(date: java.time.LocalDate) {
+        val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
+        val protocolState = prefs.getInt("protocol_state", com.neubofy.reality.data.NightlyProtocolExecutor.STATE_IDLE)
+        
+        withContext(Dispatchers.Main) {
+            binding.btnNightlyRun.isEnabled = true
+            when (protocolState) {
+                com.neubofy.reality.data.NightlyProtocolExecutor.STATE_IDLE -> binding.btnNightlyRun.text = "Start Nightly"
+                com.neubofy.reality.data.NightlyProtocolExecutor.STATE_CREATING -> {
+                    binding.btnNightlyRun.text = "Creating Diary..."
+                    binding.btnNightlyRun.isEnabled = false
+                }
+                com.neubofy.reality.data.NightlyProtocolExecutor.STATE_PENDING_REFLECTION -> binding.btnNightlyRun.text = "Analyze Day"
+                com.neubofy.reality.data.NightlyProtocolExecutor.STATE_ANALYZING -> {
+                    binding.btnNightlyRun.text = "Analyzing..."
+                    binding.btnNightlyRun.isEnabled = false
+                }
+                com.neubofy.reality.data.NightlyProtocolExecutor.STATE_PLANNING_READY -> binding.btnNightlyRun.text = "Create Plan"
+                com.neubofy.reality.data.NightlyProtocolExecutor.STATE_COMPLETE -> {
+                    binding.btnNightlyRun.text = "Review Complete"
+                    binding.btnNightlyRun.isEnabled = false
+                }
+            }
+        }
+        
+        val diaryId = withContext(Dispatchers.IO) {
+            com.neubofy.reality.data.repository.NightlyRepository.getDiaryDocId(this@MainActivity, date)
+        }
+        val planId = withContext(Dispatchers.IO) {
+            com.neubofy.reality.data.repository.NightlyRepository.getPlanDocId(this@MainActivity, date)
+        }
+        val reportId = withContext(Dispatchers.IO) {
+            com.neubofy.reality.data.repository.NightlyRepository.getReportPdfId(this@MainActivity, date)
+        }
+        
+        withContext(Dispatchers.Main) {
+            if (diaryId != null || planId != null || reportId != null) {
+                binding.nightlyDocsRow.visibility = android.view.View.VISIBLE
+                binding.btnNightlyOpenDiary.visibility = if (diaryId != null) android.view.View.VISIBLE else android.view.View.GONE
+                binding.btnNightlyOpenPlan.visibility = if (planId != null) android.view.View.VISIBLE else android.view.View.GONE
+                binding.btnNightlyOpenReport.visibility = if (reportId != null) android.view.View.VISIBLE else android.view.View.GONE
+                
+                binding.btnNightlyOpenDiary.setOnClickListener {
+                    val url = "https://docs.google.com/document/d/$diaryId/edit"
+                    startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+                }
+                binding.btnNightlyOpenPlan.setOnClickListener {
+                    val intent = Intent(this@MainActivity, NightlyPlanActivity::class.java)
+                    intent.putExtra("date", date)
+                    startActivity(intent)
+                }
+                binding.btnNightlyOpenReport.setOnClickListener {
+                    val intent = Intent(this@MainActivity, NightlyReportActivity::class.java)
+                    intent.putExtra("date", date.toString())
+                    startActivity(intent)
+                }
+            } else {
+                binding.nightlyDocsRow.visibility = android.view.View.GONE
+            }
+        }
+    }
+
+    private fun checkNightlyTimeWindow() {
         val featureManager = com.neubofy.reality.utils.FeatureManager(this)
         if (!featureManager.isRealityProEnabled()) {
             binding.cardNightlyHome.visibility = android.view.View.GONE
@@ -414,87 +517,7 @@ class MainActivity : BaseActivity() {
             currentMins >= startMin || currentMins <= endMin
         }
         
-        if (!isInNightlyWindow) {
-            binding.cardNightlyHome.visibility = android.view.View.GONE
-            return
-        }
-        binding.cardNightlyHome.visibility = android.view.View.VISIBLE
-        
-        val date = java.time.LocalDate.now()
-        val protocolState = prefs.getInt("protocol_state", com.neubofy.reality.data.NightlyProtocolExecutor.STATE_IDLE)
-        
-        binding.btnNightlyRun.isEnabled = true
-        when (protocolState) {
-            com.neubofy.reality.data.NightlyProtocolExecutor.STATE_IDLE -> binding.btnNightlyRun.text = "Start Nightly"
-            com.neubofy.reality.data.NightlyProtocolExecutor.STATE_CREATING -> {
-                binding.btnNightlyRun.text = "Creating Diary..."
-                binding.btnNightlyRun.isEnabled = false
-            }
-            com.neubofy.reality.data.NightlyProtocolExecutor.STATE_PENDING_REFLECTION -> binding.btnNightlyRun.text = "Analyze Day"
-            com.neubofy.reality.data.NightlyProtocolExecutor.STATE_ANALYZING -> {
-                binding.btnNightlyRun.text = "Analyzing..."
-                binding.btnNightlyRun.isEnabled = false
-            }
-            com.neubofy.reality.data.NightlyProtocolExecutor.STATE_PLANNING_READY -> binding.btnNightlyRun.text = "Create Plan"
-            com.neubofy.reality.data.NightlyProtocolExecutor.STATE_COMPLETE -> {
-                binding.btnNightlyRun.text = "Review Complete"
-                binding.btnNightlyRun.isEnabled = false
-            }
-        }
-        
-        scope.launch {
-            val todayStr = date.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
-            val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(this@MainActivity)
-            val todaySteps = withContext(Dispatchers.IO) {
-                db.nightlyDao().getSteps(todayStr)
-            }
-            val stepMap = todaySteps.associateBy { it.stepId }
-            
-            withContext(Dispatchers.Main) {
-                updateStepDot(binding.dotStep1, stepMap[1])
-                updateStepDot(binding.dotStep2, stepMap[2])
-                updateStepDot(binding.dotStep3, stepMap[3])
-                updateStepDot(binding.dotStep4, stepMap[4])
-                updateStepDot(binding.dotStep5, stepMap[5])
-                updateStepDot(binding.dotStep6, stepMap[6])
-            }
-            
-            val diaryId = withContext(Dispatchers.IO) {
-                com.neubofy.reality.data.repository.NightlyRepository.getDiaryDocId(this@MainActivity, date)
-            }
-            val planId = withContext(Dispatchers.IO) {
-                com.neubofy.reality.data.repository.NightlyRepository.getPlanDocId(this@MainActivity, date)
-            }
-            val reportId = withContext(Dispatchers.IO) {
-                com.neubofy.reality.data.repository.NightlyRepository.getReportPdfId(this@MainActivity, date)
-            }
-            
-            withContext(Dispatchers.Main) {
-                if (diaryId != null || planId != null || reportId != null) {
-                    binding.nightlyDocsRow.visibility = android.view.View.VISIBLE
-                    binding.btnNightlyOpenDiary.visibility = if (diaryId != null) android.view.View.VISIBLE else android.view.View.GONE
-                    binding.btnNightlyOpenPlan.visibility = if (planId != null) android.view.View.VISIBLE else android.view.View.GONE
-                    binding.btnNightlyOpenReport.visibility = if (reportId != null) android.view.View.VISIBLE else android.view.View.GONE
-                    
-                    binding.btnNightlyOpenDiary.setOnClickListener {
-                        val url = "https://docs.google.com/document/d/$diaryId/edit"
-                        startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)))
-                    }
-                    binding.btnNightlyOpenPlan.setOnClickListener {
-                        val intent = Intent(this@MainActivity, NightlyPlanActivity::class.java)
-                        intent.putExtra("date", date)
-                        startActivity(intent)
-                    }
-                    binding.btnNightlyOpenReport.setOnClickListener {
-                        val intent = Intent(this@MainActivity, NightlyReportActivity::class.java)
-                        intent.putExtra("date", date.toString())
-                        startActivity(intent)
-                    }
-                } else {
-                    binding.nightlyDocsRow.visibility = android.view.View.GONE
-                }
-            }
-        }
+        binding.cardNightlyHome.visibility = if (isInNightlyWindow) android.view.View.VISIBLE else android.view.View.GONE
     }
 
     private fun updateStepDot(dotView: ImageView, step: com.neubofy.reality.data.db.NightlyStep?) {
@@ -780,14 +803,16 @@ class MainActivity : BaseActivity() {
         }
         
         binding.btnNightlyRun.setOnClickListener {
-            val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
-            val currentState = prefs.getInt("protocol_state", com.neubofy.reality.data.NightlyProtocolExecutor.STATE_IDLE)
-            if (currentState == com.neubofy.reality.data.NightlyProtocolExecutor.STATE_PENDING_REFLECTION) {
-                analyzeDay()
-            } else if (currentState == com.neubofy.reality.data.NightlyProtocolExecutor.STATE_PLANNING_READY) {
-                processPlan()
-            } else {
-                startNightlyProtocol()
+            com.neubofy.reality.utils.NetworkUtils.checkInternetAndShowDialog(this) {
+                val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
+                val currentState = prefs.getInt("protocol_state", com.neubofy.reality.data.NightlyProtocolExecutor.STATE_IDLE)
+                if (currentState == com.neubofy.reality.data.NightlyProtocolExecutor.STATE_PENDING_REFLECTION) {
+                    analyzeDay()
+                } else if (currentState == com.neubofy.reality.data.NightlyProtocolExecutor.STATE_PLANNING_READY) {
+                    processPlan()
+                } else {
+                    startNightlyProtocol()
+                }
             }
         }
 
@@ -837,23 +862,27 @@ class MainActivity : BaseActivity() {
         // GestureDetector for double-tap detection
         val gestureDetector = android.view.GestureDetector(this, object : android.view.GestureDetector.SimpleOnGestureListener() {
             override fun onSingleTapConfirmed(e: android.view.MotionEvent): Boolean {
-                // Single tap: Open AI Chat (with voice auto if enabled)
-                val prefs = getSharedPreferences("ai_settings", Context.MODE_PRIVATE)
-                val voiceAuto = prefs.getBoolean("widget_voice_auto", false)
-                
-                val intent = Intent(this@MainActivity, AIChatActivity::class.java).apply {
-                    if (voiceAuto) putExtra("voice_auto", true)
+                com.neubofy.reality.utils.NetworkUtils.checkInternetAndShowDialog(this@MainActivity) {
+                    // Single tap: Open AI Chat (with voice auto if enabled)
+                    val prefs = getSharedPreferences("ai_settings", Context.MODE_PRIVATE)
+                    val voiceAuto = prefs.getBoolean("widget_voice_auto", false)
+                    
+                    val intent = Intent(this@MainActivity, AIChatActivity::class.java).apply {
+                        if (voiceAuto) putExtra("voice_auto", true)
+                    }
+                    startActivity(intent)
                 }
-                startActivity(intent)
                 return true
             }
             
             override fun onDoubleTap(e: android.view.MotionEvent): Boolean {
-                // Double tap: Open in PRO MODE
-                val intent = Intent(this@MainActivity, AIChatActivity::class.java).apply {
-                    putExtra("extra_mode", "pro")
+                com.neubofy.reality.utils.NetworkUtils.checkInternetAndShowDialog(this@MainActivity) {
+                    // Double tap: Open in PRO MODE
+                    val intent = Intent(this@MainActivity, AIChatActivity::class.java).apply {
+                        putExtra("extra_mode", "pro")
+                    }
+                    startActivity(intent)
                 }
-                startActivity(intent)
                 return true
             }
         })
