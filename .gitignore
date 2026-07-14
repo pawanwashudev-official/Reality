@@ -62,3 +62,5 @@ kotlin_errors.txt
 .gradle
 build
 build_v4
+build_helper.bat
+

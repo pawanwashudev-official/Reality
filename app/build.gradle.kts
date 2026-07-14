@@ -33,10 +33,6 @@ android {
         
         setProperty("archivesBaseName", "Reality-v${versionName}")
         
-        // Expose WEB_CLIENT_ID from local.properties to BuildConfig
-        val webClientId = localProperties.getProperty("WEB_CLIENT_ID") ?: ""
-        buildConfigField("String", "WEB_CLIENT_ID", "\"$webClientId\"")
-
         val workerUrl = localProperties.getProperty("WORKER_URL") ?: ""
         buildConfigField("String", "WORKER_URL", "\"$workerUrl\"")
         val aiUrl = localProperties.getProperty("AI_URL") ?: ""
@@ -166,7 +162,6 @@ dependencies {
     implementation("com.airbnb.android:lottie:6.0.0")
     
     // QR Code Generation (lightweight, open-source)
-    implementation("com.google.zxing:core:3.5.2")
     
     // Google Sign-In & Credential Manager
     

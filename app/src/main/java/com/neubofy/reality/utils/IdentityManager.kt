@@ -50,8 +50,29 @@ object IdentityManager {
 
     private suspend fun generateAndCacheIdentity(context: Context) {
         withContext(Dispatchers.IO) {
+            val email = GoogleAuthManager.getUserEmail(context) ?: ""
+            val isSignedIn = GoogleAuthManager.isSignedIn(context) && email.isNotEmpty()
             val idToken = GoogleAuthManager.getIdToken(context)
-            if (idToken.isNullOrBlank()) {
+            
+            if (!isSignedIn || idToken.isNullOrBlank()) {
+                // Auto remove all local subscription data if not signed in
+                val featuresPrefs = SecurePreferences.get(context, "reality_features")
+                val proPrefs = SecurePreferences.get(context, "reality_pro_prefs")
+                
+                val featureEditor = featuresPrefs.edit()
+                featureEditor.putBoolean("feature_reality_pro", false)
+                featuresPrefs.all.keys.filter { it.startsWith("feature_reality_pro_") }.forEach {
+                    featureEditor.remove(it)
+                }
+                featureEditor.apply()
+                
+                val proEditor = proPrefs.edit()
+                proPrefs.all.keys.filter { it.contains("pro_saved_verification_code_for_") || it.contains("is_registered_for_") }.forEach {
+                    proEditor.remove(it)
+                }
+                proEditor.apply()
+                
+                clearIdentity(context)
                 return@withContext
             }
 
@@ -80,6 +101,7 @@ object IdentityManager {
 
                     val userId = responseJson.optString("userId")
                     val backupPassword = responseJson.optString("backupPassword")
+                    val status = responseJson.optString("status")
 
                     if (userId.isNotEmpty() && backupPassword.isNotEmpty()) {
                         SecurePreferences.get(context, PREFS_NAME).edit().apply {
@@ -87,6 +109,56 @@ object IdentityManager {
                             putString(KEY_BACKUP_PASSWORD, backupPassword)
                             apply()
                         }
+
+                        val featuresPrefs = SecurePreferences.get(context, "reality_features")
+                        val featuresEditor = featuresPrefs.edit()
+
+                        val proPrefs = SecurePreferences.get(context, "reality_pro_prefs")
+                        val proEditor = proPrefs.edit()
+                        proEditor.putBoolean("is_registered_for_$userId", true)
+
+                        // Parse status and update features locally to avoid multiple requests
+                        val status = responseJson.optString("status")
+                        val expiryDate = responseJson.optString("expiryDate")
+
+                        if (status == "P" || status == "V") {
+                            proEditor.putString("pro_saved_verification_code_for_$userId", "PENDING")
+                        } else {
+                            proEditor.remove("pro_saved_verification_code_for_$userId")
+                        }
+
+                        if (status == "V") {
+                            // User is fully verified
+                            featuresEditor.putBoolean("feature_reality_pro", true)
+
+                            // If we have expiryDate, try to parse it
+                            if (expiryDate.isNotEmpty() && expiryDate != "null") {
+                                try {
+                                    val parts = expiryDate.split("-")
+                                    if (parts.size >= 2) {
+                                        val expiryUnix = parts[0].toLong()
+                                        val months = parts[1].toLong()
+
+                                        // App uses durationMs = (365L / 12) * months * 24 * 60 * 60 * 1000
+                                        val durationMs = (365L / 12) * months * 24 * 60 * 60 * 1000
+                                        val startTime = expiryUnix - durationMs
+
+                                        featuresEditor.putLong("feature_reality_pro_start_time_$userId", startTime)
+                                        featuresEditor.putLong("feature_reality_pro_verified_until_$userId", expiryUnix)
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                        } else {
+                            // Reset local verification if not verified
+                            featuresEditor.putBoolean("feature_reality_pro", false)
+                            featuresEditor.remove("feature_reality_pro_start_time_$userId")
+                            featuresEditor.remove("feature_reality_pro_verified_until_$userId")
+                        }
+
+                        featuresEditor.apply()
+                        proEditor.apply()
                     }
                 }
             } catch (e: Exception) {
