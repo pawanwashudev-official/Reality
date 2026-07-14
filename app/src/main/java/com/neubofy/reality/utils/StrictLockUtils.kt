@@ -35,7 +35,7 @@ object StrictLockUtils {
         
         if (data.modeType == Constants.StrictModeData.MODE_TIMER) {
              // Active if time hasn't passed
-             return System.currentTimeMillis() < data.timerEndTime
+             return SecureTimeProvider.currentTimeMillis(context) < data.timerEndTime
         }
         
         if (data.modeType == Constants.StrictModeData.MODE_PASSWORD) {

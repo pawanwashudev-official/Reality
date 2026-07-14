@@ -20,6 +20,8 @@ import kotlinx.coroutines.sync.withLock
  */
 object BlockCache {
     
+    @Volatile private var appContext: Context? = null
+    
     private val mutex = Mutex()
     
     /**
@@ -64,8 +66,10 @@ object BlockCache {
      * @return Pair of (shouldBlock, reasons) or (false, emptyList)
      */
     fun shouldBlock(packageName: String): Pair<Boolean, List<String>> {
+        val context = appContext
+        val now = if (context != null) SecureTimeProvider.currentTimeMillis(context) else System.currentTimeMillis()
         // 1. Emergency Mode Override - Always allow during emergency
-        if (emergencySessionEndTime > System.currentTimeMillis()) {
+        if (emergencySessionEndTime > now) {
             return Pair(false, emptyList())
         }
         
@@ -89,7 +93,9 @@ object BlockCache {
      * Uses proper domain matching to avoid false positives from search queries.
      */
     fun shouldBlockWebsite(url: String): String? {
-        if (emergencySessionEndTime > System.currentTimeMillis()) return null
+        val context = appContext
+        val now = if (context != null) SecureTimeProvider.currentTimeMillis(context) else System.currentTimeMillis()
+        if (emergencySessionEndTime > now) return null
         if (!isAnyBlockingModeActive) return null
         if (StrictLockUtils.isMaintenanceWindow()) return null
         
@@ -159,10 +165,11 @@ object BlockCache {
      * Called every 3 minutes by worker, and immediately on any trigger.
      */
     suspend fun rebuildBox(context: Context) {
+                appContext = context.applicationContext
                 val prefs = SavedPreferencesLoader(context)
                 // Get DB reference OUTSIDE the mutex to avoid holding the lock during DB initialization
                 val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(context)
-                val now = System.currentTimeMillis()
+                val now = SecureTimeProvider.currentTimeMillis(context)
                 
                 // CRITICAL FIX: Reload emergency status immediately
                 val emergencyData = prefs.getEmergencyData()
@@ -179,6 +186,7 @@ object BlockCache {
                         val newBox = mutableMapOf<String, MutableSet<String>>()
                         
                         val calendar = java.util.Calendar.getInstance()
+                        calendar.timeInMillis = now
                 val currentMins = calendar.get(java.util.Calendar.HOUR_OF_DAY) * 60 + 
                                   calendar.get(java.util.Calendar.MINUTE)
                 val currentDay = calendar.get(java.util.Calendar.DAY_OF_WEEK)
@@ -367,13 +375,15 @@ object BlockCache {
      * Load the box from disk on startup or after RAM cleanup.
      */
     fun loadFromDisk(context: Context) {
+        appContext = context.applicationContext
         try {
             val prefs = context.getSharedPreferences("block_cache", Context.MODE_PRIVATE)
             val jsonStr = prefs.getString("blocked_apps", null) ?: return
             val savedTime = prefs.getLong("last_update", 0L)
+            val now = SecureTimeProvider.currentTimeMillis(context)
             
             // Only use disk data if it's less than 5 minutes old
-            if (System.currentTimeMillis() - savedTime > 5 * 60 * 1000) {
+            if (now - savedTime > 5 * 60 * 1000) {
                 return // Data is stale, will be rebuilt by worker
             }
             
@@ -395,9 +405,8 @@ object BlockCache {
             blockedApps = newBox
             
             lastUpdateTime = savedTime
-            isAnyBlockingModeActive = prefs.getBoolean("is_active", false)
             emergencySessionEndTime = prefs.getLong("emergency_end_time", 0L)
-            TerminalLogger.log("BOX LOADED FROM DISK: ${blockedApps.size} apps, emergency=${emergencySessionEndTime > System.currentTimeMillis()}")
+            TerminalLogger.log("BOX LOADED FROM DISK: ${blockedApps.size} apps, emergency=${emergencySessionEndTime > now}")
         } catch (e: Exception) {
             TerminalLogger.log("DISK LOAD ERROR: ${e.message}")
         }

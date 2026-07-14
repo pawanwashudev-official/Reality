@@ -75,14 +75,12 @@ open class AIChatActivity : BaseActivity() {
         setupDrawer()
         
         // Load configurations
-        refreshModels()
         loadSessions()
         
     }
     
     override fun onResume() {
         super.onResume()
-        refreshModels()
         
         // Check for voice auto-trigger (from Widget with setting enabled)
         if (!hasTriggeredVoiceAuto && intent.getBooleanExtra("voice_auto", false)) {
@@ -197,12 +195,7 @@ open class AIChatActivity : BaseActivity() {
         binding.btnSend.setImageResource(iconRes)
     }
     
-    // Model selection logic removed (using default preference)
-    private fun refreshModels() {
-        // No-op or remove entirely if unused
-    }
-
-        private fun sendMessage(text: String) {
+    private fun sendMessage(text: String) {
         adapter.addMessage(ChatMessage(text, true))
         binding.recyclerChat.smoothScrollToPosition(adapter.itemCount - 1)
         

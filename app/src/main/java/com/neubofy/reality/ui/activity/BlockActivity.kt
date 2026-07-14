@@ -143,7 +143,7 @@ class BlockActivity : BaseActivity() {
         
         // 2. Consume Quota
         emergencyData.usesRemaining--
-        val newEndTime = System.currentTimeMillis() + (5 * 60 * 1000)
+        val newEndTime = com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this) + (5 * 60 * 1000)
         emergencyData.currentSessionEndTime = newEndTime
         prefs.saveEmergencyData(emergencyData)
         

@@ -67,7 +67,6 @@ class AppBlockerService : BaseBlockingService() {
     
     // Timers
     private var lastUrlCheckTime = 0L
-    private var lastBackgroundUpdate = 0L
     private var scanEventsCount = 0
     
     // Battey Optimized 60s Watchdog
@@ -157,7 +156,6 @@ class AppBlockerService : BaseBlockingService() {
                 }
                 Intent.ACTION_USER_PRESENT -> {
                     isScreenOn = true
-                    lastBackgroundUpdate = 0 
                     
                     // Refresh cache on unlock - ensuring schedules are up to date
                     kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
@@ -1294,7 +1292,7 @@ class AppBlockerService : BaseBlockingService() {
 
     private fun isWebsiteBlockActive(): Boolean {
         // GLOBAL EMERGENCY BYPASS
-        if (com.neubofy.reality.utils.BlockCache.emergencySessionEndTime > System.currentTimeMillis()) {
+        if (com.neubofy.reality.utils.BlockCache.emergencySessionEndTime > com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this)) {
              return false
         }
 

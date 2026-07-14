@@ -36,22 +36,16 @@ object BackupEncryption {
 
 
     fun encrypt(context: android.content.Context, data: String): String {
-        try {
-            val cipher = Cipher.getInstance(TRANSFORMATION)
-            cipher.init(Cipher.ENCRYPT_MODE, getSecretKey(context))
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.ENCRYPT_MODE, getSecretKey(context))
 
-            val iv = cipher.iv
-            val encryptedData = cipher.doFinal(data.toByteArray(Charsets.UTF_8))
+        val iv = cipher.iv
+        val encryptedData = cipher.doFinal(data.toByteArray(Charsets.UTF_8))
 
-            val ivBase64 = Base64.encodeToString(iv, Base64.NO_WRAP)
-            val encryptedDataBase64 = Base64.encodeToString(encryptedData, Base64.NO_WRAP)
+        val ivBase64 = Base64.encodeToString(iv, Base64.NO_WRAP)
+        val encryptedDataBase64 = Base64.encodeToString(encryptedData, Base64.NO_WRAP)
 
-            return "ENC:$ivBase64:$encryptedDataBase64"
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // Fallback to plain text if encryption fails
-            return data
-        }
+        return "ENC:$ivBase64:$encryptedDataBase64"
     }
 
     fun decrypt(context: android.content.Context, encryptedString: String, overridePassword: String? = null): String {

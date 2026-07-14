@@ -31,6 +31,43 @@ import java.net.URL
  */
 object GoogleAuthManager {
     
+    @Volatile
+    private var activeServerSocket: java.net.ServerSocket? = null
+
+    @Volatile
+    var activeLocalPort: Int = 8080
+        private set
+
+    fun prepareLocalServer(): Int {
+        try {
+            activeServerSocket?.close()
+        } catch (_: Exception) {}
+        activeServerSocket = null
+
+        // Try ports from 8080 to 8090
+        for (port in 8080..8090) {
+            try {
+                val socket = java.net.ServerSocket(port, 50, java.net.InetAddress.getByName("127.0.0.1"))
+                activeServerSocket = socket
+                activeLocalPort = port
+                return port
+            } catch (e: Exception) {
+                // port busy, continue
+            }
+        }
+
+        // Fallback to random port
+        try {
+            val socket = java.net.ServerSocket(0, 50, java.net.InetAddress.getByName("127.0.0.1"))
+            activeServerSocket = socket
+            activeLocalPort = socket.localPort
+            return activeLocalPort
+        } catch (e: Exception) {
+            activeLocalPort = 8080
+            return 8080
+        }
+    }
+
     private const val PREF_NAME = "google_auth_prefs"
     private const val KEY_CLIENT_ID = "client_id"
     private const val KEY_CLIENT_SECRET = "client_secret"
@@ -98,10 +135,13 @@ object GoogleAuthManager {
         val clientId = getClientId(context)
         val workerUrl = com.neubofy.reality.BuildConfig.WORKER_URL
 
+        val port = prepareLocalServer()
+        val redirectUri = "http://127.0.0.1:$port/Callback"
+
         if (!clientId.isNullOrBlank()) {
             return GoogleAuthorizationCodeRequestUrl(
                 clientId,
-                "http://127.0.0.1:8080/Callback",
+                redirectUri,
                 scopes
             )
             .setAccessType("offline")
@@ -110,7 +150,7 @@ object GoogleAuthManager {
              val scopeStr = scopes.joinToString(" ")
              val encodedScopeStr = java.net.URLEncoder.encode(scopeStr, "UTF-8").replace("+", "%20")
              val cleanWorkerUrl = workerUrl.removeSuffix("/")
-             return "$cleanWorkerUrl/oauth/auth?scope=$encodedScopeStr&redirect_uri=${java.net.URLEncoder.encode("http://127.0.0.1:8080/Callback", "UTF-8")}"
+             return "$cleanWorkerUrl/oauth/auth?scope=$encodedScopeStr&redirect_uri=${java.net.URLEncoder.encode(redirectUri, "UTF-8")}"
         }
         return null
     }
@@ -118,9 +158,17 @@ object GoogleAuthManager {
 
     suspend fun startLocalServerAndGetCode(): String? {
         return withContext(Dispatchers.IO) {
-            var server: java.net.ServerSocket? = null
+            var server = activeServerSocket
+            if (server == null || server.isClosed) {
+                try {
+                    server = java.net.ServerSocket(activeLocalPort, 50, java.net.InetAddress.getByName("127.0.0.1"))
+                    activeServerSocket = server
+                } catch (e: Exception) {
+                    TerminalLogger.log("GOOGLE AUTH: Failed to start server socket - ${e.message}")
+                    return@withContext null
+                }
+            }
             try {
-                server = java.net.ServerSocket(8080, 50, java.net.InetAddress.getByName("127.0.0.1"))
                 // Set a timeout so we don't block forever if the user closes the browser
                 server.soTimeout = 120000 // 2 minutes timeout
 
@@ -157,7 +205,10 @@ object GoogleAuthManager {
                 e.printStackTrace()
                 null
             } finally {
-                server?.close()
+                try {
+                    server.close()
+                } catch (_: Exception) {}
+                activeServerSocket = null
             }
         }
     }
@@ -186,8 +237,8 @@ object GoogleAuthManager {
                         clientId,
                         clientSecret,
                         code,
-                        "http://127.0.0.1:8080/Callback"
-                    ).execute()
+                        "http://127.0.0.1:$activeLocalPort/Callback"
+                      ).execute()
                     accessToken = tokenResponse.accessToken
                     refreshToken = tokenResponse.refreshToken
                     idToken = tokenResponse.idToken
@@ -201,7 +252,7 @@ object GoogleAuthManager {
 
                      val jsonBody = JSONObject()
                      jsonBody.put("code", code)
-                     jsonBody.put("redirect_uri", "http://127.0.0.1:8080/Callback")
+                     jsonBody.put("redirect_uri", "http://127.0.0.1:$activeLocalPort/Callback")
                      jsonBody.put("grant_type", "authorization_code")
 
                      java.io.OutputStreamWriter(conn.outputStream).use { writer ->
