@@ -38,7 +38,6 @@ class RealityEliteActivity : BaseActivity() {
     private lateinit var btnPayUpi: MaterialButton
     private lateinit var cardStep3: MaterialCardView
     private lateinit var btnVerify: MaterialButton
-    private lateinit var btnRegister: MaterialButton
     private lateinit var btnCancel: MaterialButton
     private lateinit var spinnerDuration: android.widget.AutoCompleteTextView
     private var selectedMonths = 12
@@ -59,11 +58,6 @@ class RealityEliteActivity : BaseActivity() {
         btnPayUpi = findViewById(R.id.btn_pay_upi)
         cardStep3 = findViewById(R.id.card_step3)
                 btnVerify = findViewById(R.id.btn_verify)
-        btnRegister = findViewById(R.id.btn_register)
-
-        btnRegister.setOnClickListener {
-            registerIdentity()
-        }
         btnCancel = findViewById(R.id.btn_cancel)
         spinnerDuration = findViewById(R.id.spinner_duration)
 
@@ -274,7 +268,6 @@ class RealityEliteActivity : BaseActivity() {
         val tvPaidStart = findViewById<android.widget.TextView>(R.id.tv_paid_start_date)
         val tvPaidExpiry = findViewById<android.widget.TextView>(R.id.tv_paid_expiry_date)
         val tvYearlySubscriptionTitle = findViewById<android.widget.TextView>(R.id.tv_or_yearly_subscription)
-        val cardStep1Paid = findViewById<android.view.View>(R.id.card_step1_paid)
         val cardStep2 = findViewById<android.view.View>(R.id.card_step2)
         val cardStep3 = findViewById<android.view.View>(R.id.card_step3)
 
@@ -307,7 +300,6 @@ class RealityEliteActivity : BaseActivity() {
             tvPaidPlanHeader?.text = "Paid Plan Locked (Trial Active)"
             findViewById<android.view.View>(R.id.ll_paid_dates)?.visibility = android.view.View.GONE
             tvYearlySubscriptionTitle?.visibility = android.view.View.GONE
-            cardStep1Paid?.visibility = android.view.View.GONE
             cardStep2?.visibility = android.view.View.GONE
             cardStep3?.visibility = android.view.View.GONE
 
@@ -328,7 +320,6 @@ class RealityEliteActivity : BaseActivity() {
             tvPaidExpiry?.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
 
             tvYearlySubscriptionTitle?.visibility = android.view.View.GONE
-            cardStep1Paid?.visibility = android.view.View.GONE
             cardStep2?.visibility = android.view.View.GONE
             cardStep3?.visibility = android.view.View.GONE
 
@@ -336,7 +327,6 @@ class RealityEliteActivity : BaseActivity() {
             // NEITHER ACTIVE: Both are available to purchase/start
             cardPaidPlanActive?.visibility = android.view.View.GONE
             tvYearlySubscriptionTitle?.visibility = android.view.View.VISIBLE
-            cardStep1Paid?.visibility = android.view.View.VISIBLE
             cardStep2?.visibility = android.view.View.VISIBLE
             cardStep3?.visibility = android.view.View.VISIBLE
 
@@ -363,11 +353,9 @@ class RealityEliteActivity : BaseActivity() {
 
             if (userId != null && userId != "Unknown" && userId.isNotEmpty()) {
                 val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
-                val isRegistered = prefs.getBoolean("is_registered_for_$userId", false) || btnRegister.text.toString().equals("Registered", ignoreCase = true)
+                val isRegistered = prefs.getBoolean("is_registered_for_$userId", false)
 
                 if (isRegistered) {
-                    btnRegister.text = "Registered"
-                    btnRegister.isEnabled = false
                     cardStep2.alpha = 1.0f
                     cardStep2.alpha = 1.0f
                     btnPayUpi.isEnabled = true
@@ -397,110 +385,6 @@ class RealityEliteActivity : BaseActivity() {
     }
 
 
-    private fun registerIdentity() {
-        val email = GoogleAuthManager.getUserEmail(this)
-        if (email.isNullOrEmpty()) {
-            Toast.makeText(this, "Please sign in first.", Toast.LENGTH_SHORT).show()
-            // Highlight the sign in button by scrolling and animation if needed
-            findViewById<android.widget.ScrollView>(R.id.scroll_view)?.smoothScrollTo(0, 0)
-            btnUnifiedSignin.requestFocus()
-            return
-        }
-
-        GlobalScope.launch(Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityEliteActivity.applicationContext) }
-        val userId = IdentityManager.getUserId(this)
-        val password = IdentityManager.getBackupPassword(this)
-
-        val workerUrl = BuildConfig.WORKER_URL
-        if (workerUrl.isEmpty()) return
-
-        btnRegister.isEnabled = false
-        btnRegister.text = "Registering..."
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val url = URL("${workerUrl.removeSuffix("/")}/license")
-                var conn = url.openConnection() as HttpURLConnection
-                conn.requestMethod = "POST"
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.doOutput = true
-                conn.connectTimeout = 10000
-                conn.readTimeout = 10000
-
-                val jsonBody = JSONObject()
-                jsonBody.put("userId", userId)
-                jsonBody.put("password", password)
-                jsonBody.put("status", "P")
-
-                java.io.OutputStreamWriter(conn.outputStream).use { writer ->
-                    writer.write(jsonBody.toString())
-                    writer.flush()
-                }
-
-                var responseCode = conn.responseCode
-                if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
-                    val newUrl = conn.getHeaderField("Location")
-                    conn = URL(newUrl).openConnection() as HttpURLConnection
-                    conn.requestMethod = "POST"
-                    conn.setRequestProperty("Content-Type", "application/json")
-                    conn.doOutput = true
-                    conn.connectTimeout = 10000
-                    conn.readTimeout = 10000
-
-                    java.io.OutputStreamWriter(conn.outputStream).use { writer ->
-                        writer.write(jsonBody.toString())
-                        writer.flush()
-                    }
-                    responseCode = conn.responseCode
-                }
-
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    val responseStr = conn.inputStream.bufferedReader().use { it.readText() }.trim()
-                    withContext(Dispatchers.Main) {
-                        try {
-                            val jsonResponse = JSONObject(responseStr)
-                            val status = jsonResponse.optString("status", "")
-                            if (status.equals("SUCCESS", ignoreCase = true) || status.equals("REGISTERED", ignoreCase = true) || status.equals("ALREADY_REGISTERED", ignoreCase = true)) {
-                                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@RealityEliteActivity, "reality_pro_prefs")
-                                prefs.edit().putBoolean("is_registered_for_$userId", true).apply()
-
-                                if (status.equals("ALREADY_REGISTERED", ignoreCase = true)) {
-                                    Toast.makeText(this@RealityEliteActivity, "Account retrieved successfully! Checking active status...", Toast.LENGTH_SHORT).show()
-                                    verifyCode(true)
-                                } else {
-                                    Toast.makeText(this@RealityEliteActivity, "Successfully registered!", Toast.LENGTH_SHORT).show()
-                                    btnRegister.text = "Registered"
-                                    btnRegister.isEnabled = false
-                                    cardStep2.alpha = 1.0f
-                                    btnPayUpi.isEnabled = true
-                                    updateUpiButtonText()
-                                }
-                            } else {
-                                Toast.makeText(this@RealityEliteActivity, "Registration failed or already exists.", Toast.LENGTH_SHORT).show()
-                                btnRegister.isEnabled = true
-                                btnRegister.text = "Register Identity"
-                            }
-                        } catch(e: Exception) {
-                            btnRegister.isEnabled = true
-                            btnRegister.text = "Register Identity"
-                        }
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(this@RealityEliteActivity, "Failed to register. Server Error: $responseCode", Toast.LENGTH_SHORT).show()
-                        btnRegister.isEnabled = true
-                        btnRegister.text = "Register Identity"
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@RealityEliteActivity, "Network Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    btnRegister.isEnabled = true
-                    btnRegister.text = "Register Identity"
-                }
-            }
-        }
-    }
 
     private fun showUpiPaymentDialog() {
         val intent = Intent(this, PaymentVerificationActivity::class.java)
@@ -535,8 +419,6 @@ class RealityEliteActivity : BaseActivity() {
         if (!isSilentCheck) {
             findViewById<MaterialButton>(R.id.btn_verify).isEnabled = false
             findViewById<MaterialButton>(R.id.btn_verify).text = "Verifying..."
-        } else {
-            btnRegister.text = "Checking License..."
         }
 
         lifecycleScope.launch(Dispatchers.IO) {
@@ -654,8 +536,6 @@ class RealityEliteActivity : BaseActivity() {
         val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
         prefs.edit().remove("pro_saved_verification_code_for_$userId").apply()
 
-        btnRegister.text = "Registered"
-        btnRegister.isEnabled = false
         cardStep2.alpha = 1.0f
         btnPayUpi.isEnabled = true
         updateUpiButtonText()

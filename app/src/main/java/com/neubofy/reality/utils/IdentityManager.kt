@@ -80,6 +80,7 @@ object IdentityManager {
 
                     val userId = responseJson.optString("userId")
                     val backupPassword = responseJson.optString("backupPassword")
+                    val status = responseJson.optString("status")
 
                     if (userId.isNotEmpty() && backupPassword.isNotEmpty()) {
                         SecurePreferences.get(context, PREFS_NAME).edit().apply {
@@ -87,6 +88,44 @@ object IdentityManager {
                             putString(KEY_BACKUP_PASSWORD, backupPassword)
                             apply()
                         }
+
+                        val proPrefs = SecurePreferences.get(context, "reality_pro_prefs")
+                        val editor = proPrefs.edit()
+                        editor.putBoolean("is_registered_for_$userId", true)
+
+                        // Parse status and update features locally to avoid multiple requests
+                        val status = responseJson.optString("status")
+                        val expiryDate = responseJson.optString("expiryDate")
+
+                        if (status == "V") {
+                            // User is fully verified
+                            FeatureManager.enableRealityProFeatures(context)
+
+                            // If we have expiryDate, try to parse it
+                            if (expiryDate.isNotEmpty() && expiryDate != "null") {
+                                try {
+                                    val parts = expiryDate.split("-")
+                                    if (parts.size >= 2) {
+                                        val expiryUnix = parts[0].toLong()
+                                        val months = parts[1].toLong()
+
+                                        // App uses durationMs = (365L / 12) * months * 24 * 60 * 60 * 1000
+                                        val durationMs = (365L / 12) * months * 24 * 60 * 60 * 1000
+                                        val startTime = expiryUnix - durationMs
+
+                                        editor.putLong("feature_reality_pro_start_time_$userId", startTime)
+                                        editor.putLong("feature_reality_pro_end_time_$userId", expiryUnix)
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                        } else {
+                            // Reset local verification if not verified
+                            FeatureManager.disableRealityProFeatures(context)
+                        }
+
+                        editor.apply()
                     }
                 }
             } catch (e: Exception) {

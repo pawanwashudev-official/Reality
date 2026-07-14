@@ -90,8 +90,66 @@ export default {
           .join('');
         const backupPassword = pwHashHex.substring(0, 32);
 
+        let userDate = null;
+        let userStatus = null;
+        let userExpiryDate = null;
+
+        if (env.DB) {
+          try {
+            const existingRow = await env.DB.prepare(
+              'SELECT date, status, expiryDate FROM "Reality Elite members management" WHERE userId = ?'
+            ).bind(userId).first();
+
+            if (!existingRow) {
+              const currentDate = new Date().toISOString();
+              await env.DB.prepare(`
+                INSERT INTO "Reality Elite members management" (userId, date)
+                VALUES (?, ?)
+              `).bind(userId, currentDate).run();
+              userDate = currentDate;
+            } else {
+              userDate = existingRow.date;
+              userStatus = existingRow.status;
+              userExpiryDate = existingRow.expiryDate;
+
+              if (userExpiryDate) {
+                const parts = userExpiryDate.split("-");
+                let isExpired = false;
+                if (parts.length === 2) {
+                  const expiryUnix = parseInt(parts[0], 10);
+                  if (expiryUnix < Date.now()) isExpired = true;
+                } else if (parts.length === 4) {
+                  const yyyy = parseInt(parts[0], 10);
+                  const mm = parseInt(parts[1], 10) - 1;
+                  const dd = parseInt(parts[2], 10);
+                  const expiryDateObj = new Date(Date.UTC(yyyy, mm, dd));
+                  if (expiryDateObj.getTime() < Date.now()) isExpired = true;
+                }
+
+                if (isExpired) {
+                  await env.DB.prepare(`
+                    UPDATE "Reality Elite members management"
+                    SET status = NULL, expiryDate = NULL
+                    WHERE userId = ?
+                  `).bind(userId).run();
+                  userStatus = null;
+                  userExpiryDate = null;
+                }
+              }
+            }
+          } catch (e) {
+            console.error("DB Error in generate-identity:", e);
+          }
+        }
+
         return new Response(
-          JSON.stringify({ userId: userId, backupPassword: backupPassword }), 
+          JSON.stringify({
+            userId: userId,
+            backupPassword: backupPassword,
+            date: userDate,
+            status: userStatus,
+            expiryDate: userExpiryDate
+          }),
           { 
             status: 200, 
             headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } 
