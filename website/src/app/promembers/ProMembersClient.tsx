@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Shield, User, Calendar, Sparkles, ChevronLeft, ChevronRight, Search, SlidersHorizontal, Share2, Lock, Clock, CreditCard } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Shield, User, Calendar, Sparkles, ChevronLeft, ChevronRight, Search, SlidersHorizontal, Share2, Lock, Clock, CreditCard, ShieldCheck, Crown } from 'lucide-react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import ShareCertificateModal from './ShareCertificateModal';
 import { fetchSensitiveMemberData } from './actions';
 
@@ -16,141 +16,188 @@ interface ProMember {
 
 interface ProMembersClientProps {
   initialMembers: ProMember[];
+  totalFiltered: number;
+  initialSearch: string;
+  initialSort: 'latest' | 'oldest';
+  initialPage: number;
+  pageSize: number;
 }
 
-export default function ProMembersClient({ initialMembers }: ProMembersClientProps) {
+export default function ProMembersClient({
+  initialMembers,
+  totalFiltered,
+  initialSearch,
+  initialSort,
+  initialPage,
+  pageSize,
+}: ProMembersClientProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  const [adminPassword, setAdminPassword] = useState('');
+  // Search input state (local to input field)
+  const [searchInput, setSearchInput] = useState(initialSearch);
+
+  // Admin login credentials states
+  const [adminUserIdInput, setAdminUserIdInput] = useState('');
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminError, setAdminError] = useState('');
+  const [isVerifyingAdmin, setIsVerifyingAdmin] = useState(false);
+
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [sensitiveData, setSensitiveData] = useState<Record<string, { status: string | null, expiryDate: string | null }>>({});
 
+  // Sync input value if URL changes externally (e.g. back button)
   useEffect(() => {
-    const fetchData = async () => {
-      // Check for exact match in searchQuery
-      const exactMatch = initialMembers.find(m => m.userId.toLowerCase() === searchQuery.trim().toLowerCase());
+    setSearchInput(initialSearch);
+  }, [initialSearch]);
 
-      if (adminPassword.length > 0 || exactMatch) {
-         const response = await fetchSensitiveMemberData(exactMatch?.userId, adminPassword);
-         if (response && !response.error && response.data) {
-             setSensitiveData(response.data);
-             setIsAdmin(!!response.isAdmin);
-         } else {
-             if (adminPassword.length > 0) setIsAdmin(false);
-         }
-      } else {
-         setSensitiveData({});
-         setIsAdmin(false);
-      }
-    };
-
-    // Debounce slightly to prevent spamming
-    const timeout = setTimeout(() => {
-        fetchData();
-    }, 300);
-
-    return () => clearTimeout(timeout);
-  }, [searchQuery, adminPassword, initialMembers]);
-
-  const pageParam = searchParams.get('page');
-  const verifyParam = searchParams.get('verify');
-  const [currentPage, setCurrentPage] = useState(pageParam ? parseInt(pageParam, 10) : 1);
-  const pageSize = 50;
-
-  // Sync state when URL changes externally (e.g. back button)
+  // Sync state when URL has "verify" parameter to open modal
   useEffect(() => {
-    const page = searchParams.get('page');
-    if (page) {
-      setCurrentPage(parseInt(page, 10));
-    }
-
     const verify = searchParams.get('verify');
     if (verify) {
-      setSearchQuery(verify);
       setIsShareModalOpen(true);
     }
   }, [searchParams]);
 
-
-  // Filter and sort the full dataset on the client.
-  const processedMembers = useMemo(() => {
-    let result = [...initialMembers];
-
-    // 1. Search Filter
-    if (searchQuery.trim()) {
-      const lowerQuery = searchQuery.toLowerCase();
-      result = result.filter(m => m.userId.toLowerCase().includes(lowerQuery));
-    }
-
-    // 2. Sort
-    result.sort((a, b) => {
-      const dateA = new Date(a.dateJoined).getTime();
-      const dateB = new Date(b.dateJoined).getTime();
-
-      // Fallback for invalid dates
-      if (isNaN(dateA) || isNaN(dateB)) return 0;
-
-      if (sortOrder === 'latest') {
-        return dateB - dateA; // Newest first
-      } else {
-        return dateA - dateB; // Oldest first
-      }
-    });
-
-    return result;
-  }, [initialMembers, searchQuery, sortOrder]);
-
-  const isMounted = useRef(false);
-  // Reset to page 1 when search or sort changes
+  // Fetch sensitive details for searched member ONLY when search query is exactly 16 characters (full ID)
   useEffect(() => {
-    if (!isMounted.current) {
-      isMounted.current = true;
+    const fetchSearchedDetail = async () => {
+      const trimmedQuery = initialSearch.trim();
+      if (trimmedQuery.length === 16) {
+        const exactMatch = initialMembers.find(m => m.userId.toLowerCase() === trimmedQuery.toLowerCase());
+        if (exactMatch) {
+          try {
+            const response = await fetchSensitiveMemberData(exactMatch.userId, undefined, undefined);
+            if (response && !response.error && response.data) {
+              setSensitiveData(prev => ({ ...prev, ...response.data }));
+            }
+          } catch (err) {
+            console.error("Error fetching exact match details:", err);
+          }
+        }
+      }
+    };
+    fetchSearchedDetail();
+  }, [initialSearch, initialMembers]);
+
+  // Search submit handler (updates URL)
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const params = new URLSearchParams(searchParams.toString());
+    if (searchInput.trim()) {
+      params.set('search', searchInput.trim());
+    } else {
+      params.delete('search');
+    }
+    params.set('page', '1'); // Reset to page 1
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  // Sort change handler
+  const handleSortChange = (newSort: 'latest' | 'oldest') => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('sort', newSort);
+    params.set('page', '1');
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  // Pagination handler
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', newPage.toString());
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  // Admin submit credentials handler (prevents keystroke requests, uses form submit)
+  const handleAdminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminError('');
+    setIsVerifyingAdmin(true);
+
+    if (!adminUserIdInput.trim() || !adminPasswordInput.trim()) {
+      setAdminError('Please enter both Admin ID and Password.');
+      setIsVerifyingAdmin(false);
       return;
     }
-    setCurrentPage(1);
-    const params = new URLSearchParams(window.location.search);
-    params.set('page', '1');
-    router.replace(`?${params.toString()}`);
-  }, [searchQuery, sortOrder, router]);
 
-  const totalPages = Math.ceil(processedMembers.length / pageSize);
-
-  // Calculate sliced members for current page
-  const paginatedMembers = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    return processedMembers.slice(startIndex, startIndex + pageSize);
-  }, [processedMembers, currentPage, pageSize]);
-
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-    // Preserve existing search params if any
-    const params = new URLSearchParams(window.location.search);
-    params.set('page', newPage.toString());
-    router.push(`?${params.toString()}`);
+    try {
+      const response = await fetchSensitiveMemberData(
+        undefined,
+        adminUserIdInput.trim(),
+        adminPasswordInput.trim()
+      );
+      if (response && !response.error && response.data) {
+        setSensitiveData(response.data);
+        setIsAdmin(true);
+        setAdminError('');
+      } else {
+        setAdminError(response?.error || 'Invalid admin credentials.');
+        setIsAdmin(false);
+      }
+    } catch (err: any) {
+      setAdminError(err.message || 'An error occurred during verification.');
+      setIsAdmin(false);
+    } finally {
+      setIsVerifyingAdmin(false);
+    }
   };
+
+  const totalPages = Math.ceil(totalFiltered / pageSize);
 
   return (
     <>
       {/* Admin Access Section */}
-      <section className="py-4 border-b border-gray-800 bg-neural-bg relative z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-gray-400">
-            <Lock size={16} />
-            <span className="text-sm font-mono">Neubofy Team Access</span>
+      <section className="py-6 border-b border-gray-800 bg-neural-bg relative z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex items-center gap-2.5 text-gray-400">
+            <Lock size={16} className="text-gray-500" />
+            <div className="flex flex-col">
+              <span className="text-sm font-bold font-mono text-gray-300">Neubofy Team Access</span>
+              <span className="text-xs text-gray-500 font-mono">Unlock full directory subscription info</span>
+            </div>
           </div>
-          <div className="relative w-full sm:w-64">
-             <input
-                type="password"
-                placeholder="Enter connection secret..."
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-                className={`block w-full px-3 py-1.5 bg-black/50 border ${isAdmin ? 'border-green-500/50 focus:ring-green-500 focus:border-green-500' : 'border-gray-700 focus:ring-neural-cyan focus:border-neural-cyan'} rounded-lg text-gray-300 placeholder-gray-600 focus:outline-none focus:ring-1 transition-colors font-mono text-sm`}
-             />
-             {isAdmin && <Shield className="absolute right-3 top-1.5 text-green-500" size={16} />}
+          
+          <div className="w-full md:w-auto flex flex-col items-start gap-2">
+            <form onSubmit={handleAdminSubmit} className="flex flex-col sm:flex-row items-end gap-3 w-full sm:w-auto">
+              <div className="relative w-full sm:w-48">
+                <label htmlFor="admin-username" className="block text-[10px] text-gray-500 font-mono uppercase mb-1 font-bold tracking-wider">Admin ID</label>
+                <input
+                   id="admin-username"
+                   name="username"
+                   type="text"
+                   autoComplete="username"
+                   placeholder="Admin User ID..."
+                   value={adminUserIdInput}
+                   onChange={(e) => setAdminUserIdInput(e.target.value)}
+                   className="block w-full px-3 py-2 bg-black/50 border border-gray-700 focus:ring-neural-cyan focus:border-neural-cyan rounded-xl text-gray-300 placeholder-gray-600 focus:outline-none focus:ring-1 transition-colors font-mono text-sm"
+                />
+              </div>
+              <div className="relative w-full sm:w-48">
+                <label htmlFor="admin-password" className="block text-[10px] text-gray-500 font-mono uppercase mb-1 font-bold tracking-wider">Password</label>
+                <input
+                   id="admin-password"
+                   name="password"
+                   type="password"
+                   autoComplete="current-password"
+                   placeholder="Connection secret..."
+                   value={adminPasswordInput}
+                   onChange={(e) => setAdminPasswordInput(e.target.value)}
+                   className="block w-full px-3 py-2 bg-black/50 border border-gray-700 focus:ring-neural-cyan focus:border-neural-cyan rounded-xl text-gray-300 placeholder-gray-600 focus:outline-none focus:ring-1 transition-colors font-mono text-sm"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isVerifyingAdmin}
+                className={`w-full sm:w-auto px-5 py-2 bg-neural-cyan/10 border border-neural-cyan/30 text-neural-cyan hover:bg-neural-cyan/20 hover:border-neural-cyan/50 font-bold rounded-xl transition-all text-sm h-[38px] shrink-0 font-mono flex items-center justify-center gap-1.5`}
+              >
+                {isVerifyingAdmin ? 'Unlocking...' : 'Unlock'}
+                {isAdmin && <Shield className="text-green-400" size={15} />}
+              </button>
+            </form>
+            {adminError && <p className="text-xs text-red-400 font-mono">{adminError}</p>}
+            {isAdmin && <p className="text-xs text-green-400 font-mono">Access granted. Full subscription details unlocked.</p>}
           </div>
         </div>
       </section>
@@ -162,7 +209,7 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
           className="group relative px-8 py-4 bg-gradient-to-r from-neural-cyan/20 to-blue-500/10 border border-neural-cyan/50 rounded-2xl overflow-hidden hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(0,229,255,0.15)] hover:shadow-[0_0_30px_rgba(0,229,255,0.3)] flex items-center gap-3"
         >
           <div className="absolute inset-0 bg-neural-cyan/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-0"></div>
-          <Share2 className="text-neural-cyan relative z-10" size={24} />
+          <Share2 className="text-neural-cyan relative z-10 animate-pulse" size={24} />
           <span className="text-lg font-bold text-white relative z-10 font-outfit tracking-wide group-hover:text-neural-cyan transition-colors">
             Get Member Card & Share on Social Media
           </span>
@@ -175,30 +222,38 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
 
-                {/* Search */}
-                <div className="relative w-full sm:w-96">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="text-gray-500" size={18} />
+                {/* Search form with Verify submit button */}
+                <form onSubmit={handleSearchSubmit} className="flex w-full sm:w-auto gap-2">
+                    <div className="relative w-full sm:w-80">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="text-gray-500" size={18} />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search/Verify by User ID..."
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            className="block w-full pl-10 pr-3 py-2.5 bg-black/50 border border-gray-700 rounded-xl text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-neural-cyan focus:border-neural-cyan transition-colors font-mono text-sm"
+                        />
                     </div>
-                    <input
-                        type="text"
-                        placeholder="Search by User ID..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="block w-full pl-10 pr-3 py-2.5 bg-black/50 border border-gray-700 rounded-xl text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-neural-cyan focus:border-neural-cyan transition-colors font-mono text-sm"
-                    />
-                </div>
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 bg-neural-cyan text-black font-extrabold rounded-xl hover:bg-cyan-400 hover:scale-[1.02] active:scale-[0.98] transition-all font-mono text-sm flex items-center gap-1.5 shrink-0 shadow-lg shadow-neural-cyan/20"
+                    >
+                      Verify
+                    </button>
+                </form>
 
-                {/* Sort */}
-                <div className="flex items-center gap-3 w-full sm:w-auto">
+                {/* Sort dropdown */}
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
                     <SlidersHorizontal className="text-gray-500 hidden sm:block" size={18} />
                     <select
-                        value={sortOrder}
-                        onChange={(e) => setSortOrder(e.target.value as 'latest' | 'oldest')}
-                        className="block w-full sm:w-48 pl-3 pr-8 py-2.5 bg-black/50 border border-gray-700 rounded-xl text-gray-300 focus:outline-none focus:ring-1 focus:ring-neural-cyan focus:border-neural-cyan transition-colors text-sm appearance-none cursor-pointer"
+                        value={initialSort}
+                        onChange={(e) => handleSortChange(e.target.value as 'latest' | 'oldest')}
+                        className="block w-full sm:w-48 pl-3 pr-8 py-2.5 bg-black/50 border border-gray-700 rounded-xl text-gray-300 focus:outline-none focus:ring-1 focus:ring-neural-cyan focus:border-neural-cyan transition-colors text-sm appearance-none cursor-pointer font-mono"
                     >
-                        <option value="latest">Latest to Oldest</option>
-                        <option value="oldest">Oldest to Latest</option>
+                        <option value="latest">Latest First</option>
+                        <option value="oldest">Oldest First</option>
                     </select>
                 </div>
             </div>
@@ -209,22 +264,22 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
       <section className="py-16 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          {processedMembers.length === 0 ? (
+          {initialMembers.length === 0 ? (
             <div className="text-center py-20 bg-neural-card/30 border border-gray-800 rounded-2xl">
-              <Shield className="mx-auto text-gray-600 mb-4" size={48} />
-              <h3 className="text-xl font-bold text-gray-400">No members found</h3>
-              <p className="text-gray-500 mt-2">
-                {searchQuery ? `No matches found for "${searchQuery}".` : 'Could not retrieve the member list at this time.'}
+              <Shield className="mx-auto text-gray-600 mb-4 animate-bounce" size={48} />
+              <h3 className="text-xl font-bold text-gray-400 font-mono">No active members found</h3>
+              <p className="text-gray-500 mt-2 font-mono text-sm max-w-md mx-auto">
+                {initialSearch ? `No exact matches found for User ID "${initialSearch}". Make sure it is correct.` : 'No active member directories loaded.'}
               </p>
             </div>
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {paginatedMembers.map((member, index) => (
+                {initialMembers.map((member, index) => (
                   <MemberCard
                      key={`${member.userId}-${index}`}
                      member={{...member, ...sensitiveData[member.userId]}}
-                     searchQuery={searchQuery}
+                     searchQuery={initialSearch}
                      isAdmin={isAdmin}
                   />
                 ))}
@@ -234,27 +289,27 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
               {totalPages > 1 && (
                 <div className="mt-12 flex justify-center items-center gap-4">
                   <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage <= 1}
-                    className={`p-2 rounded-lg border transition-colors ${
-                        currentPage > 1
-                        ? 'bg-neural-card border-gray-700 hover:border-neural-cyan hover:text-neural-cyan'
+                    onClick={() => handlePageChange(initialPage - 1)}
+                    disabled={initialPage <= 1}
+                    className={`p-2 rounded-xl border transition-all ${
+                        initialPage > 1
+                        ? 'bg-neural-card border-gray-700 hover:border-neural-cyan hover:text-neural-cyan hover:scale-105'
                         : 'bg-neural-card/30 border-gray-800 text-gray-600 cursor-not-allowed'
                     }`}
                   >
                     <ChevronLeft size={20} />
                   </button>
 
-                  <span className="font-mono text-gray-400">
-                    Page <span className="text-white">{currentPage}</span> of {totalPages}
+                  <span className="font-mono text-gray-400 text-sm">
+                    Page <span className="text-white font-bold">{initialPage}</span> of {totalPages}
                   </span>
 
                   <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage >= totalPages}
-                    className={`p-2 rounded-lg border transition-colors ${
-                        currentPage < totalPages
-                        ? 'bg-neural-card border-gray-700 hover:border-neural-cyan hover:text-neural-cyan'
+                    onClick={() => handlePageChange(initialPage + 1)}
+                    disabled={initialPage >= totalPages}
+                    className={`p-2 rounded-xl border transition-all ${
+                        initialPage < totalPages
+                        ? 'bg-neural-card border-gray-700 hover:border-neural-cyan hover:text-neural-cyan hover:scale-105'
                         : 'bg-neural-card/30 border-gray-800 text-gray-600 cursor-not-allowed'
                     }`}
                   >
@@ -270,7 +325,6 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
       <ShareCertificateModal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
-        members={initialMembers}
       />
     </>
   );
@@ -300,7 +354,7 @@ function MemberCard({ member, searchQuery, isAdmin }: { member: ProMember, searc
   if (!showDetails && member.userId.length > 8) {
      const start = member.userId.substring(0, 4);
      const end = member.userId.substring(member.userId.length - 4);
-     displayId = `${start}****${end}`;
+     displayId = `${start}••••${end}`;
   }
 
   let subStartDate = 'N/A';
@@ -322,7 +376,6 @@ function MemberCard({ member, searchQuery, isAdmin }: { member: ProMember, searc
           day: 'numeric'
         });
 
-        // App duration ms: Math.floor(365/12) * months * 24*60*60*1000
         const durationMs = Math.floor(365 / 12) * months * 24 * 60 * 60 * 1000;
         const startD = new Date(expiryUnix - durationMs);
         subStartDate = startD.toLocaleDateString('en-US', {
@@ -334,82 +387,113 @@ function MemberCard({ member, searchQuery, isAdmin }: { member: ProMember, searc
     }
   }
 
-  let statusText = 'UNKNOWN';
-  let statusColor = 'text-gray-500';
-  let statusIcon = <Shield className="text-gray-500 shrink-0" size={14} />;
+  let statusText = 'STANDARD';
+  let statusColor = 'text-cyan-400 bg-cyan-950/40 border-cyan-800/40';
+  let dotColor = 'bg-cyan-400 shadow-[0_0_8px_#00e5ff]';
+  let cardBorder = showDetails ? 'border-cyan-500/50 shadow-[0_0_20px_rgba(0,229,255,0.15)]' : 'border-gray-800 hover:border-cyan-500/30';
+  let cardBg = 'from-[#0A0E1A] to-[#05060B]';
+  let statusIcon = <Shield className="text-cyan-400 shrink-0" size={14} />;
 
   if (member.status === 'V') {
-    statusText = 'VERIFIED';
-    statusColor = 'text-green-500';
-    statusIcon = <Shield className="text-green-500 shrink-0" size={14} />;
+    statusText = 'ELITE PRO';
+    statusColor = 'text-yellow-400 bg-yellow-950/40 border-yellow-800/40';
+    dotColor = 'bg-yellow-400 shadow-[0_0_8px_#fbbf24]';
+    cardBorder = showDetails ? 'border-yellow-500/50 shadow-[0_0_25px_rgba(234,179,8,0.2)]' : 'border-gray-800 hover:border-yellow-500/30';
+    cardBg = 'from-[#1A1305] to-[#0A0702]';
+    statusIcon = <Crown className="text-yellow-400 shrink-0" size={14} />;
   } else if (member.status === 'P') {
     statusText = 'PENDING';
-    statusColor = 'text-yellow-500';
-    statusIcon = <Clock className="text-yellow-500 shrink-0" size={14} />;
+    statusColor = 'text-amber-500 bg-amber-950/40 border-amber-800/40';
+    dotColor = 'bg-amber-500 shadow-[0_0_8px_#f59e0b]';
+    cardBorder = showDetails ? 'border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.15)]' : 'border-gray-800 hover:border-amber-500/30';
+    cardBg = 'from-[#1A1005] to-[#0A0602]';
+    statusIcon = <Clock className="text-amber-500 shrink-0" size={14} />;
   }
 
   return (
-    <div className={`group relative bg-neural-card border ${showDetails ? 'border-neural-cyan/30' : 'border-gray-800'} p-6 rounded-2xl hover:border-neural-cyan/50 transition-all duration-300 shadow-lg hover:shadow-neural-cyan/10 overflow-hidden`}>
-      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-        <Sparkles className={member.status === 'P' ? 'text-yellow-500' : 'text-neural-cyan'} size={40} />
-      </div>
+    <div className={`group relative bg-gradient-to-b ${cardBg} border ${cardBorder} p-6 rounded-2xl transition-all duration-500 shadow-xl overflow-hidden backdrop-blur-md hover:scale-[1.03] hover:-translate-y-1.5`}>
+      {/* Glossy overlay sheen animation */}
+      <div className="absolute inset-0 w-[200%] translate-x-[-100%] group-hover:translate-x-[100%] bg-gradient-to-r from-transparent via-white/5 to-transparent transition-all duration-1000 ease-in-out pointer-events-none z-10" />
 
-      <div className="flex items-center gap-4 mb-4 relative z-10">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-800 to-black border border-gray-700 flex items-center justify-center shadow-inner shrink-0">
-          <User className="text-gray-400 group-hover:text-white transition-colors" size={24} />
+      {/* Decorative Cyber Grid Background Pattern */}
+      <div className="absolute inset-0 opacity-[0.02] bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+
+      {/* Floating Sparkles for Elite / Pending members */}
+      {(member.status === 'V' || member.status === 'P') && (
+        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
+          <Sparkles className={member.status === 'V' ? 'text-yellow-500' : 'text-amber-500'} size={32} />
         </div>
-        <div className="min-w-0">
+      )}
+
+      {/* Header section: Avatar, ID, Status */}
+      <div className="flex items-center gap-4 mb-5 relative z-10">
+        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br from-gray-900 to-[#05050A] border ${member.status === 'V' ? 'border-yellow-500/30' : 'border-gray-800'} flex items-center justify-center shadow-inner shrink-0 group-hover:border-opacity-50 transition-colors`}>
+          {member.status === 'V' ? (
+            <Crown className="text-yellow-400 group-hover:scale-110 transition-transform" size={24} />
+          ) : (
+            <User className="text-gray-400 group-hover:text-cyan-400 transition-colors" size={24} />
+          )}
+        </div>
+        
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            {statusIcon}
-            <span className={`text-xs font-bold ${statusColor} tracking-wider`}>{statusText}</span>
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[10px] font-bold tracking-wider uppercase font-mono ${statusColor}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${dotColor} animate-pulse`} />
+              {statusText}
+            </span>
           </div>
-          <div className="font-mono text-white text-lg mt-1 tracking-tight truncate" title={member.userId}>
+          <div className="font-mono text-white text-lg mt-1.5 tracking-tight truncate font-bold" title={member.userId}>
             {displayId}
           </div>
         </div>
       </div>
 
-      <div className="pt-4 border-t border-gray-800/50 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-2 text-gray-500 text-sm font-mono shrink-0">
-          <Calendar size={14} />
-          <span>Joined</span>
+      {/* Main Details Body */}
+      <div className="space-y-3.5 relative z-10 pt-4 border-t border-gray-900/60">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-gray-500 text-xs font-mono font-medium uppercase tracking-wider">
+            <Calendar size={13} className="text-gray-600" />
+            <span>Registration</span>
+          </div>
+          <div className="text-gray-300 text-sm font-semibold font-mono">
+            {displayDate}
+          </div>
         </div>
-        <div className="text-gray-300 text-sm font-medium truncate ml-2">
-          {displayDate}
-        </div>
-      </div>
 
-      {showDetails && member.expiryDate && (
-        <div className="mt-4 pt-4 border-t border-gray-800/50 space-y-3 relative z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-gray-500 text-xs font-mono">
-              <CreditCard size={12} />
-              <span>Purchased</span>
+        {showDetails && member.expiryDate && (
+          <div className="pt-3.5 mt-3.5 border-t border-gray-900/60 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-gray-500 text-xs font-mono font-medium uppercase tracking-wider">
+                <CreditCard size={13} className="text-gray-600" />
+                <span>Purchased</span>
+              </div>
+              <div className="text-gray-300 text-sm font-semibold font-mono">
+                {subStartDate}
+              </div>
             </div>
-            <div className="text-gray-300 text-xs font-medium">
-              {subStartDate}
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-gray-500 text-xs font-mono font-medium uppercase tracking-wider">
+                <Clock size={13} className="text-gray-600" />
+                <span>Plan Duration</span>
+              </div>
+              <div className="text-gray-300 text-sm font-semibold font-mono">
+                {subMonths}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-gray-500 text-xs font-mono font-medium uppercase tracking-wider">
+                <ShieldCheck size={13} className="text-gray-600" />
+                <span>Valid Until</span>
+              </div>
+              <div className="text-yellow-400 text-sm font-bold font-mono">
+                {subEndDate}
+              </div>
             </div>
           </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-gray-500 text-xs font-mono">
-              <Clock size={12} />
-              <span>Duration</span>
-            </div>
-            <div className="text-gray-300 text-xs font-medium">
-              {subMonths}
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-gray-500 text-xs font-mono">
-              <Calendar size={12} />
-              <span>Expires</span>
-            </div>
-            <div className="text-neural-cyan text-xs font-bold">
-              {subEndDate}
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

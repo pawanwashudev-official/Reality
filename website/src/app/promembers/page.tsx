@@ -98,17 +98,51 @@ async function getProMembers(): Promise<MembersResponse | null> {
   }
 }
 
-export default async function ProMembersPage() {
+interface PageProps {
+  searchParams: {
+    page?: string;
+    search?: string;
+    sort?: string;
+  };
+}
+
+export default async function ProMembersPage({ searchParams }: PageProps) {
   const data = await getProMembers();
+  const allMembers = data?.members || [];
+  const totalActive = data?.total || 0;
+
+  // Server-side filtering, sorting, and pagination
+  const rawSearch = searchParams?.search || '';
+  const searchQuery = rawSearch.trim().toLowerCase();
+  const sortOrder = (searchParams?.sort || 'latest') as 'latest' | 'oldest';
+  const currentPage = parseInt(searchParams?.page || '1', 10);
+  const pageSize = 50;
+
+  // 1. Filter
+  let filtered = allMembers;
+  if (searchQuery) {
+    filtered = allMembers.filter(m => m.userId.toLowerCase().includes(searchQuery));
+  }
+
+  // 2. Sort
+  filtered.sort((a, b) => {
+    const dateA = new Date(a.dateJoined).getTime();
+    const dateB = new Date(b.dateJoined).getTime();
+    if (isNaN(dateA) || isNaN(dateB)) return 0;
+    return sortOrder === 'latest' ? dateB - dateA : dateA - dateB;
+  });
+
+  // 3. Paginate
+  const totalFiltered = filtered.length;
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginated = filtered.slice(startIndex, startIndex + pageSize);
 
   // Strip sensitive info before sending to client component
-  const safeMembers = (data?.members || []).map(m => ({
+  const safeMembers = paginated.map(m => ({
     userId: m.userId,
     dateJoined: m.dateJoined,
     hasAccess: m.hasAccess,
   }));
-
-  const total = data?.total || 0;
 
   return (
     <div className="min-h-screen bg-neural-bg font-outfit text-gray-100 selection:bg-neural-cyan selection:text-black">
@@ -130,7 +164,7 @@ export default async function ProMembersPage() {
           <div className="flex justify-center gap-6">
             <div className="flex flex-col items-center p-4 bg-neural-card/50 border border-gray-800 rounded-xl min-w-[120px]">
               <Database className="text-neural-cyan mb-2" size={24} />
-              <span className="text-2xl font-bold text-white">{total}</span>
+              <span className="text-2xl font-bold text-white">{totalActive}</span>
               <span className="text-xs text-gray-500 font-mono uppercase mt-1">Total Active</span>
             </div>
           </div>
@@ -153,11 +187,17 @@ export default async function ProMembersPage() {
       </section>
 
       {/* Interactive Client Component for Search, Sort, and Grid Display */}
-      <Suspense fallback={<div>Loading members...</div>}>
+      <Suspense fallback={<div className="text-center py-20 font-mono text-gray-500">Loading members directory...</div>}>
         <ProMembersClient
           initialMembers={safeMembers}
+          totalFiltered={totalFiltered}
+          initialSearch={rawSearch}
+          initialSort={sortOrder}
+          initialPage={currentPage}
+          pageSize={pageSize}
         />
       </Suspense>
     </div>
   );
 }
+
