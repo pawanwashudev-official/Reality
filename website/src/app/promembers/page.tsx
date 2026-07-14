@@ -9,6 +9,8 @@ interface ProMember {
   userId: string;
   dateJoined: string;
   hasAccess: boolean;
+  status: string | null;
+  expiryDate: string | null;
 }
 
 interface MembersResponse {
@@ -74,7 +76,9 @@ async function getProMembers(): Promise<MembersResponse | null> {
         members = data.members.map((m: any) => ({
           userId: m.userId,
           dateJoined: m.date,
-          hasAccess: m.status === 'V'
+          hasAccess: m.status === 'V',
+          status: m.status || null,
+          expiryDate: m.expiryDate || null
         }));
       }
       if (typeof data.totalMembers === 'number') {
@@ -96,7 +100,14 @@ async function getProMembers(): Promise<MembersResponse | null> {
 
 export default async function ProMembersPage() {
   const data = await getProMembers();
-  const members = data?.members || [];
+
+  // Strip sensitive info before sending to client component
+  const safeMembers = (data?.members || []).map(m => ({
+    userId: m.userId,
+    dateJoined: m.dateJoined,
+    hasAccess: m.hasAccess,
+  }));
+
   const total = data?.total || 0;
 
   return (
@@ -144,7 +155,7 @@ export default async function ProMembersPage() {
       {/* Interactive Client Component for Search, Sort, and Grid Display */}
       <Suspense fallback={<div>Loading members...</div>}>
         <ProMembersClient
-          initialMembers={members}
+          initialMembers={safeMembers}
         />
       </Suspense>
     </div>

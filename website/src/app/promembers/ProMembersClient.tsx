@@ -1,14 +1,17 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Shield, User, Calendar, Sparkles, ChevronLeft, ChevronRight, Search, SlidersHorizontal, Share2 } from 'lucide-react';
+import { Shield, User, Calendar, Sparkles, ChevronLeft, ChevronRight, Search, SlidersHorizontal, Share2, Lock, Clock, CreditCard } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ShareCertificateModal from './ShareCertificateModal';
+import { fetchSensitiveMemberData } from './actions';
 
 interface ProMember {
   userId: string;
   dateJoined: string;
   hasAccess: boolean;
+  status?: string | null;
+  expiryDate?: string | null;
 }
 
 interface ProMembersClientProps {
@@ -22,6 +25,36 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
   const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [sensitiveData, setSensitiveData] = useState<Record<string, { status: string | null, expiryDate: string | null }>>({});
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // Check for exact match in searchQuery
+      const exactMatch = initialMembers.find(m => m.userId.toLowerCase() === searchQuery.trim().toLowerCase());
+
+      if (adminPassword.length > 0 || exactMatch) {
+         const response = await fetchSensitiveMemberData(exactMatch?.userId, adminPassword);
+         if (response && !response.error && response.data) {
+             setSensitiveData(response.data);
+             setIsAdmin(!!response.isAdmin);
+         } else {
+             if (adminPassword.length > 0) setIsAdmin(false);
+         }
+      } else {
+         setSensitiveData({});
+         setIsAdmin(false);
+      }
+    };
+
+    // Debounce slightly to prevent spamming
+    const timeout = setTimeout(() => {
+        fetchData();
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [searchQuery, adminPassword, initialMembers]);
 
   const pageParam = searchParams.get('page');
   const verifyParam = searchParams.get('verify');
@@ -102,6 +135,26 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
 
   return (
     <>
+      {/* Admin Access Section */}
+      <section className="py-4 border-b border-gray-800 bg-neural-bg relative z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-gray-400">
+            <Lock size={16} />
+            <span className="text-sm font-mono">Neubofy Team Access</span>
+          </div>
+          <div className="relative w-full sm:w-64">
+             <input
+                type="password"
+                placeholder="Enter connection secret..."
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                className={`block w-full px-3 py-1.5 bg-black/50 border ${isAdmin ? 'border-green-500/50 focus:ring-green-500 focus:border-green-500' : 'border-gray-700 focus:ring-neural-cyan focus:border-neural-cyan'} rounded-lg text-gray-300 placeholder-gray-600 focus:outline-none focus:ring-1 transition-colors font-mono text-sm`}
+             />
+             {isAdmin && <Shield className="absolute right-3 top-1.5 text-green-500" size={16} />}
+          </div>
+        </div>
+      </section>
+
       {/* Call to Action: Share */}
       <section className="py-8 border-b border-gray-800 bg-neural-bg relative z-20 flex justify-center">
         <button
@@ -168,7 +221,12 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {paginatedMembers.map((member, index) => (
-                  <MemberCard key={`${member.userId}-${index}`} member={member} searchQuery={searchQuery} />
+                  <MemberCard
+                     key={`${member.userId}-${index}`}
+                     member={{...member, ...sensitiveData[member.userId]}}
+                     searchQuery={searchQuery}
+                     isAdmin={isAdmin}
+                  />
                 ))}
               </div>
 
@@ -218,7 +276,7 @@ export default function ProMembersClient({ initialMembers }: ProMembersClientPro
   );
 }
 
-function MemberCard({ member, searchQuery }: { member: ProMember, searchQuery: string }) {
+function MemberCard({ member, searchQuery, isAdmin }: { member: ProMember, searchQuery: string, isAdmin: boolean }) {
   // Format the date if it's a valid string
   let displayDate = member.dateJoined;
   try {
@@ -234,20 +292,66 @@ function MemberCard({ member, searchQuery }: { member: ProMember, searchQuery: s
     // Keep original string if parsing fails
   }
 
+  const isExactMatch = searchQuery.trim().toLowerCase() === member.userId.toLowerCase();
+  const showDetails = isExactMatch || isAdmin;
 
   let displayId = member.userId;
-  // If the user hasn't typed the exact ID, hide the middle
-  if (searchQuery.trim().toLowerCase() !== member.userId.toLowerCase() && member.userId.length > 8) {
+  // If the user hasn't typed the exact ID and is not admin, hide the middle
+  if (!showDetails && member.userId.length > 8) {
      const start = member.userId.substring(0, 4);
      const end = member.userId.substring(member.userId.length - 4);
      displayId = `${start}****${end}`;
   }
 
+  let subStartDate = 'N/A';
+  let subEndDate = 'N/A';
+  let subMonths = 'N/A';
+
+  if (member.expiryDate) {
+    const parts = member.expiryDate.split('-');
+    if (parts.length >= 2) {
+      const expiryUnix = parseInt(parts[0], 10);
+      const months = parseInt(parts[1], 10);
+      if (!isNaN(expiryUnix) && !isNaN(months)) {
+        subMonths = `${months} month${months > 1 ? 's' : ''}`;
+
+        const endD = new Date(expiryUnix);
+        subEndDate = endD.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+
+        // App duration ms: Math.floor(365/12) * months * 24*60*60*1000
+        const durationMs = Math.floor(365 / 12) * months * 24 * 60 * 60 * 1000;
+        const startD = new Date(expiryUnix - durationMs);
+        subStartDate = startD.toLocaleDateString('en-US', {
+           year: 'numeric',
+           month: 'short',
+           day: 'numeric'
+        });
+      }
+    }
+  }
+
+  let statusText = 'UNKNOWN';
+  let statusColor = 'text-gray-500';
+  let statusIcon = <Shield className="text-gray-500 shrink-0" size={14} />;
+
+  if (member.status === 'V') {
+    statusText = 'VERIFIED';
+    statusColor = 'text-green-500';
+    statusIcon = <Shield className="text-green-500 shrink-0" size={14} />;
+  } else if (member.status === 'P') {
+    statusText = 'PENDING';
+    statusColor = 'text-yellow-500';
+    statusIcon = <Clock className="text-yellow-500 shrink-0" size={14} />;
+  }
 
   return (
-    <div className="group relative bg-neural-card border border-gray-800 p-6 rounded-2xl hover:border-yellow-500/50 transition-all duration-300 shadow-lg hover:shadow-yellow-500/10 overflow-hidden">
+    <div className={`group relative bg-neural-card border ${showDetails ? 'border-neural-cyan/30' : 'border-gray-800'} p-6 rounded-2xl hover:border-neural-cyan/50 transition-all duration-300 shadow-lg hover:shadow-neural-cyan/10 overflow-hidden`}>
       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-        <Sparkles className="text-yellow-500" size={40} />
+        <Sparkles className={member.status === 'P' ? 'text-yellow-500' : 'text-neural-cyan'} size={40} />
       </div>
 
       <div className="flex items-center gap-4 mb-4 relative z-10">
@@ -256,8 +360,8 @@ function MemberCard({ member, searchQuery }: { member: ProMember, searchQuery: s
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <Shield className="text-green-500 shrink-0" size={14} />
-            <span className="text-xs font-bold text-green-500 tracking-wider">VERIFIED</span>
+            {statusIcon}
+            <span className={`text-xs font-bold ${statusColor} tracking-wider`}>{statusText}</span>
           </div>
           <div className="font-mono text-white text-lg mt-1 tracking-tight truncate" title={member.userId}>
             {displayId}
@@ -274,6 +378,38 @@ function MemberCard({ member, searchQuery }: { member: ProMember, searchQuery: s
           {displayDate}
         </div>
       </div>
+
+      {showDetails && member.expiryDate && (
+        <div className="mt-4 pt-4 border-t border-gray-800/50 space-y-3 relative z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-gray-500 text-xs font-mono">
+              <CreditCard size={12} />
+              <span>Purchased</span>
+            </div>
+            <div className="text-gray-300 text-xs font-medium">
+              {subStartDate}
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-gray-500 text-xs font-mono">
+              <Clock size={12} />
+              <span>Duration</span>
+            </div>
+            <div className="text-gray-300 text-xs font-medium">
+              {subMonths}
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-gray-500 text-xs font-mono">
+              <Calendar size={12} />
+              <span>Expires</span>
+            </div>
+            <div className="text-neural-cyan text-xs font-bold">
+              {subEndDate}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
