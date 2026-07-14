@@ -309,7 +309,7 @@ class NightlySettingsActivity : BaseActivity() {
         val minute = currentMinutes % 60
         
         com.google.android.material.timepicker.MaterialTimePicker.Builder()
-            .setTimeFormat(com.google.android.material.timepicker.TimeFormat.CLOCK_24H)
+            .setTimeFormat(com.google.android.material.timepicker.TimeFormat.CLOCK_12H)
             .setHour(hour)
             .setMinute(minute)
             .setTitleText(if (isStartTime) "Select Start Time" else "Select End Time")

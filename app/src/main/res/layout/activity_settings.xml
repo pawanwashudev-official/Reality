@@ -736,7 +736,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Reality Sleep Mode"
+                            android:text="Auto Dark Mode &amp; Grayscale on Bedtime (Android 15+)"
                             android:textColor="?attr/colorPrimary"
                                 android:fontFamily="monospace"
                             android:textSize="16sp"
@@ -747,7 +747,7 @@
                             android:id="@+id/tv_reality_sleep_status"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Grayscale, Dim &amp; Dark Mode"
+                            android:text="Grayscale, Dim &amp; Dark Mode on Schedule"
                             android:textColor="?attr/colorOnSurfaceVariant"
                             android:textSize="12sp" />
                     </LinearLayout>

@@ -514,7 +514,7 @@ class SmartSleepActivity : BaseActivity() {
         val zdt = instant.atZone(ZoneId.systemDefault())
         
         val picker = MaterialTimePicker.Builder()
-            .setTimeFormat(TimeFormat.CLOCK_24H)
+            .setTimeFormat(TimeFormat.CLOCK_12H)
             .setHour(zdt.hour)
             .setMinute(zdt.minute)
             .setTitleText(if (isStart) "Slept at" else "Woke up at")
@@ -534,7 +534,7 @@ class SmartSleepActivity : BaseActivity() {
 
     private fun showAddSleepPicker() {
         val picker = MaterialTimePicker.Builder()
-            .setTimeFormat(TimeFormat.CLOCK_24H)
+            .setTimeFormat(TimeFormat.CLOCK_12H)
             .setTitleText("New Sleep Start")
             .setHour(23).setMinute(0).build()
             
@@ -546,7 +546,7 @@ class SmartSleepActivity : BaseActivity() {
 
     private fun showAddWakePicker(sh: Int, sm: Int) {
         val picker = MaterialTimePicker.Builder()
-            .setTimeFormat(TimeFormat.CLOCK_24H)
+            .setTimeFormat(TimeFormat.CLOCK_12H)
             .setTitleText("New Wake Time")
             .setHour(7).setMinute(0).build()
             

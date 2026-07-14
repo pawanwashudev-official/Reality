@@ -55,13 +55,24 @@ object SecureTimeProvider {
         // If elapsedRealtime has reset (reboot) or is lower than last known elapsed,
         // we recalculate the offset using the last recorded time as the minimum baseline time.
         if (elapsedRealtime < lastKnownElapsed) {
-            val newOffset = lastRecordedTime - elapsedRealtime
-            cachedOffset = newOffset
-            prefs.edit()
-                .putLong(KEY_TIME_OFFSET, newOffset)
-                .putLong(KEY_LAST_KNOWN_ELAPSED, elapsedRealtime)
-                .apply()
-            calculatedTime = lastRecordedTime
+            val currentSystemTime = System.currentTimeMillis()
+            if (currentSystemTime > lastRecordedTime) {
+                val newOffset = currentSystemTime - elapsedRealtime
+                cachedOffset = newOffset
+                prefs.edit()
+                    .putLong(KEY_TIME_OFFSET, newOffset)
+                    .putLong(KEY_LAST_KNOWN_ELAPSED, elapsedRealtime)
+                    .apply()
+                calculatedTime = currentSystemTime
+            } else {
+                val newOffset = lastRecordedTime - elapsedRealtime
+                cachedOffset = newOffset
+                prefs.edit()
+                    .putLong(KEY_TIME_OFFSET, newOffset)
+                    .putLong(KEY_LAST_KNOWN_ELAPSED, elapsedRealtime)
+                    .apply()
+                calculatedTime = lastRecordedTime
+            }
         } else {
             // Check if user set system clock backward below last recorded time
             if (calculatedTime < lastRecordedTime) {

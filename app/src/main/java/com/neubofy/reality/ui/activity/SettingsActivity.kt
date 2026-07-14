@@ -479,10 +479,10 @@ class SettingsActivity : BaseActivity() {
                 binding.tvRealitySleepStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_light))
                 if (isRealitySleepEnabled) prefs.saveRealitySleepEnabled(false)
             } else if (isRealitySleepEnabled) {
-                binding.tvRealitySleepStatus.text = "Enabled (Grayscale, Dim & Dark)"
+                binding.tvRealitySleepStatus.text = "Enabled (Grayscale, Dim & Dark on Bedtime)"
                 binding.tvRealitySleepStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_light))
             } else {
-                binding.tvRealitySleepStatus.text = "Grayscale, Dim & Dark Mode"
+                binding.tvRealitySleepStatus.text = "Grayscale, Dim & Dark Mode on Schedule"
                 binding.tvRealitySleepStatus.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
             }
         } else {

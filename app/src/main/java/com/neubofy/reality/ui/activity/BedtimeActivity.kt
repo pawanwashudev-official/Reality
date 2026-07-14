@@ -136,7 +136,7 @@ class BedtimeActivity : BaseActivity() {
         val min = currentMins % 60
         
         val picker = MaterialTimePicker.Builder()
-            .setTimeFormat(TimeFormat.CLOCK_24H)
+            .setTimeFormat(TimeFormat.CLOCK_12H)
             .setHour(hour)
             .setMinute(min)
             .setTitleText(if (isStartTime) "Select start time" else "Select end time")
