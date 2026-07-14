@@ -226,7 +226,7 @@ export default {
 
         // Fetch only safe, shareable details from D1
         const { results } = await env.DB.prepare(
-          'SELECT userId, date, status FROM "Reality Elite members management" WHERE status = \'V\' ORDER BY date DESC'
+          'SELECT userId, date, status, expiryDate FROM "Reality Elite members management" ORDER BY date DESC'
         ).all();
 
         const totalMembers = results.length;
