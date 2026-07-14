@@ -50,8 +50,29 @@ object IdentityManager {
 
     private suspend fun generateAndCacheIdentity(context: Context) {
         withContext(Dispatchers.IO) {
+            val email = GoogleAuthManager.getUserEmail(context) ?: ""
+            val isSignedIn = GoogleAuthManager.isSignedIn(context) && email.isNotEmpty()
             val idToken = GoogleAuthManager.getIdToken(context)
-            if (idToken.isNullOrBlank()) {
+            
+            if (!isSignedIn || idToken.isNullOrBlank()) {
+                // Auto remove all local subscription data if not signed in
+                val featuresPrefs = SecurePreferences.get(context, "reality_features")
+                val proPrefs = SecurePreferences.get(context, "reality_pro_prefs")
+                
+                val featureEditor = featuresPrefs.edit()
+                featureEditor.putBoolean("feature_reality_pro", false)
+                featuresPrefs.all.keys.filter { it.startsWith("feature_reality_pro_") }.forEach {
+                    featureEditor.remove(it)
+                }
+                featureEditor.apply()
+                
+                val proEditor = proPrefs.edit()
+                proPrefs.all.keys.filter { it.contains("pro_saved_verification_code_for_") || it.contains("is_registered_for_") }.forEach {
+                    proEditor.remove(it)
+                }
+                proEditor.apply()
+                
+                clearIdentity(context)
                 return@withContext
             }
 
@@ -99,6 +120,12 @@ object IdentityManager {
                         // Parse status and update features locally to avoid multiple requests
                         val status = responseJson.optString("status")
                         val expiryDate = responseJson.optString("expiryDate")
+
+                        if (status == "P" || status == "V") {
+                            proEditor.putString("pro_saved_verification_code_for_$userId", "PENDING")
+                        } else {
+                            proEditor.remove("pro_saved_verification_code_for_$userId")
+                        }
 
                         if (status == "V") {
                             // User is fully verified
