@@ -580,7 +580,6 @@ class ScheduleListActivity : BaseActivity() {
     private fun showSyncSettingsDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_calendar_settings, null)
         val switchAutoSync = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switchAutoSync)
-        val btnManualSync = dialogView.findViewById<View>(R.id.btnManualSync)
         val btnSetupRealTimeSync = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSetupRealTimeSync)
 
         val isAutoSync = prefs.getBoolean("calendar_sync_auto_enabled", true)
@@ -603,13 +602,6 @@ class ScheduleListActivity : BaseActivity() {
         // Auto-sync toggle (enables 15-min heartbeat sync)
         switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
             prefs.saveBoolean("calendar_sync_auto_enabled", isChecked)
-        }
-
-        // Manual sync now button
-        btnManualSync.setOnClickListener {
-            dialog.dismiss()
-            triggerManualSync()
-            binding.swipeRefresh.isRefreshing = true
         }
 
         // Real-time sync setup (FCM webhook registration)

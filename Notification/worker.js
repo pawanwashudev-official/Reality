@@ -184,6 +184,9 @@ async function verifyUserCredentials(userId, backupPassword, env) {
 // HELPER: Send silent FCM push using Firebase HTTP v1 API
 // ============================================================
 async function sendFcmPush(fcmToken, env) {
+  if (!env.FIREBASE_SERVICE_ACCOUNT) {
+    throw new Error("FIREBASE_SERVICE_ACCOUNT secret is not configured in the Cloudflare Dashboard settings for this Worker.");
+  }
   const accessToken = await getFirebaseAccessToken(env.FIREBASE_SERVICE_ACCOUNT);
   const serviceAccount = JSON.parse(env.FIREBASE_SERVICE_ACCOUNT);
   const projectId = serviceAccount.project_id;
