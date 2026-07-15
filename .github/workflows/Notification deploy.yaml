@@ -1,0 +1,30 @@
+name: Deploy Notification Worker
+
+on:
+  push:
+    paths:
+      - 'Notification/**'  # Only triggers if changes occur in the Notification folder
+  workflow_dispatch:       # Enable manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Inject the same D1 DB ID used by the proxy worker
+      - name: Inject D1 Database ID
+        run: |
+          sed -i 's/database_id = ""/database_id = "${{ secrets.DB_ID }}"/g' Notification/wrangler.toml
+
+      - name: Install latest Wrangler
+        run: npm install -g wrangler@latest
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          account_Id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'Notification'
+          # FIREBASE_SERVICE_ACCOUNT is stored directly as a Cloudflare secret via Dashboard
+          # After first deploy: go to Workers > reality-notification-bridge > Settings > Variables > Add Secret

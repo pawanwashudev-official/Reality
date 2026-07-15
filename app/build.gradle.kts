@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.google.services)
 }
 
 layout.buildDirectory.set(File(projectDir, "build_v4"))
@@ -37,6 +38,8 @@ android {
         buildConfigField("String", "WORKER_URL", "\"$workerUrl\"")
         val aiUrl = localProperties.getProperty("AI_URL") ?: ""
         buildConfigField("String", "AI_URL", "\"$aiUrl\"")
+        val notificationWorkerUrl = localProperties.getProperty("NOTIFICATION_WORKER_URL") ?: ""
+        buildConfigField("String", "NOTIFICATION_WORKER_URL", "\"$notificationWorkerUrl\"")
 
         val buildTimestamp = System.currentTimeMillis()
         buildConfigField("Long", "BUILD_TIMESTAMP", "${buildTimestamp}L")
@@ -209,4 +212,8 @@ dependencies {
     
     // Professional App Updater (Open Source)
     implementation("io.github.azhon:appupdate:4.3.6")
+
+    // Firebase Cloud Messaging
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 }

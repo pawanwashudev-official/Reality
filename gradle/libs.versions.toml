@@ -18,6 +18,8 @@ timerangepicker = "1.0.0"
 room = "2.6.1"
 work = "2.9.0"
 ksp = "1.9.24-1.0.20"
+googleServices = "4.4.1"
+firebaseBom = "32.8.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -35,7 +37,6 @@ mpandroidchart = { module = "com.github.PhilJay:MPAndroidChart", version.ref = "
 provider = { module = "dev.rikka.shizuku:provider", version.ref = "api" }
 timerangepicker = { module = "nl.joery.timerangepicker:timerangepicker", version.ref = "timerangepicker" }
 
-
 # Room
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
@@ -44,10 +45,14 @@ room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 # WorkManager
 work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 
+# Firebase
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging-ktx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 
 

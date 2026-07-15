@@ -407,7 +407,14 @@
 
         <!-- TapasyaService removed — replaced by stateless TapasyaManager (no background process) -->
 
-
+        <!-- Firebase Cloud Messaging service — receives silent calendar sync pushes -->
+        <service
+            android:name=".services.RealityFCMService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
         <receiver
             android:name=".receivers.AdminLockReceiver"

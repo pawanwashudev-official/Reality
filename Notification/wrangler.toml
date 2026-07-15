@@ -1,0 +1,18 @@
+name = "reality-notification-bridge"
+main = "worker.js"
+compatibility_date = "2024-03-01"
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+[vars]
+WEBHOOK_SECRET_TOKEN = "reality-secret-webhook-validation-token"
+
+# Secrets set directly via Cloudflare Dashboard (never in code or GitHub):
+# - FIREBASE_SERVICE_ACCOUNT  (Firebase service account JSON string)
+
+[[d1_databases]]
+binding = "DB"
+database_name = "reality-db"
+database_id = ""  # Injected by GitHub Action

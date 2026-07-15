@@ -90,23 +90,34 @@ class ScheduleListActivity : BaseActivity() {
             android.R.color.holo_green_light,
             android.R.color.holo_orange_light
         )
-        
-        binding.swipeRefresh.setOnRefreshListener {
 
-            
-            // Trigger manual calendar sync
-            val isAutoSync = prefs.getBoolean("calendar_sync_auto_enabled", true)
-            if (isAutoSync) {
-                val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.neubofy.reality.workers.CalendarSyncWorker>().build()
-                androidx.work.WorkManager.getInstance(applicationContext).enqueue(workRequest)
-                android.widget.Toast.makeText(this, "📅 Syncing calendar...", android.widget.Toast.LENGTH_SHORT).show()
-            }
-            
-            // Reload schedules after delay
-            binding.swipeRefresh.postDelayed({
+        binding.swipeRefresh.setOnRefreshListener {
+            triggerManualSync()
+        }
+    }
+
+    private fun triggerManualSync() {
+        android.widget.Toast.makeText(this, "\uD83D\uDCC5 Syncing calendar...", android.widget.Toast.LENGTH_SHORT).show()
+
+        // Always trigger sync regardless of auto-sync toggle (pull = explicit user intent)
+        val tag = "manual_calendar_sync"
+        val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.neubofy.reality.workers.CalendarSyncWorker>()
+            .addTag(tag)
+            .build()
+
+        val workManager = androidx.work.WorkManager.getInstance(applicationContext)
+        workManager.enqueue(workRequest)
+
+        // Observe work state and reload UI when done
+        workManager.getWorkInfosByTagLiveData(tag).observe(this) { workInfos ->
+            val info = workInfos?.firstOrNull() ?: return@observe
+            if (info.state == androidx.work.WorkInfo.State.SUCCEEDED ||
+                info.state == androidx.work.WorkInfo.State.FAILED ||
+                info.state == androidx.work.WorkInfo.State.CANCELLED
+            ) {
                 loadSchedules()
                 binding.swipeRefresh.isRefreshing = false
-            }, 2000)
+            }
         }
     }
 
@@ -567,38 +578,75 @@ class ScheduleListActivity : BaseActivity() {
     }
 
     private fun showSyncSettingsDialog() {
-        val prefsSync = getSharedPreferences("calendar_sync", android.content.Context.MODE_PRIVATE)
-        val isAutoSync = prefs.getBoolean("calendar_sync_auto_enabled", true)
-        
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_calendar_settings, null)
         val switchAutoSync = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switchAutoSync)
+        val btnManualSync = dialogView.findViewById<View>(R.id.btnManualSync)
+        val btnSetupRealTimeSync = dialogView.findViewById<View>(R.id.btnSetupRealTimeSync)
         val btnDisconnect = dialogView.findViewById<View>(R.id.btnDisconnect)
-        
+
+        val isAutoSync = prefs.getBoolean("calendar_sync_auto_enabled", true)
         switchAutoSync.isChecked = isAutoSync
-        
+
         val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
             .setView(dialogView)
             .show()
-            
+
+        // Auto-sync toggle (enables 15-min heartbeat sync)
         switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
             prefs.saveBoolean("calendar_sync_auto_enabled", isChecked)
         }
-        
-        btnDisconnect.setOnClickListener {
 
-             android.app.AlertDialog.Builder(this)
-                .setTitle("Disconnect Calendar?")
-                .setMessage("This will stop syncing and remove all synced events.")
-                .setPositiveButton("Disconnect") { _, _ ->
-                     prefsSync.edit().clear().apply()
-                     lifecycleScope.launch(Dispatchers.IO) {
-                         AppDatabase.getDatabase(applicationContext).calendarEventDao().deleteOldEvents(Long.MAX_VALUE)
-                         withContext(Dispatchers.Main) { 
-                             loadSchedules()
-                             android.widget.Toast.makeText(this@ScheduleListActivity, "Disconnected.", android.widget.Toast.LENGTH_SHORT).show() 
-                         }
-                     }
-                     dialog.dismiss()
+        // Manual sync now button
+        btnManualSync.setOnClickListener {
+            dialog.dismiss()
+            triggerManualSync()
+            binding.swipeRefresh.isRefreshing = true
+        }
+
+        // Real-time sync setup (FCM webhook registration)
+        btnSetupRealTimeSync.setOnClickListener {
+            val userId = getSharedPreferences("reality_prefs", android.content.Context.MODE_PRIVATE)
+                .getString("reality_user_id", null)
+            val backupPassword = getSharedPreferences("reality_prefs", android.content.Context.MODE_PRIVATE)
+                .getString("reality_backup_password", null)
+            val fcmToken = getSharedPreferences("reality_prefs", android.content.Context.MODE_PRIVATE)
+                .getString(com.neubofy.reality.services.RealityFCMService.PREF_FCM_TOKEN, null)
+            val workerUrl = com.neubofy.reality.BuildConfig.NOTIFICATION_WORKER_URL
+
+            if (userId.isNullOrEmpty() || backupPassword.isNullOrEmpty()) {
+                android.widget.Toast.makeText(this, "Sign in to your Reality account first.", android.widget.Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (fcmToken.isNullOrEmpty()) {
+                android.widget.Toast.makeText(this, "Waiting for device token... try again in a moment.", android.widget.Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (workerUrl.isEmpty()) {
+                android.widget.Toast.makeText(this, "Notification service not configured.", android.widget.Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Register FCM token with notification worker
+            com.neubofy.reality.services.RealityFCMService.registerTokenWithWorker(workerUrl, userId, backupPassword, fcmToken)
+            android.widget.Toast.makeText(this, "\uD83D\uDD14 Real-time sync setup started...", android.widget.Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
+        }
+
+        // Disconnect & clear all synced events
+        btnDisconnect.setOnClickListener {
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Clear Synced Events?")
+                .setMessage("This will remove all synced Google Calendar events from the app. Your Google Calendar is not affected.")
+                .setPositiveButton("Clear") { _, _ ->
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        AppDatabase.getDatabase(applicationContext).calendarEventDao().deleteOldEvents(Long.MAX_VALUE)
+                        getSharedPreferences("calendar_sync", android.content.Context.MODE_PRIVATE).edit().clear().apply()
+                        withContext(Dispatchers.Main) {
+                            loadSchedules()
+                            android.widget.Toast.makeText(this@ScheduleListActivity, "Synced events cleared.", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    dialog.dismiss()
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
