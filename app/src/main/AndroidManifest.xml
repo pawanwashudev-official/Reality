@@ -19,7 +19,7 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
-    <uses-permission android:name="android.permission.READ_CALENDAR"/>
+
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
@@ -436,6 +436,10 @@
 
         <receiver
             android:name=".receivers.ReminderReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".receivers.BedtimeAlarmReceiver"
             android:exported="false" />
 
         <receiver

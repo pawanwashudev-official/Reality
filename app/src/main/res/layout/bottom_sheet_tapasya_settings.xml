@@ -111,55 +111,7 @@
         app:labelBehavior="floating"
         android:layout_marginBottom="24dp"/>
 
-    <com.google.android.material.divider.MaterialDivider
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"/>
 
-    <!-- Calendar Source Section -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
-
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/baseline_sync_24"
-            app:tint="?attr/colorOnSurface"/>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="12dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Sync Source"
-                android:textColor="?attr/colorOnSurface"
-                android:textSize="16sp"
-                android:textStyle="bold"/>
-            
-            <TextView
-                android:id="@+id/tv_sync_source_desc"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Device Calendar"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:textSize="12sp"/>
-        </LinearLayout>
-
-        <com.google.android.material.switchmaterial.SwitchMaterial
-            android:id="@+id/switch_sync_source"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:checked="false"/>
-    </LinearLayout>
 
 
     <!-- Lock Start Time Section -->

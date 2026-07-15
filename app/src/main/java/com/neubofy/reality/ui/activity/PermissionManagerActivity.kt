@@ -211,19 +211,7 @@ class PermissionManagerActivity : BaseActivity() {
             )
         }
 
-        // 10. Calendar (Pro/Workspace)
-        if (featureManager.isRealityProEnabled()) {
-            val granted = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
-            addPermissionCard(
-                title = "Calendar",
-                desc = "Required to block apps during scheduled calendar events.",
-                iconRes = R.drawable.baseline_calendar_month_24,
-                isGranted = granted,
-                onClick = {
-                    if (!granted) permissionLauncher.launch(Manifest.permission.READ_CALENDAR)
-                }
-            )
-        }
+
 
         // 11. Camera
         val cameraGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED

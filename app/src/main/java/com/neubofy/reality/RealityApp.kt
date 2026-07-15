@@ -19,8 +19,7 @@ class RealityApp: Application() {
     DynamicColors.applyToActivitiesIfAvailable(this)
     Thread.setDefaultUncaughtExceptionHandler(CrashLogger(this))
     
-    // Schedule BlockCacheWorker to run every 3 minutes
-    scheduleBlockCacheWorker()
+    // BlockCacheWorker periodic 3-min polling removed per user request
     
     // Schedule HeartbeatWorker (15 min system pulse)
     com.neubofy.reality.workers.HeartbeatWorker.startHeartbeat(this)
@@ -59,21 +58,5 @@ class RealityApp: Application() {
     })
   }
   
-  private fun scheduleBlockCacheWorker() {
-    try {
-      val cacheWorkRequest = PeriodicWorkRequestBuilder<com.neubofy.reality.workers.BlockCacheWorker>(
-        3, TimeUnit.MINUTES
-      ).build()
-      
-      WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-        "BlockCacheUpdate",
-        ExistingPeriodicWorkPolicy.KEEP,
-        cacheWorkRequest
-      )
-      
-      com.neubofy.reality.utils.TerminalLogger.log("INIT: BlockCacheWorker scheduled")
-    } catch (e: Exception) {
-      com.neubofy.reality.utils.TerminalLogger.log("INIT ERROR: ${e.message}")
-    }
-  }
+
 }

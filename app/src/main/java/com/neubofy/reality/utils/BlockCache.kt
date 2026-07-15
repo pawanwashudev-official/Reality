@@ -72,12 +72,7 @@ object BlockCache {
         val context = appContext
         val now = if (context != null) SecureTimeProvider.currentTimeMillis(context) else System.currentTimeMillis()
         
-        // Lazy background refresh: if more than 30 seconds passed since last update, trigger an async rebuild
-        if (context != null && now - lastUpdateTime > 30_000) {
-            CoroutineScope(Dispatchers.IO).launch {
-                rebuildBox(context)
-            }
-        }
+
 
         // 1. Emergency Mode Override - Always allow during emergency
         if (emergencySessionEndTime > now) {

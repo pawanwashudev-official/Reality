@@ -35,18 +35,9 @@ class CalendarSyncWorker(context: Context, params: WorkerParameters) : Coroutine
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            if (ActivityCompat.checkSelfPermission(applicationContext, Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
-                TerminalLogger.log("CALENDAR SYNC: No permission")
-                return@withContext Result.failure()
-            }
-
             val prefs = applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
             val selectedCalendarIds = prefs.getStringSet("selected_calendar_ids", emptySet()) ?: emptySet()
-            
-            if (selectedCalendarIds.isEmpty()) {
-                TerminalLogger.log("CALENDAR SYNC: No calendars selected")
-                return@withContext Result.success()
-            }
+            val finalCalendarIds = if (selectedCalendarIds.isEmpty()) setOf("primary") else selectedCalendarIds
 
             val db = AppDatabase.getDatabase(applicationContext)
             val dao = db.calendarEventDao()
@@ -65,9 +56,9 @@ class CalendarSyncWorker(context: Context, params: WorkerParameters) : Coroutine
             // Update last sync timestamp (OVERWRITE, not accumulate)
             prefs.edit().putLong(KEY_LAST_SYNC_DATE, System.currentTimeMillis()).apply()
 
-            // === Fetch Today's Events from System Calendar ===
+            // === Fetch Today's Events from Google Calendar API ===
             val endTime = todayStart + (24 * 60 * 60 * 1000)
-            val fetchedEvents = fetchCalendarEvents(selectedCalendarIds, todayStart, endTime)
+            val fetchedEvents = fetchCalendarEvents(applicationContext, finalCalendarIds, todayStart, endTime)
             
             if (isDayChanged) {
                 // Fresh sync - just insert all
@@ -142,37 +133,21 @@ class CalendarSyncWorker(context: Context, params: WorkerParameters) : Coroutine
         return cal.timeInMillis
     }
     
-    private fun fetchCalendarEvents(
+    private suspend fun fetchCalendarEvents(
+        context: Context,
         calendarIds: Set<String>, 
         startTime: Long, 
         endTime: Long
     ): List<CalendarEvent> {
         val events = mutableListOf<CalendarEvent>()
         
-        val projection = arrayOf(
-            CalendarContract.Events._ID,
-            CalendarContract.Events.TITLE,
-            CalendarContract.Events.DTSTART,
-            CalendarContract.Events.DTEND,
-            CalendarContract.Events.CALENDAR_ID
-        )
-
-        val selection = "${CalendarContract.Events.CALENDAR_ID} IN (${calendarIds.joinToString(",")}) AND ${CalendarContract.Events.DTSTART} >= ? AND ${CalendarContract.Events.DTSTART} < ?"
-        val selectionArgs = arrayOf(startTime.toString(), endTime.toString())
-
-        applicationContext.contentResolver.query(
-            CalendarContract.Events.CONTENT_URI,
-            projection,
-            selection,
-            selectionArgs,
-            "${CalendarContract.Events.DTSTART} ASC"
-        )?.use { cursor ->
-            while (cursor.moveToNext()) {
-                val eventId = cursor.getString(0)
-                val title = cursor.getString(1) ?: "Untitled"
-                val start = cursor.getLong(2)
-                val end = cursor.getLong(3)
-                val calId = cursor.getString(4)
+        for (calId in calendarIds) {
+            val apiEvents = com.neubofy.reality.google.GoogleCalendarManager.getEvents(context, startTime, endTime, calId)
+            for (gEvent in apiEvents) {
+                val eventId = gEvent.id ?: continue
+                val title = gEvent.summary ?: "Untitled"
+                val start = gEvent.start.dateTime?.value ?: startTime
+                val end = gEvent.end.dateTime?.value ?: endTime
                 
                 events.add(CalendarEvent(eventId, title, start, end, calId, isEnabled = true))
             }

@@ -92,6 +92,7 @@ class SavedPreferencesLoader(private val context: Context) {
     fun saveBedtimeData(data: Constants.BedtimeData) {
         val sharedPreferences = context.getSharedPreferences("bedtime_mode", Context.MODE_PRIVATE)
         sharedPreferences.edit().putString("bedtime_data", gson.toJson(data)).apply()
+        com.neubofy.reality.utils.BedtimeAlarmScheduler.scheduleNextBedtimeAlarm(context)
     }
     
     fun getBedtimeData(): Constants.BedtimeData {

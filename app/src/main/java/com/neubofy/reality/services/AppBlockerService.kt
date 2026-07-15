@@ -1227,6 +1227,7 @@ class AppBlockerService : BaseBlockingService() {
         checkCurrentWindow()
         
         com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(this)
+        com.neubofy.reality.utils.BedtimeAlarmScheduler.scheduleNextBedtimeAlarm(this)
     }
     
     private fun checkCurrentWindow() {

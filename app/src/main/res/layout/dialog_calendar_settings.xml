@@ -61,17 +61,7 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnSelectCalendars"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Manage Selected Calendars"
-        android:textColor="?attr/colorOnSurface"
-        android:backgroundTint="#4A5568"
-        app:icon="@drawable/baseline_event_24"
-        app:iconTint="#FFFFFF"
-        app:cornerRadius="8dp"
-        android:layout_marginBottom="8dp" />
+
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnDisconnect"

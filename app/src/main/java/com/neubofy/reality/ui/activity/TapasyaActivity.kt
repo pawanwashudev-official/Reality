@@ -49,19 +49,7 @@ class TapasyaActivity : BaseActivity() {
     }
     private val dateFormat = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
 
-    private val requestCalendarPermissionLauncher = registerForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            binding.cardCalendarPerm.visibility = View.GONE
-            binding.rvCalendarEvents.visibility = View.VISIBLE
-            loadCalendarEvents()
-        } else {
-            binding.cardCalendarPerm.visibility = View.VISIBLE
-            binding.rvCalendarEvents.visibility = View.GONE
-            binding.tvPermMessage.text = "Permission needed to sync study blocks."
-        }
-    }
+
 
     private lateinit var calendarRepository: com.neubofy.reality.data.repository.CalendarRepository
     private lateinit var calendarAdapter: com.neubofy.reality.ui.adapter.CalendarEventAdapter
@@ -408,28 +396,13 @@ class TapasyaActivity : BaseActivity() {
         binding.rvCalendarEvents.adapter = calendarAdapter
         
         binding.btnConnectCalendar.setOnClickListener {
-            requestCalendarPermissionLauncher.launch(android.Manifest.permission.READ_CALENDAR)
+            // Deprecated - permission is removed
         }
         
         binding.btnShowEvents.setOnClickListener {
-             val useInternalSync = getSharedPreferences("tapasya_prefs", MODE_PRIVATE).getBoolean("sync_source_internal", false)
-             
-             if (useInternalSync) {
-                 loadCalendarEvents()
-                 binding.cardCalendarPerm.visibility = View.GONE
-                 binding.rvCalendarEvents.visibility = View.VISIBLE
-             } else {
-                 if (androidx.core.content.ContextCompat.checkSelfPermission(
-                    this, 
-                    android.Manifest.permission.READ_CALENDAR
-                ) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                     loadCalendarEvents()
-                     binding.cardCalendarPerm.visibility = View.GONE
-                     binding.rvCalendarEvents.visibility = View.VISIBLE
-                } else {
-                    requestCalendarPermissionLauncher.launch(android.Manifest.permission.READ_CALENDAR)
-                }
-             }
+            loadCalendarEvents()
+            binding.cardCalendarPerm.visibility = View.GONE
+            binding.rvCalendarEvents.visibility = View.VISIBLE
         }
         
         // Initial state
@@ -437,83 +410,28 @@ class TapasyaActivity : BaseActivity() {
     }
     
     private fun checkCalendarPermission() {
-        val useInternalSync = getSharedPreferences("tapasya_prefs", MODE_PRIVATE).getBoolean("sync_source_internal", false)
-        
-        if (useInternalSync) {
-            // Internal sync doesn't need calendar permission
-            binding.cardCalendarPerm.visibility = View.GONE
-            binding.rvCalendarEvents.visibility = View.VISIBLE
-            loadCalendarEvents() // Will route to internal
-        } else {
-            if (androidx.core.content.ContextCompat.checkSelfPermission(
-                    this, 
-                    android.Manifest.permission.READ_CALENDAR
-                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-            ) {
-                binding.cardCalendarPerm.visibility = View.GONE
-                binding.rvCalendarEvents.visibility = View.VISIBLE
-                loadCalendarEvents() 
-            } else {
-                binding.cardCalendarPerm.visibility = View.VISIBLE
-                binding.rvCalendarEvents.visibility = View.GONE
-            }
-        }
+        binding.cardCalendarPerm.visibility = View.GONE
+        binding.rvCalendarEvents.visibility = View.VISIBLE
+        loadCalendarEvents()
     }
     
     private var upcomingSmartEvent: com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent? = null
 
     private fun loadCalendarEvents() {
-        // "useInternalSync" variable name is legacy. 
-        // TRUE = Internal Blocking Schedule (from ScheduleManager)
-        // FALSE = Google Calendar API (via GoogleCalendarManager)
-        val useBlockingSchedule = getSharedPreferences("tapasya_prefs", MODE_PRIVATE).getBoolean("sync_source_internal", false)
-        
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                // 1. Fetch Events (00:00 - 23:59)
-                val events = if (useBlockingSchedule) {
-                     loadInternalEvents()
-                } else {
-                     // Check if we should use Google API (Network) or Device Calendar (ContentProvider)
-                     // User requested: "1 option is device calendar (repo) and other by API"
-                     // BUT effectively we have two modes in the switch: "Blocking Schedule" vs "Google/Device"
-                     // The user wants Google API to be Manual Refresh.
-                     
-                     // Let's implement Google API call here directly if not blocking schedule
-                     // NOTE: This requires Google Sign-In. If fails, fallback to Device Repo?
-                     // For now, let's try API and fallback to empty/error if not signed in.
-                     
-                     val cal = Calendar.getInstance()
-                     cal.set(Calendar.HOUR_OF_DAY, 0)
-                     cal.set(Calendar.MINUTE, 0)
-                     cal.set(Calendar.SECOND, 0)
-                     cal.set(Calendar.MILLISECOND, 0)
-                     val startOfDay = cal.timeInMillis
-                     
-                     cal.set(Calendar.HOUR_OF_DAY, 23)
-                     cal.set(Calendar.MINUTE, 59)
-                     cal.set(Calendar.SECOND, 59)
-                     val endOfDay = cal.timeInMillis
-
-                     val apiEvents = com.neubofy.reality.google.GoogleCalendarManager.getEvents(this@TapasyaActivity, startOfDay, endOfDay)
-                     
-                     if (apiEvents.isNotEmpty()) {
-                         apiEvents.map { gEvent ->
-                             com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent(
-                                 id = gEvent.id.hashCode().toLong(),
-                                 title = gEvent.summary ?: "No Title",
-                                 description = gEvent.description,
-                                 startTime = gEvent.start.dateTime.value,
-                                 endTime = gEvent.end.dateTime.value,
-                                 color = android.graphics.Color.BLUE,
-                                 location = gEvent.location
-                             )
-                         }
-                     } else {
-                        // Fallback to Device Calendar Repo if API returns empty 
-                        // (User might not be signed in or no internet, so allow offline device calendar)
-                        calendarRepository.getEventsForToday()
-                     }
+                // 1. Fetch Events from local DB cache directly (00:00 - 23:59)
+                val dbEvents = db.calendarEventDao().getAllEvents()
+                val events = dbEvents.map { dbEvent ->
+                    com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent(
+                        id = dbEvent.eventId.hashCode().toLong(),
+                        title = dbEvent.title,
+                        description = "",
+                        startTime = dbEvent.startTime,
+                        endTime = dbEvent.endTime,
+                        color = android.graphics.Color.BLUE,
+                        location = ""
+                    )
                 }
                 
                 // 2. Fetch Sessions for Today (00:00 - 23:59)
@@ -534,8 +452,6 @@ class TapasyaActivity : BaseActivity() {
                 // 3. Correlate
                 val correlatedEvents = correlateEventsWithSessions(events, sessions)
                 
-                // 4. Identify Smart Event (First Upcoming or Running)
-                val now = System.currentTimeMillis()
                 upcomingSmartEvent = correlatedEvents.firstOrNull { 
                      it.status == com.neubofy.reality.data.repository.CalendarRepository.EventStatus.RUNNING || 
                      (it.status == com.neubofy.reality.data.repository.CalendarRepository.EventStatus.UPCOMING) 
@@ -645,17 +561,7 @@ class TapasyaActivity : BaseActivity() {
             sheetBinding.tvPauseLimitVal.text = formatMinutes(pauseLimitMins)
         }
         
-        // Sync Source Switch
-        val prefs = getSharedPreferences("tapasya_prefs", MODE_PRIVATE)
-        var useInternalSync = prefs.getBoolean("sync_source_internal", false)
-        
-        sheetBinding.switchSyncSource.isChecked = useInternalSync
-        sheetBinding.tvSyncSourceDesc.text = if (useInternalSync) "Device Calendar (Local Sync)" else "Google Calendar API (Online)"
-        
-        sheetBinding.switchSyncSource.setOnCheckedChangeListener { _, isChecked ->
-            useInternalSync = isChecked
-            sheetBinding.tvSyncSourceDesc.text = if (useInternalSync) "Device Calendar (Local Sync)" else "Google Calendar API (Online)"
-        }
+        // Sync Source Switch removed per user request
 
         // Lock Start Time Switch
         val lockPrefs = getSharedPreferences("tapasya_prefs", MODE_PRIVATE) // Move to tapasya prefs
@@ -690,6 +596,7 @@ class TapasyaActivity : BaseActivity() {
         }
 
         // Block Distracting Apps Switch
+        val prefs = getSharedPreferences("tapasya_prefs", MODE_PRIVATE)
         var blockDistracting = prefs.getBoolean("block_distracting_in_tapasya", false)
         sheetBinding.switchBlockDistracting.isChecked = blockDistracting
         
@@ -725,10 +632,7 @@ class TapasyaActivity : BaseActivity() {
         sheetBinding.btnSaveSettings.setOnClickListener {
             saveSettings()
             
-            // Save Sync Pref
-            prefs.edit()
-                .putBoolean("sync_source_internal", useInternalSync)
-                .apply()
+            // Settings saved successfully
             
             // Refresh list if visible
             checkCalendarPermission()
@@ -760,8 +664,6 @@ class TapasyaActivity : BaseActivity() {
         
         // Resolve colors
         val colorPrimary = getThemeColor(android.R.attr.colorPrimary)
-        val colorSecondary = getThemeColor(android.R.attr.colorAccent) 
-        val colorError = getThemeColor(android.R.attr.colorError)
 
         when {
             state.isRunning -> {

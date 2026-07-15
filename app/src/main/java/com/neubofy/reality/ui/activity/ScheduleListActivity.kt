@@ -34,10 +34,7 @@ class ScheduleListActivity : BaseActivity() {
     private var manualList: MutableList<Constants.AutoTimedActionItem> = mutableListOf()
     private lateinit var dialogBinding: com.neubofy.reality.databinding.DialogAddTimedActionBinding
     
-    // Sync Logic
-    private val calendarPermissionLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) selectCalendars() else android.widget.Toast.makeText(this, "Permission denied", android.widget.Toast.LENGTH_SHORT).show()
-    }
+
 
     // Timeline Constants
     private val HOUR_HEIGHT_DP = 60
@@ -60,10 +57,7 @@ class ScheduleListActivity : BaseActivity() {
             binding.root.post { showSyncSettingsDialog() }
         }
 
-        // Request calendar permission immediately when opened
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_CALENDAR) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            calendarPermissionLauncher.launch(android.Manifest.permission.READ_CALENDAR)
-        }
+
     }
     
     private fun setupToolbar() {
@@ -98,15 +92,7 @@ class ScheduleListActivity : BaseActivity() {
         )
         
         binding.swipeRefresh.setOnRefreshListener {
-            // Check if manual sync is blocked by Strict Mode
-            val strict = prefs.getStrictModeData()
-            val isStrictActive = strict.isEnabled && !com.neubofy.reality.utils.StrictLockUtils.isMaintenanceWindow()
-            
-            if (isStrictActive && strict.isCalendarLocked) {
-                android.widget.Toast.makeText(this, "🔒 Manual sync blocked by Strict Mode. Edit allowed 00:00-00:10 daily.", android.widget.Toast.LENGTH_LONG).show()
-                binding.swipeRefresh.isRefreshing = false
-                return@setOnRefreshListener
-            }
+
             
             // Trigger manual calendar sync
             val isAutoSync = prefs.getBoolean("calendar_sync_auto_enabled", true)
@@ -192,10 +178,7 @@ class ScheduleListActivity : BaseActivity() {
             // 2. Load Synced Events
             val allDbEvents = db.calendarEventDao().getAllEvents()
 
-            // 3. Strict Mode Check
-            val strict = prefs.getStrictModeData()
-            val isStrictLocked = strict.isEnabled && !com.neubofy.reality.utils.StrictLockUtils.isMaintenanceWindow()
-            
+
             withContext(Dispatchers.Main) {
                 displayItems.clear()
                 
@@ -589,7 +572,6 @@ class ScheduleListActivity : BaseActivity() {
         
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_calendar_settings, null)
         val switchAutoSync = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switchAutoSync)
-        val btnSelect = dialogView.findViewById<View>(R.id.btnSelectCalendars)
         val btnDisconnect = dialogView.findViewById<View>(R.id.btnDisconnect)
         
         switchAutoSync.isChecked = isAutoSync
@@ -602,21 +584,8 @@ class ScheduleListActivity : BaseActivity() {
             prefs.saveBoolean("calendar_sync_auto_enabled", isChecked)
         }
         
-        btnSelect.setOnClickListener {
-            dialog.dismiss()
-            calendarPermissionLauncher.launch(android.Manifest.permission.READ_CALENDAR)
-        }
-        
         btnDisconnect.setOnClickListener {
-             // === STRICT MODE: Lock Calendar Disconnect ===
-             val strict = prefs.getStrictModeData()
-             val isStrictActive = strict.isEnabled && !com.neubofy.reality.utils.StrictLockUtils.isMaintenanceWindow()
-             
-             if (isStrictActive && strict.isCalendarLocked) {
-                 android.widget.Toast.makeText(this, "🔒 Calendar is locked by Strict Mode. Edit allowed 00:00-00:10 daily.", android.widget.Toast.LENGTH_LONG).show()
-                 return@setOnClickListener
-             }
-             
+
              android.app.AlertDialog.Builder(this)
                 .setTitle("Disconnect Calendar?")
                 .setMessage("This will stop syncing and remove all synced events.")
@@ -636,67 +605,10 @@ class ScheduleListActivity : BaseActivity() {
         }
     }
 
-    private fun selectCalendars() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val calendars = mutableListOf<Pair<String, String>>()
-            val projection = arrayOf(
-                android.provider.CalendarContract.Calendars._ID,
-                android.provider.CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
-                android.provider.CalendarContract.Calendars.ACCOUNT_NAME
-            )
 
-            contentResolver.query(
-                android.provider.CalendarContract.Calendars.CONTENT_URI,
-                projection, null, null, null
-            )?.use { cursor ->
-                while (cursor.moveToNext()) {
-                    val id = cursor.getString(0)
-                    val name = cursor.getString(1) ?: "Unknown"
-                    val account = cursor.getString(2) ?: "Local"
-                    val lower = name.lowercase()
-                    if (lower.contains("holiday") || lower.contains("birth") || lower.contains("week")) continue
-                    calendars.add(Pair(id, "$name ($account)"))
-                }
-            }
-
-            withContext(Dispatchers.Main) {
-                if (calendars.isEmpty()) {
-                    android.widget.Toast.makeText(this@ScheduleListActivity, "No calendars found", android.widget.Toast.LENGTH_SHORT).show()
-                } else {
-                    showSelectionDialog(calendars)
-                }
-            }
-        }
-    }
-    
-    private fun showSelectionDialog(calendars: List<Pair<String, String>>) {
-        val prefsSync = getSharedPreferences("calendar_sync", android.content.Context.MODE_PRIVATE)
-        val selectedIds = prefsSync.getStringSet("selected_calendar_ids", emptySet())?.toMutableSet() ?: mutableSetOf()
-        val items = calendars.map { it.second }.toTypedArray()
-        val checked = calendars.map { selectedIds.contains(it.first) }.toBooleanArray()
-
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-            .setTitle("Select Calendars")
-            .setMultiChoiceItems(items, checked) { _, which, isChecked ->
-                if (isChecked) selectedIds.add(calendars[which].first) else selectedIds.remove(calendars[which].first)
-            }
-            .setPositiveButton("Save") { _, _ ->
-                prefsSync.edit().putStringSet("selected_calendar_ids", selectedIds).apply()
-                syncAndReload()
-            }
-            .show()
-    }
 
     private fun syncAndReload() {
-        // === STRICT MODE: Block manual refresh when calendar is locked ===
-        val strict = prefs.getStrictModeData()
-        val isStrictActive = strict.isEnabled && !com.neubofy.reality.utils.StrictLockUtils.isMaintenanceWindow()
-        
-        if (isStrictActive && strict.isCalendarLocked) {
-            android.widget.Toast.makeText(this, "🔒 Manual sync blocked by Strict Mode.", android.widget.Toast.LENGTH_SHORT).show()
-            return
-        }
-        
+
         val isAutoSync = prefs.getBoolean("calendar_sync_auto_enabled", true)
         if (isAutoSync) {
             val workRequest = androidx.work.OneTimeWorkRequestBuilder<com.neubofy.reality.workers.CalendarSyncWorker>().build()
