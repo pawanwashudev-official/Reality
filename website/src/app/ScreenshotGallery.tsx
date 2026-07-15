@@ -42,7 +42,15 @@ const SCREENS: ScreenItem[] = [
 
 export default function ScreenshotGallery() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [loading, setLoading] = useState<boolean>(true);
   const currentScreen = SCREENS.find(s => s.id === activeTab) || SCREENS[0];
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId !== activeTab) {
+      setLoading(true);
+      setActiveTab(tabId);
+    }
+  };
 
   return (
     <div className="grid lg:grid-cols-12 gap-8 items-center max-w-6xl mx-auto">
@@ -58,7 +66,7 @@ export default function ScreenshotGallery() {
             return (
               <button
                 key={screen.id}
-                onClick={() => setActiveTab(screen.id)}
+                onClick={() => handleTabChange(screen.id)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition duration-300 ${
                   isActive 
                     ? 'bg-gradient-to-r from-neural-cyan/20 to-neural-purple/20 border-neural-cyan text-white font-semibold' 
@@ -97,10 +105,19 @@ export default function ScreenshotGallery() {
             
             {/* Screen Image container */}
             <div className="w-full h-full bg-[#0a0a0f] rounded-[24px] overflow-hidden relative flex items-center justify-center p-1">
+              {loading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0f]/90 z-10">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-10 h-10 border-4 border-neural-cyan/30 border-t-neural-cyan rounded-full animate-spin"></div>
+                    <span className="text-[10px] font-mono tracking-wider text-neural-cyan uppercase">Syncing View...</span>
+                  </div>
+                </div>
+              )}
               <img
                 src={currentScreen.img}
+                onLoad={() => setLoading(false)}
                 alt={`Reality Mobile App simulator displaying ${currentScreen.title}`}
-                className="max-w-full max-h-full object-contain rounded-[20px] transition duration-500"
+                className={`max-w-full max-h-full object-contain rounded-[20px] transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
               />
             </div>
           </div>

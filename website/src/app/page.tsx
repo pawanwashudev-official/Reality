@@ -154,7 +154,7 @@ export default async function Home() {
           <div className="space-y-20">
 
             {/* Diagram Layer 1: App Blocker Security */}
-            <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl">
+            <div className="bg-neural-card border border-gray-800 p-4 sm:p-8 rounded-2xl">
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
                 <Lock className="text-neural-cyan" size={24}/> Block Verification & Tamper Loop
               </h3>
@@ -165,7 +165,7 @@ export default async function Home() {
                     <li><strong className="text-white">Accessibility Watchdog:</strong> Instantly hooks layout update triggers to scan package titles against forbidden paths.</li>
                     <li><strong className="text-white">Device Admin Safeguard:</strong> Rejects deactivation attempts and shields settings menus from de-authorization hooks.</li>
                   </ul>
-                  <div className="flex gap-4 pt-2">
+                  <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2">
                     <a href="https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt" target="_blank" rel="noopener noreferrer" className="text-neural-cyan hover:underline font-mono text-xs flex items-center gap-1">
                       AppBlockerService.kt <ArrowUpRight size={12}/>
                     </a>
@@ -203,7 +203,7 @@ export default async function Home() {
             </div>
 
             {/* Diagram Layer 2: Room ORM Database Architecture */}
-            <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl">
+            <div className="bg-neural-card border border-gray-800 p-4 sm:p-8 rounded-2xl">
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
                 <Database className="text-neural-cyan" size={24}/> Database schema (Room ORM)
               </h3>
@@ -250,7 +250,7 @@ export default async function Home() {
             </div>
 
             {/* Diagram Layer 3: Cloud Backup Architecture */}
-            <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl">
+            <div className="bg-neural-card border border-gray-800 p-4 sm:p-8 rounded-2xl">
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
                 <FolderLock className="text-neural-cyan" size={24}/> Google Drive Encrypted Backups
               </h3>
@@ -296,7 +296,7 @@ export default async function Home() {
             </div>
 
             {/* Diagram Layer 4: Google Workspace Handshake */}
-            <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl">
+            <div className="bg-neural-card border border-gray-800 p-4 sm:p-8 rounded-2xl">
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
                 <RefreshCw className="text-neural-cyan" size={24}/> Google Calendar & Tasks Handshake
               </h3>
@@ -307,7 +307,7 @@ export default async function Home() {
                     <li><strong className="text-white">Credentials Validation:</strong> Interacts with Google Auth server using your client ID configs.</li>
                     <li><strong className="text-white">Synchronized writing:</strong> Automates tasks/events updates in Google Tasks and Calendar.</li>
                   </ul>
-                  <div className="flex gap-4 pt-2">
+                  <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2">
                     <a href="https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/google/GoogleCalendarManager.kt" target="_blank" rel="noopener noreferrer" className="text-neural-cyan hover:underline font-mono text-xs flex items-center gap-1">
                       GoogleCalendarManager.kt <ArrowUpRight size={12}/>
                     </a>
@@ -345,7 +345,7 @@ export default async function Home() {
             </div>
 
             {/* Diagram Layer 5: Cloudflare Worker Edge Identity */}
-            <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl">
+            <div className="bg-neural-card border border-gray-800 p-4 sm:p-8 rounded-2xl">
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
                 <Cpu className="text-neural-cyan" size={24}/> Cloudflare Worker Edge JIT Identity
               </h3>
@@ -392,7 +392,7 @@ export default async function Home() {
             </div>
 
             {/* Diagram Layer 6: Tapasya focus mechanics */}
-            <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl">
+            <div className="bg-neural-card border border-gray-800 p-4 sm:p-8 rounded-2xl">
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
                 <Zap className="text-neural-cyan" size={24}/> Tapasya focus logic
               </h3>
@@ -438,7 +438,7 @@ export default async function Home() {
             </div>
 
             {/* Diagram Layer 7: Wakeup Alarm scaling */}
-            <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl">
+            <div className="bg-neural-card border border-gray-800 p-4 sm:p-8 rounded-2xl">
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
                 <SmartphoneCharging className="text-neural-cyan" size={24}/> Math Alarm Difficulty Scaling
               </h3>
@@ -485,7 +485,7 @@ export default async function Home() {
             </div>
 
             {/* Diagram Layer 8: MCP Assistant Routing */}
-            <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl">
+            <div className="bg-neural-card border border-gray-800 p-4 sm:p-8 rounded-2xl">
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
                 <Brain className="text-neural-cyan" size={24}/> Model Context Protocol (MCP) Tool Routing
               </h3>
@@ -496,7 +496,7 @@ export default async function Home() {
                     <li><strong className="text-white">Command Parsing:</strong> Chat prompts are parsed to identify tool requirements.</li>
                     <li><strong className="text-white">Registry execution:</strong> Binds actions directly to `ToolRegistry.kt` for automation.</li>
                   </ul>
-                  <div className="flex gap-4 pt-2">
+                  <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2">
                     <a href="https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/utils/ToolRegistry.kt" target="_blank" rel="noopener noreferrer" className="text-neural-cyan hover:underline font-mono text-xs flex items-center gap-1">
                       ToolRegistry.kt <ArrowUpRight size={12}/>
                     </a>
@@ -531,7 +531,7 @@ export default async function Home() {
             </div>
 
             {/* Diagram Layer 9: Cinematic Styling Engine */}
-            <div className="bg-neural-card border border-gray-800 p-8 rounded-2xl">
+            <div className="bg-neural-card border border-gray-800 p-4 sm:p-8 rounded-2xl">
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
                 <Layout className="text-neural-cyan" size={24}/> Appearance & Theme Engine
               </h3>
@@ -641,7 +641,7 @@ export default async function Home() {
                 <p className="text-gray-400">Bring Your Own Cloud (BYOC) for ultimate control.</p>
              </div>
 
-             <div className="bg-neural-card p-8 rounded-2xl border border-gray-800 shadow-lg space-y-6">
+             <div className="bg-neural-card p-4 sm:p-8 rounded-2xl border border-gray-800 shadow-lg space-y-6">
                  <h3 className="text-2xl font-bold text-neural-cyan">OAuth Project Architecture</h3>
                  <p className="text-gray-300 text-sm leading-relaxed">
                      To ensure no centralized database has access to your files, you connect Reality directly to your Google Cloud Console project. All Google Tasks, Calendar events, and Docs logs are created straight from your device using local OAuth tokens.
@@ -650,15 +650,27 @@ export default async function Home() {
                  <div className="space-y-6 border-l-2 border-neural-purple pl-6">
                      <div>
                          <h4 className="text-lg font-bold text-white">1. Configure Google Cloud Console</h4>
-                         <p className="text-gray-400 text-sm mt-1">Activate the Calendar API, Docs API, Tasks API, and Drive API under your project dashboard.</p>
+                         <p className="text-gray-400 text-sm mt-1">
+                           Go to the <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-neural-cyan hover:underline">Google Cloud Console</a>, create a project, and enable the <strong>Google Calendar API</strong>, <strong>Google Drive API</strong>, <strong>Google Tasks API</strong>, and <strong>Google Docs API</strong>.
+                         </p>
                      </div>
                      <div>
-                         <h4 className="text-lg font-bold text-white">2. Generate Client Credentials</h4>
-                         <p className="text-gray-400 text-sm mt-1">Generate Google Desktop application credentials (OAuth client ID with Application type set to &apos;Desktop application&apos;).</p>
+                         <h4 className="text-lg font-bold text-white">2. Set Up OAuth Consent Screen & Test User</h4>
+                         <p className="text-gray-400 text-sm mt-1">
+                           Set up an External OAuth Consent Screen. Since the project is in testing, you <strong>must add your Google account email as a Test User</strong> to authorize login. Add scopes for Tasks, Drive, Calendar, and Documents.
+                         </p>
                      </div>
                      <div>
-                         <h4 className="text-lg font-bold text-white">3. Paste Keys inside Reality</h4>
-                         <p className="text-gray-400 text-sm mt-1">Open Settings &gt; Integrations &gt; Google Setup inside the app. Paste your client details to start on-device sync.</p>
+                         <h4 className="text-lg font-bold text-white">3. Generate Desktop Credentials</h4>
+                         <p className="text-gray-400 text-sm mt-1">
+                           Go to Credentials &gt; Create Credentials &gt; OAuth client ID. Select <strong>Desktop application</strong> as the Application type, name it, and copy the generated Client ID and Client Secret.
+                         </p>
+                     </div>
+                     <div>
+                         <h4 className="text-lg font-bold text-white">4. Link inside Reality</h4>
+                         <p className="text-gray-400 text-sm mt-1">
+                           Open Settings &gt; Integrations &gt; Google Setup inside the app. Paste your Client ID and Client Secret, and tap <strong>Sign In</strong>. Reality launches your browser for OAuth authentication and automatically catches the loopback callback locally at <code>http://127.0.0.1:8080/Callback</code> using a JIT on-device socket.
+                         </p>
                      </div>
                  </div>
              </div>
