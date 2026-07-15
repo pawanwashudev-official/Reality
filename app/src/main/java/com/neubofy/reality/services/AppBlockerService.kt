@@ -1052,6 +1052,23 @@ class AppBlockerService : BaseBlockingService() {
     // Updated signature to control session persistence
     private fun handleBlock(packageName: String, reason: String? = null, addToSession: Boolean = true) {
         com.neubofy.reality.utils.TerminalLogger.log("ACTION: Blocking $packageName. Reason: ${reason ?: "N/A"}")
+        
+        // Event-driven Sleep Mode Enforcement (Android 15+ Fix on bypass attempt)
+        try {
+            if (com.neubofy.reality.utils.ZenModeManager.isSupported()) {
+                val sleepPrefs = com.neubofy.reality.utils.SavedPreferencesLoader(applicationContext)
+                if (sleepPrefs.isRealitySleepEnabled()) {
+                    val isBedtime = com.neubofy.reality.utils.BlockCache.isBedtimeCurrentlyActive
+                    if (isBedtime) {
+                        com.neubofy.reality.utils.ZenModeManager.setZenState(applicationContext, true)
+                        com.neubofy.reality.utils.TerminalLogger.log("BYPASS CHECK: Sleep mode forced ON (bedtime active)")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         // Kill Process for stronger block
         try {
              val am = getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager
