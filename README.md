@@ -113,7 +113,7 @@ A fully customized UI rendering module allows personalizing fonts, layouts, and 
 Reality works without developer servers. You can host your own sync endpoints using a Google Cloud Console project:
 1. **Enable Google APIs**: Go to the Google Cloud Console and activate the **Calendar API**, **Drive API**, **Tasks API**, and **Docs API**.
 2. **OAuth Consent Screen**: Add your email as a test user and add scopes for Tasks, Drive, Calendar, and Docs.
-3. **Generate OAuth Credentials**: Go to `Credentials` -> `Create Credentials` -> `OAuth Client ID`. Create an Android client ID (add package name `com.neubofy.reality` and SHA-1 fingerprint) and a Web client ID.
+3. **Generate OAuth Credentials**: Go to `Credentials` -> `Create Credentials` -> `OAuth Client ID`. Select **Desktop application** as the application type, name your client, and generate the credentials.
 4. **Link inside Reality**: Paste your Client ID and Client Secret in [GoogleAuthManager.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/google/GoogleAuthManager.kt) / Google setup panel. Reality will execute direct on-device OAuth token updates with Google.
 
 ### Secure Identity & Encryption

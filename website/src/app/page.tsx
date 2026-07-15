@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import HeroActions from './HeroActions';
+import ScreenshotGallery from './ScreenshotGallery';
 
 import { 
   Download, 
@@ -127,7 +128,7 @@ export default async function Home() {
         </div>
       </header>
 
-      {/* Feature Screenshot Showcases (12 UI Screens Gallery) */}
+      {/* Feature Screenshot Showcases (Simulator Gallery) */}
       <section id="screenshots-gallery" className="py-24 bg-neural-card/10 border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 space-y-4">
@@ -136,20 +137,7 @@ export default async function Home() {
             <p className="text-gray-400 max-w-2xl mx-auto text-sm">Visual mockups of the principal modules running inside Reality.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <ScreenshotCard img="/dashboard_mockup.png" title="Life OS Dashboard" desc="Central metric console showing active scores, XP delta levels, and local database sync trackers." />
-            <ScreenshotCard img="/tapasya_timer_mockup.png" title="Tapasya Focus Timer" desc="Rigid focus screen enforcing Amoled DND parameters and tracking Effective Focus in 15-minute segments." />
-            <ScreenshotCard img="/nightly_protocol_mockup.png" title="Nightly Protocol Steps" desc="The step-by-step evening checklist interface managing Google workspace enqueues." />
-            <ScreenshotCard img="/settings_mockup.png" title="Main Settings Console" desc="Clean menu categorizing features, blocking configurations, sleep mode, and AI setups." />
-            <ScreenshotCard img="/reminders_mockup.png" title="Alarms & Reminders" desc="Setup for notifications and task schedules linked directly with Google accounts." />
-            <ScreenshotCard img="/usage_stats_mockup.png" title="App Usage Statistics" desc="Real-time on-device analytics tracking today's and 7-day screen limits per package." />
-            <ScreenshotCard img="/progress_mockup.png" title="XP Progress Analytics" desc="Visualized user level metrics showing progression histories and focus segments." />
-            <ScreenshotCard img="/profile_mockup.png" title="Google Sync & Profile" desc="Status trackers for Google Calendar, Docs, Tasks, Drive integration and Cloudflare Secure IDs." />
-            <ScreenshotCard img="/ai_chat_mockup.png" title="Reality AI Assistant" desc="Direct chat dialogue module with the local assistant resolving queries." />
-            <ScreenshotCard img="/tapasya_settings_mockup.png" title="Tapasya Configurations" desc="Target time, pause limit limits, and app blocking checkboxes." />
-            <ScreenshotCard img="/permissions_mockup.png" title="Permission Dashboard" desc="Central authorization checks verifying Accessibility service and Device Admin tools." />
-            <ScreenshotCard img="/nightly_settings_mockup.png" title="Protocol Customizer" desc="Configurator managing synchronization windows and toggling individual execution steps." />
-          </div>
+          <ScreenshotGallery />
         </div>
       </section>
 
@@ -159,7 +147,7 @@ export default async function Home() {
           <div className="text-center mb-20 space-y-4">
             <span className="text-xs uppercase font-mono tracking-widest text-neural-purple font-bold">Architecture Blueprints</span>
             <h2 className="text-4xl md:text-6xl font-extrabold text-white">Technical Connections & Visual Flows</h2>
-            <p className="text-gray-400 max-w-3xl mx-auto text-sm">Complete visual mappings explaining Reality's security policies, database ORM relations, on-device managers, and Cloudflare Worker endpoints.</p>
+            <p className="text-gray-400 max-w-3xl mx-auto text-sm">Complete visual mappings explaining Reality&apos;s security policies, database ORM relations, on-device managers, and Cloudflare Worker endpoints.</p>
             <div className="h-1 w-24 bg-gradient-to-r from-neural-cyan to-neural-purple mx-auto rounded-full mt-4"></div>
           </div>
 
@@ -187,8 +175,8 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
-                  <svg viewBox="0 0 400 240" className="w-full h-auto">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-x-auto scrollbar-thin">
+                  <svg viewBox="0 0 400 240" className="w-full h-auto min-w-[380px]">
                     {/* Node 1 */}
                     <rect x="10" y="80" width="100" height="60" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
                     <text x="60" y="115" fill="#FFF" fontSize="10" fontFamily="monospace" textAnchor="middle">Window Callback</text>
@@ -233,8 +221,8 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
-                  <svg viewBox="0 0 400 240" className="w-full h-auto">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-x-auto scrollbar-thin">
+                  <svg viewBox="0 0 400 240" className="w-full h-auto min-w-[380px]">
                     {/* Node 1: App Database */}
                     <rect x="140" y="20" width="120" height="40" rx="6" fill="#0D0D14" stroke="#00E5FF" strokeWidth="2"/>
                     <text x="200" y="45" fill="#00E5FF" fontSize="11" fontWeight="bold" fontFamily="monospace" textAnchor="middle">RealityDatabase</text>
@@ -268,7 +256,7 @@ export default async function Home() {
               </h3>
               <div className="grid lg:grid-cols-2 gap-8 items-center">
                 <div className="space-y-4 text-sm text-gray-400">
-                  <p>Your backups stay in your control. The application encrypts local data packages before initiating uploads directly to the user's Drive folder:</p>
+                  <p>Your backups stay in your control. The application encrypts local data packages before initiating uploads directly to the user&apos;s Drive folder:</p>
                   <ul className="space-y-2">
                     <li><strong className="text-white">Local Encryption:</strong> Database schemas and shared preferences are compiled and encrypted on-device.</li>
                     <li><strong className="text-white">Drive Transfer:</strong> Interacts directly with the personal Google Drive API endpoint.</li>
@@ -280,8 +268,8 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
-                  <svg viewBox="0 0 450 200" className="w-full h-auto">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-x-auto scrollbar-thin">
+                  <svg viewBox="0 0 450 200" className="w-full h-auto min-w-[380px]">
                     {/* Local DB */}
                     <rect x="10" y="60" width="100" height="80" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
                     <text x="60" y="95" fill="#FFF" fontSize="10" fontFamily="monospace" textAnchor="middle">Local SQLite +</text>
@@ -329,8 +317,8 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
-                  <svg viewBox="0 0 400 240" className="w-full h-auto">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-x-auto scrollbar-thin">
+                  <svg viewBox="0 0 400 240" className="w-full h-auto min-w-[380px]">
                     {/* Reality App */}
                     <rect x="20" y="80" width="100" height="80" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
                     <text x="70" y="125" fill="#FFF" fontSize="11" fontWeight="bold" fontFamily="monospace" textAnchor="middle">Reality App</text>
@@ -366,7 +354,7 @@ export default async function Home() {
                   <p>Protects key seeds against client-side exploitation. Both user-specific identifier maps and database encryption keys are processed JIT on Cloudflare Workers edge nodes:</p>
                   <ul className="space-y-2">
                     <li><strong className="text-white">Edge Node calculations:</strong> Runs server-side HMAC-SHA256 operations using private secret string peppers.</li>
-                    <li><strong className="text-white">Encrypted Injection:</strong> Directly writes verified variables into Android's EncryptedSharedPreferences container.</li>
+                    <li><strong className="text-white">Encrypted Injection:</strong> Directly writes verified variables into Android&apos;s EncryptedSharedPreferences container.</li>
                   </ul>
                   <div className="pt-2">
                     <a href="https://github.com/pawanwashudev-official/Reality/blob/main/cloudflare/worker.js" target="_blank" rel="noopener noreferrer" className="text-neural-cyan hover:underline font-mono text-xs flex items-center gap-1">
@@ -375,8 +363,8 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
-                  <svg viewBox="0 0 450 200" className="w-full h-auto">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-x-auto scrollbar-thin">
+                  <svg viewBox="0 0 450 200" className="w-full h-auto min-w-[380px]">
                     {/* Google Login */}
                     <rect x="10" y="60" width="110" height="80" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
                     <text x="65" y="95" fill="#FFF" fontSize="10" fontFamily="monospace" textAnchor="middle">Google Login</text>
@@ -422,8 +410,8 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
-                  <svg viewBox="0 0 400 200" className="w-full h-auto">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-x-auto scrollbar-thin">
+                  <svg viewBox="0 0 400 200" className="w-full h-auto min-w-[380px]">
                     {/* Tapasya Start */}
                     <rect x="10" y="60" width="100" height="80" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
                     <text x="60" y="105" fill="#FFF" fontSize="11" fontWeight="bold" fontFamily="monospace" textAnchor="middle">Focus Start</text>
@@ -468,8 +456,8 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
-                  <svg viewBox="0 0 400 200" className="w-full h-auto">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-x-auto scrollbar-thin">
+                  <svg viewBox="0 0 400 200" className="w-full h-auto min-w-[380px]">
                     {/* Ring Trigger */}
                     <rect x="10" y="60" width="100" height="80" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
                     <text x="60" y="95" fill="#FFF" fontSize="10" fontFamily="monospace" textAnchor="middle">Alarm Ring</text>
@@ -515,8 +503,8 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
-                  <svg viewBox="0 0 400 200" className="w-full h-auto">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-x-auto scrollbar-thin">
+                  <svg viewBox="0 0 400 200" className="w-full h-auto min-w-[380px]">
                     {/* User Prompt */}
                     <rect x="10" y="60" width="90" height="80" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
                     <text x="55" y="105" fill="#FFF" fontSize="10" fontFamily="monospace" textAnchor="middle">User Voice/Text</text>
@@ -549,7 +537,7 @@ export default async function Home() {
               </h3>
               <div className="grid lg:grid-cols-2 gap-8 items-center">
                 <div className="space-y-4 text-sm text-gray-400">
-                  <p>Handles the user's customized UI. Styling setups dynamically map XML layouts and vector fonts: </p>
+                  <p>Handles the user&apos;s customized UI. Styling setups dynamically map XML layouts and vector fonts: </p>
                   <ul className="space-y-2">
                     <li><strong className="text-white">Theme Mapping:</strong> Applies custom vector resources and layouts to the UI elements.</li>
                     <li><strong className="text-white">Fonts Integration:</strong> Injects customizable assets to style dashboard consoles.</li>
@@ -561,8 +549,8 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
-                  <svg viewBox="0 0 400 200" className="w-full h-auto">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-x-auto scrollbar-thin">
+                  <svg viewBox="0 0 400 200" className="w-full h-auto min-w-[380px]">
                     {/* User Selection */}
                     <rect x="10" y="60" width="100" height="80" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
                     <text x="60" y="105" fill="#FFF" fontSize="10" fontFamily="monospace" textAnchor="middle">Theme Selection</text>
@@ -666,7 +654,7 @@ export default async function Home() {
                      </div>
                      <div>
                          <h4 className="text-lg font-bold text-white">2. Generate Client Credentials</h4>
-                         <p className="text-gray-400 text-sm mt-1">Generate a Google Android Client ID (adding package name `com.neubofy.reality`) and Web client keys.</p>
+                         <p className="text-gray-400 text-sm mt-1">Generate Google Desktop application credentials (OAuth client ID with Application type set to &apos;Desktop application&apos;).</p>
                      </div>
                      <div>
                          <h4 className="text-lg font-bold text-white">3. Paste Keys inside Reality</h4>
@@ -692,22 +680,6 @@ export default async function Home() {
         </div>
       </section>
 
-    </div>
-  );
-}
-
-function ScreenshotCard({ img, title, desc }: { img: string, title: string, desc: string }) {
-  return (
-    <div className="bg-neural-card border border-gray-800 p-4 rounded-2xl flex flex-col hover:border-gray-700 transition duration-300">
-      <div className="overflow-hidden rounded-xl bg-black/60 border border-gray-800/60 mb-4 aspect-[9/16] h-[480px] w-full flex items-center justify-center p-2 relative shadow-inner">
-        <img
-          src={img}
-          alt={`Reality App UI screen mockup for ${title} showcasing features and AMOLED interfaces`}
-          className="max-w-full max-h-full object-contain rounded-lg hover:scale-[1.02] transition duration-500"
-        />
-      </div>
-      <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
-      <p className="text-xs text-gray-400 leading-relaxed mt-auto">{desc}</p>
     </div>
   );
 }
