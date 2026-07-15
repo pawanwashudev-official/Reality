@@ -11,14 +11,13 @@
 [![GitHub All Releases](https://img.shields.io/github/downloads/pawanwashudev-official/Reality/total?style=for-the-badge&color=success)](https://github.com/pawanwashudev-official/Reality/releases)
 [![License](https://img.shields.io/badge/License-Custom-blue.svg?style=for-the-badge)](#%EF%B8%8F-legal--license)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg?style=for-the-badge)](https://www.android.com)
-[![Privacy](https://img.shields.io/badge/Data-Local%20%2B%20Your%20G--Drive-lock.svg?style=for-the-badge&color=teal)]()
+[![Privacy](https://img.shields.io/badge/Privacy-First-teal.svg?style=for-the-badge)]()
 [![AI](https://img.shields.io/badge/AI-Deployed%20on%20Own%20server-purple.svg?style=for-the-badge)]()
 [![Ads](https://img.shields.io/badge/Ads-ZERO-red.svg?style=for-the-badge)]()
-[![Trackers](https://img.shields.io/badge/Trackers-ZERO-red.svg?style=for-the-badge)]()
 
 > **"Stop managing your life. Start commanding it."**
 
-### 🌟 99.9% Source-Available • No Ads • No Trackers • Privacy-Preserving Hosted AI
+### 🌟 99.9% Source-Available • No Ads • Privacy-First • Privacy-Preserving Hosted AI
 
 <p>While advanced features (like Neural Protocol, Gamification, and Google Workspace Sync) require a yearly Reality Elite Member subscription to support ongoing maintenance, the app remains 99.9% source-available. However, building custom APKs for distribution or cloning is strictly prohibited, and the codebase is strictly source-available for review only.</p>
 

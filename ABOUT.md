@@ -33,7 +33,7 @@ A fully Agentic Siri-like AI that can block apps, fetch calendar data, and run r
 Math-based Wakeup Alarms that scale in difficulty, preventing you from oversleeping, tightly integrated with Sleep tracking.
 
 ---
-*Made with ❤️ for Focus. Source-available for review only. No Ads. No Trackers.*
+*Made with ❤️ for Focus. Source-available for review only. No Ads.*
 
 ## ⚖️ Legal & License
 This application is strictly source-available for review purposes only. We do not allow anyone to clone this repository, modify the app, or build and distribute their own version. It is strictly prohibited to make your own version of the app or to claim ownership. App stores or individuals are allowed to distribute the exact pre-compiled APK obtained directly from our GitHub release page. Our AI crawlers continuously scan the internet. If unauthorized distribution or cloning is detected, strict legal action will be taken.

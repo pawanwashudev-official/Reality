@@ -44,7 +44,7 @@ export default function TermsOfService() {
 
               <section>
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">5. Privacy</h2>
-                <p>Your privacy is critically important to us. Please review our <Link href="/privacypolicy" className="text-blue-600 font-medium hover:underline">Privacy Policy</Link> to understand how your local data is handled. We do not collect, store, or transmit your data to our servers.</p>
+                <p>Your privacy is critically important to us. Please review our <Link href="/privacypolicy" className="text-blue-600 font-medium hover:underline">Privacy Policy</Link> to understand how your local data is handled. We do not collect or store your personal data on our servers. The app uses Firebase to collect anonymous app usage analytics strictly to monitor active users and app stability.</p>
               </section>
 
               <section>
