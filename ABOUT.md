@@ -1,50 +1,11 @@
 # About Reality
 
-> **"Stop managing your life. Start commanding it."**
+Reality is an open, military-grade productivity operating system for Android, designed to eliminate digital distractions and enforce discipline. Rather than acting as a standard, easily-bypassed app blocker, Reality utilizes Android's native `AccessibilityService` ([AppBlockerService.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt)) alongside device administration ([StrictModeActivity.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/ui/activity/StrictModeActivity.kt)) to construct an impenetrable **Strict Mode** that blocks uninstallation, system settings tampering, and clock manipulation. 
 
-**Reality** is a military-grade productivity operating system designed to eliminate digital distractions and act as a relentless partner in achieving your goals. It is not just an app blocker; it is an intelligent, completely integrated local-first system that merges task management, calendar sync, screen-time control, sleep tracking, and agentic AI.
+Its ecosystem integrates:
+- **Tapasya (Neural Focus)** ([TapasyaService.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/services/TapasyaService.kt)) for deep, distraction-free work blocks.
+- **Nightly Protocol** ([NightlyWorker.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/workers/NightlyWorker.kt)) for structured evening planning, Google Workspace sync, and daily report generation.
+- **Wakeup Alarms** ([WakeupAlarmService.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/services/WakeupAlarmService.kt)) that scale math difficulty based on morning hours to prevent oversleeping.
+- **Reality Intelligence Assistant** ([AIChatActivity.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/ui/activity/AIChatActivity.kt)), a local-first, Jarvis-like agent for secure, private in-app automation.
 
-## 🎯 Executive Summary
-Reality operates locally via Android's AccessibilityService. Unlike basic blockers that can be uninstalled or force-stopped, Reality employs an almost impenetrable **Strict Mode**. It monitors active windows in real-time, features anti-tamper protections, and enforces time penalties to ensure focus.
-
-## 🏆 Core Features
-
-### 🚫 Strict Mode App Blocker
-- Device Admin Protection prevents uninstalls.
-- Anti-Tamper detects clock manipulation.
-- Blocks settings access and system-level workarounds.
-
-### 🌙 The Nightly Protocol (6 Unified Steps)
-An autonomous, AI-powered evening workflow to build discipline:
-1. **Fetch Analytics**: Gathers digital usage, calendar events, focus sessions, and physical health/sleep metrics.
-2. **Create Diary**: Prompts you with personalized, AI-generated reflection questions and sets up your digital diary template.
-3. **Save Today Analytics**: Grades your evening reflection using AI, scores your day's performance, and finalizes your XP delta.
-4. **Create Plan**: Builds tomorrow's plan document layout inside Google Docs.
-5. **Apply Plan**: Extracts tasks and schedules them directly to Google Tasks and schedules tomorrow's alarms.
-6. **Report & Finalize**: Generates a professional progress report PDF and backs up logs to your Google Reality Sheet.
-
-### ⚡ Tapasya (Neural Focus)
-A rigorous deep-work timer tracking "Effective Time" in 15-minute chunks, strictly penalizing digital distraction.
-
-### 🤖 Reality AI Pro
-A fully Agentic Jarvis-like AI that can block apps, fetch calendar data, and run routines, serving as a Jarvis for in-app features. Supports Bring-Your-Own-Key.
-
-### 🛌 Sleep & Alarm
-Math-based Wakeup Alarms that scale in difficulty, preventing you from oversleeping, tightly integrated with Sleep tracking.
-
----
-*Made with ❤️ for Focus. Source-available for review only. No Ads.*
-
-## ⚖️ Legal & License
-This application is strictly source-available for review purposes only. We do not allow anyone to clone this repository, modify the app, or build and distribute their own version. It is strictly prohibited to make your own version of the app or to claim ownership. App stores or individuals are allowed to distribute the exact pre-compiled APK obtained directly from our GitHub release page. Our AI crawlers continuously scan the internet. If unauthorized distribution or cloning is detected, strict legal action will be taken.
-
-## 🐛 Support & Issues
-Encountered a bug or have a feature request? You can easily report it!
-Use the **"Report an Issue"** button directly within the app (About page) to seamlessly create an issue on our GitHub repository.
-Alternatively, visit [Reality GitHub Issues](https://github.com/pawanwashudev-official/Reality/issues) to submit your feedback.
-
-### Secure Identity & Encryption
-Instead of relying on legacy client-side identifiers (like MD5) or manual user password management for backups, Reality employs a **Just-In-Time (JIT) secure edge architecture**:
-- Both the unique `userId` and automated `backupPassword` keys are generated deterministically on our Cloudflare Worker edge nodes.
-- This is achieved via server-side HMAC-SHA256 calculations using an isolated secret pepper environment string, eliminating all local cryptographic vulnerabilities and client-side exploits.
-- These keys are injected directly into Android's EncryptedSharedPreferences upon Google Login or critical lifecycle events, providing frictionless background encryption without exposing sensitive configuration files.
+Everything is processed on-device, preserving total user privacy.
