@@ -146,6 +146,8 @@ export async function verifyMemberId(userId: string) {
           userId: found.userId,
           dateJoined: found.date || found.dateJoined || '',
           hasAccess: found.status === 'V',
+          status: found.status || null,
+          expiryDate: found.expiryDate || null,
         }
       };
     }

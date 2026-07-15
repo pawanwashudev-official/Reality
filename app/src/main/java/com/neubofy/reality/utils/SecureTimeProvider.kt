@@ -40,7 +40,11 @@ object SecureTimeProvider {
         
         // Load offset
         val offset = cachedOffset ?: synchronized(this) {
-            val savedOffset = prefs.getLong(KEY_TIME_OFFSET, 0L)
+            var savedOffset = prefs.getLong(KEY_TIME_OFFSET, 0L)
+            if (savedOffset == 0L) {
+                savedOffset = System.currentTimeMillis() - SystemClock.elapsedRealtime()
+                prefs.edit().putLong(KEY_TIME_OFFSET, savedOffset).apply()
+            }
             cachedOffset = savedOffset
             savedOffset
         }

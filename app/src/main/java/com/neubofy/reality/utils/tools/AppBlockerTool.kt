@@ -2,6 +2,7 @@ package com.neubofy.reality.utils.tools
 
 import android.content.Context
 import com.neubofy.reality.utils.SavedPreferencesLoader
+import com.neubofy.reality.utils.SecureTimeProvider
 import com.neubofy.reality.utils.ToolRegistry
 import org.json.JSONArray
 import org.json.JSONObject
@@ -31,7 +32,7 @@ class AppBlockerTool : AgentTool {
 
         val isStrict = prefs.isStrictModeEnabled()
         val focusData = prefs.getFocusModeData()
-        val isFocus = focusData.endTime > System.currentTimeMillis()
+        val isFocus = focusData.endTime > SecureTimeProvider.currentTimeMillis(context)
 
         val json = JSONObject().apply {
             put("strict_mode", isStrict)

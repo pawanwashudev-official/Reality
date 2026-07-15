@@ -20,8 +20,9 @@ class BlockerStatusManager(private val context: Context) {
     private val db = AppDatabase.getDatabase(context)
 
     suspend fun getCurrentStatus(): BlockerStatus {
-        val now = System.currentTimeMillis()
+        val now = SecureTimeProvider.currentTimeMillis(context)
         val cal = Calendar.getInstance()
+        cal.timeInMillis = now
         val currentMins = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
         val currentDay = cal.get(Calendar.DAY_OF_WEEK) // Sun=1, Mon=2
 
@@ -36,16 +37,16 @@ class BlockerStatusManager(private val context: Context) {
             if (start < end) {
                 if (currentMins in start until end) {
                     isBedtimeActive = true
-                    bedEndTimeMs = getTimeToday(end)
+                    bedEndTimeMs = getTimeToday(now, end)
                 }
             } else if (start > end) {
                 // Spans midnight e.g. 22:00 to 07:00
                 if (currentMins >= start) {
                     isBedtimeActive = true
-                    bedEndTimeMs = getTimeTomorrow(end)
+                    bedEndTimeMs = getTimeTomorrow(now, end)
                 } else if (currentMins < end) {
                     isBedtimeActive = true
-                    bedEndTimeMs = getTimeToday(end)
+                    bedEndTimeMs = getTimeToday(now, end)
                 }
             }
             
@@ -87,15 +88,15 @@ class BlockerStatusManager(private val context: Context) {
                 if (start < end) {
                     if (currentMins in start until end) {
                         isScheduleActive = true
-                        schedEndTimeMs = getTimeToday(end)
+                        schedEndTimeMs = getTimeToday(now, end)
                     }
                 } else if (start > end) {
                     if (currentMins >= start) {
                         isScheduleActive = true
-                        schedEndTimeMs = getTimeTomorrow(end)
+                        schedEndTimeMs = getTimeTomorrow(now, end)
                     } else if (currentMins < end) {
                         isScheduleActive = true
-                        schedEndTimeMs = getTimeToday(end)
+                        schedEndTimeMs = getTimeToday(now, end)
                     }
                 }
                 
@@ -108,20 +109,24 @@ class BlockerStatusManager(private val context: Context) {
         return BlockerStatus(false, BlockerType.NONE, 0, "")
     }
     
-    private fun getTimeToday(minutes: Int): Long {
+    private fun getTimeToday(now: Long, minutes: Int): Long {
         val cal = Calendar.getInstance()
+        cal.timeInMillis = now
         cal.set(Calendar.HOUR_OF_DAY, minutes / 60)
         cal.set(Calendar.MINUTE, minutes % 60)
         cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
         return cal.timeInMillis
     }
     
-    private fun getTimeTomorrow(minutes: Int): Long {
+    private fun getTimeTomorrow(now: Long, minutes: Int): Long {
         val cal = Calendar.getInstance()
+        cal.timeInMillis = now
         cal.add(Calendar.DAY_OF_YEAR, 1)
         cal.set(Calendar.HOUR_OF_DAY, minutes / 60)
         cal.set(Calendar.MINUTE, minutes % 60)
         cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
         return cal.timeInMillis
     }
 }

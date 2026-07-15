@@ -5,6 +5,7 @@ import android.content.Intent
 import com.neubofy.reality.data.db.AppDatabase
 import com.neubofy.reality.data.db.TapasyaSession
 import com.neubofy.reality.utils.SavedPreferencesLoader
+import com.neubofy.reality.utils.SecureTimeProvider
 import com.neubofy.reality.utils.XPManager
 import kotlinx.coroutines.*
 
@@ -330,7 +331,7 @@ object TapasyaManager {
         val prefs = SavedPreferencesLoader(ctx)
         val data = prefs.getFocusModeData()
         data.isTurnedOn = true
-        data.endTime = System.currentTimeMillis() + (6 * 60 * 60 * 1000L)
+        data.endTime = SecureTimeProvider.currentTimeMillis(ctx) + (6 * 60 * 60 * 1000L)
         data.isTapasyaTriggered = true
         prefs.saveFocusModeData(data)
         

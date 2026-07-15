@@ -9,6 +9,7 @@ import com.neubofy.reality.databinding.DialogFocusModeBinding
 import com.neubofy.reality.services.AppBlockerService
 import com.neubofy.reality.utils.NotificationTimerManager
 import com.neubofy.reality.utils.SavedPreferencesLoader
+import com.neubofy.reality.utils.SecureTimeProvider
 
 class StartFocusMode(private val loader: SavedPreferencesLoader, private val onPositiveButtonPressed: () -> Unit) : BaseDialog(loader) {
 
@@ -37,7 +38,7 @@ class StartFocusMode(private val loader: SavedPreferencesLoader, private val onP
                 val totalMs = (binding.focusModeHoursPicker.getValue() * 3600000L) + (binding.focusModeMinsPicker.getValue() * 60000L)
                 val newData = RealityBlocker.FocusModeData(
                     isTurnedOn = true,
-                    endTime = System.currentTimeMillis() + totalMs,
+                    endTime = SecureTimeProvider.currentTimeMillis(requireContext()) + totalMs,
                     modeType = selectedMode,
                     selectedApps = data.selectedApps,
                     blockedWebsites = data.blockedWebsites

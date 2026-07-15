@@ -5,6 +5,7 @@ import android.content.Intent
 import com.neubofy.reality.blockers.RealityBlocker
 import com.neubofy.reality.services.AppBlockerService
 import com.neubofy.reality.utils.SavedPreferencesLoader
+import com.neubofy.reality.utils.SecureTimeProvider
 import org.json.JSONObject
 
 class StartFocusTool : AgentTool {
@@ -25,7 +26,7 @@ class StartFocusTool : AgentTool {
         val durationMins = args.optInt("duration_mins", 25)
 
         val prefs = SavedPreferencesLoader(context)
-        val endTime = System.currentTimeMillis() + (durationMins * 60 * 1000L)
+        val endTime = SecureTimeProvider.currentTimeMillis(context) + (durationMins * 60 * 1000L)
 
         val currentData = prefs.getFocusModeData()
         val newData = RealityBlocker.FocusModeData(

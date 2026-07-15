@@ -14,6 +14,7 @@ import com.neubofy.reality.data.db.AppDatabase
 import com.neubofy.reality.data.db.TapasyaSession
 import com.neubofy.reality.ui.activity.TapasyaActivity
 import com.neubofy.reality.utils.SavedPreferencesLoader
+import com.neubofy.reality.utils.SecureTimeProvider
 import com.neubofy.reality.utils.XPManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -297,7 +298,7 @@ class TapasyaService : Service() {
         val data = prefs.getFocusModeData()
         data.isTurnedOn = true
         // User requested ~6 hours max duration to avoid infinite issues
-        data.endTime = System.currentTimeMillis() + (6 * 60 * 60 * 1000L)
+        data.endTime = SecureTimeProvider.currentTimeMillis(this) + (6 * 60 * 60 * 1000L)
         data.isTapasyaTriggered = true  // Mark as Tapasya-controlled
         prefs.saveFocusModeData(data)
         
