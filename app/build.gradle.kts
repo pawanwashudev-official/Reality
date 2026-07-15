@@ -213,7 +213,8 @@ dependencies {
     // Professional App Updater (Open Source)
     implementation("io.github.azhon:appupdate:4.3.6")
 
-    // Firebase Cloud Messaging
+    // Firebase Cloud Messaging & Analytics
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.analytics)
 }
