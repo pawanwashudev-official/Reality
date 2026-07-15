@@ -21,7 +21,7 @@
 
 <p>While advanced features (like Neural Protocol, Gamification, and Google Workspace Sync) require a yearly Reality Elite Member subscription to support ongoing maintenance, the app remains 99.9% source-available. However, building custom APKs for distribution or cloning is strictly prohibited, and the codebase is strictly source-available for review only.</p>
 
-[**🌐 Official Website**](https://reality.neubofy.in) • [**⬇️ Download Latest APK**](https://github.com/pawanwashudev-official/Reality/releases)
+[**🌐 Official Website**](https://reality.neubofy.in) • [**⬇️ Download Latest APK**](https://reality.neubofy.in/download)
 
 </div>
 
