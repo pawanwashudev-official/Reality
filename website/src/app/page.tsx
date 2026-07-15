@@ -61,7 +61,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-neural-bg font-outfit text-gray-100 selection:bg-neural-cyan selection:text-black">
+    <div className="min-h-screen bg-neural-bg font-outfit text-gray-100 selection:bg-neural-cyan selection:text-black overflow-x-hidden">
       
       {/* Premium Hero Section */}
       <header id="hero-section" className="relative overflow-hidden border-b border-gray-800 py-20 lg:py-32">
@@ -187,7 +187,7 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
                   <svg viewBox="0 0 400 240" className="w-full h-auto">
                     {/* Node 1 */}
                     <rect x="10" y="80" width="100" height="60" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
@@ -233,7 +233,7 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
                   <svg viewBox="0 0 400 240" className="w-full h-auto">
                     {/* Node 1: App Database */}
                     <rect x="140" y="20" width="120" height="40" rx="6" fill="#0D0D14" stroke="#00E5FF" strokeWidth="2"/>
@@ -280,7 +280,7 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
                   <svg viewBox="0 0 450 200" className="w-full h-auto">
                     {/* Local DB */}
                     <rect x="10" y="60" width="100" height="80" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
@@ -329,7 +329,7 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
                   <svg viewBox="0 0 400 240" className="w-full h-auto">
                     {/* Reality App */}
                     <rect x="20" y="80" width="100" height="80" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
@@ -375,7 +375,7 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
                   <svg viewBox="0 0 450 200" className="w-full h-auto">
                     {/* Google Login */}
                     <rect x="10" y="60" width="110" height="80" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
@@ -422,7 +422,7 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
                   <svg viewBox="0 0 400 200" className="w-full h-auto">
                     {/* Tapasya Start */}
                     <rect x="10" y="60" width="100" height="80" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
@@ -468,7 +468,7 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
                   <svg viewBox="0 0 400 200" className="w-full h-auto">
                     {/* Ring Trigger */}
                     <rect x="10" y="60" width="100" height="80" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
@@ -515,7 +515,7 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
                   <svg viewBox="0 0 400 200" className="w-full h-auto">
                     {/* User Prompt */}
                     <rect x="10" y="60" width="90" height="80" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
@@ -561,7 +561,7 @@ export default async function Home() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-xl border border-gray-800">
+                <div className="bg-black/40 p-4 rounded-xl border border-gray-800 overflow-hidden">
                   <svg viewBox="0 0 400 200" className="w-full h-auto">
                     {/* User Selection */}
                     <rect x="10" y="60" width="100" height="80" rx="8" fill="#0D0D14" stroke="#7B61FF" strokeWidth="2"/>
@@ -699,11 +699,11 @@ export default async function Home() {
 function ScreenshotCard({ img, title, desc }: { img: string, title: string, desc: string }) {
   return (
     <div className="bg-neural-card border border-gray-800 p-4 rounded-2xl flex flex-col hover:border-gray-700 transition duration-300">
-      <div className="overflow-hidden rounded-xl bg-black border border-gray-900 mb-4 aspect-[9/16] flex items-center justify-center max-h-[380px]">
+      <div className="overflow-hidden rounded-xl bg-black/60 border border-gray-800/60 mb-4 aspect-[9/16] h-[480px] w-full flex items-center justify-center p-2 relative shadow-inner">
         <img
           src={img}
           alt={`Reality App UI screen mockup for ${title} showcasing features and AMOLED interfaces`}
-          className="w-full h-full object-cover hover:scale-105 transition duration-500"
+          className="max-w-full max-h-full object-contain rounded-lg hover:scale-[1.02] transition duration-500"
         />
       </div>
       <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
