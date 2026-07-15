@@ -582,7 +582,6 @@ class ScheduleListActivity : BaseActivity() {
         val switchAutoSync = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switchAutoSync)
         val btnManualSync = dialogView.findViewById<View>(R.id.btnManualSync)
         val btnSetupRealTimeSync = dialogView.findViewById<View>(R.id.btnSetupRealTimeSync)
-        val btnDisconnect = dialogView.findViewById<View>(R.id.btnDisconnect)
 
         val isAutoSync = prefs.getBoolean("calendar_sync_auto_enabled", true)
         switchAutoSync.isChecked = isAutoSync
@@ -605,18 +604,20 @@ class ScheduleListActivity : BaseActivity() {
 
         // Real-time sync setup (FCM webhook registration)
         btnSetupRealTimeSync.setOnClickListener {
-            val userId = getSharedPreferences("reality_prefs", android.content.Context.MODE_PRIVATE)
-                .getString("reality_user_id", null)
-            val backupPassword = getSharedPreferences("reality_prefs", android.content.Context.MODE_PRIVATE)
-                .getString("reality_backup_password", null)
+            val isSignedIn = com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)
+            val userId = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getUserId(this) else null
+            val backupPassword = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getBackupPassword(this) else null
             val fcmToken = getSharedPreferences("reality_prefs", android.content.Context.MODE_PRIVATE)
                 .getString(com.neubofy.reality.services.RealityFCMService.PREF_FCM_TOKEN, null)
             val workerUrl = com.neubofy.reality.BuildConfig.NOTIFICATION_WORKER_URL
 
             if (userId.isNullOrEmpty() || backupPassword.isNullOrEmpty()) {
-                android.widget.Toast.makeText(this, "Sign in to your Reality account first.", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(this, "Sign in to your Google/Reality account first.", android.widget.Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+
+
+
             if (fcmToken.isNullOrEmpty()) {
                 android.widget.Toast.makeText(this, "Waiting for device token... try again in a moment.", android.widget.Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
@@ -630,26 +631,6 @@ class ScheduleListActivity : BaseActivity() {
             com.neubofy.reality.services.RealityFCMService.registerTokenWithWorker(workerUrl, userId, backupPassword, fcmToken)
             android.widget.Toast.makeText(this, "\uD83D\uDD14 Real-time sync setup started...", android.widget.Toast.LENGTH_SHORT).show()
             dialog.dismiss()
-        }
-
-        // Disconnect & clear all synced events
-        btnDisconnect.setOnClickListener {
-            android.app.AlertDialog.Builder(this)
-                .setTitle("Clear Synced Events?")
-                .setMessage("This will remove all synced Google Calendar events from the app. Your Google Calendar is not affected.")
-                .setPositiveButton("Clear") { _, _ ->
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        AppDatabase.getDatabase(applicationContext).calendarEventDao().deleteOldEvents(Long.MAX_VALUE)
-                        getSharedPreferences("calendar_sync", android.content.Context.MODE_PRIVATE).edit().clear().apply()
-                        withContext(Dispatchers.Main) {
-                            loadSchedules()
-                            android.widget.Toast.makeText(this@ScheduleListActivity, "Synced events cleared.", android.widget.Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                    dialog.dismiss()
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
         }
     }
 

@@ -62,7 +62,6 @@ export default {
       }
 
       if (!userRow) return jsonError("User not found", 404);
-      if (userRow.status !== "elite") return jsonError("Active Elite subscription required for calendar sync", 403);
 
       // Store FCM token
       try {
@@ -128,10 +127,7 @@ export default {
         return new Response("No FCM token for user", { status: 200 }); // 200 so Google doesn't retry
       }
 
-      if (userRow.status !== "elite") {
-        console.log(`User no longer elite, skipping FCM push`);
-        return new Response("User not elite", { status: 200 });
-      }
+
 
       // Send silent FCM push notification
       try {
