@@ -177,6 +177,11 @@ class AppBlockerService : BaseBlockingService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (!isScreenOn) return
         
+        // Dynamic cleanup of session blocks when no global blocking modes are active
+        if (!com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive) {
+            sessionBlockedPackages.clear()
+        }
+        
         // Capture window class for learning mode and strict mode
         if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val className = event.className?.toString() ?: ""

@@ -332,7 +332,7 @@ object BlockCache {
                     val totalDistractingMins = totalDistractingUsageMs / (60 * 1000L)
                     
                     if (totalDistractingMins >= limitMins) {
-                        val reason = "Daily Limit Reached (${totalDistractingMins}/${limitMins}m)"
+                        val reason = "Distracting App Limit Reached (${totalDistractingMins}/${limitMins}m)"
                         distractionApps.forEach { pkg ->
                             if (pkg.isNotEmpty()) {
                                 addToBox(newBox, pkg, reason)
