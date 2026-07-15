@@ -84,8 +84,9 @@ class BlockerDetailsActivity : BaseActivity() {
 
         // 2. Load Active Blocker Sessions
         layoutActiveBlockers.removeAllViews()
-        val now = System.currentTimeMillis()
+        val now = SecureTimeProvider.currentTimeMillis(this)
         val cal = Calendar.getInstance()
+        cal.timeInMillis = now
         val currentMins = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
         val currentDay = cal.get(Calendar.DAY_OF_WEEK)
 
@@ -116,9 +117,9 @@ class BlockerDetailsActivity : BaseActivity() {
             hasAnyBlocker = true
         }
 
-        // Manual Blocker
+        // Manual Blocker (Omit duplicate if started by Tapasya)
         val manualBlocker = savedPreferencesLoader.getFocusModeData()
-        if (manualBlocker.isTurnedOn && manualBlocker.endTime > now) {
+        if (manualBlocker.isTurnedOn && manualBlocker.endTime > now && !manualBlocker.isTapasyaTriggered) {
             val df = SimpleDateFormat("hh:mm a", Locale.getDefault())
             val endStr = df.format(Date(manualBlocker.endTime))
             addActiveBlockerCard(
@@ -169,15 +170,30 @@ class BlockerDetailsActivity : BaseActivity() {
         }
 
         // 3. Load Target Apps
-        val blockedApps = savedPreferencesLoader.getFocusModeSelectedApps()
+        val activeBlockedMap = BlockCache.getAllBlockedApps()
         val list = mutableListOf<AppItem>()
-        for (pkg in blockedApps) {
-            try {
-                val appInfo = packageManager.getApplicationInfo(pkg, 0)
-                val label = packageManager.getApplicationLabel(appInfo).toString()
-                list.add(AppItem(pkg, label))
-            } catch (e: PackageManager.NameNotFoundException) {
-                // App uninstalled
+        
+        if (activeBlockedMap.isNotEmpty()) {
+            for ((pkg, reasons) in activeBlockedMap) {
+                try {
+                    val appInfo = packageManager.getApplicationInfo(pkg, 0)
+                    val label = packageManager.getApplicationLabel(appInfo).toString()
+                    list.add(AppItem(pkg, label, reasons.joinToString(", ")))
+                } catch (e: PackageManager.NameNotFoundException) {
+                    // App uninstalled
+                }
+            }
+        } else {
+            // Fallback: show configured Focus Mode apps with "Inactive" status
+            val focusApps = savedPreferencesLoader.getFocusModeSelectedApps()
+            for (pkg in focusApps) {
+                try {
+                    val appInfo = packageManager.getApplicationInfo(pkg, 0)
+                    val label = packageManager.getApplicationLabel(appInfo).toString()
+                    list.add(AppItem(pkg, label, "Focus Mode List (Inactive)"))
+                } catch (e: PackageManager.NameNotFoundException) {
+                    // App uninstalled
+                }
             }
         }
 
@@ -255,7 +271,7 @@ class BlockerDetailsActivity : BaseActivity() {
     private val Int.sp: Float get() = this.toFloat()
     private val Int.dp: Int get() = (this * resources.displayMetrics.density).toInt()
 
-    data class AppItem(val packageName: String, val name: String)
+    data class AppItem(val packageName: String, val name: String, val reasons: String)
 
     inner class TargetAppAdapter : RecyclerView.Adapter<TargetAppAdapter.ViewHolder>() {
         private val items = mutableListOf<AppItem>()
@@ -282,9 +298,11 @@ class BlockerDetailsActivity : BaseActivity() {
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
             holder.name.text = item.name
-            holder.reasons.text = item.packageName
-            holder.status.text = "DETECT & BLOCK"
-            holder.status.setTextColor(Color.parseColor("#FF5252"))
+            holder.reasons.text = if (item.reasons.isNotEmpty()) "${item.packageName} • ${item.reasons}" else item.packageName
+            
+            val isCurrentlyBlocked = BlockCache.getAllBlockedApps().containsKey(item.packageName)
+            holder.status.text = if (isCurrentlyBlocked) "BLOCKED" else "MONITORED"
+            holder.status.setTextColor(if (isCurrentlyBlocked) Color.parseColor("#FF5252") else Color.parseColor("#4CAF50"))
 
             try {
                 val iconDrawable = packageManager.getApplicationIcon(item.packageName)
@@ -300,6 +318,7 @@ class BlockerDetailsActivity : BaseActivity() {
     private fun isBedtimeActiveNow(bedtime: com.neubofy.reality.Constants.BedtimeData): Boolean {
         if (!bedtime.isEnabled) return false
         val cal = Calendar.getInstance()
+        cal.timeInMillis = SecureTimeProvider.currentTimeMillis(this)
         val currentMins = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
         val start = bedtime.startTimeInMins
         val end = bedtime.endTimeInMins

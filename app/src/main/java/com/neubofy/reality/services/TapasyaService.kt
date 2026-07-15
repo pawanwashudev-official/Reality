@@ -297,8 +297,9 @@ class TapasyaService : Service() {
         val prefs = SavedPreferencesLoader(this)
         val data = prefs.getFocusModeData()
         data.isTurnedOn = true
-        // User requested ~6 hours max duration to avoid infinite issues
-        data.endTime = SecureTimeProvider.currentTimeMillis(this) + (6 * 60 * 60 * 1000L)
+        // Sum target time and pause limit for exact maximum duration
+        val maxDurationMs = targetTimeMs + pauseLimitMs
+        data.endTime = SecureTimeProvider.currentTimeMillis(this) + maxDurationMs
         data.isTapasyaTriggered = true  // Mark as Tapasya-controlled
         prefs.saveFocusModeData(data)
         

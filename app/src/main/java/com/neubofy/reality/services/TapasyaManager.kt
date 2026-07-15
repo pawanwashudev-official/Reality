@@ -331,7 +331,14 @@ object TapasyaManager {
         val prefs = SavedPreferencesLoader(ctx)
         val data = prefs.getFocusModeData()
         data.isTurnedOn = true
-        data.endTime = SecureTimeProvider.currentTimeMillis(ctx) + (6 * 60 * 60 * 1000L)
+        
+        // Sum target time and pause limit for exact maximum duration
+        val tapasyaPrefs = ctx.getSharedPreferences("tapasya_service_prefs", Context.MODE_PRIVATE)
+        val targetMs = tapasyaPrefs.getLong("target_time", 60 * 60 * 1000L)
+        val pauseLimitMs = tapasyaPrefs.getLong("pause_limit", 15 * 60 * 1000L)
+        val maxDurationMs = targetMs + pauseLimitMs
+        
+        data.endTime = SecureTimeProvider.currentTimeMillis(ctx) + maxDurationMs
         data.isTapasyaTriggered = true
         prefs.saveFocusModeData(data)
         

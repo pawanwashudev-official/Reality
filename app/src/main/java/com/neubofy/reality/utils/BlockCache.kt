@@ -1,6 +1,9 @@
 package com.neubofy.reality.utils
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -68,6 +71,14 @@ object BlockCache {
     fun shouldBlock(packageName: String): Pair<Boolean, List<String>> {
         val context = appContext
         val now = if (context != null) SecureTimeProvider.currentTimeMillis(context) else System.currentTimeMillis()
+        
+        // Lazy background refresh: if more than 30 seconds passed since last update, trigger an async rebuild
+        if (context != null && now - lastUpdateTime > 30_000) {
+            CoroutineScope(Dispatchers.IO).launch {
+                rebuildBox(context)
+            }
+        }
+
         // 1. Emergency Mode Override - Always allow during emergency
         if (emergencySessionEndTime > now) {
             return Pair(false, emptyList())
@@ -330,7 +341,7 @@ object BlockCache {
                     }
                 }
                 
-                lastUpdateTime = System.currentTimeMillis()
+                lastUpdateTime = SecureTimeProvider.currentTimeMillis(context)
                 
                 // === ATOMIC SWAP ===
                 // We replace the old box with the new one instantly.
