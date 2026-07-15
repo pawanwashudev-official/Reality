@@ -27,7 +27,7 @@ An autonomous, AI-powered evening workflow to build discipline:
 A rigorous deep-work timer tracking "Effective Time" in 15-minute chunks, strictly penalizing digital distraction.
 
 ### 🤖 Reality AI Pro
-A fully Agentic Siri-like AI that can block apps, fetch calendar data, and run routines. Supports Bring-Your-Own-Key.
+A fully Agentic Jarvis-like AI that can block apps, fetch calendar data, and run routines, serving as a Jarvis for in-app features. Supports Bring-Your-Own-Key.
 
 ### 🛌 Sleep & Alarm
 Math-based Wakeup Alarms that scale in difficulty, preventing you from oversleeping, tightly integrated with Sleep tracking.

@@ -60,7 +60,7 @@ Tapasya is not a normal timer or stopwatch; it is an aggressive deep-work state.
 
 ### 4. **🤖 INBUILT AI ASSISTANT (Reality AI Pro)**
 Reality does not use a basic chatbot. It features a fully Agentic System operating on a generic Model Context Protocol (MCP) architecture (`ToolRegistry.kt`, `AgentTools.kt`).
-*   **How it differs**: It acts autonomously. It can fetch your calendar, toggle alarms, block apps on command, and query the web. It is a "Siri-like" floating modal (`PopupAIChatActivity`) that allows you to use the phone simultaneously.
+*   **How it differs**: It acts autonomously. It can fetch your calendar, toggle alarms, block apps on command, and query the web. It is a Jarvis-like floating modal (`PopupAIChatActivity`) that allows you to use the phone simultaneously, serving as a Jarvis for in-app features.
 *   **Supported Models**: 100% private architecture using our hosted open-source gpt-oss-20b model on Cloudflare Workers. Your data is NEVER sent to third-party services like OpenAI or Groq.
 *   **Data Handling**: Uses a `ConversationMemoryManager` for context sliding windows and token counting. All requests are authenticated securely using your local Reality Identity credentials. The AI can explicitly store long-term facts about you into local Room storage using the `save_memory` tool.
 
