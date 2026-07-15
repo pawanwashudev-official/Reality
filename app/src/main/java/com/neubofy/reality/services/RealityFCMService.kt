@@ -35,9 +35,10 @@ class RealityFCMService : FirebaseMessagingService() {
 
         /**
          * Register the device's FCM token with the Reality Notification Worker.
-         * Called after login (when userId/backupPassword are available) and on token refresh.
+         * Called after login and on token refresh.
          */
         fun registerTokenWithWorker(
+            context: android.content.Context,
             notificationWorkerUrl: String,
             userId: String,
             backupPassword: String,
@@ -64,6 +65,11 @@ class RealityFCMService : FirebaseMessagingService() {
 
                     if (response.isSuccessful) {
                         TerminalLogger.log("FCM: Token registered with notification worker successfully")
+                        // Persist registration status
+                        context.getSharedPreferences("reality_prefs", android.content.Context.MODE_PRIVATE)
+                            .edit()
+                            .putBoolean("calendar_realtime_sync_enabled", true)
+                            .apply()
                     } else {
                         TerminalLogger.log("FCM: Token registration failed (${response.code}): $responseBody")
                     }
@@ -75,12 +81,10 @@ class RealityFCMService : FirebaseMessagingService() {
 
         /**
          * Register the Google Calendar webhook with Google's API.
-         * The userId is embedded as the channel token so the notification worker
-         * can identify which user's calendar changed.
-         *
          * Call this after the user enables "Calendar Auto-Sync" in settings.
          */
         fun registerCalendarWebhook(
+            context: android.content.Context,
             notificationWorkerUrl: String,
             userId: String,
             googleAccessToken: String
@@ -112,6 +116,11 @@ class RealityFCMService : FirebaseMessagingService() {
 
                     if (response.isSuccessful) {
                         TerminalLogger.log("FCM: Google Calendar webhook registered. Channel: $channelId")
+                        // Persist registration status
+                        context.getSharedPreferences("reality_prefs", android.content.Context.MODE_PRIVATE)
+                            .edit()
+                            .putBoolean("calendar_realtime_sync_enabled", true)
+                            .apply()
                     } else {
                         TerminalLogger.log("FCM: Webhook registration failed (${response.code}): $responseBody")
                     }
@@ -131,19 +140,20 @@ class RealityFCMService : FirebaseMessagingService() {
         TerminalLogger.log("FCM: New token generated")
 
         // Save token locally
-        val prefs: SharedPreferences = getSharedPreferences("reality_prefs", MODE_PRIVATE)
+        val prefs = getSharedPreferences("reality_prefs", MODE_PRIVATE)
         prefs.edit().putString(PREF_FCM_TOKEN, token).apply()
 
         // Re-register with notification worker if user is already authenticated
-        val userId = prefs.getString("reality_user_id", null)
-        val backupPassword = prefs.getString("reality_backup_password", null)
+        val isSignedIn = com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)
+        val userId = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getUserId(this) else null
+        val backupPassword = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getBackupPassword(this) else null
         val workerUrl = com.neubofy.reality.BuildConfig.NOTIFICATION_WORKER_URL
-        val isAutoSyncEnabled = prefs.getBoolean("calendar_sync_auto_enabled", false)
+        val isRealTimeSyncEnabled = prefs.getBoolean("calendar_realtime_sync_enabled", false)
 
         if (!userId.isNullOrEmpty() && !backupPassword.isNullOrEmpty()
-            && workerUrl.isNotEmpty() && isAutoSyncEnabled
+            && workerUrl.isNotEmpty() && isRealTimeSyncEnabled
         ) {
-            registerTokenWithWorker(workerUrl, userId, backupPassword, token)
+            registerTokenWithWorker(applicationContext, workerUrl, userId, backupPassword, token)
         }
     }
 
