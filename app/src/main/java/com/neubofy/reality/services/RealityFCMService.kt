@@ -167,6 +167,7 @@ class RealityFCMService : FirebaseMessagingService() {
         val action = remoteMessage.data["action"]
         TerminalLogger.log("FCM: Message received. Action: $action")
 
+        // 1. Silent google calendar sync trigger
         if (action == "SYNC_CALENDAR") {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
@@ -179,6 +180,20 @@ class RealityFCMService : FirebaseMessagingService() {
                     TerminalLogger.log("FCM: Failed to enqueue CalendarSyncWorker: ${e.message}")
                 }
             }
+        }
+
+        // 2. Custom administrative/informational notifications (data payload)
+        val title = remoteMessage.data["title"]
+        val message = remoteMessage.data["message"]
+        if (!title.isNullOrEmpty() && !message.isNullOrEmpty()) {
+            com.neubofy.reality.utils.NotificationHelper.showNotification(applicationContext, title, message)
+        }
+
+        // 3. Campaign notifications (FCM Console notification payload)
+        remoteMessage.notification?.let {
+            val notifTitle = it.title ?: "Reality"
+            val notifBody = it.body ?: ""
+            com.neubofy.reality.utils.NotificationHelper.showNotification(applicationContext, notifTitle, notifBody)
         }
     }
 }
