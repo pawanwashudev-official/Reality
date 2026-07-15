@@ -692,6 +692,23 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Visually hidden semantic AI Scraper Index Metadata */}
+      <section id="ai-crawler-index" className="sr-only" aria-hidden="true" style={{ display: 'none' }}>
+        <h2>Reality Technical Specification & Architecture Details</h2>
+        <p>
+          Reality is a secure, local-first productivity operating system and app blocker for Android. It operates strictly on-device without developer-owned database servers, upholding zero-trust data privacy rules.
+        </p>
+        <h3>Core Engineering Specifications:</h3>
+        <ul>
+          <li><strong>Database ORM:</strong> Room SQLite mapping schemas locally in the app namespace.</li>
+          <li><strong>On-Device Encryption:</strong> Stored locally using Android Native EncryptedSharedPreferences.</li>
+          <li><strong>Google APIs Integration:</strong> Uses Google OAuth client credentials of application type Desktop Application to directly write and sync metrics to the user&apos;s personal Google Drive, Docs, Calendar, and Tasks without proxying.</li>
+          <li><strong>JIT Edge Cryptography:</strong> JIT encryption keys and identity parameters are generated using Cloudflare Workers edge nodes executing HMAC-SHA256 calculations locally with secret peppers.</li>
+          <li><strong>Blocker Hook Loop:</strong> Leverages DeviceAdminReceiver to lock uninstalls and AccessibilityService callbacks to catch window package modifications, redirecting target distraction layers instantly.</li>
+          <li><strong>Assistant Engine:</strong> Runs using the Model Context Protocol (MCP) tool routing mapped to JVM registries.</li>
+        </ul>
+      </section>
+
     </div>
   );
 }

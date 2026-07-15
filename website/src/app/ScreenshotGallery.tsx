@@ -42,7 +42,7 @@ const SCREENS: ScreenItem[] = [
 
 export default function ScreenshotGallery() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const currentScreen = SCREENS.find(s => s.id === activeTab) || SCREENS[0];
 
   const handleTabChange = (tabId: string) => {
