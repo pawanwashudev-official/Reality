@@ -390,6 +390,47 @@
                     </com.google.android.material.card.MaterialCardView>
                 </GridLayout>
                 
+                <!-- 7-Day Trends Section -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="7-Day Habits"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorPrimary"
+                    android:fontFamily="monospace"
+                    android:layout_marginTop="32dp"
+                    android:layout_marginBottom="12dp"
+                    android:layout_marginStart="4dp"/>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="250dp"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                    app:strokeWidth="0dp">
+                    
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:padding="16dp">
+                        
+                        <com.github.mikephil.charting.charts.LineChart
+                            android:id="@+id/chart_health_trends"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent" />
+                            
+                        <ProgressBar
+                            android:id="@+id/progress_chart"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_centerInParent="true" />
+                            
+                    </RelativeLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_manage_health_perms"
                     style="@style/Widget.Material3.Button.TextButton"

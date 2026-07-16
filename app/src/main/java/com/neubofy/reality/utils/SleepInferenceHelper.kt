@@ -283,4 +283,80 @@ object SleepInferenceHelper {
             TerminalLogger.log("AutoConfirmSleep: Error - ${e.message}")
         }
     }
+
+    /**
+     * Passive check called when the app is opened (e.g., MainActivity onResume).
+     * Waits 60 minutes after wake-up time. If no sleep is recorded in Health Connect,
+     * infers sleep and sends a local notification suggesting the user to save it.
+     */
+    suspend fun checkAndNotifyMissingSleep(context: Context) {
+        val loader = SavedPreferencesLoader(context)
+        if (!loader.isSmartSleepEnabled()) return
+        
+        val bedtimeData = loader.getBedtimeData()
+        if (!bedtimeData.isEnabled) return
+        
+        val prefs = context.getSharedPreferences("reality_sleep_prefs", Context.MODE_PRIVATE)
+        val todayStr = java.time.LocalDate.now().toString()
+        if (prefs.getString("last_notified_date", "") == todayStr) return // Already checked/notified today
+        
+        val nowTime = java.time.LocalTime.now()
+        val nowMins = (nowTime.hour * 60) + nowTime.minute
+        
+        // Ensure we are at least 60 minutes past the scheduled wake-up time
+        val wakeUpMins = bedtimeData.endTimeInMins
+        if (nowMins < wakeUpMins + 60) {
+            return // Not enough time has passed since wake-up
+        }
+        
+        val healthManager = com.neubofy.reality.health.HealthManager(context)
+        val today = java.time.LocalDate.now()
+        
+        if (healthManager.isSleepSyncedToday(today)) {
+            // A wearable already synced it! Do nothing, just mark as checked today.
+            prefs.edit().putString("last_notified_date", todayStr).apply()
+            return
+        }
+        
+        // Sleep not found in Health Connect 60+ mins after wakeup. Infer it!
+        // Immediately mark as checked so we ONLY run this heavy inference once a day
+        prefs.edit().putString("last_notified_date", todayStr).apply()
+        
+        val inferred = inferSleepSession(context, today, force = true)
+        if (inferred != null) {
+            TerminalLogger.log("SmartSleep: Inferred sleep from ${inferred.first} to ${inferred.second}, sending notification")
+            
+            // Format time for notification
+            val formatter = java.time.format.DateTimeFormatter.ofPattern("h:mm a").withZone(ZoneId.systemDefault())
+            val startStr = formatter.format(inferred.first)
+            val endStr = formatter.format(inferred.second)
+            
+            sendSleepNotification(context, "Reality detected sleep from $startStr to $endStr. Tap to review and save.")
+        }
+    }
+    
+    private fun sendSleepNotification(context: Context, message: String) {
+        val channelId = "reality_sleep_channel"
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channel = android.app.NotificationChannel(channelId, "Smart Sleep", android.app.NotificationManager.IMPORTANCE_DEFAULT)
+            notificationManager.createNotificationChannel(channel)
+        }
+        
+        val intent = android.content.Intent(context, com.neubofy.reality.ui.activity.SmartSleepActivity::class.java)
+        intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+        val pendingIntent = android.app.PendingIntent.getActivity(context, 0, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)
+        
+        val builder = androidx.core.app.NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(com.neubofy.reality.R.drawable.ic_launcher_foreground) // Replace with actual icon if available
+            .setContentTitle("Add Sleep Session")
+            .setContentText(message)
+            .setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            
+        notificationManager.notify(1001, builder.build())
+    }
 }

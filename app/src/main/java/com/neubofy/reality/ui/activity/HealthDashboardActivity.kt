@@ -17,6 +17,13 @@ import android.view.LayoutInflater
 import android.widget.TextView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.neubofy.reality.R
+import android.graphics.Color
+import androidx.core.content.ContextCompat
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 
 class HealthDashboardActivity : BaseActivity() {
 
@@ -80,7 +87,39 @@ class HealthDashboardActivity : BaseActivity() {
             startActivity(android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
         }
 
+        setupChart()
         setupSmartSleepToggle()
+    }
+    
+    private fun setupChart() {
+        val chart = binding.chartHealthTrends
+        chart.description.isEnabled = false
+        chart.setTouchEnabled(true)
+        chart.isDragEnabled = true
+        chart.setScaleEnabled(false)
+        chart.setPinchZoom(false)
+        chart.setDrawGridBackground(false)
+        
+        // Hide right axis
+        chart.axisRight.isEnabled = false
+        
+        // Setup left axis
+        val leftAxis = chart.axisLeft
+        leftAxis.textColor = ContextCompat.getColor(this, R.color.md_theme_onSurfaceVariant)
+        leftAxis.setDrawGridLines(true)
+        leftAxis.gridColor = Color.parseColor("#20888888")
+        leftAxis.axisMinimum = 0f
+        
+        // Setup X axis
+        val xAxis = chart.xAxis
+        xAxis.position = XAxis.XAxisPosition.BOTTOM
+        xAxis.textColor = ContextCompat.getColor(this, R.color.md_theme_onSurfaceVariant)
+        xAxis.setDrawGridLines(false)
+        xAxis.granularity = 1f
+        
+        // Legend
+        val legend = chart.legend
+        legend.textColor = ContextCompat.getColor(this, R.color.md_theme_onSurface)
     }
     
     override fun onCreateOptionsMenu(menu: android.view.Menu?): Boolean {
@@ -222,6 +261,73 @@ class HealthDashboardActivity : BaseActivity() {
                     binding.tvHealthStatus.visibility = android.view.View.VISIBLE
                     binding.tvHealthStatus.text = "Health Connect not installed"
                     binding.gridHealthDashboard.visibility = android.view.View.GONE
+                }
+                
+                // 3. Load 7-Day Chart Data
+                binding.progressChart.visibility = android.view.View.VISIBLE
+                binding.chartHealthTrends.visibility = android.view.View.INVISIBLE
+                
+                withContext(Dispatchers.IO) {
+                    val dates = mutableListOf<String>()
+                    val screenTimeEntries = ArrayList<Entry>()
+                    val stepsEntries = ArrayList<Entry>()
+                    
+                    val healthManager = com.neubofy.reality.health.HealthManager(this@HealthDashboardActivity)
+                    val hasHealthAccess = healthManager.hasPermissions()
+                    
+                    val today = LocalDate.now()
+                    
+                    for (i in 6 downTo 0) {
+                        val date = today.minusDays(i.toLong())
+                        val dayLabel = date.format(DateTimeFormatter.ofPattern("EEE"))
+                        dates.add(dayLabel)
+                        
+                        // Screen Time (Hours)
+                        var stHours = 0f
+                        if (hasUsagePermission) {
+                            val stMs = com.neubofy.reality.utils.UsageUtils.getProUsageMetrics(this@HealthDashboardActivity, date).screenTimeMs
+                            stHours = stMs / (1000f * 60f * 60f)
+                        }
+                        screenTimeEntries.add(Entry((6 - i).toFloat(), stHours))
+                        
+                        // Steps (Thousands)
+                        var stepK = 0f
+                        if (hasHealthAccess) {
+                            try {
+                                val s = healthManager.getSteps(date)
+                                stepK = s / 1000f
+                            } catch (e: Exception) {}
+                        }
+                        stepsEntries.add(Entry((6 - i).toFloat(), stepK))
+                    }
+                    
+                    withContext(Dispatchers.Main) {
+                        val screenSet = LineDataSet(screenTimeEntries, "Screen Time (hrs)").apply {
+                            color = ContextCompat.getColor(this@HealthDashboardActivity, R.color.md_theme_primary)
+                            setCircleColor(color)
+                            lineWidth = 3f
+                            circleRadius = 4f
+                            setDrawCircleHole(false)
+                            mode = LineDataSet.Mode.CUBIC_BEZIER
+                            setDrawValues(false)
+                        }
+                        
+                        val stepSet = LineDataSet(stepsEntries, "Steps (k)").apply {
+                            color = ContextCompat.getColor(this@HealthDashboardActivity, R.color.accent_health)
+                            setCircleColor(color)
+                            lineWidth = 3f
+                            circleRadius = 4f
+                            setDrawCircleHole(false)
+                            mode = LineDataSet.Mode.CUBIC_BEZIER
+                            setDrawValues(false)
+                        }
+                        
+                        binding.chartHealthTrends.xAxis.valueFormatter = IndexAxisValueFormatter(dates)
+                        binding.chartHealthTrends.data = LineData(screenSet, stepSet)
+                        binding.progressChart.visibility = android.view.View.GONE
+                        binding.chartHealthTrends.visibility = android.view.View.VISIBLE
+                        binding.chartHealthTrends.animateY(1000)
+                    }
                 }
 
             } catch (e: Exception) {

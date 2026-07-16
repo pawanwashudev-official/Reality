@@ -267,26 +267,11 @@ class ReflectionSettingsActivity : BaseActivity() {
             var totalUsedMillis = 0L
             
             if (hasUsagePerm && blockedApps.isNotEmpty()) {
-                val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as? android.app.usage.UsageStatsManager
-                if (usageStatsManager != null) {
-                    val now = System.currentTimeMillis()
-                    val startOfDay = java.time.LocalDate.now()
-                        .atStartOfDay(java.time.ZoneId.systemDefault())
-                        .toInstant().toEpochMilli()
-                    
-                    val stats = usageStatsManager.queryUsageStats(
-                        android.app.usage.UsageStatsManager.INTERVAL_DAILY,
-                        startOfDay,
-                        now
-                    )
-                    
-                    for (stat in stats) {
-                        if (stat.totalTimeInForeground <= 0) continue
-                        if (blockedApps.contains(stat.packageName)) {
-                            totalUsedMillis += stat.totalTimeInForeground
-                        }
-                    }
-                }
+                totalUsedMillis = UsageUtils.getBlockedAppsUsageForDate(
+                    this@ReflectionSettingsActivity, 
+                    java.time.LocalDate.now(), 
+                    blockedApps
+                )
             }
 
             // Get Labels for display

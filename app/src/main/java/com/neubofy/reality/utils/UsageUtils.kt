@@ -28,15 +28,28 @@ object UsageUtils {
         return mode == android.app.AppOpsManager.MODE_ALLOWED
     }
 
+    private var cachedUsageMap: Map<String, Long>? = null
+    private var lastUsageFetchTime = 0L
+    private const val USAGE_CACHE_EXPIRY_MS = 60_000L // 1 minute cache
+
     /**
      * PRIMARY METHOD - Uses system's queryAndAggregateUsageStats for app usage.
      * This is the GOLD STANDARD that matches Digital Wellbeing exactly.
      * 
-     * The system internally accounts for all foreground/background transitions
-     * and provides totalTimeInForeground which is the definitive usage time.
+     * Includes an automatic 1-minute memory cache to keep the app extremely fast and fluid
+     * across different settings pages (like Gamification and Usage Limits) without
+     * constantly hammering the system UsageStatsManager.
      */
-    fun getUsageSinceMidnight(context: Context): Map<String, Long> {
-        return getUsageForDate(context, java.time.LocalDate.now())
+    fun getUsageSinceMidnight(context: Context, forceRefresh: Boolean = false): Map<String, Long> {
+        val now = System.currentTimeMillis()
+        if (!forceRefresh && cachedUsageMap != null && (now - lastUsageFetchTime < USAGE_CACHE_EXPIRY_MS)) {
+            return cachedUsageMap!!
+        }
+
+        val freshMap = getUsageForDate(context, java.time.LocalDate.now())
+        cachedUsageMap = freshMap
+        lastUsageFetchTime = now
+        return freshMap
     }
 
     /**
@@ -368,7 +381,12 @@ object UsageUtils {
         if (!hasUsageStatsPermission(context)) return 0L
         if (blockedApps.isEmpty()) return 0L
 
-        val usageMap = getUsageForDate(context, date)
+        val usageMap = if (date == java.time.LocalDate.now()) {
+            getUsageSinceMidnight(context)
+        } else {
+            getUsageForDate(context, date)
+        }
+        
         var total = 0L
         blockedApps.forEach { pkg ->
             total += usageMap[pkg] ?: 0L

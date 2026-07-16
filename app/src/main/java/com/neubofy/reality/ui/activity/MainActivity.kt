@@ -182,6 +182,15 @@ class MainActivity : BaseActivity() {
 
         // Professional Auto-Update (7-day throttle)
         com.neubofy.reality.utils.UpdateManager.checkForUpdates(this, silent = true)
+        
+        // Passive Smart Sleep Check
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                com.neubofy.reality.utils.SleepInferenceHelper.checkAndNotifyMissingSleep(this@MainActivity)
+            } catch (e: Exception) {
+                com.neubofy.reality.utils.TerminalLogger.log("SmartSleep Check Error: ${e.message}")
+            }
+        }
     }
     
     private fun applyFeatureToggles() {
