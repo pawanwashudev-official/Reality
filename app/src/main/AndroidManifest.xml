@@ -14,6 +14,7 @@
     <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
     <uses-permission android:name="android.permission.health.WRITE_SLEEP" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
@@ -60,6 +61,10 @@
         
         <activity
             android:name=".ui.activity.NightlyPlanActivity"
+            android:exported="false" />
+            
+        <receiver
+            android:name=".receivers.SleepReceiver"
             android:exported="false" />
             
         <activity

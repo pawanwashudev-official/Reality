@@ -324,7 +324,6 @@ object ThemeManager {
     fun applyCardAppearance(card: com.google.android.material.card.MaterialCardView) {
         val context = card.context
         val pattern = getBackgroundPattern(context)
-        val glass = getGlassIntensity(context)
         val style = getCardStyle(context)
         val radius = getCornerRadius(context).toFloat()
         
@@ -395,7 +394,6 @@ object ThemeManager {
      * Recursively applies all personalization (cards, spacing, styles, colors) to the view hierarchy.
      */
     fun applyGlobalPersonalization(view: android.view.View) {
-        val context = view.context
         
         // 1. Apply Card Appearance (if it's a card)
         if (view is com.google.android.material.card.MaterialCardView) {

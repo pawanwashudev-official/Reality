@@ -25,6 +25,13 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.neubofy.reality.health.HealthPermissionManager
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.ActivityRecognition
+import com.google.android.gms.location.SleepSegmentRequest
+import android.app.PendingIntent
+import com.neubofy.reality.receivers.SleepReceiver
 
 class SmartSleepActivity : BaseActivity() {
 
@@ -62,6 +69,55 @@ class SmartSleepActivity : BaseActivity() {
             loadSessions()
         } else {
             showHealthPermissionRequiredDialog()
+        }
+    }
+
+    private val activityRecognitionLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { granted ->
+        val swGoogleSleep = findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(com.neubofy.reality.R.id.swGoogleSleep)
+        if (granted) {
+            enableGoogleSleep()
+            swGoogleSleep?.isChecked = true
+        } else {
+            Toast.makeText(this, "Permission required for Google Sleep Detection.", Toast.LENGTH_LONG).show()
+            swGoogleSleep?.isChecked = false
+            val prefs = getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+            prefs.edit().putBoolean("google_sleep_enabled", false).apply()
+        }
+    }
+
+    private fun enableGoogleSleep() {
+        val prefs = getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("google_sleep_enabled", true).apply()
+        
+        val intent = android.content.Intent(this, SleepReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
+        
+        try {
+            ActivityRecognition.getClient(this).requestSleepSegmentUpdates(
+                pendingIntent, 
+                SleepSegmentRequest.getDefaultSleepSegmentRequest()
+            ).addOnSuccessListener {
+                com.neubofy.reality.utils.TerminalLogger.log("Google Sleep API successfully registered.")
+            }.addOnFailureListener { e ->
+                com.neubofy.reality.utils.TerminalLogger.log("Failed to register Google Sleep API: ${e.message}")
+            }
+        } catch (e: SecurityException) {
+            com.neubofy.reality.utils.TerminalLogger.log("SecurityException registering Sleep API: ${e.message}")
+        }
+    }
+    
+    private fun disableGoogleSleep() {
+        val prefs = getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("google_sleep_enabled", false).apply()
+        
+        val intent = android.content.Intent(this, SleepReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
+        
+        try {
+            ActivityRecognition.getClient(this).removeSleepSegmentUpdates(pendingIntent)
+            com.neubofy.reality.utils.TerminalLogger.log("Google Sleep API unregistered.")
+        } catch (e: Exception) {
+            com.neubofy.reality.utils.TerminalLogger.log("Error unregistering Sleep API: ${e.message}")
         }
     }
 
@@ -153,6 +209,27 @@ class SmartSleepActivity : BaseActivity() {
     private fun setupUI() {
         binding.btnFinish.setOnClickListener { finish() }
         binding.btnManualAdd.setOnClickListener { showAddSleepPicker() }
+        
+        val swGoogleSleep = findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(com.neubofy.reality.R.id.swGoogleSleep)
+        val prefs = getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        swGoogleSleep.isChecked = prefs.getBoolean("google_sleep_enabled", false)
+        
+        swGoogleSleep.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED) {
+                        swGoogleSleep.isChecked = false // Revert until granted
+                        activityRecognitionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+                    } else {
+                        enableGoogleSleep()
+                    }
+                } else {
+                    enableGoogleSleep()
+                }
+            } else {
+                disableGoogleSleep()
+            }
+        }
     }
 
     private fun loadSessions() {
@@ -162,10 +239,19 @@ class SmartSleepActivity : BaseActivity() {
             
             sessions.clear()
             if (healthSessions.isEmpty()) {
-                // Run inference if no confirmed data
-                val inferred = SleepInferenceHelper.inferSleepSession(this@SmartSleepActivity, today, force = true)
-                if (inferred != null) {
-                    sessions.add(SleepSessionUiModel(inferred.first, inferred.second))
+                val sleepPrefs = getSharedPreferences("reality_sleep_prefs", Context.MODE_PRIVATE)
+                val googleStart = sleepPrefs.getLong("google_sleep_start", 0L)
+                val googleEnd = sleepPrefs.getLong("google_sleep_end", 0L)
+                
+                if (googleStart > 0 && googleEnd > 0) {
+                    // Use Google's highly accurate AI sleep detection
+                    sessions.add(SleepSessionUiModel(Instant.ofEpochMilli(googleStart), Instant.ofEpochMilli(googleEnd)))
+                } else {
+                    // Fallback to our own screen-gap inference
+                    val inferred = SleepInferenceHelper.inferSleepSession(this@SmartSleepActivity, today, force = true)
+                    if (inferred != null) {
+                        sessions.add(SleepSessionUiModel(inferred.first, inferred.second))
+                    }
                 }
             } else {
                 healthSessions.forEach { (s, e) ->

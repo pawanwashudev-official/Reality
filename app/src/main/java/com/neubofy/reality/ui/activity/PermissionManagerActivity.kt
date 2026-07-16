@@ -203,6 +203,28 @@ class PermissionManagerActivity : BaseActivity() {
                 }
             )
         }
+        
+        // 8.5 Physical Activity / Google Sleep API (If Enabled)
+        val prefs = getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("google_sleep_enabled", false)) {
+            val isGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true // Granted implicitly on older versions
+            }
+            addPermissionCard(
+                title = "Physical Activity",
+                desc = "Required to accurately detect your sleep patterns.",
+                whyText = "When Google Sleep Detection is enabled, we use this permission to access the Google Play Services Sleep API, which detects sleep extremely accurately using motion and light sensors.",
+                iconRes = R.drawable.baseline_accessibility_24,
+                isGranted = isGranted,
+                onClick = {
+                    if (!isGranted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        permissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+                    }
+                }
+            )
+        }
 
         // 9. Exact Alarm (If Reminders/Alarms Enabled)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && featureManager.isReminderEnabled()) {
