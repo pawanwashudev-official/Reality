@@ -50,8 +50,51 @@ object UsageUtils {
         val endOfDay = date.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
         
         return try {
-            val statsMap = usm.queryAndAggregateUsageStats(startOfDay, endOfDay)
-            statsMap.mapValues { it.value.totalTimeInForeground }
+            // Query starting 2 hours early to catch apps that were opened before midnight
+            // but stayed open past midnight.
+            val queryStart = startOfDay - (2 * 60 * 60 * 1000L)
+            val events = usm.queryEvents(queryStart, endOfDay)
+            val event = android.app.usage.UsageEvents.Event()
+            
+            val appUsageMap = mutableMapOf<String, Long>()
+            val lastForegroundEventTime = mutableMapOf<String, Long>()
+            
+            while (events.hasNextEvent()) {
+                events.getNextEvent(event)
+                val pkg = event.packageName
+                if (pkg.isNullOrEmpty()) continue
+                
+                if (event.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND) {
+                    lastForegroundEventTime[pkg] = event.timeStamp
+                } else if (event.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_BACKGROUND) {
+                    val lastTime = lastForegroundEventTime[pkg]
+                    if (lastTime != null) {
+                        // We only care about time spent AFTER startOfDay
+                        val effectiveStart = if (lastTime < startOfDay) startOfDay else lastTime
+                        val effectiveEnd = if (event.timeStamp < startOfDay) startOfDay else event.timeStamp
+                        
+                        if (effectiveEnd > effectiveStart) {
+                            val duration = effectiveEnd - effectiveStart
+                            appUsageMap[pkg] = (appUsageMap[pkg] ?: 0L) + duration
+                        }
+                        lastForegroundEventTime.remove(pkg)
+                    }
+                }
+            }
+            
+            // Handle apps still in foreground right now
+            val now = System.currentTimeMillis()
+            val endBound = if (endOfDay > now) now else endOfDay
+            
+            for ((pkg, lastTime) in lastForegroundEventTime) {
+                val effectiveStart = if (lastTime < startOfDay) startOfDay else lastTime
+                if (endBound > effectiveStart) {
+                    val duration = endBound - effectiveStart
+                    appUsageMap[pkg] = (appUsageMap[pkg] ?: 0L) + duration
+                }
+            }
+            
+            appUsageMap
         } catch (e: Exception) {
             emptyMap()
         }
