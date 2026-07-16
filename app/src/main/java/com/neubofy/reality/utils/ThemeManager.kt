@@ -960,16 +960,46 @@ object ThemeManager {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
     }
 
+    data class CardStyleConfig(
+        val style: CardStyle,
+        val radius: Float,
+        val customBg: Int?,
+        val customStroke: Int?,
+        val glassIntensity: GlassIntensity,
+        val glassStrokeColor: Int,
+        val noiseIntensity: Float,
+        val isShimmerEnabled: Boolean,
+        val colorSurface: Int,
+        val colorOutline: Int
+    )
+
     /**
-     * Finds and applies theme to all cards in a hierarchy.
+     * Finds and applies theme to all cards in a hierarchy using a cached style configuration to avoid blocking SharedPreferences queries.
      */
     fun applyToAllCards(rootView: android.view.View) {
+        val context = rootView.context
+        val config = CardStyleConfig(
+            style = getCardStyle(context),
+            radius = getCornerRadius(context).toFloat(),
+            customBg = getCardBackgroundColor(context),
+            customStroke = getCardStrokeColor(context),
+            glassIntensity = getGlassIntensity(context),
+            glassStrokeColor = getGlassStrokeColor(context),
+            noiseIntensity = getNoiseIntensity(context),
+            isShimmerEnabled = isShimmerEnabled(context),
+            colorSurface = getColorWithFallback(context, null, com.google.android.material.R.attr.colorSurface),
+            colorOutline = getColorWithFallback(context, null, com.google.android.material.R.attr.colorOutline)
+        )
+        applyToAllCardsInternal(rootView, config)
+    }
+
+    private fun applyToAllCardsInternal(rootView: android.view.View, config: CardStyleConfig) {
         if (rootView is com.google.android.material.card.MaterialCardView) {
-            applyToCard(rootView)
+            applyToCardWithConfig(rootView, config)
         }
         if (rootView is android.view.ViewGroup) {
             for (i in 0 until rootView.childCount) {
-                applyToAllCards(rootView.getChildAt(i))
+                applyToAllCardsInternal(rootView.getChildAt(i), config)
             }
         }
     }
@@ -979,44 +1009,52 @@ object ThemeManager {
      */
     fun applyToCard(card: com.google.android.material.card.MaterialCardView) {
         val context = card.context
-        val style = getCardStyle(context)
-        val radius = getCornerRadius(context).toFloat()
+        val config = CardStyleConfig(
+            style = getCardStyle(context),
+            radius = getCornerRadius(context).toFloat(),
+            customBg = getCardBackgroundColor(context),
+            customStroke = getCardStrokeColor(context),
+            glassIntensity = getGlassIntensity(context),
+            glassStrokeColor = getGlassStrokeColor(context),
+            noiseIntensity = getNoiseIntensity(context),
+            isShimmerEnabled = isShimmerEnabled(context),
+            colorSurface = getColorWithFallback(context, null, com.google.android.material.R.attr.colorSurface),
+            colorOutline = getColorWithFallback(context, null, com.google.android.material.R.attr.colorOutline)
+        )
+        applyToCardWithConfig(card, config)
+    }
+
+    private fun applyToCardWithConfig(card: com.google.android.material.card.MaterialCardView, config: CardStyleConfig) {
+        val context = card.context
+        card.radius = config.radius * context.resources.displayMetrics.density
         
-        card.radius = radius * context.resources.displayMetrics.density
-        
-        // Mode specific color overrides
-        val customBg = getCardBackgroundColor(context)
-        val customStroke = getCardStrokeColor(context)
-        
-        when (style) {
+        when (config.style) {
             CardStyle.GLASS -> {
-                val intensity = getGlassIntensity(context)
-                val bgColor = when (intensity) {
+                val bgColor = when (config.glassIntensity) {
                     GlassIntensity.SUBTLE -> 0x0DFFFFFF.toInt()
                     GlassIntensity.LIGHT -> 0x1AFFFFFF.toInt()
                     GlassIntensity.MEDIUM -> 0x26FFFFFF.toInt()
                     GlassIntensity.STRONG -> 0x40FFFFFF.toInt()
                 }
-                card.setCardBackgroundColor(customBg ?: bgColor)
+                card.setCardBackgroundColor(config.customBg ?: bgColor)
                 card.strokeWidth = (1 * context.resources.displayMetrics.density).toInt()
-                card.strokeColor = customStroke ?: getGlassStrokeColor(context)
+                card.strokeColor = config.customStroke ?: config.glassStrokeColor
                 card.cardElevation = 0f
             }
             CardStyle.FILLED -> {
-                card.setCardBackgroundColor(customBg ?: getColorWithFallback(context, null, com.google.android.material.R.attr.colorSurface))
+                card.setCardBackgroundColor(config.customBg ?: config.colorSurface)
                 card.strokeWidth = 0
                 card.cardElevation = (2 * context.resources.displayMetrics.density)
             }
             CardStyle.OUTLINED -> {
-                card.setCardBackgroundColor(customBg ?: android.graphics.Color.TRANSPARENT)
+                card.setCardBackgroundColor(config.customBg ?: android.graphics.Color.TRANSPARENT)
                 card.strokeWidth = (1 * context.resources.displayMetrics.density).toInt()
-                card.strokeColor = customStroke ?: getColorWithFallback(context, null, com.google.android.material.R.attr.colorOutline)
+                card.strokeColor = config.customStroke ?: config.colorOutline
                 card.cardElevation = 0f
             }
         }
         
-        // Apply Premium Effects (Noise, Shimmer)
-        applyPremiumEffects(card)
+        applyPremiumEffectsWithConfig(card, config)
     }
 
     /**
@@ -1025,6 +1063,7 @@ object ThemeManager {
     fun applyPremiumEffects(view: android.view.View) {
         val context = view.context
         val noiseIntensity = getNoiseIntensity(context)
+        val isShimmer = isShimmerEnabled(context)
         
         if (noiseIntensity > 0) {
             val noise = com.neubofy.reality.ui.view.NoiseDrawable(noiseIntensity * 0.05f) // Subtle
@@ -1036,8 +1075,23 @@ object ThemeManager {
             }
         }
         
-        // Shimmer logic would go here if implemented as a drawable/overlay
-        if (isShimmerEnabled(context)) {
+        if (isShimmer) {
+            // TODO: Wrap with a ShimmerFrameLayout or apply a Shimmer Shader
+        }
+    }
+
+    private fun applyPremiumEffectsWithConfig(view: android.view.View, config: CardStyleConfig) {
+        if (config.noiseIntensity > 0) {
+            val noise = com.neubofy.reality.ui.view.NoiseDrawable(config.noiseIntensity * 0.05f) // Subtle
+            val currentBg = view.background
+            if (currentBg != null) {
+                view.background = android.graphics.drawable.LayerDrawable(arrayOf(currentBg, noise))
+            } else {
+                view.background = noise
+            }
+        }
+        
+        if (config.isShimmerEnabled) {
             // TODO: Wrap with a ShimmerFrameLayout or apply a Shimmer Shader
         }
     }

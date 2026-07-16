@@ -201,7 +201,11 @@ object BlockCache {
                 val focusData = prefs.getFocusModeData()
                 val bedtimeData = prefs.getBedtimeData()
                 val schedules = prefs.loadAutoFocusHoursList()
-                val calendarEvents = db.calendarEventDao().getCurrentEvents(now)
+                val calendarEvents = if (context.getSharedPreferences("reality_prefs", Context.MODE_PRIVATE).getBoolean("reminder_source_calendar", true)) {
+                    db.calendarEventDao().getCurrentEvents(now)
+                } else {
+                    emptyList()
+                }
                 
                 val isFocusActiveRaw = focusData.isTurnedOn && focusData.endTime > now
                 val isTapasyaActive = isFocusActiveRaw && focusData.isTapasyaTriggered

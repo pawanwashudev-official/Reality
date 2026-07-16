@@ -1,10 +1,8 @@
 package com.neubofy.reality.data.repository
 
-import android.content.ContentResolver
 import android.content.Context
-import android.database.Cursor
-import android.net.Uri
-import android.provider.CalendarContract
+import com.neubofy.reality.data.db.AppDatabase
+import kotlinx.coroutines.runBlocking
 import java.util.Calendar
 
 class CalendarRepository(private val context: Context) {
@@ -50,132 +48,43 @@ class CalendarRepository(private val context: Context) {
     }
 
     /**
-     * Get events in a time range from device calendar.
+     * Get events in a time range from synced local database.
      */
     fun getEventsInRange(startMillis: Long, endMillis: Long): List<CalendarEvent> {
         val events = mutableListOf<CalendarEvent>()
-        
-        val projection = arrayOf(
-            CalendarContract.Instances.EVENT_ID,
-            CalendarContract.Instances.TITLE,
-            CalendarContract.Instances.DESCRIPTION,
-            CalendarContract.Instances.BEGIN,
-            CalendarContract.Instances.END,
-            CalendarContract.Instances.DISPLAY_COLOR,
-            CalendarContract.Instances.EVENT_LOCATION,
-            CalendarContract.Instances.ALL_DAY
-        )
-
-        // Construct the query with the Instances URI
-        val builder: Uri.Builder = CalendarContract.Instances.CONTENT_URI.buildUpon()
-        android.content.ContentUris.appendId(builder, startMillis)
-        android.content.ContentUris.appendId(builder, endMillis)
-
-        // Filter: Exclude All Day Events (Holidays, Birthdays, etc.)
-        val selection = "${CalendarContract.Instances.ALL_DAY} = 0"
-
-        val cursor: Cursor? = try {
-            context.contentResolver.query(
-                builder.build(),
-                projection,
-                selection,
-                null,
-                "${CalendarContract.Instances.BEGIN} ASC"
-            )
-        } catch (e: SecurityException) {
-            null
-        }
-
-        cursor?.use {
-            val idIndex = it.getColumnIndex(CalendarContract.Instances.EVENT_ID)
-            val titleIndex = it.getColumnIndex(CalendarContract.Instances.TITLE)
-            val descIndex = it.getColumnIndex(CalendarContract.Instances.DESCRIPTION)
-            val beginIndex = it.getColumnIndex(CalendarContract.Instances.BEGIN)
-            val endIndex = it.getColumnIndex(CalendarContract.Instances.END)
-            val colorIndex = it.getColumnIndex(CalendarContract.Instances.DISPLAY_COLOR)
-            val locationIndex = it.getColumnIndex(CalendarContract.Instances.EVENT_LOCATION)
-
-            while (it.moveToNext()) {
-                val title = it.getString(titleIndex) ?: "No Title"
+        try {
+            val db = AppDatabase.getDatabase(context)
+            val dbEvents = runBlocking {
+                db.calendarEventDao().getEventsInRange(startMillis, endMillis)
+            }
+            
+            for (dbEvent in dbEvents) {
                 // Filter: Exclude "Family" events
-                if (title.contains("family", ignoreCase = true)) continue
-
-                val begin = it.getLong(beginIndex)
-                val end = it.getLong(endIndex)
+                if (dbEvent.title.contains("family", ignoreCase = true)) continue
                 
                 events.add(
                     CalendarEvent(
-                        id = it.getLong(idIndex),
-                        title = title,
-                        description = it.getString(descIndex),
-                        startTime = begin,
-                        endTime = end,
-                        color = it.getInt(colorIndex),
-                        location = it.getString(locationIndex)
+                        id = (dbEvent.eventId.hashCode() and 0x7FFFFFFF).toLong(), // Map string UUID/ID hash to Long
+                        title = dbEvent.title,
+                        description = null,
+                        startTime = dbEvent.startTime,
+                        endTime = dbEvent.endTime,
+                        color = 0xFF4CAF50.toInt(), // Default green color for calendar events
+                        location = null
                     )
                 )
             }
+        } catch (e: Exception) {
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR loading synced events: ${e.message}")
         }
         return events
     }
     
     /**
-     * Create a calendar event.
-     * @return The event ID if successful, -1 if failed
+     * Create a calendar event (Stub: device calendar writing is stripped).
+     * @return -1
      */
     fun createEvent(title: String, startTime: Long, endTime: Long, description: String? = null): Long {
-        try {
-            val values = android.content.ContentValues().apply {
-                put(CalendarContract.Events.TITLE, title)
-                put(CalendarContract.Events.DTSTART, startTime)
-                put(CalendarContract.Events.DTEND, endTime)
-                if (description != null) {
-                    put(CalendarContract.Events.DESCRIPTION, description)
-                }
-                put(CalendarContract.Events.CALENDAR_ID, getDefaultCalendarId())
-                put(CalendarContract.Events.EVENT_TIMEZONE, java.util.TimeZone.getDefault().id)
-            }
-            
-            val uri = context.contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)
-            return uri?.lastPathSegment?.toLongOrNull() ?: -1
-        } catch (e: Exception) {
-            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
-            return -1
-        }
-    }
-    
-    private fun getDefaultCalendarId(): Long {
-        try {
-            val cursor = context.contentResolver.query(
-                CalendarContract.Calendars.CONTENT_URI,
-                arrayOf(CalendarContract.Calendars._ID),
-                "${CalendarContract.Calendars.IS_PRIMARY} = 1",
-                null,
-                null
-            )
-
-            cursor?.use {
-                if (it.moveToFirst()) {
-                    return it.getLong(0)
-                }
-            }
-
-            // Fallback: get first available calendar
-            val fallbackCursor = context.contentResolver.query(
-                CalendarContract.Calendars.CONTENT_URI,
-                arrayOf(CalendarContract.Calendars._ID),
-                null, null, null
-            )
-
-            fallbackCursor?.use {
-                if (it.moveToFirst()) {
-                    return it.getLong(0)
-                }
-            }
-        } catch (e: SecurityException) {
-            // Ignored
-        }
-        
-        return 1L // Fallback to calendar ID 1
+        return -1
     }
 }

@@ -81,9 +81,6 @@ class AppBlockerService : BaseBlockingService() {
     private var lastBlockedPackage: String = ""
     private var lastBlockTime: Long = 0L
     
-    // PERSISTENT blocked packages for current session (prevents 2-min bypass)
-    private val sessionBlockedPackages = mutableSetOf<String>()
-    
     // === SETTINGS PAGE LEARNING ===
     private var isLearningMode = false
     private var isCustomPageLearning = false      // NEW: Learning a custom (user-defined) page/button
@@ -176,16 +173,36 @@ class AppBlockerService : BaseBlockingService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (!isScreenOn) return
+        if (event == null) return
         
-        // Dynamic cleanup of session blocks when no global blocking modes are active
-        if (!com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive) {
-            sessionBlockedPackages.clear()
+        val eventType = event.eventType
+        val packageName = event.packageName?.toString() ?: return
+        if (packageName == this.packageName) return
+        
+        // 1. Strict Event Type Filtering
+        // Drop high-frequency events we don't care about immediately.
+        if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+            eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
+            eventType != AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED &&
+            eventType != AccessibilityEvent.TYPE_VIEW_FOCUSED) {
+            return
+        }
+        
+        val isSettingsPackage = packageName.contains("settings") || packageName.contains("securitycenter")
+        val isBrowser = com.neubofy.reality.utils.UrlDetector.isBrowser(packageName)
+        
+        // 2. High-Frequency Event Dropping for Non-Target Apps
+        // If it's not a settings app and not a browser, we only need to monitor app switching (TYPE_WINDOW_STATE_CHANGED).
+        // This drops 99% of scrolling/typing events in regular apps (WhatsApp, Instagram, etc.) with zero overhead.
+        if (!isLearningMode && !isSettingsPackage && !isBrowser) {
+            if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+                return
+            }
         }
         
         // Capture window class for learning mode and strict mode
-        if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+        if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val className = event.className?.toString() ?: ""
-            val pkg = event.packageName?.toString() ?: ""
             
             // === SMART SETTINGS PROTECTION ===
             // Only wake protection system when:
@@ -193,18 +210,17 @@ class AppBlockerService : BaseBlockingService() {
             // 2. Page just changed (not same page)
             // 3. Strict mode protection is active (early exit if not!)
             // 4. Not in learning mode
-            val isSettingsPackage = pkg.contains("settings") || pkg.contains("securitycenter")
-            val isNewPage = className != lastWindowClassName || pkg != lastWindowPackage
+            val isNewPage = className != lastWindowClassName || packageName != lastWindowPackage
             
             lastWindowClassName = className
-            lastWindowPackage = pkg
+            lastWindowPackage = packageName
             
             // === EARLY EXIT: Skip if no protection is active ===
             // This is the key optimization - don't do ANY work unless protection is ON
             if (isSettingsPackage && isNewPage && !isLearningMode && 
                 com.neubofy.reality.utils.SettingsBox.isAnyProtectionActive()) {
                 lastSettingsContentHash = "" // Reset content hash for new page
-                scheduleSettingsProtectionCheck(className, pkg)
+                scheduleSettingsProtectionCheck(className, packageName)
             }
             
             // Log only Settings-related packages (only if protection active)
@@ -222,10 +238,7 @@ class AppBlockerService : BaseBlockingService() {
         // When navigating between pages that share the same class (SubSettings),
         // TYPE_WINDOW_STATE_CHANGED doesn't fire with a new className.
         // But TYPE_WINDOW_CONTENT_CHANGED fires when the content updates.
-        if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-            val pkg = event.packageName?.toString() ?: ""
-            val isSettingsPackage = pkg.contains("settings") || pkg.contains("securitycenter")
-            
+        if (eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
             if (isSettingsPackage && !isLearningMode && 
                 com.neubofy.reality.utils.SettingsBox.isAnyProtectionActive()) {
                 // Debounce: max once per 500ms
@@ -248,9 +261,6 @@ class AppBlockerService : BaseBlockingService() {
         // We now rely on robust page blocking.
 
         
-        // REMOVED: Over-aggressive content change checks for settings
-        // The WINDOW_STATE_CHANGED check above is sufficient and catches recents too
-        
         // PERIODIC CHECK RESTORED
         // This is CRITICAL for scheduled/auto focus to detect when a session starts.
         // Manual focus works via intent, but scheduled focus needs this time-based check.
@@ -259,15 +269,7 @@ class AppBlockerService : BaseBlockingService() {
         // Polling removed. We now rely on 'Screen On' broadcasts and 'HeartbeatWorker'.
         scanEventsCount++
         
-        if (event == null) return
-        val eventType = event.eventType
-        val packageName = event.packageName?.toString() ?: return
-        if (packageName == this.packageName) return
-        
-        // REMOVED: Duplicate settings check here - now handled above with smart caching
-
         // 1. Browser Special Handling (Watchdog Trigger)
-        val isBrowser = com.neubofy.reality.utils.UrlDetector.isBrowser(packageName)
         
         // Check if any blocking mode is active (Focus/Schedule/Calendar/Bedtime)
         val isAnyBlockingModeActive = isWebsiteBlockActive()
@@ -300,16 +302,13 @@ class AppBlockerService : BaseBlockingService() {
                  }
              }
         } else {
-             // Left the browser
+             // Left the browser - stop watchdog immediately to conserve battery
              currentBrowserPackage = null
-             // FIX: Watchdog stays alive (Hibernating) ONLY if session is active.
-             // If session ends, the watchdog stops itself in the Runnable check.
-             // We do NOT explicitly stop it here to prevent "Recent Apps" loophole.
+             stopBrowserCheckTimer()
         }
         
         // Strict Optimization: Ignore high-frequency events below this line
         if (eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
-             if (!sessionBlockedPackages.contains(packageName)) return
         }
         
         if (eventType == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) return
@@ -321,10 +320,6 @@ class AppBlockerService : BaseBlockingService() {
         }
         
         // Session Block Check (Fast path)
-        if (sessionBlockedPackages.contains(packageName)) {
-             handleBlock(packageName, "Session Block")
-             return
-        }
         
         // NOTE: Removed 30-second polling for battery optimization.
         // Box rebuilds via: BlockCacheWorker (15 min), Screen ON, Settings changed.
@@ -345,11 +340,6 @@ class AppBlockerService : BaseBlockingService() {
         
         if (shouldBlock) {
             val reason = reasons.joinToString(", ")
-            
-            if (sessionBlockedPackages.contains(packageName)) {
-                 handleBlock(packageName, reason)
-                 return
-            }
             if (packageName == lastBlockedPackage && (System.currentTimeMillis() - lastBlockTime) < 60000) {
                  handleBlock(packageName, reason)
                  return
@@ -434,87 +424,7 @@ class AppBlockerService : BaseBlockingService() {
     }
 
 
-    private fun performBackgroundUpdates() {
-        if (!hasUsageStatsPermission()) return
-        
-        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
-            try {
-                // === REBUILD THE BOX - SINGLE SOURCE OF TRUTH ===
-                com.neubofy.reality.utils.BlockCache.rebuildBox(applicationContext)
-                
-                kotlinx.coroutines.withContext(Dispatchers.Main) {
-                    // Update blocking status based on BlockCache
-                    val wasActive = isBlockingActive
-                    val nowActive = com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive ||
-                                       com.neubofy.reality.utils.BlockCache.getBlockedCount() > 0
-                    
-                    isBlockingActive = nowActive
-                    
-                    // SMART ALERT: Transition to Blocked State from Unblocked
-                    if (nowActive && !wasActive) {
-                        com.neubofy.reality.utils.NotificationHelper.showNotification(
-                            applicationContext, 
-                            "Reality Blocker", 
-                            "Schedule Started: Apps are now blocked. Stay focused!", 
-                            3001
-                        )
-                    }
-                    
-                    val isAnyModeActive = com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive
-                    
-                    // === NOTIFICATION MANAGEMENT ===
-                    if (!isAnyModeActive) {
-                        com.neubofy.reality.utils.NotificationTimerManager(this@AppBlockerService).stopTimer()
-                        sessionBlockedPackages.clear()
-                    }
-                    
-                    // === DND SYNC ===
-                    if (savedPreferencesLoader.isAutoDndEnabled()) {
-                        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-                        val currentFilter = notificationManager.getCurrentInterruptionFilter()
-                        val isDndOn = currentFilter == android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY
-                        
-                        // Smart DND Logic: Only toggle if we need to, and respect manual changes
-                        if (isAnyModeActive) {
-                            if (!isDndOn) {
-                                toggleDnd(true)
-                                wasDndEnabledByApp = true // Remember we did this
-                            }
-                        } else {
-                            // Only turn OFF if WE turned it on, AND it's currently on
-                            if (isDndOn && wasDndEnabledByApp) {
-                                toggleDnd(false)
-                                wasDndEnabledByApp = false // Reset state
-                            } else if (!isDndOn) {
-                                // If user turned it off manually, just sync our state
-                                wasDndEnabledByApp = false
-                            }
-                        }
-                    }
-                    
-                    // === REALITY SLEEP MODE SYNC (Android 15+, BEDTIME ONLY) ===
-                    if (savedPreferencesLoader.isRealitySleepEnabled() && com.neubofy.reality.utils.ZenModeManager.isSupported()) {
-                        val isBedtime = com.neubofy.reality.utils.BlockCache.isBedtimeCurrentlyActive
-                        if (isBedtime) {
-                            if (!wasSleepEnabledByApp) {
-                                com.neubofy.reality.utils.ZenModeManager.setZenState(applicationContext, true)
-                                wasSleepEnabledByApp = true
-                            }
-                        } else {
-                            if (wasSleepEnabledByApp) {
-                                com.neubofy.reality.utils.ZenModeManager.setZenState(applicationContext, false)
-                                wasSleepEnabledByApp = false
-                            }
-                        }
-                    }
-                    
-                    // === GRAYSCALE REMOVED - feature requires ADB ===
-                }
-            } catch (e: Exception) {
-                com.neubofy.reality.utils.TerminalLogger.log("BG UPDATE ERROR: ${e.message}")
-            }
-        }
-    }
+
 
     // toggleGrayscale REMOVED - feature requires ADB
 
@@ -1074,11 +984,6 @@ class AppBlockerService : BaseBlockingService() {
              val am = getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager
              am.killBackgroundProcesses(packageName)
         } catch(e: Exception) {}
-
-        // Add to session blocked set - prevents 2-min bypass
-        if (addToSession) {
-            sessionBlockedPackages.add(packageName)
-        }
         
         lastBlockedPackage = packageName
         lastBlockTime = System.currentTimeMillis()
@@ -1203,7 +1108,6 @@ class AppBlockerService : BaseBlockingService() {
                     } else {
                         // No blocking mode active - stop notification timer
                         com.neubofy.reality.utils.NotificationTimerManager(this@AppBlockerService).stopTimer()
-                        sessionBlockedPackages.clear()
                     }
                     
                     // === DND SYNC ===
@@ -1218,6 +1122,22 @@ class AppBlockerService : BaseBlockingService() {
                         } else if (!isAnyModeActive && isDndOn) {
                             // Mode ended, turn DND off
                             toggleDnd(false)
+                        }
+                    }
+                    
+                    // === REALITY SLEEP MODE SYNC (Android 15+, BEDTIME ONLY) ===
+                    if (savedPreferencesLoader.isRealitySleepEnabled() && com.neubofy.reality.utils.ZenModeManager.isSupported()) {
+                        val isBedtime = com.neubofy.reality.utils.BlockCache.isBedtimeCurrentlyActive
+                        if (isBedtime) {
+                            if (!wasSleepEnabledByApp) {
+                                com.neubofy.reality.utils.ZenModeManager.setZenState(applicationContext, true)
+                                wasSleepEnabledByApp = true
+                            }
+                        } else {
+                            if (wasSleepEnabledByApp) {
+                                com.neubofy.reality.utils.ZenModeManager.setZenState(applicationContext, false)
+                                wasSleepEnabledByApp = false
+                            }
                         }
                     }
                     
@@ -1423,7 +1343,7 @@ class AppBlockerService : BaseBlockingService() {
         // Reset to aggressive start
         resetWatchdogRampUp()
         
-        com.neubofy.reality.utils.TerminalLogger.log("WATCHDOG: Started (Smart Hibernation)")
+        com.neubofy.reality.utils.TerminalLogger.log("WATCHDOG: Started")
         browserCheckRunnable = object : Runnable {
             override fun run() {
                 // STOP CONDITION: Only if the entire Blocking Session Ends
@@ -1459,21 +1379,14 @@ class AppBlockerService : BaseBlockingService() {
                     }
                     currentPollInterval = POLL_STEPS[pollStepIndex]
                     
+                    // Re-run with calculated interval
+                    handler.postDelayed(this, currentPollInterval)
                 } else {
-                    // HIBERNATE MODE: Browser is NOT active - check less frequently
-                    // Just check if browser appeared (from recents, etc.)
-                    currentBrowserPackage = null
-                    
-                    // Use longer interval when hibernating (5 seconds - just to detect browser opening)
-                    // This saves battery vs constantly checking URL when not in browser
-                    currentPollInterval = 5000L  // 5 second hibernate check
-                    
-                    // If browser detected from recents, wake up immediately next cycle
-                    // (handled above when isBrowserActive becomes true)
+                    // Browser is no longer in foreground - stop the watchdog entirely!
+                    // Accessibility event will wake it up when user returns to a browser.
+                    com.neubofy.reality.utils.TerminalLogger.log("WATCHDOG: Stopped (Browser Left)")
+                    stopBrowserCheckTimer()
                 }
-                
-                // Re-run with calculated interval
-                handler.postDelayed(this, currentPollInterval)
             }
         }
         handler.post(browserCheckRunnable!!) // Run immediately first
