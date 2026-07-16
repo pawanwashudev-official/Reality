@@ -136,6 +136,7 @@ dependencies {
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
     implementation(libs.androidx.core.ktx)
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)

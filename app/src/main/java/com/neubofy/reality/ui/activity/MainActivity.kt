@@ -17,6 +17,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import com.neubofy.reality.ui.base.BaseActivity
@@ -94,6 +95,7 @@ class MainActivity : BaseActivity() {
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         ThemeManager.applyTheme(this)
         ThemeManager.applyAccentTheme(this)
         super.onCreate(savedInstanceState)

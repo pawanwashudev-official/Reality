@@ -309,4 +309,15 @@
         <item name="cornerSize">50%</item>
     </style>
 
+    <!-- Modern Native Android 12+ Splash Screen -->
+    <style name="Theme.Neubofy.Splash" parent="Theme.SplashScreen">
+        <!-- Background Color -->
+        <item name="windowSplashScreenBackground">@color/md_theme_background</item>
+        <!-- Icon -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/app_logo</item>
+        <!-- Post-splash theme -->
+        <item name="postSplashScreenTheme">@style/Theme.Reality</item>
+    </style>
+
+
 </resources>
