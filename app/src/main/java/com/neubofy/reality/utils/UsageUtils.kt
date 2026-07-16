@@ -50,8 +50,51 @@ object UsageUtils {
         val endOfDay = date.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
         
         return try {
-            val statsMap = usm.queryAndAggregateUsageStats(startOfDay, endOfDay)
-            statsMap.mapValues { it.value.totalTimeInForeground }
+            // Query starting 2 hours early to catch apps that were opened before midnight
+            // but stayed open past midnight.
+            val queryStart = startOfDay - (2 * 60 * 60 * 1000L)
+            val events = usm.queryEvents(queryStart, endOfDay)
+            val event = android.app.usage.UsageEvents.Event()
+            
+            val appUsageMap = mutableMapOf<String, Long>()
+            val lastForegroundEventTime = mutableMapOf<String, Long>()
+            
+            while (events.hasNextEvent()) {
+                events.getNextEvent(event)
+                val pkg = event.packageName
+                if (pkg.isNullOrEmpty()) continue
+                
+                if (event.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND) {
+                    lastForegroundEventTime[pkg] = event.timeStamp
+                } else if (event.eventType == android.app.usage.UsageEvents.Event.MOVE_TO_BACKGROUND) {
+                    val lastTime = lastForegroundEventTime[pkg]
+                    if (lastTime != null) {
+                        // We only care about time spent AFTER startOfDay
+                        val effectiveStart = if (lastTime < startOfDay) startOfDay else lastTime
+                        val effectiveEnd = if (event.timeStamp < startOfDay) startOfDay else event.timeStamp
+                        
+                        if (effectiveEnd > effectiveStart) {
+                            val duration = effectiveEnd - effectiveStart
+                            appUsageMap[pkg] = (appUsageMap[pkg] ?: 0L) + duration
+                        }
+                        lastForegroundEventTime.remove(pkg)
+                    }
+                }
+            }
+            
+            // Handle apps still in foreground right now
+            val now = System.currentTimeMillis()
+            val endBound = if (endOfDay > now) now else endOfDay
+            
+            for ((pkg, lastTime) in lastForegroundEventTime) {
+                val effectiveStart = if (lastTime < startOfDay) startOfDay else lastTime
+                if (endBound > effectiveStart) {
+                    val duration = endBound - effectiveStart
+                    appUsageMap[pkg] = (appUsageMap[pkg] ?: 0L) + duration
+                }
+            }
+            
+            appUsageMap
         } catch (e: Exception) {
             emptyMap()
         }
@@ -220,38 +263,33 @@ object UsageUtils {
         // Actually, existing getProUsageMetrics uses midnight-2h. 
         // Let's mimic that consistency: start query 2h before to catch "Last ON" event if it crossed midnight.
         val queryStart = startOfDay - (120 * 60 * 1000L)
-
         val events = usageStatsManager.queryEvents(queryStart, endOfQuery)
         val event = UsageEvents.Event()
 
         var unlockCount = 0
-        var lastLockTime = 0L 
-        var lastOffTime = 0L
         var maxStreakMillis = 0L
-        var isScreenOn = false 
+        var totalScreenTimeMs = 0L
         
-        // We only care about unlocks happening AFTER startOfDay
-        // But we need earlier events to know initial state (isScreenOn) at startOfDay?
-        // Simpler approach: Just count unlocks strictly within the window.
+        var lastOnTime = 0L
+        var lastOffTime = 0L
         
-        // Loop
         while (events.hasNextEvent()) {
             events.getNextEvent(event)
-            
-            val isInsideDay = event.timeStamp >= startOfDay
             
             if (event.eventType == UsageEvents.Event.SCREEN_INTERACTIVE || 
                 event.eventType == UsageEvents.Event.KEYGUARD_HIDDEN) {
                 
-                // Deduplicate unlocks (similar to today logic)
-                if (isInsideDay) {
-                    if (lastOffTime != 0L && (event.timeStamp - lastOffTime > 1000)) {
-                         unlockCount++
-                         
-                         // Streak check: Time from last LOCK to this UNLOCK
+                // Deduplicate events
+                if (lastOnTime == 0L || (event.timeStamp - lastOnTime > 1000)) {
+                    lastOnTime = event.timeStamp
+                    if (event.timeStamp >= startOfDay) {
+                        unlockCount++
+                    }
+                    
+                    // Streak check: Time from last OFF to this ON
+                    if (lastOffTime != 0L) {
+                         val streakStart = if (lastOffTime < startOfDay) startOfDay else lastOffTime
                          val streakEnd = event.timeStamp
-                         val streakStart = if (lastLockTime < startOfDay) startOfDay else lastLockTime
-                         
                          if (streakEnd > streakStart) {
                              val streak = streakEnd - streakStart
                              if (streak > maxStreakMillis) maxStreakMillis = streak
@@ -259,29 +297,37 @@ object UsageUtils {
                     }
                 }
                 
-                isScreenOn = true
-                
             } else if (event.eventType == UsageEvents.Event.SCREEN_NON_INTERACTIVE) {
-                lastLockTime = event.timeStamp
+                if (lastOnTime != 0L) {
+                    val effectiveStart = if (lastOnTime < startOfDay) startOfDay else lastOnTime
+                    val effectiveEnd = if (event.timeStamp < startOfDay) startOfDay else event.timeStamp
+                    
+                    if (effectiveEnd > effectiveStart) {
+                        totalScreenTimeMs += (effectiveEnd - effectiveStart)
+                    }
+                    lastOnTime = 0L
+                }
                 lastOffTime = event.timeStamp
-                isScreenOn = false
             }
         }
         
-        // Final streak check (if screen stayed off until end of the day)
-        if (!isScreenOn && lastLockTime != 0L) {
-             val streakEnd = endOfQuery
-             val streakStart = if (lastLockTime < startOfDay) startOfDay else lastLockTime
+        // Handle if screen stayed ON at the end of the query (e.g. 11:59:59 PM)
+        if (lastOnTime != 0L) {
+            val effectiveStart = if (lastOnTime < startOfDay) startOfDay else lastOnTime
+            val effectiveEnd = if (endOfQuery < startOfDay) startOfDay else endOfQuery
+            if (effectiveEnd > effectiveStart) {
+                totalScreenTimeMs += (effectiveEnd - effectiveStart)
+            }
+        } else if (lastOffTime != 0L) {
+             // Currently unplugged - streak potentially continuing to end of day
+             val streakStart = if (lastOffTime < startOfDay) startOfDay else lastOffTime
+             val streakEnd = if (endOfQuery < startOfDay) startOfDay else endOfQuery
              if (streakEnd > streakStart) {
                  val currentStreak = streakEnd - streakStart
                  if (currentStreak > maxStreakMillis) maxStreakMillis = currentStreak
              }
         }
 
-        // Screen time: Use official aggregate API for device-wide total (Gold Standard)
-        val statsMap = usageStatsManager.queryAndAggregateUsageStats(startOfDay, endOfQuery)
-        val totalScreenTimeMs = statsMap.values.sumOf { it.totalTimeInForeground }
-        
         return ProUsageMetrics(totalScreenTimeMs, unlockCount, maxStreakMillis)
     }
 
