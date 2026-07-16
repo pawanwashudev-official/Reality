@@ -43,6 +43,11 @@ object SleepInferenceHelper {
         val planStartMins = bedtimeData.startTimeInMins
         val planEndMins = bedtimeData.endTimeInMins
         
+        if (!bedtimeData.isEnabled) {
+            TerminalLogger.log("SleepInference: Bedtime schedule is disabled. Not inferring.")
+            return null
+        }
+        
         // ========== TIMING GUARD: Only run after bedtime ends ==========
         if (bedtimeData.isEnabled && !force) {
             val nowTime = java.time.LocalTime.now()
@@ -152,10 +157,11 @@ object SleepInferenceHelper {
             }
             .sortedByDescending { it.second }
 
-        // FALLBACK: No gap >= 3h found, return plan
+        // If no gap >= 3h found, do NOT blindly suggest the scheduled plan. 
+        // This makes the algorithm smart: only suggest if actual sleep-like phone usage is detected.
         if (scoredGaps.isEmpty()) {
-            TerminalLogger.log("SleepInference: No gaps >= 3h found, falling back to plan")
-            return Pair(planStartTime, planEndTime)
+            TerminalLogger.log("SleepInference: No gaps >= 3h found, returning null (no sleep detected)")
+            return null
         }
 
         val bestGap = scoredGaps.first().first

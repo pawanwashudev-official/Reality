@@ -141,6 +141,13 @@ class MainActivity : BaseActivity() {
         
         // Handle deep link actions (from Alarm dismiss, etc.)
         handleIntentAction(intent)
+        
+        // Apply theme borders to all cards (Run once on create)
+        ThemeManager.applyToAllCards(binding.root)
+        updateThemeVisuals()
+        
+        // Staggered Entry Animation (Run only once on create to avoid scroll lag)
+        startStaggeredAnimation()
     }
     
     private fun handleIntentAction(intent: Intent?) {
@@ -171,14 +178,9 @@ class MainActivity : BaseActivity() {
         startStatusUpdater()
         startNightlyFlowObservers()
         updateGreeting()
-        updateThemeVisuals()
         updateTerminalLogVisibility()
-        ThemeManager.applyToAllCards(binding.root)
         
         applyFeatureToggles()
-
-        // Staggered Entry Animation
-        startStaggeredAnimation()
 
         // Professional Auto-Update (7-day throttle)
         com.neubofy.reality.utils.UpdateManager.checkForUpdates(this, silent = true)
@@ -344,19 +346,22 @@ class MainActivity : BaseActivity() {
                   val remaining = status.endTime - com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this@MainActivity)
                   binding.tvBlockerCardTitle.text = status.title
 
-                  // Breathing Glow Animation
-                  val colorFrom = getColor(R.color.accent_focus)
-                  val colorTo = getColor(R.color.white)
-                  val anim = android.animation.ObjectAnimator.ofArgb(
-                      binding.cardBlockerMode, 
-                      "strokeColor", 
-                      colorFrom, 
-                      colorTo
-                  )
-                  anim.duration = 1500
-                  anim.repeatMode = android.animation.ValueAnimator.REVERSE
-                  anim.repeatCount = android.animation.ValueAnimator.INFINITE
-                  anim.start()
+                  // Breathing Glow Animation (Only start if not already animating)
+                  if (binding.cardBlockerMode.tag != "animating") {
+                      binding.cardBlockerMode.tag = "animating"
+                      val colorFrom = getColor(R.color.accent_focus)
+                      val colorTo = getColor(R.color.white)
+                      val anim = android.animation.ObjectAnimator.ofArgb(
+                          binding.cardBlockerMode, 
+                          "strokeColor", 
+                          colorFrom, 
+                          colorTo
+                      )
+                      anim.duration = 1500
+                      anim.repeatMode = android.animation.ValueAnimator.REVERSE
+                      anim.repeatCount = android.animation.ValueAnimator.INFINITE
+                      anim.start()
+                  }
                   
                   // Check if Tapasya is running
                   val data = savedPreferencesLoader.getFocusModeData()
@@ -391,6 +396,11 @@ class MainActivity : BaseActivity() {
                   binding.tvBlockerCardStatus.text = "Ready to Start"
                   binding.blockerMode.text = "Start Blocker"
                   binding.blockerMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.teal_200))
+                  
+                  if (binding.cardBlockerMode.tag == "animating") {
+                      binding.cardBlockerMode.tag = null
+                      binding.cardBlockerMode.strokeColor = getColor(R.color.md_theme_outline) // Reset to default
+                  }
              }
         }
     }
