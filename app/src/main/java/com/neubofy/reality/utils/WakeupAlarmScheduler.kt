@@ -17,12 +17,7 @@ object WakeupAlarmScheduler {
         val alarms = prefsLoader.loadWakeupAlarms().filter { it.isEnabled && !it.isDeleted }
 
         if (alarms.isEmpty()) {
-            val intent = Intent(context, WakeupAlarmReceiver::class.java)
-            val pendingIntent = PendingIntent.getBroadcast(
-                context, 1001, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            alarmManager.cancel(pendingIntent)
+            cancelAlarm(context)
             return
         }
 
@@ -110,8 +105,9 @@ object WakeupAlarmScheduler {
             putExtra("vibrationEnabled", vibrationEnabled)
         }
         val triggerTime = System.currentTimeMillis() + (snoozeIntervalMins * 60 * 1000L)
+        // Use 1001 to OVERWRITE the main alarm. Single source of truth.
         val pendingIntent = PendingIntent.getBroadcast(
-            context, 1002, intent,
+            context, 1001, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -121,16 +117,18 @@ object WakeupAlarmScheduler {
         } else {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
         }
-        TerminalLogger.log("WAKEUP ALARM: Scheduled snooze alarm")
+        val timeStr = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(triggerTime))
+        TerminalLogger.log("WAKEUP ALARM: Scheduled snooze alarm at $timeStr")
     }
 
-    fun cancelSnooze(context: Context) {
+    fun cancelAlarm(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, WakeupAlarmReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
-            context, 1002, intent,
+            context, 1001, intent,
             PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         )
         pendingIntent?.let { alarmManager.cancel(it) }
+        TerminalLogger.log("WAKEUP ALARM: Canceled pending alarm")
     }
 }

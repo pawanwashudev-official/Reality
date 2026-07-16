@@ -334,6 +334,14 @@ class AppBlockerService : BaseBlockingService() {
 
         lastPackage = packageName
         
+        // CONDITIONAL USAGE TRACKER
+        // Only run the 15-minute polling worker if the user is actively using an app that has a usage limit.
+        if (com.neubofy.reality.utils.BlockCache.monitoredApps.contains(packageName)) {
+            startUsageTracker()
+        } else {
+            stopUsageTracker()
+        }
+        
         // === THE BOX CHECK - SINGLE SOURCE OF TRUTH ===
         // No fallback. No calculations. Just check the box.
         val (shouldBlock, reasons) = com.neubofy.reality.utils.BlockCache.shouldBlock(packageName)
@@ -427,6 +435,29 @@ class AppBlockerService : BaseBlockingService() {
 
 
     // toggleGrayscale REMOVED - feature requires ADB
+
+    private fun startUsageTracker() {
+        try {
+            val workRequest = androidx.work.PeriodicWorkRequestBuilder<com.neubofy.reality.workers.UsageTrackerWorker>(
+                15, java.util.concurrent.TimeUnit.MINUTES
+            ).build()
+            androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "UsageTrackerWorker",
+                androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                workRequest
+            )
+        } catch (e: Exception) {
+            com.neubofy.reality.utils.TerminalLogger.log("TRACKER START ERROR: ${e.message}")
+        }
+    }
+
+    private fun stopUsageTracker() {
+        try {
+            androidx.work.WorkManager.getInstance(this).cancelUniqueWork("UsageTrackerWorker")
+        } catch (e: Exception) {
+            com.neubofy.reality.utils.TerminalLogger.log("TRACKER STOP ERROR: ${e.message}")
+        }
+    }
 
     private fun isSystemApp(packageName: String): Boolean {
         try {

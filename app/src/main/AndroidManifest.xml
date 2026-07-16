@@ -549,7 +549,12 @@
             android:exported="false" />
         <service android:name=".services.WakeupAlarmService" android:foregroundServiceType="mediaPlayback" />
 
-        <!-- EncryptionSetupActivity REMOVED — source file no longer exists -->
+        <!-- Disable Firebase Init Provider to stop it from lagging the Main Thread on startup -->
+        <provider
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            android:authorities="${applicationId}.firebaseinitprovider"
+            tools:node="remove" />
+
     </application>
 
 </manifest>

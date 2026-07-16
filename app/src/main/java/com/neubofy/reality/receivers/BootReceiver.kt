@@ -18,20 +18,20 @@ class BootReceiver : BroadcastReceiver() {
             
             TerminalLogger.log("BOOT: Device restarted. Resurrecting Reality...")
             
-            // 1. Start Heartbeat Worker (unified 15-min refresh for all caches)
-            com.neubofy.reality.workers.HeartbeatWorker.startHeartbeat(context)
+            // Heartbeat Worker eliminated to save battery. Relying on Single-Intent alarm architecture.
             
             // 2. CRITICAL: Reschedule reminders (AlarmManager alarms are lost on reboot)
             try {
                 com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(context)
                 com.neubofy.reality.utils.BedtimeAlarmScheduler.scheduleNextBedtimeAlarm(context)
+                com.neubofy.reality.utils.AlarmScheduler.scheduleMidnightReset(context)
                 TerminalLogger.log("BOOT: Alarms rescheduled successfully")
             } catch (e: Exception) {
                 TerminalLogger.log("BOOT ERROR: Failed to reschedule alarms: ${e.message}")
             }
             
             // Note: AccessibilityService cannot be started directly via startService
-            // It must be enabled by user. HeartbeatWorker will keep things running.
+            // It must be enabled by user. Event-driven triggers keep things running.
         }
     }
 }

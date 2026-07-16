@@ -44,6 +44,10 @@ object BlockCache {
      */
     @Volatile var blockedWebsites: Set<String> = emptySet()
         private set
+        
+    /** Apps that are actively monitored for usage limits (Daily Limits & Group Limits) */
+    @Volatile var monitoredApps: Set<String> = emptySet()
+        private set
     
     /** Last time the cache was updated */
     var lastUpdateTime = 0L
@@ -190,6 +194,7 @@ object BlockCache {
                         // ATOMIC SWAP: Create a completely new box. 
                         // The old 'blockedApps' is still active and protecting the phone while we build this.
                         val newBox = mutableMapOf<String, MutableSet<String>>()
+                        val newMonitoredApps = mutableSetOf<String>()
                         
                         val calendar = java.util.Calendar.getInstance()
                         calendar.timeInMillis = now
@@ -269,6 +274,7 @@ object BlockCache {
                 val appLimits = db.appLimitDao().getAllLimits()
                 
                 for (limit in appLimits) {
+                    newMonitoredApps.add(limit.packageName)
                     val usedMs = usageMap[limit.packageName] ?: 0L
                     val limitMs = limit.limitInMinutes * 60 * 1000L
                     
@@ -290,6 +296,7 @@ object BlockCache {
                 
                 for (group in appGroups) {
                     val packages = parsePackages(group.packageNamesJson)
+                    newMonitoredApps.addAll(packages)
                     val limitMs = group.limitInMinutes * 60 * 1000L
                     
                     // Calculate total group usage
@@ -345,6 +352,7 @@ object BlockCache {
                 // === ATOMIC SWAP ===
                 // We replace the old box with the new one instantly.
                 blockedApps = newBox
+                monitoredApps = newMonitoredApps
                 
                 TerminalLogger.log("BOX REBUILT: ${blockedApps.size} apps blocked")
                 

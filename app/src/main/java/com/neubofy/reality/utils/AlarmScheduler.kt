@@ -21,37 +21,8 @@ object AlarmScheduler {
     
     private const val ALARM_REQUEST_CODE = 1001
     private const val SNOOZE_REQUEST_CODE = 1002
-    private const val SNOOZE_CODES_PREF = "active_snooze_codes"
-    
-    // Track active snooze request codes for proper cancellation
-    private fun getActiveSnoozeCodesPrefs(context: Context) = 
-        context.getSharedPreferences(SNOOZE_CODES_PREF, Context.MODE_PRIVATE)
-    
-    private fun addSnoozeCode(context: Context, code: Int) {
-        val prefs = getActiveSnoozeCodesPrefs(context)
-        val codes = prefs.getStringSet("codes", mutableSetOf()) ?: mutableSetOf()
-        val newCodes = codes.toMutableSet()
-        newCodes.add(code.toString())
-        prefs.edit().putStringSet("codes", newCodes).apply()
-    }
-    
-    private fun removeSnoozeCode(context: Context, code: Int) {
-        val prefs = getActiveSnoozeCodesPrefs(context)
-        val codes = prefs.getStringSet("codes", mutableSetOf()) ?: mutableSetOf()
-        val newCodes = codes.toMutableSet()
-        newCodes.remove(code.toString())
-        prefs.edit().putStringSet("codes", newCodes).apply()
-    }
-    
-    private fun getAllSnoozeCodes(context: Context): Set<Int> {
-        val prefs = getActiveSnoozeCodesPrefs(context)
-        val codes = prefs.getStringSet("codes", emptySet()) ?: emptySet()
-        return codes.mapNotNull { it.toIntOrNull() }.toSet()
-    }
-    
-    private fun clearAllSnoozeCodes(context: Context) {
-        getActiveSnoozeCodesPrefs(context).edit().clear().apply()
-    }
+    private const val MIDNIGHT_REQUEST_CODE = 1003
+    // Snooze tracking removed. Single-Intent architecture uses 1001 for everything.
     
     /**
      * Schedules the next upcoming reminder from ALL sources.
@@ -196,6 +167,35 @@ object AlarmScheduler {
     }
     
     /**
+     * Schedules a lightweight alarm for EXACTLY 12:00 AM to cleanly reset daily usage stats.
+     */
+    fun scheduleMidnightReset(context: Context) {
+        try {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val intent = Intent(context, ReminderReceiver::class.java).apply {
+                putExtra("isMidnightReset", true)
+            }
+            
+            val triggerTime = getMidnightTonightMillis()
+            
+            val pIntent = PendingIntent.getBroadcast(
+                context,
+                MIDNIGHT_REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            // Just use RTC, no need for exact alarm permission for a midnight reset if it's slightly off,
+            // but if we want it exact without waking the screen, setExact is fine.
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pIntent)
+            
+            TerminalLogger.log("ALARM: Midnight Reset scheduled.")
+        } catch (e: Exception) {
+            TerminalLogger.log("ALARM MIDNIGHT ERROR: ${e.message}")
+        }
+    }
+    
+    /**
      * Schedules a snooze alarm. Uses separate request code.
      * Now tracks snooze codes for proper cancellation and passes source for dismissal.
      */
@@ -222,11 +222,8 @@ object AlarmScheduler {
             
             val triggerTime = System.currentTimeMillis() + (snoozeMins * 60 * 1000L)
             
-            // Use unique request code based on reminder ID to avoid overwrites
-            val snoozeRequestCode = 2000 + (originalId.hashCode() and 0x7FFFFFFF) % 1000
-            
-            // Track this snooze code for later cancellation
-            addSnoozeCode(context, snoozeRequestCode)
+            // SINGLE INTENT: Overwrite the main alarm so we never have ghost snoozes
+            val snoozeRequestCode = ALARM_REQUEST_CODE
             
             val pIntent = PendingIntent.getBroadcast(
                 context,
@@ -251,29 +248,7 @@ object AlarmScheduler {
         }
     }
     
-    /**
-     * Cancels a specific snooze alarm by ID.
-     */
-    fun cancelSnooze(context: Context, id: String) {
-        try {
-            val originalId = if (id.startsWith("snooze_")) id.removePrefix("snooze_") else id
-            val snoozeRequestCode = 2000 + (originalId.hashCode() and 0x7FFFFFFF) % 1000
-            
-            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            val intent = Intent(context, ReminderReceiver::class.java)
-            val pIntent = PendingIntent.getBroadcast(
-                context, snoozeRequestCode, intent,
-                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-            )
-            pIntent?.let { alarmManager.cancel(it) }
-            
-            // Remove from tracking
-            removeSnoozeCode(context, snoozeRequestCode)
-            TerminalLogger.log("SNOOZE: Canceled snooze for ID $originalId")
-        } catch (e: Exception) {
-            TerminalLogger.log("SNOOZE CANCEL ERROR: ${e.message}")
-        }
-    }
+    // cancelSnooze removed (handled automatically by scheduleNextAlarm overwriting 1001)
     
     /**
      * Cancels all scheduled alarms (main + ALL tracked snoozes).
@@ -283,49 +258,21 @@ object AlarmScheduler {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val intent = Intent(context, ReminderReceiver::class.java)
             
-            // Cancel main alarm
+            // Cancel main alarm (which also handles snoozes now)
             val mainIntent = PendingIntent.getBroadcast(
                 context, ALARM_REQUEST_CODE, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             alarmManager.cancel(mainIntent)
             
-            // Cancel ALL tracked snooze alarms (CRITICAL FIX)
-            val snoozeCodes = getAllSnoozeCodes(context)
-            var canceledCount = 0
-            for (code in snoozeCodes) {
-                val snoozeIntent = PendingIntent.getBroadcast(
-                    context, code, intent,
-                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-                )
-                snoozeIntent?.let { 
-                    alarmManager.cancel(it) 
-                    canceledCount++
-                }
-            }
-            
-            // Clear all tracked codes
-            clearAllSnoozeCodes(context)
-            
-            TerminalLogger.log("ALARM: Canceled main + $canceledCount snooze alarms")
+            TerminalLogger.log("ALARM: Canceled pending reminder alarm")
         } catch (e: Exception) {
             TerminalLogger.log("ALARM CANCEL ERROR: ${e.message}")
             com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
         }
     }
 
-    /**
-     * Housekeeping: Ensure old fired events are cleared from cache.
-     * Called by HeartbeatWorker every 15 mins.
-     */
-    fun cleanupOldEvents(context: Context) {
-        try {
-            // Implicitly clears if new day
-            // We force a check by calling hasFiredRecently with a dummy ID
-            FiredEventsCache.hasFiredRecently(context, "cleanup_check")
-            TerminalLogger.log("ALARM: Cleanup routine executed")
-        } catch (e: Exception) {}
-    }
+    // cleanupOldEvents removed (no longer called since HeartbeatWorker is dead)
 
     /**
      * Cancels alarm for a specific event ID.
@@ -338,9 +285,6 @@ object AlarmScheduler {
         // It will rebuild the schedule excluding the deleted ID.
         TerminalLogger.log("ALARM: Event $id deleted/disabled. Rescheduling...")
         scheduleNextAlarm(context)
-        
-        // Also cancel any active snoozes for this ID
-        cancelSnooze(context, id)
     }
 }
 

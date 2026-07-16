@@ -8,7 +8,7 @@ import android.os.PowerManager
 import com.neubofy.reality.services.AlarmService
 import com.neubofy.reality.utils.AlarmScheduler
 import com.neubofy.reality.utils.FiredEventsCache
-
+import kotlinx.coroutines.launch
 class ReminderReceiver : BroadcastReceiver() {
 
     @Suppress("DEPRECATION")
@@ -19,10 +19,15 @@ class ReminderReceiver : BroadcastReceiver() {
             return
         }
 
-        // 2. Handle Midnight Refresh (Silent - just reschedule)
-        if (intent?.getBooleanExtra("isMidnightRefresh", false) == true) {
-            TerminalLogger.log("ALARM: Midnight refresh triggered - recalculating...")
-            AlarmScheduler.scheduleNextAlarm(context)
+        // 2. Handle Midnight Reset (Silent)
+        if (intent?.getBooleanExtra("isMidnightReset", false) == true) {
+            TerminalLogger.log("ALARM: Midnight Reset triggered - clearing daily usage stats")
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                try {
+                    com.neubofy.reality.utils.BlockCache.rebuildBox(context)
+                } catch (e: Exception) {}
+            }
+            AlarmScheduler.scheduleMidnightReset(context)
             return
         }
 
@@ -34,6 +39,15 @@ class ReminderReceiver : BroadcastReceiver() {
         val type = intent.getStringExtra("type") ?: "ALARM" // Default to ALARM
 
         TerminalLogger.log("ALARM: Waking up for $type: $title")
+        
+        // REBUILD THE BLOCK BOX EXACTLY ON TIME (Replaces HeartbeatWorker!)
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                com.neubofy.reality.utils.BlockCache.rebuildBox(context)
+            } catch (e: Exception) {
+                TerminalLogger.log("ERROR rebuilding box: ${e.message}")
+            }
+        }
         
         // Mark as fired to prevent same-minute re-triggering
         FiredEventsCache.markAsFired(context, id)
@@ -138,10 +152,7 @@ class ReminderReceiver : BroadcastReceiver() {
          if (isUserExplicitDismiss) {
              TerminalLogger.log("ALARM: Explicit Dismiss -> Marking as done for today")
              
-             // If this was a snooze, cancel its alarm
-             if (isSnooze) {
-                 AlarmScheduler.cancelSnooze(context, originalId)
-             }
+             // Snooze is automatically canceled by ScheduleManager.markAsDismissed -> scheduleNextAlarm()
              
              // Mark as dismissed in DB/Prefs using ORIGINAL ID
              try {

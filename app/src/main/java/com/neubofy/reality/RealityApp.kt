@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 import android.os.Bundle
 import android.app.Activity
 import android.app.Application.ActivityLifecycleCallbacks
+import kotlinx.coroutines.launch
 
 class RealityApp: Application() {
   override fun onCreate() {
@@ -19,10 +20,21 @@ class RealityApp: Application() {
     DynamicColors.applyToActivitiesIfAvailable(this)
     Thread.setDefaultUncaughtExceptionHandler(CrashLogger(this))
     
+    // Kickstart the Midnight Reset alarm
+    com.neubofy.reality.utils.AlarmScheduler.scheduleMidnightReset(this)
+    
     // BlockCacheWorker periodic 3-min polling removed per user request
     
-    // Schedule HeartbeatWorker (15 min system pulse)
-    com.neubofy.reality.workers.HeartbeatWorker.startHeartbeat(this)
+    // HeartbeatWorker completely removed. Replaced by Event-Driven Triggers (Screen-On + Reminders)
+    
+    // Start Firebase Analytics passively in the background so it never blocks startup
+    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+        try {
+            com.google.firebase.FirebaseApp.initializeApp(this@RealityApp)
+        } catch (e: Exception) {
+            // Fails silently if network is bad or blocked
+        }
+    }
     
     super.onCreate()
     
