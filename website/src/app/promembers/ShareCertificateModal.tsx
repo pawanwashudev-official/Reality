@@ -495,7 +495,7 @@ export default function ShareCertificateModal({ isOpen, onClose, preVerifiedMemb
                       </div>
                     </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/Realitylogo.png" alt="Reality" style={{ height: '36px', objectFit: 'contain' }} />
+                    <img src="/neubofylogo.png" alt="Neubofy" style={{ height: '36px', objectFit: 'contain' }} />
                   </div>
 
                   {/* ── AVATAR + NAME ── */}
@@ -600,7 +600,7 @@ export default function ShareCertificateModal({ isOpen, onClose, preVerifiedMemb
                   <div style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: isPro ? '1px solid rgba(234,179,8,0.1)' : '1px solid rgba(0,229,255,0.08)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/neubofylogo.png" alt="Neubofy" style={{ height: '24px', objectFit: 'contain' }} />
+                      <img src="/Realitylogo.png" alt="Reality" style={{ height: '24px', objectFit: 'contain' }} />
                       <div>
                         <div style={{ fontSize: '7px', color: isPro ? 'rgba(251,191,36,0.5)' : 'rgba(0,229,255,0.4)', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>Issued by Neubofy</div>
                         <div style={{ fontSize: '9px', color: isPro ? 'rgba(251,191,36,0.7)' : 'rgba(180,180,180,0.6)', fontWeight: 600 }}>reality.neubofy.in</div>

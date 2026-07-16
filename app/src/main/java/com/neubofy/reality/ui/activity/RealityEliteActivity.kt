@@ -53,6 +53,11 @@ class RealityEliteActivity : BaseActivity() {
         }
 
         btnUnifiedSignin = findViewById(R.id.btn_unified_signin)
+        
+        findViewById<android.view.View>(R.id.btn_why_google)?.setOnClickListener {
+            startActivity(android.content.Intent(this, WhyGooglePermissionActivity::class.java))
+        }
+
         cardStep2 = findViewById(R.id.card_step2)
         btnPayUpi = findViewById(R.id.btn_pay_upi)
         cardStep3 = findViewById(R.id.card_step3)
