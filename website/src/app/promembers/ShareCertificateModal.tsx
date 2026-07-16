@@ -11,11 +11,13 @@ interface VerifiedMember {
   hasAccess: boolean;
   status?: string | null;
   expiryDate?: string | null;
+  trial_plan?: string | null;
 }
 
 interface ShareCertificateModalProps {
   isOpen: boolean;
   onClose: () => void;
+  preVerifiedMember?: VerifiedMember | null;
 }
 
 // Parse expiryDate string (format: "unixMs-months") to useful dates
@@ -42,7 +44,7 @@ function parseExpiryDate(expiryDate: string | null | undefined): {
   };
 }
 
-export default function ShareCertificateModal({ isOpen, onClose }: ShareCertificateModalProps) {
+export default function ShareCertificateModal({ isOpen, onClose, preVerifiedMember }: ShareCertificateModalProps) {
   const [step, setStep] = useState(-1);
   const [isPro, setIsPro] = useState<boolean | null>(null);
   const [userId, setUserId] = useState('');
@@ -59,6 +61,20 @@ export default function ShareCertificateModal({ isOpen, onClose }: ShareCertific
   const cardRef = useRef<HTMLDivElement>(null);
   // Fixed card dimensions — NEVER change these; they determine the output image size
   const CARD_W = 560;
+
+  // Jump to customize step if pre-verified member is passed
+  useEffect(() => {
+    if (isOpen) {
+      if (preVerifiedMember) {
+        setVerifiedMember(preVerifiedMember);
+        setIsPro(preVerifiedMember.status === 'V' || preVerifiedMember.status === 'P' || !!preVerifiedMember.trial_plan);
+        setUserId(preVerifiedMember.userId);
+        setStep(2);
+      } else {
+        setStep(-1);
+      }
+    }
+  }, [isOpen, preVerifiedMember]);
 
   useEffect(() => {
     if (step === 3 && cardRef.current) {
@@ -308,6 +324,13 @@ export default function ShareCertificateModal({ isOpen, onClose }: ShareCertific
                 {/* Photo upload */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-300 mb-1.5">Profile Photo <span className="text-gray-600 font-normal">(optional)</span></label>
+                  
+                  <div className="mb-4 p-3 bg-blue-950/20 border border-blue-900/30 rounded-xl text-left">
+                     <p className="text-xs text-blue-300/80 leading-relaxed">
+                        You can use your original name and own photo. This is completely client-side. We don't even know who generated the card. We only verify and send details to the website if the User ID is found in our DB, which we collect during subscription. We don't have your name, email, or personal details. The User ID is irreversible, meaning no one can get your email or generate the same User ID from your email.
+                     </p>
+                  </div>
+
                   <label className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-700 rounded-xl hover:border-neural-cyan hover:bg-neural-cyan/5 transition-all cursor-pointer">
                     <div className="flex items-center gap-3 text-gray-500">
                       <Upload size={20} />
@@ -350,12 +373,14 @@ export default function ShareCertificateModal({ isOpen, onClose }: ShareCertific
               </div>
 
               <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setStep(isPro ? 1 : 0)}
-                  className="px-4 py-2.5 text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  ← Back
-                </button>
+                {!preVerifiedMember && (
+                  <button
+                    onClick={() => setStep(isPro ? 1 : 0)}
+                    className="px-4 py-2.5 text-gray-400 hover:text-white transition-colors text-sm"
+                  >
+                    ← Back
+                  </button>
+                )}
                 <button
                   onClick={() => setStep(3)}
                   className="flex-1 px-4 py-3 bg-neural-cyan text-black font-extrabold rounded-xl hover:bg-cyan-400 transition-all"

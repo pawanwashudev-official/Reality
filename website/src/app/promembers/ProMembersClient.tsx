@@ -47,20 +47,13 @@ export default function ProMembersClient({
   const [isVerifyingAdmin, setIsVerifyingAdmin] = useState(false);
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [selectedUserIdForCard, setSelectedUserIdForCard] = useState<string | null>(null);
   const [sensitiveData, setSensitiveData] = useState<Record<string, { status: string | null, expiryDate: string | null }>>({});
 
   // Sync input value if URL changes externally (e.g. back button)
   useEffect(() => {
     setSearchInput(initialSearch);
   }, [initialSearch]);
-
-  // Sync state when URL has "verify" parameter to open modal
-  useEffect(() => {
-    const verify = searchParams.get('verify');
-    if (verify) {
-      setIsShareModalOpen(true);
-    }
-  }, [searchParams]);
 
   // Fetch sensitive details for searched member ONLY when search query is exactly 16 characters (full ID)
   useEffect(() => {
@@ -203,21 +196,6 @@ export default function ProMembersClient({
         </div>
       </section>
 
-      {/* Call to Action: Share */}
-      <section className="py-8 border-b border-gray-800 bg-neural-bg relative z-20 flex justify-center">
-        <button
-          onClick={() => setIsShareModalOpen(true)}
-          className="group relative px-8 py-4 bg-gradient-to-r from-neural-cyan/20 to-blue-500/10 border border-neural-cyan/50 rounded-2xl overflow-hidden hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(0,229,255,0.15)] hover:shadow-[0_0_30px_rgba(0,229,255,0.3)] flex items-center gap-3"
-        >
-          <div className="absolute inset-0 bg-neural-cyan/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-0"></div>
-          <Share2 className="text-neural-cyan relative z-10 animate-pulse" size={24} />
-          <span className="text-lg font-bold text-white relative z-10 font-outfit tracking-wide group-hover:text-neural-cyan transition-colors">
-            Get Member Card & Share on Social Media
-          </span>
-          <Sparkles className="absolute top-2 right-2 text-neural-cyan/50 opacity-0 group-hover:opacity-100 transition-opacity z-10" size={16} />
-        </button>
-      </section>
-
       {/* Control Bar: Search and Sort */}
       <section className="py-6 border-b border-gray-800 bg-neural-card/30 relative z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -282,6 +260,10 @@ export default function ProMembersClient({
                      member={{...member, ...sensitiveData[member.userId]}}
                      searchQuery={initialSearch}
                      isAdmin={isAdmin}
+                     onGenerateCard={() => {
+                       setSelectedUserIdForCard(member.userId);
+                       setIsShareModalOpen(true);
+                     }}
                   />
                 ))}
               </div>
@@ -325,14 +307,24 @@ export default function ProMembersClient({
 
       <ShareCertificateModal
         isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
+        onClose={() => {
+            setIsShareModalOpen(false);
+            setSelectedUserIdForCard(null);
+        }}
+        preVerifiedMember={
+          selectedUserIdForCard 
+            ? {
+                ...(initialMembers.find(m => m.userId === selectedUserIdForCard) as any),
+                ...(sensitiveData[selectedUserIdForCard] || {})
+              }
+            : null
+        }
       />
     </>
   );
 }
 
-function MemberCard({ member, searchQuery, isAdmin }: { member: ProMember, searchQuery: string, isAdmin: boolean }) {
-  const [localPhoto, setLocalPhoto] = useState<string | null>(null);
+function MemberCard({ member, searchQuery, isAdmin, onGenerateCard }: { member: ProMember, searchQuery: string, isAdmin: boolean, onGenerateCard: () => void }) {
   // Format the date if it's a valid string
   let displayDate = member.dateJoined;
   try {
@@ -435,35 +427,8 @@ function MemberCard({ member, searchQuery, isAdmin }: { member: ProMember, searc
     }
   }
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (event) => setLocalPhoto(event.target?.result as string);
-      reader.readAsDataURL(e.target.files[0]);
-    }
-  };
-
   return (
-    <div className={`group relative bg-gradient-to-b ${cardBg} border ${cardBorder} p-4 rounded-2xl transition-all duration-500 shadow-xl overflow-hidden backdrop-blur-md hover:scale-[1.03] hover:-translate-y-1.5`}>
-      {/* 3:4 Aspect Ratio Photo Area */}
-      <div className="w-full aspect-[3/4] relative rounded-xl overflow-hidden mb-4 bg-black/40 border border-gray-800 flex items-center justify-center group/photo">
-        {localPhoto ? (
-          <img src={localPhoto} alt="Member Photo" className="w-full h-full object-cover" />
-        ) : (
-          <div className="flex flex-col items-center gap-4 text-gray-500 opacity-50">
-            {member.status === 'V' ? <Crown size={64} /> : member.trial_plan ? <Sparkles size={64} /> : <User size={64} />}
-          </div>
-        )}
-        
-        {/* Upload Overlay (Only shown to Exact Matches/Verified users) */}
-        {showDetails && (
-          <label className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover/photo:opacity-100 transition-opacity cursor-pointer">
-            <span className="text-white font-mono text-xs mb-2">Upload Photo</span>
-            <span className="text-gray-400 font-mono text-[10px] text-center px-4">Local only. We do not upload or store this on our servers.</span>
-            <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-          </label>
-        )}
-      </div>
+    <div className={`group relative bg-gradient-to-b ${cardBg} border ${cardBorder} p-5 rounded-2xl transition-all duration-500 shadow-xl overflow-hidden backdrop-blur-md hover:scale-[1.03] hover:-translate-y-1.5 flex flex-col justify-between`}>
 
       {/* Glossy overlay sheen animation */}
       <div className="absolute inset-0 w-[200%] translate-x-[-100%] group-hover:translate-x-[100%] bg-gradient-to-r from-transparent via-white/5 to-transparent transition-all duration-1000 ease-in-out pointer-events-none z-10" />
@@ -537,6 +502,19 @@ function MemberCard({ member, searchQuery, isAdmin }: { member: ProMember, searc
           </div>
         )}
       </div>
+
+      {/* Generate Card Button (Only for verified exact matches or admin) */}
+      {showDetails && (
+        <div className="mt-5 relative z-10 pt-4 border-t border-gray-900/60">
+          <button
+            onClick={onGenerateCard}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-neural-cyan/10 border border-neural-cyan/30 text-neural-cyan hover:bg-neural-cyan hover:text-black font-bold font-mono text-sm rounded-xl transition-all"
+          >
+            <Share2 size={16} />
+            Generate Member Card
+          </button>
+        </div>
+      )}
     </div>
   );
 }
