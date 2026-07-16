@@ -138,7 +138,60 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-                        <!-- ==================== AI DATA ACCESS CARD ==================== -->
+            <!-- ==================== USAGE LIMITS CARD ==================== -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Usage &amp; Limits"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:strokeColor="?attr/colorPrimaryContainer"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="@android:color/transparent"
+                android:layout_marginBottom="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Your daily limit is 25 uses. The advanced 120b model consumes 2 uses per request, while the standard 20b model consumes 1 use."
+                        android:textSize="14sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:layout_marginBottom="16dp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCheckUsage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Check Neubofy Model Usage"
+                        style="@style/Widget.Material3.Button.TonalButton"/>
+
+                    <TextView
+                        android:id="@+id/tvUsageResult"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:visibility="gone"
+                        android:layout_marginTop="8dp"
+                        android:textColor="?attr/colorOnSurface"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ==================== AI DATA ACCESS CARD ==================== -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

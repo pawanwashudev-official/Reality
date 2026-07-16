@@ -17,7 +17,14 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
 import com.neubofy.reality.utils.ToolRegistry
 import com.neubofy.reality.ui.adapter.ToolToggleAdapter
-
+import com.neubofy.reality.utils.IdentityManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 class AISettingsActivity : BaseActivity() {
 
     private lateinit var binding: ActivityAiSettingsBinding
@@ -93,6 +100,66 @@ class AISettingsActivity : BaseActivity() {
 
         setupMeshApiUI()
         setupModelSpinners()
+        setupUsageCheck()
+    }
+
+    private fun setupUsageCheck() {
+        binding.btnCheckUsage.setOnClickListener {
+            binding.btnCheckUsage.isEnabled = false
+            binding.btnCheckUsage.text = "Checking..."
+            binding.tvUsageResult.visibility = View.GONE
+            
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val userId = IdentityManager.getUserId(this@AISettingsActivity)
+                    val password = IdentityManager.getBackupPassword(this@AISettingsActivity)
+                    
+                    val aiUrl = com.neubofy.reality.BuildConfig.AI_URL
+                    
+                    val json = JSONObject().apply {
+                        put("userId", userId)
+                        put("password", password)
+                        put("action", "get_usage")
+                    }
+                    
+                    val requestBody = json.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
+                    val request = Request.Builder()
+                        .url(aiUrl)
+                        .post(requestBody)
+                        .build()
+                        
+                    val client = OkHttpClient()
+                    val response = client.newCall(request).execute()
+                    val responseStr = response.body?.string() ?: ""
+                    
+                    withContext(Dispatchers.Main) {
+                        binding.btnCheckUsage.isEnabled = true
+                        binding.btnCheckUsage.text = "Check Neubofy Model Usage"
+                        
+                        if (response.isSuccessful) {
+                            val respJson = JSONObject(responseStr)
+                            val usage = respJson.optInt("usage", 0)
+                            val limit = respJson.optInt("limit", 25)
+                            binding.tvUsageResult.text = "You have used $usage / $limit requests today"
+                            binding.tvUsageResult.setTextColor(getColor(android.R.color.holo_green_dark))
+                        } else {
+                            binding.tvUsageResult.text = "Failed to fetch usage: ${response.code}"
+                            binding.tvUsageResult.setTextColor(getColor(android.R.color.holo_red_dark))
+                        }
+                        binding.tvUsageResult.visibility = View.VISIBLE
+                    }
+                } catch (e: Exception) {
+                    com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
+                    withContext(Dispatchers.Main) {
+                        binding.btnCheckUsage.isEnabled = true
+                        binding.btnCheckUsage.text = "Check Neubofy Model Usage"
+                        binding.tvUsageResult.text = "Network Error"
+                        binding.tvUsageResult.setTextColor(getColor(android.R.color.holo_red_dark))
+                        binding.tvUsageResult.visibility = View.VISIBLE
+                    }
+                }
+            }
+        }
     }
 
     private fun setupMeshApiUI() {

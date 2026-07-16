@@ -60,35 +60,6 @@ export default {
         });
       }
 
-      // ============================================================
-      // SERVER-SIDE RATE LIMITING
-      // Uses Cloudflare KV to track daily request counts per userId.
-      // Requires KV namespace binding "RATE_LIMIT" in wrangler.toml.
-      // Falls back to allowing requests if KV is unavailable.
-      // ============================================================
-      const DAILY_LIMIT = 75;
-      if (env.RATE_LIMIT) {
-        try {
-          const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-          const rateLimitKey = `ai_rate:${userId}:${today}`;
-          const currentCountStr = await env.RATE_LIMIT.get(rateLimitKey);
-          const currentCount = currentCountStr ? parseInt(currentCountStr, 10) : 0;
-
-          if (currentCount >= DAILY_LIMIT) {
-            return new Response(JSON.stringify({ error: "Daily limit of 75 AI requests reached." }), {
-              status: 429,
-              headers: { "Content-Type": "application/json", ...corsHeaders },
-            });
-          }
-
-          // Increment count with 24h TTL (auto-cleanup)
-          await env.RATE_LIMIT.put(rateLimitKey, String(currentCount + 1), { expirationTtl: 86400 });
-        } catch (e) {
-          // KV error — allow request but log
-          console.error("Rate limit KV error:", e.message);
-        }
-      }
-
       // Allowed models list (strictly gpt-oss-120b and gpt-oss-20b)
       const allowedModels = [
         "@cf/openai/gpt-oss-120b",
@@ -97,6 +68,49 @@ export default {
 
       const requestedModel = body.model;
       const modelToUse = allowedModels.includes(requestedModel) ? requestedModel : "@cf/openai/gpt-oss-120b";
+      const requestCost = modelToUse === "@cf/openai/gpt-oss-120b" ? 2 : 1;
+
+      // ============================================================
+      // SERVER-SIDE RATE LIMITING
+      // Uses Cloudflare KV to track daily request counts per userId.
+      // Requires KV namespace binding "RATE_LIMIT" in wrangler.toml.
+      // Falls back to allowing requests if KV is unavailable.
+      // ============================================================
+      const DAILY_LIMIT = 25;
+      if (env.RATE_LIMIT) {
+        try {
+          const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+          const rateLimitKey = `ai_rate:${userId}:${today}`;
+          const currentCountStr = await env.RATE_LIMIT.get(rateLimitKey);
+          const currentCount = currentCountStr ? parseInt(currentCountStr, 10) : 0;
+
+          if (body.action === "get_usage") {
+            return new Response(JSON.stringify({ usage: currentCount, limit: DAILY_LIMIT }), {
+              status: 200,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            });
+          }
+
+          if (currentCount + requestCost > DAILY_LIMIT) {
+            return new Response(JSON.stringify({ error: `Daily limit of ${DAILY_LIMIT} AI requests reached.` }), {
+              status: 429,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            });
+          }
+
+          // Increment count with 24h TTL (auto-cleanup)
+          await env.RATE_LIMIT.put(rateLimitKey, String(currentCount + requestCost), { expirationTtl: 86400 });
+        } catch (e) {
+          // KV error — allow request but log
+          console.error("Rate limit KV error:", e.message);
+        }
+      } else if (body.action === "get_usage") {
+          return new Response(JSON.stringify({ usage: 0, limit: DAILY_LIMIT }), {
+            status: 200,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
+      }
+
 
       let messages = body.messages || [{ role: "user", content: "Hello!" }];
 
