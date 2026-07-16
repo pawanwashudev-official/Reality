@@ -314,7 +314,7 @@
         <!-- Background Color -->
         <item name="windowSplashScreenBackground">@color/md_theme_background</item>
         <!-- Icon -->
-        <item name="windowSplashScreenAnimatedIcon">@drawable/app_logo</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
         <!-- Post-splash theme -->
         <item name="postSplashScreenTheme">@style/Theme.Reality</item>
     </style>
