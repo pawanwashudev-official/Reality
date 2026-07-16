@@ -99,7 +99,7 @@ export default {
         if (env.DB) {
           try {
             const existingRow = await env.DB.prepare(
-              'SELECT date, status, expiryDate FROM "Reality Elite members management" WHERE userId = ?'
+              'SELECT date, status, expiryDate, trial_plan FROM "Reality Elite members management" WHERE userId = ?'
             ).bind(userId).first();
 
             if (!existingRow) {
@@ -139,6 +139,9 @@ export default {
                 }
               }
             }
+            
+            // Add trial_plan variable
+            var userTrialPlan = existingRow ? existingRow.trial_plan : null;
           } catch (e) {
             console.error("DB Error in generate-identity:", e);
           }
@@ -150,13 +153,60 @@ export default {
             backupPassword: backupPassword,
             date: userDate,
             status: userStatus,
-            expiryDate: userExpiryDate
+            expiryDate: userExpiryDate,
+            trial_plan: userTrialPlan
           }),
           { 
             status: 200, 
             headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } 
           }
         );
+      }
+
+      // ============================================================
+      // ROUTE: NATIVE TRIAL ACTIVATION
+      // ============================================================
+      if (url.pathname === "/api/trial" && request.method === "POST") {
+        let incomingData = {};
+        try {
+          incomingData = await request.json();
+        } catch (e) {
+          return new Response(JSON.stringify({ error: "Invalid JSON payload" }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
+        }
+        
+        const userId = incomingData.userId;
+        const password = incomingData.password;
+        if (!userId || !password) {
+          return new Response(JSON.stringify({ error: "Missing auth fields" }), { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
+        }
+
+        const isAuthorized = await this.verifyAuth(userId, password, env.APP_SECRET_PEPPER);
+        if (!isAuthorized) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
+        }
+
+        const existingRow = await env.DB.prepare(
+            'SELECT trial_plan FROM "Reality Elite members management" WHERE userId = ?'
+        ).bind(userId).first();
+
+        if (existingRow && existingRow.trial_plan) {
+            return new Response(JSON.stringify({ status: "ALREADY_USED", trialPlan: existingRow.trial_plan }), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
+        }
+
+        const durationDays = incomingData.durationDays || 3;
+        const currentUnix = Date.now();
+        const durationMs = durationDays * 24 * 60 * 60 * 1000;
+        const expiryUnix = currentUnix + durationMs;
+        const trialPlanStr = `${expiryUnix}-${durationDays}`;
+
+        // Ensure row exists or create if not
+        await env.DB.prepare(`
+            INSERT INTO "Reality Elite members management" (userId, date, trial_plan)
+            VALUES (?, ?, ?)
+            ON CONFLICT(userId) DO UPDATE SET trial_plan = excluded.trial_plan
+        `).bind(userId, new Date().toISOString(), trialPlanStr).run();
+
+        return new Response(JSON.stringify({ status: "SUCCESS", trialPlan: trialPlanStr }), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
       }
 
       // ============================================================
@@ -228,7 +278,7 @@ export default {
 
         // Fetch only safe, shareable details from D1
         const { results } = await env.DB.prepare(
-          'SELECT userId, date, status, expiryDate FROM "Reality Elite members management" ORDER BY date DESC'
+          'SELECT userId, date, status, expiryDate, trial_plan FROM "Reality Elite members management" ORDER BY date DESC'
         ).all();
 
         const totalMembers = results.length;

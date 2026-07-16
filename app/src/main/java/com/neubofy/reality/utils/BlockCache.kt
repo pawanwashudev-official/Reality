@@ -80,7 +80,7 @@ object BlockCache {
         }
         
         // 2. Maintenance Window (00:00 - 00:10) - Always allow
-        if (StrictLockUtils.isMaintenanceWindow()) {
+        if (StrictLockUtils.isMaintenanceWindow(context)) {
             return Pair(false, emptyList())
         }
         
@@ -103,7 +103,7 @@ object BlockCache {
         val now = if (context != null) SecureTimeProvider.currentTimeMillis(context) else System.currentTimeMillis()
         if (emergencySessionEndTime > now) return null
         if (!isAnyBlockingModeActive) return null
-        if (StrictLockUtils.isMaintenanceWindow()) return null
+        if (StrictLockUtils.isMaintenanceWindow(context)) return null
         
         val currentList = blockedWebsites
         if (currentList.isEmpty()) return null

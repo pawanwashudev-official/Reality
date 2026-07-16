@@ -9,9 +9,18 @@ object StrictLockUtils {
     /**
      * Checks if we are currently in the Maintenance Window (00:00 - 00:10).
      * During this time, EVERYTHING is unlocked (Usage and Settings).
+     * 
+     * SECURITY: Uses SecureTimeProvider when context is available to resist
+     * clock manipulation. Falls back to Calendar when no context is provided
+     * (e.g., from static callers that can't pass context).
      */
-    fun isMaintenanceWindow(): Boolean {
-        val cal = Calendar.getInstance()
+    fun isMaintenanceWindow(context: Context? = null): Boolean {
+        val cal = if (context != null) {
+            val secureMs = SecureTimeProvider.currentTimeMillis(context)
+            Calendar.getInstance().apply { timeInMillis = secureMs }
+        } else {
+            Calendar.getInstance()
+        }
         val hour = cal.get(Calendar.HOUR_OF_DAY)
         val minute = cal.get(Calendar.MINUTE)
         return hour == 0 && minute < 10
@@ -56,7 +65,7 @@ object StrictLockUtils {
      * Note: Emergency Mode does NOT allow modification.
      */
     fun isModificationAllowed(context: Context): Boolean {
-        if (isMaintenanceWindow()) return true
+        if (isMaintenanceWindow(context)) return true
         return !isStrictModeActive(context)
     }
     
@@ -71,7 +80,7 @@ object StrictLockUtils {
      * 2. Global Strict Mode enabled AND the feature's specific lock flag
      */
     fun isModificationAllowedFor(context: Context, feature: FeatureType): Boolean {
-        if (isMaintenanceWindow()) return true
+        if (isMaintenanceWindow(context)) return true
         
         val loader = SavedPreferencesLoader(context)
         val strictData = loader.getStrictModeData()

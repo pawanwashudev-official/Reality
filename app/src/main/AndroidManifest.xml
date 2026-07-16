@@ -74,12 +74,7 @@
             android:theme="@style/Theme.Reality.TransparentDialog"
             android:exported="false" />
         
-        <activity
-            android:name=".ui.activity.WarningActivity"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:launchMode="singleTop"
-            android:theme="@style/Theme.Reality.TransparentDialog" />
+        <!-- WarningActivity REMOVED — source file no longer exists -->
         
         <activity
             android:name=".ui.activity.FragmentActivity"
@@ -315,12 +310,7 @@
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
             
-        <activity
-            android:name=".ui.activity.PlanningPadActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.Reality"
-            android:windowSoftInputMode="adjustResize" />
+        <!-- PlanningPadActivity REMOVED — source file no longer exists -->
 
         <activity
             android:name=".ui.activity.ReflectionDetailActivity"
@@ -445,9 +435,7 @@
             android:name=".receivers.BedtimeAlarmReceiver"
             android:exported="false" />
 
-        <receiver
-            android:name=".receiver.NightlyAlarmReceiver"
-            android:exported="false" />
+        <!-- NightlyAlarmReceiver REMOVED — source file no longer exists in .receiver or .receivers package -->
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -561,11 +549,7 @@
             android:exported="false" />
         <service android:name=".services.WakeupAlarmService" android:foregroundServiceType="mediaPlayback" />
 
-        <activity
-            android:name=".ui.activity.EncryptionSetupActivity"
-            android:screenOrientation="portrait"
-            android:exported="false"
-            android:theme="@style/Theme.Reality" />
+        <!-- EncryptionSetupActivity REMOVED — source file no longer exists -->
     </application>
 
 </manifest>

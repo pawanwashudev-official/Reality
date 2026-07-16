@@ -11,6 +11,7 @@ interface ProMember {
   hasAccess: boolean;
   status: string | null;
   expiryDate: string | null;
+  trial_plan: string | null;
 }
 
 interface MembersResponse {
@@ -76,9 +77,10 @@ async function getProMembers(): Promise<MembersResponse | null> {
         members = data.members.map((m: any) => ({
           userId: m.userId,
           dateJoined: m.date,
-          hasAccess: m.status === 'V',
+          hasAccess: m.status === 'V' || (m.trial_plan && !m.status),
           status: m.status || null,
-          expiryDate: m.expiryDate || null
+          expiryDate: m.expiryDate || null,
+          trial_plan: m.trial_plan || null
         }));
       }
       if (typeof data.totalMembers === 'number') {
@@ -142,6 +144,7 @@ export default async function ProMembersPage({ searchParams }: PageProps) {
     userId: m.userId,
     dateJoined: m.dateJoined,
     hasAccess: m.hasAccess,
+    trial_plan: m.trial_plan
   }));
 
   return (

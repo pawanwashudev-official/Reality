@@ -147,50 +147,64 @@ class NightlyPhaseAnalysis(
                     JSONObject()
                 }
 
-                val rowValues = mutableListOf<Any>()
-                rowValues.add(diaryDate.toString())
-
                 val totalDue = j1.optInt("pendingCount", 0) + j1.optInt("completedCount", 0)
                 val totalComp = j1.optInt("completedCount", 0)
-                rowValues.add(totalComp.toString())
-                rowValues.add(totalDue.toString())
 
-                rowValues.add(j1.optInt("plannedEventCount", 0).toString())
-                rowValues.add(j1.optInt("sessionCount", 0).toString())
-                rowValues.add(j1.optLong("steps", 0L).toString())
-                rowValues.add(j1.optString("sleepInfo", "N/A"))
+                val rowDataMap = mapOf(
+                    "Date" to diaryDate.toString(),
+                    "Tasks Completed" to totalComp.toString(),
+                    "Total Tasks" to totalDue.toString(),
+                    "Planned Sessions" to j1.optInt("plannedEventCount", 0).toString(),
+                    "Tapasya Sessions" to j1.optInt("sessionCount", 0).toString(),
+                    "Steps" to j1.optLong("steps", 0L).toString(),
+                    "Sleep Info" to j1.optString("sleepInfo", "N/A"),
+                    "XP Tapasya" to finalStats.tapasyaXP.toString(),
+                    "XP Task" to finalStats.taskXP.toString(),
+                    "XP Session" to finalStats.sessionXP.toString(),
+                    "XP Distraction" to finalStats.distractionXP.toString(),
+                    "XP Reflection" to finalStats.reflectionXP.toString(),
+                    "XP Total" to finalStats.totalDailyXP.toString(),
+                    "Level" to finalStats.level.toString(),
+                    "Streak" to finalStats.streak.toString(),
+                    "Diary Feedback" to result.feedback
+                )
 
-                rowValues.add(finalStats.tapasyaXP.toString())
-                rowValues.add(finalStats.taskXP.toString())
-                rowValues.add(finalStats.sessionXP.toString())
-                rowValues.add(finalStats.distractionXP.toString())
-                rowValues.add(finalStats.reflectionXP.toString())
-                rowValues.add(finalStats.totalDailyXP.toString())
-                rowValues.add(finalStats.level.toString())
-                rowValues.add(finalStats.streak.toString())
-                rowValues.add(result.feedback)
+                val currentHeaders = com.neubofy.reality.google.GoogleSheetsManager.getHeaders(context, sheetId)
+                val requiredHeaders = com.neubofy.reality.google.GoogleSheetsManager.REQUIRED_HEADERS
+                val missingHeaders = requiredHeaders.filter { it !in currentHeaders }
 
-                sheetSuccess = withContext(Dispatchers.IO) {
-                    try {
-                        val credential = com.neubofy.reality.google.GoogleAuthManager.getGoogleCredential(context)
-                        val service = credential?.let {
-                            com.google.api.services.sheets.v4.Sheets.Builder(
-                                com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport(),
-                                com.google.api.client.json.gson.GsonFactory.getDefaultInstance(),
-                                it
-                            ).setApplicationName("Reality").build()
+                if (missingHeaders.isNotEmpty()) {
+                    val errorMsg = "Error: Sheet columns are missing or invalid. Please disconnect and reconnect your sheet in Profile Settings, or delete it and create a new one."
+                    NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, errorMsg, listener)
+                    sheetSuccess = false
+                } else {
+                    val rowValues = MutableList<Any>(currentHeaders.size) { "" }
+                    for ((index, header) in currentHeaders.withIndex()) {
+                        rowValues[index] = rowDataMap[header] ?: ""
+                    }
+
+                    sheetSuccess = withContext(Dispatchers.IO) {
+                        try {
+                            val credential = com.neubofy.reality.google.GoogleAuthManager.getGoogleCredential(context)
+                            val service = credential?.let {
+                                com.google.api.services.sheets.v4.Sheets.Builder(
+                                    com.google.api.client.googleapis.javanet.GoogleNetHttpTransport.newTrustedTransport(),
+                                    com.google.api.client.json.gson.GsonFactory.getDefaultInstance(),
+                                    it
+                                ).setApplicationName("Reality").build()
+                            }
+                            if (service != null) {
+                                val body = com.google.api.services.sheets.v4.model.ValueRange().setValues(listOf(rowValues as List<Any>))
+                                service.spreadsheets().values()
+                                    .append(sheetId, "Sheet1", body)
+                                    .setValueInputOption("USER_ENTERED")
+                                    .execute()
+                                true
+                            } else false
+                        } catch (e: Exception) {
+                            TerminalLogger.log("Sheets backup failed: ${e.message}")
+                            false
                         }
-                        if (service != null) {
-                            val body = com.google.api.services.sheets.v4.model.ValueRange().setValues(listOf(rowValues as List<Any>))
-                            service.spreadsheets().values()
-                                .append(sheetId, "Sheet1", body)
-                                .setValueInputOption("USER_ENTERED")
-                                .execute()
-                            true
-                        } else false
-                    } catch (e: Exception) {
-                        TerminalLogger.log("Sheets backup failed: ${e.message}")
-                        false
                     }
                 }
                 

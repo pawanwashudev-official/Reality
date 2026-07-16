@@ -67,14 +67,15 @@ export async function fetchSensitiveMemberData(
     let members = data?.members || [];
 
     // Filter to build a dictionary of sensitive data
-    const result: Record<string, { status: string | null, expiryDate: string | null }> = {};
+    const result: Record<string, { status: string | null, expiryDate: string | null, trial_plan: string | null }> = {};
 
     if (isAdmin) {
        // Return all
        for (const m of members) {
            result[m.userId] = {
                status: m.status || null,
-               expiryDate: m.expiryDate || null
+               expiryDate: m.expiryDate || null,
+               trial_plan: m.trial_plan || null
            };
        }
        return { isAdmin: true, data: result };
@@ -84,7 +85,8 @@ export async function fetchSensitiveMemberData(
        if (m) {
            result[m.userId] = {
                status: m.status || null,
-               expiryDate: m.expiryDate || null
+               expiryDate: m.expiryDate || null,
+               trial_plan: m.trial_plan || null
            };
        }
        return { isAdmin: false, data: result };
@@ -145,9 +147,10 @@ export async function verifyMemberId(userId: string) {
         member: {
           userId: found.userId,
           dateJoined: found.date || found.dateJoined || '',
-          hasAccess: found.status === 'V',
+          hasAccess: found.status === 'V' || (!found.status && !!found.trial_plan),
           status: found.status || null,
           expiryDate: found.expiryDate || null,
+          trial_plan: found.trial_plan || null,
         }
       };
     }

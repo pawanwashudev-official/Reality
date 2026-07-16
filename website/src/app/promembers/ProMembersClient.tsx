@@ -12,6 +12,7 @@ interface ProMember {
   hasAccess: boolean;
   status?: string | null;
   expiryDate?: string | null;
+  trial_plan?: string | null;
 }
 
 interface ProMembersClientProps {
@@ -331,6 +332,7 @@ export default function ProMembersClient({
 }
 
 function MemberCard({ member, searchQuery, isAdmin }: { member: ProMember, searchQuery: string, isAdmin: boolean }) {
+  const [localPhoto, setLocalPhoto] = useState<string | null>(null);
   // Format the date if it's a valid string
   let displayDate = member.dateJoined;
   try {
@@ -393,6 +395,7 @@ function MemberCard({ member, searchQuery, isAdmin }: { member: ProMember, searc
   let cardBorder = showDetails ? 'border-cyan-500/50 shadow-[0_0_20px_rgba(0,229,255,0.15)]' : 'border-gray-800 hover:border-cyan-500/30';
   let cardBg = 'from-[#0A0E1A] to-[#05060B]';
   let statusIcon = <Shield className="text-cyan-400 shrink-0" size={14} />;
+  let showSubDetails = false;
 
   if (member.status === 'V') {
     statusText = 'ELITE PRO';
@@ -401,6 +404,7 @@ function MemberCard({ member, searchQuery, isAdmin }: { member: ProMember, searc
     cardBorder = showDetails ? 'border-yellow-500/50 shadow-[0_0_25px_rgba(234,179,8,0.2)]' : 'border-gray-800 hover:border-yellow-500/30';
     cardBg = 'from-[#1A1305] to-[#0A0702]';
     statusIcon = <Crown className="text-yellow-400 shrink-0" size={14} />;
+    showSubDetails = !!member.expiryDate;
   } else if (member.status === 'P') {
     statusText = 'PENDING';
     statusColor = 'text-amber-500 bg-amber-950/40 border-amber-800/40';
@@ -408,48 +412,87 @@ function MemberCard({ member, searchQuery, isAdmin }: { member: ProMember, searc
     cardBorder = showDetails ? 'border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.15)]' : 'border-gray-800 hover:border-amber-500/30';
     cardBg = 'from-[#1A1005] to-[#0A0602]';
     statusIcon = <Clock className="text-amber-500 shrink-0" size={14} />;
+  } else if (member.trial_plan) {
+    statusText = 'TRIAL';
+    statusColor = 'text-purple-400 bg-purple-950/40 border-purple-800/40';
+    dotColor = 'bg-purple-400 shadow-[0_0_8px_#c084fc]';
+    cardBorder = showDetails ? 'border-purple-500/50 shadow-[0_0_20px_rgba(192,132,252,0.15)]' : 'border-gray-800 hover:border-purple-500/30';
+    cardBg = 'from-[#130A1A] to-[#07020A]';
+    statusIcon = <Sparkles className="text-purple-400 shrink-0" size={14} />;
+    showSubDetails = true;
+    
+    const parts = member.trial_plan.split('-');
+    if (parts.length >= 2) {
+      const expiryUnix = parseInt(parts[0], 10);
+      const days = parseInt(parts[1], 10);
+      if (!isNaN(expiryUnix) && !isNaN(days)) {
+         subMonths = `${days} day${days > 1 ? 's' : ''}`;
+         const endD = new Date(expiryUnix);
+         subEndDate = endD.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+         const startD = new Date(expiryUnix - (days * 24 * 60 * 60 * 1000));
+         subStartDate = startD.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      }
+    }
   }
 
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (event) => setLocalPhoto(event.target?.result as string);
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
   return (
-    <div className={`group relative bg-gradient-to-b ${cardBg} border ${cardBorder} p-6 rounded-2xl transition-all duration-500 shadow-xl overflow-hidden backdrop-blur-md hover:scale-[1.03] hover:-translate-y-1.5`}>
+    <div className={`group relative bg-gradient-to-b ${cardBg} border ${cardBorder} p-4 rounded-2xl transition-all duration-500 shadow-xl overflow-hidden backdrop-blur-md hover:scale-[1.03] hover:-translate-y-1.5`}>
+      {/* 3:4 Aspect Ratio Photo Area */}
+      <div className="w-full aspect-[3/4] relative rounded-xl overflow-hidden mb-4 bg-black/40 border border-gray-800 flex items-center justify-center group/photo">
+        {localPhoto ? (
+          <img src={localPhoto} alt="Member Photo" className="w-full h-full object-cover" />
+        ) : (
+          <div className="flex flex-col items-center gap-4 text-gray-500 opacity-50">
+            {member.status === 'V' ? <Crown size={64} /> : member.trial_plan ? <Sparkles size={64} /> : <User size={64} />}
+          </div>
+        )}
+        
+        {/* Upload Overlay (Only shown to Exact Matches/Verified users) */}
+        {showDetails && (
+          <label className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover/photo:opacity-100 transition-opacity cursor-pointer">
+            <span className="text-white font-mono text-xs mb-2">Upload Photo</span>
+            <span className="text-gray-400 font-mono text-[10px] text-center px-4">Local only. We do not upload or store this on our servers.</span>
+            <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+          </label>
+        )}
+      </div>
+
       {/* Glossy overlay sheen animation */}
       <div className="absolute inset-0 w-[200%] translate-x-[-100%] group-hover:translate-x-[100%] bg-gradient-to-r from-transparent via-white/5 to-transparent transition-all duration-1000 ease-in-out pointer-events-none z-10" />
 
-      {/* Decorative Cyber Grid Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.02] bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
-
-      {/* Floating Sparkles for Elite / Pending members */}
-      {(member.status === 'V' || member.status === 'P') && (
+      {/* Floating Sparkles for Elite / Trial / Pending members */}
+      {(member.status === 'V' || member.status === 'P' || member.trial_plan) && (
         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
-          <Sparkles className={member.status === 'V' ? 'text-yellow-500' : 'text-amber-500'} size={32} />
+          <Sparkles className={member.status === 'V' ? 'text-yellow-500' : member.status === 'P' ? 'text-amber-500' : 'text-purple-500'} size={32} />
         </div>
       )}
 
-      {/* Header section: Avatar, ID, Status */}
-      <div className="flex items-center gap-4 mb-5 relative z-10">
-        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br from-gray-900 to-[#05050A] border ${member.status === 'V' ? 'border-yellow-500/30' : 'border-gray-800'} flex items-center justify-center shadow-inner shrink-0 group-hover:border-opacity-50 transition-colors`}>
-          {member.status === 'V' ? (
-            <Crown className="text-yellow-400 group-hover:scale-110 transition-transform" size={24} />
-          ) : (
-            <User className="text-gray-400 group-hover:text-cyan-400 transition-colors" size={24} />
-          )}
-        </div>
-        
+      {/* Header section: ID, Status */}
+      <div className="flex items-start justify-between gap-2 mb-4 relative z-10">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[10px] font-bold tracking-wider uppercase font-mono ${statusColor}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${dotColor} animate-pulse`} />
-              {statusText}
-            </span>
-          </div>
-          <div className="font-mono text-white text-lg mt-1.5 tracking-tight truncate font-bold" title={member.userId}>
+          <div className="font-mono text-white text-lg tracking-tight truncate font-bold" title={member.userId}>
             {displayId}
           </div>
+          <div className="text-gray-500 text-xs font-mono uppercase tracking-widest mt-0.5">
+            MEMBER ID
+          </div>
+        </div>
+        <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-bold tracking-wider uppercase font-mono ${statusColor} shrink-0`}>
+           <span className={`w-1.5 h-1.5 rounded-full ${dotColor} animate-pulse`} />
+           {statusText}
         </div>
       </div>
 
       {/* Main Details Body */}
-      <div className="space-y-3.5 relative z-10 pt-4 border-t border-gray-900/60">
+      <div className="space-y-3 relative z-10 pt-4 border-t border-gray-900/60">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-gray-500 text-xs font-mono font-medium uppercase tracking-wider">
             <Calendar size={13} className="text-gray-600" />
@@ -460,12 +503,12 @@ function MemberCard({ member, searchQuery, isAdmin }: { member: ProMember, searc
           </div>
         </div>
 
-        {showDetails && member.expiryDate && (
-          <div className="pt-3.5 mt-3.5 border-t border-gray-900/60 space-y-3">
+        {showSubDetails && showDetails && (
+          <div className="pt-3 mt-3 border-t border-gray-900/60 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-gray-500 text-xs font-mono font-medium uppercase tracking-wider">
                 <CreditCard size={13} className="text-gray-600" />
-                <span>Purchased</span>
+                <span>Started</span>
               </div>
               <div className="text-gray-300 text-sm font-semibold font-mono">
                 {subStartDate}
@@ -475,7 +518,7 @@ function MemberCard({ member, searchQuery, isAdmin }: { member: ProMember, searc
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-gray-500 text-xs font-mono font-medium uppercase tracking-wider">
                 <Clock size={13} className="text-gray-600" />
-                <span>Plan Duration</span>
+                <span>Duration</span>
               </div>
               <div className="text-gray-300 text-sm font-semibold font-mono">
                 {subMonths}
@@ -487,7 +530,7 @@ function MemberCard({ member, searchQuery, isAdmin }: { member: ProMember, searc
                 <ShieldCheck size={13} className="text-gray-600" />
                 <span>Valid Until</span>
               </div>
-              <div className="text-yellow-400 text-sm font-bold font-mono">
+              <div className={`${member.trial_plan && !member.status ? 'text-purple-400' : 'text-yellow-400'} text-sm font-bold font-mono`}>
                 {subEndDate}
               </div>
             </div>

@@ -39,6 +39,23 @@ object GoogleSheetsManager {
         "Diary Feedback"
     )
 
+    suspend fun getHeaders(context: Context, spreadsheetId: String): List<String> = withContext(Dispatchers.IO) {
+        try {
+            val service = getService(context) ?: return@withContext emptyList()
+            val range = "Sheet1!1:1"
+            val response = service.spreadsheets().values().get(spreadsheetId, range).execute()
+            val values = response.getValues()
+            if (values != null && values.isNotEmpty()) {
+                values[0].map { it.toString() }
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            TerminalLogger.log("Sheets Error: Failed to get headers - ${e.message}")
+            emptyList()
+        }
+    }
+
     suspend fun verifyAndCreateColumns(context: Context, spreadsheetId: String): Boolean = withContext(Dispatchers.IO) {
         try {
             val service = getService(context) ?: return@withContext false

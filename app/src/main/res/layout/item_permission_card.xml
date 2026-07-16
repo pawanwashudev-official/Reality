@@ -54,5 +54,15 @@
             android:id="@+id/iv_status"
             android:layout_width="24dp"
             android:layout_height="24dp" />
+
+        <ImageButton
+            android:id="@+id/btn_why"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/baseline_help_outline_24"
+            app:tint="?attr/colorPrimary"
+            android:contentDescription="Why is this needed?" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

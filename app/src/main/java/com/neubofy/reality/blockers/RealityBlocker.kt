@@ -340,6 +340,8 @@ class RealityBlocker {
         )
         if (expandedWhitelist.contains(packageName)) return null
         if (com.neubofy.reality.utils.StrictLockUtils.isMaintenanceWindow()) return null
+        // Note: Emergency mode end time check. BlockCache.shouldBlock() is the enforcement point
+        // and already uses SecureTimeProvider. This is a UI-facing reason string helper.
         if (emergencyData.currentSessionEndTime > System.currentTimeMillis()) return null
         
         // 2. Blocking Checks

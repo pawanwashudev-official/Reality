@@ -24,7 +24,6 @@ import com.neubofy.reality.utils.IdentityManager
 import com.neubofy.reality.utils.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.OutputStreamWriter
@@ -93,11 +92,19 @@ class RealityEliteActivity : BaseActivity() {
                 lifecycleScope.launch {
                     val internetTime = com.neubofy.reality.utils.InternetTime.getTime()
                     withContext(Dispatchers.Main) {
-                        featureManager.activateTrial(internetTime)
-                        Toast.makeText(this@RealityEliteActivity, "3-Day Trial Activated! Enjoy Elite Member features.", Toast.LENGTH_LONG).show()
-                        featureManager.setRealityProEnabled(true)
-                        startActivity(Intent(this@RealityEliteActivity, MainActivity::class.java))
-                        finish()
+                        val success = withContext(Dispatchers.IO) {
+                            featureManager.activateTrial(internetTime)
+                        }
+                        if (success) {
+                            Toast.makeText(this@RealityEliteActivity, "3-Day Trial Activated! Enjoy Elite Member features.", Toast.LENGTH_LONG).show()
+                            featureManager.setRealityProEnabled(true)
+                            startActivity(Intent(this@RealityEliteActivity, MainActivity::class.java))
+                            finish()
+                        } else {
+                            Toast.makeText(this@RealityEliteActivity, "Failed to activate trial. Please check your connection.", Toast.LENGTH_LONG).show()
+                            btn?.isEnabled = true
+                            btn?.text = "Start 3-Day Free Trial"
+                        }
                     }
                 }
             }
@@ -248,7 +255,7 @@ class RealityEliteActivity : BaseActivity() {
         val featureManager = FeatureManager(this)
         if (userId != null) {
             val endTime = featureManager.getRealityProEndTime()
-            if (endTime > 0 && System.currentTimeMillis() > endTime) {
+            if (endTime > 0 && com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this) > endTime) {
                 // Subscription has expired, wipe the data so they can purchase again
                 val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
                 prefs.edit().remove("pro_saved_verification_code_for_$userId").remove("is_registered_for_$userId").apply()
@@ -428,14 +435,25 @@ class RealityEliteActivity : BaseActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                // Construct URL
-                val requestUrl = "$baseUrl?userId=$userId&password=${IdentityManager.getBackupPassword(this@RealityEliteActivity)}"
-                var url = URL(requestUrl)
+                // Use POST instead of GET to avoid leaking password in URL (server logs, caches)
+                val url = URL(baseUrl)
                 var conn = url.openConnection() as HttpURLConnection
-                conn.requestMethod = "GET"
-                conn.instanceFollowRedirects = false // Handle cross-domain manually
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.doOutput = true
+                conn.instanceFollowRedirects = false
                 conn.connectTimeout = 10000
                 conn.readTimeout = 10000
+
+                val jsonBody = org.json.JSONObject()
+                jsonBody.put("userId", userId)
+                jsonBody.put("password", IdentityManager.getBackupPassword(this@RealityEliteActivity))
+                jsonBody.put("action", "verify")
+
+                java.io.OutputStreamWriter(conn.outputStream).use { writer ->
+                    writer.write(jsonBody.toString())
+                    writer.flush()
+                }
 
                 var responseCode = conn.responseCode
                 if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_SEE_OTHER) {

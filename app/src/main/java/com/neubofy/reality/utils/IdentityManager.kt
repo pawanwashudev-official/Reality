@@ -4,7 +4,6 @@ import android.content.Context
 import com.neubofy.reality.BuildConfig
 import com.neubofy.reality.google.GoogleAuthManager
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -28,7 +27,9 @@ object IdentityManager {
             return cachedId
         }
 
-        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { generateAndCacheIdentity(context) }
+        // Use applicationContext to prevent Activity leak from fire-and-forget coroutine
+        val appContext = context.applicationContext
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { generateAndCacheIdentity(appContext) }
         return "Unknown"
     }
 
@@ -42,7 +43,9 @@ object IdentityManager {
             return cachedPassword
         }
 
-        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { generateAndCacheIdentity(context) }
+        // Use applicationContext to prevent Activity leak from fire-and-forget coroutine
+        val appContext = context.applicationContext
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { generateAndCacheIdentity(appContext) }
         return "Unknown"
     }
 
@@ -121,6 +124,7 @@ object IdentityManager {
 
                         // Parse status and update features locally to avoid multiple requests
                         val expiryDate = responseJson.optString("expiryDate")
+                        val trialPlan = responseJson.optString("trial_plan")
 
                         if (status == "P" || status == "V") {
                             proEditor.putString("pro_saved_verification_code_for_$userId", "PENDING")
@@ -156,6 +160,21 @@ object IdentityManager {
                             featuresEditor.putBoolean("feature_reality_pro", false)
                             featuresEditor.remove("feature_reality_pro_start_time_$userId")
                             featuresEditor.remove("feature_reality_pro_verified_until_$userId")
+                        }
+
+                        if (trialPlan.isNotEmpty() && trialPlan != "null") {
+                            try {
+                                val parts = trialPlan.split("-")
+                                if (parts.size >= 2) {
+                                    val trialEndTime = parts[0].toLong()
+                                    val days = parts[1].toLong()
+                                    val trialStartTime = trialEndTime - (days * 24 * 60 * 60 * 1000)
+                                    featuresEditor.putLong("trial_end_time_$userId", trialEndTime)
+                                    featuresEditor.putLong("trial_start_time_$userId", trialStartTime)
+                                }
+                            } catch (e: Exception) {
+                                com.neubofy.reality.utils.TerminalLogger.log("ERROR parsing trialPlan: ${e.message}")
+                            }
                         }
 
                         featuresEditor.apply()

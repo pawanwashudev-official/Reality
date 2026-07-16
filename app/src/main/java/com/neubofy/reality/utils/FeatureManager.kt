@@ -60,7 +60,8 @@ class FeatureManager(private val context: Context) {
             return true
         }
 
-        val isValid = verifiedUntil > 0 && System.currentTimeMillis() < verifiedUntil
+        val secureNow = SecureTimeProvider.currentTimeMillis(context)
+        val isValid = verifiedUntil > 0 && secureNow < verifiedUntil
         if (!isValid && verifiedUntil > 0) {
             // Subscription expired. Wipe it out directly.
             setRealityProVerified(false)
@@ -71,7 +72,7 @@ class FeatureManager(private val context: Context) {
         return isValid
     }
 
-    fun setRealityProVerified(verified: Boolean, currentTimeMs: Long = System.currentTimeMillis(), months: Int = 12) {
+    fun setRealityProVerified(verified: Boolean, currentTimeMs: Long = SecureTimeProvider.currentTimeMillis(context), months: Int = 12) {
         val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
         val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
         if (verified) {
@@ -79,14 +80,15 @@ class FeatureManager(private val context: Context) {
             val verifiedUntil = currentTimeMs + durationMs
             prefs.edit().putLong("feature_reality_pro_verified_until_$userId", verifiedUntil).apply()
         } else {
-            prefs.edit().remove("feature_reality_pro_verified_until_$userId").apply()
-            prefs.edit().remove("feature_reality_pro_verified_$userId").apply()
+            // Batch both removals into a single atomic edit to avoid race conditions
+            prefs.edit()
+                .remove("feature_reality_pro_verified_until_$userId")
+                .remove("feature_reality_pro_verified_$userId")
+                .apply()
         }
     }
 
-    private fun getDeviceUniqueId(): String {
-        return android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ANDROID_ID) ?: "unknown"
-    }
+    // getDeviceUniqueId() removed — was dead code from an older device-binding approach
 
 
     fun isTrialActive(): Boolean {
@@ -97,7 +99,7 @@ class FeatureManager(private val context: Context) {
         var trialEndTime = prefs.getLong("trial_end_time_$userId", 0L)
 
 
-        return trialEndTime > 0L && System.currentTimeMillis() < trialEndTime
+        return trialEndTime > 0L && SecureTimeProvider.currentTimeMillis(context) < trialEndTime
     }
 
     fun hasUsedTrial(): Boolean {
@@ -110,21 +112,58 @@ class FeatureManager(private val context: Context) {
         return false
     }
 
-    fun activateTrial(currentTimeMs: Long = System.currentTimeMillis()) {
-        val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return
+    suspend fun activateTrial(currentTimeMs: Long = System.currentTimeMillis()): Boolean = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return@withContext false
         val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
-        val trialDurationMs = 3L * 24 * 60 * 60 * 1000
-        val currentTime = currentTimeMs
-        val trialEndTime = currentTime + trialDurationMs
-
-        // 1. Save local
-        val editor = prefs.edit()
-        editor.putLong("trial_end_time_$userId", trialEndTime)
-        if (prefs.getLong("trial_start_time_$userId", 0L) == 0L) {
-            editor.putLong("trial_start_time_$userId", currentTime)
+        val password = com.neubofy.reality.utils.IdentityManager.getBackupPassword(context)
+        
+        try {
+            val workerUrl = com.neubofy.reality.BuildConfig.WORKER_URL.removeSuffix("/")
+            val url = java.net.URL("$workerUrl/api/trial")
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.doOutput = true
+            
+            val jsonBody = org.json.JSONObject()
+            jsonBody.put("userId", userId)
+            jsonBody.put("password", password)
+            jsonBody.put("durationDays", 3)
+            
+            java.io.OutputStreamWriter(conn.outputStream).use { writer ->
+                writer.write(jsonBody.toString())
+                writer.flush()
+            }
+            
+            if (conn.responseCode == java.net.HttpURLConnection.HTTP_OK) {
+                val responseStr = conn.inputStream.bufferedReader().use { it.readText() }
+                val responseJson = org.json.JSONObject(responseStr)
+                val status = responseJson.optString("status")
+                val trialPlan = responseJson.optString("trialPlan")
+                
+                if (trialPlan.isNotEmpty() && trialPlan != "null") {
+                    val parts = trialPlan.split("-")
+                    if (parts.size >= 2) {
+                        val trialEndTime = parts[0].toLong()
+                        val days = parts[1].toLong()
+                        val trialStartTime = trialEndTime - (days * 24 * 60 * 60 * 1000)
+                        
+                        val editor = prefs.edit()
+                        editor.putLong("trial_end_time_$userId", trialEndTime)
+                        if (prefs.getLong("trial_start_time_$userId", 0L) == 0L) {
+                            editor.putLong("trial_start_time_$userId", trialStartTime)
+                        }
+                        editor.apply()
+                    }
+                }
+                return@withContext status == "SUCCESS" || status == "ALREADY_USED"
+            }
+        } catch (e: Exception) {
+            com.neubofy.reality.utils.TerminalLogger.log("TRIAL API ERROR: ${e.message}")
         }
-        editor.apply()
-
+        return@withContext false
     }
 
 

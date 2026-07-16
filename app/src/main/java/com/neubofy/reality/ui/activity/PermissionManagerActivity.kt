@@ -83,6 +83,7 @@ class PermissionManagerActivity : BaseActivity() {
         addPermissionCard(
             title = "Accessibility Service",
             desc = "Required for app blocking functionality.",
+            whyText = "We need this to detect when you open an app so we can block it if it exceeds your limits or if a blocking mode is active.",
             iconRes = R.drawable.baseline_accessibility_24,
             isGranted = isAccessibilityServiceEnabled(AppBlockerService::class.java),
             onClick = {
@@ -95,6 +96,7 @@ class PermissionManagerActivity : BaseActivity() {
         addPermissionCard(
             title = "Usage Access",
             desc = "Required to enforce app limits and track screen time.",
+            whyText = "This allows us to track how much time you spend on each app so your usage limits are accurately enforced.",
             iconRes = R.drawable.baseline_timer_24,
             isGranted = UsageUtils.hasUsageStatsPermission(this),
             onClick = {
@@ -107,6 +109,7 @@ class PermissionManagerActivity : BaseActivity() {
         addPermissionCard(
             title = "Display Over Other Apps",
             desc = "Required to show the block screen over restricted apps.",
+            whyText = "When an app is blocked, we use this permission to display our custom block screen over it, preventing you from accessing it.",
             iconRes = R.drawable.baseline_layers_24,
             isGranted = Settings.canDrawOverlays(this),
             onClick = {
@@ -120,6 +123,7 @@ class PermissionManagerActivity : BaseActivity() {
         addPermissionCard(
             title = "Ignore Battery Optimization",
             desc = "Required to keep the blocking service running reliably in the background.",
+            whyText = "Android often kills background apps to save battery. This permission ensures our blocking features remain active at all times.",
             iconRes = R.drawable.baseline_bolt_24,
             isGranted = pm.isIgnoringBatteryOptimizations(packageName),
             onClick = {
@@ -139,6 +143,7 @@ class PermissionManagerActivity : BaseActivity() {
             addPermissionCard(
                 title = "Notifications",
                 desc = "Required for reminders, alarms, and blocking status.",
+                whyText = "We need this to remind you of your limits and ensure background services run correctly without the system pausing them.",
                 iconRes = R.drawable.baseline_notifications_24,
                 isGranted = granted,
                 onClick = {
@@ -153,6 +158,7 @@ class PermissionManagerActivity : BaseActivity() {
         addPermissionCard(
             title = "Device Admin (Anti-Uninstall)",
             desc = "Prevents uninstalling Reality when Strict Mode is active.",
+            whyText = "When Strict Mode is active, you could bypass it simply by uninstalling the app. Device Admin protection prevents you from uninstalling the app to ensure your limits are respected.",
             iconRes = R.drawable.baseline_security_24,
             isGranted = dpm.isAdminActive(adminComponent),
             onClick = {
@@ -173,6 +179,7 @@ class PermissionManagerActivity : BaseActivity() {
             addPermissionCard(
                 title = "Microphone",
                 desc = "Required for AI voice interactions.",
+                whyText = "The RECORD_AUDIO permission is needed specifically for the voice interaction button on the AI page. We do not listen to you outside of those interactions.",
                 iconRes = R.drawable.baseline_mic_24,
                 isGranted = granted,
                 onClick = {
@@ -186,6 +193,7 @@ class PermissionManagerActivity : BaseActivity() {
             addPermissionCard(
                 title = "Health Connect",
                 desc = "Required to sync sleep and step data.",
+                whyText = "By linking with Health Connect, we can integrate your sleep duration and step count directly into Reality.",
                 iconRes = R.drawable.baseline_favorite_24,
                 isGranted = ContextCompat.checkSelfPermission(this, "android.permission.health.READ_SLEEP") == PackageManager.PERMISSION_GRANTED,
                 onClick = {
@@ -202,6 +210,7 @@ class PermissionManagerActivity : BaseActivity() {
             addPermissionCard(
                 title = "Exact Alarms",
                 desc = "Required to fire reminders and alarms on time.",
+                whyText = "Reminders and bedtime alarms need this permission to trigger at the exact time you schedule them, rather than being delayed by the OS.",
                 iconRes = R.drawable.baseline_access_time_24,
                 isGranted = alarmManager.canScheduleExactAlarms(),
                 onClick = {
@@ -218,6 +227,7 @@ class PermissionManagerActivity : BaseActivity() {
         addPermissionCard(
             title = "Camera",
             desc = "Required to scan QR codes for Tapasya import.",
+            whyText = "When importing Tapasya configurations, you can do so by scanning a QR code with the Camera. We do not use the camera for any other purpose.",
             iconRes = R.drawable.baseline_qr_code_24,
             isGranted = cameraGranted,
             onClick = {
@@ -226,17 +236,26 @@ class PermissionManagerActivity : BaseActivity() {
         )
     }
 
-    private fun addPermissionCard(title: String, desc: String, iconRes: Int, isGranted: Boolean, onClick: () -> Unit) {
+    private fun addPermissionCard(title: String, desc: String, whyText: String, iconRes: Int, isGranted: Boolean, onClick: () -> Unit) {
         val view = LayoutInflater.from(this).inflate(R.layout.item_permission_card, container, false)
         val rootCard = view.findViewById<MaterialCardView>(R.id.card_root)
         val tvTitle = view.findViewById<TextView>(R.id.tv_title)
         val tvDesc = view.findViewById<TextView>(R.id.tv_desc)
         val ivIcon = view.findViewById<ImageView>(R.id.iv_icon)
         val ivStatus = view.findViewById<ImageView>(R.id.iv_status)
+        val btnWhy = view.findViewById<android.widget.ImageButton>(R.id.btn_why)
 
         tvTitle.text = title
         tvDesc.text = desc
         ivIcon.setImageResource(iconRes)
+
+        btnWhy.setOnClickListener {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Why is this needed?")
+                .setMessage(whyText)
+                .setPositiveButton("Got it", null)
+                .show()
+        }
 
         if (isGranted) {
             ivStatus.setImageResource(R.drawable.baseline_check_circle_24)

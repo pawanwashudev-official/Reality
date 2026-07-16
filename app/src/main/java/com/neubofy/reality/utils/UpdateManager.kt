@@ -148,20 +148,7 @@ object UpdateManager {
         }
     }
 
-    private fun isNewerOrEqualVersion(latest: String, current: String): Boolean {
-        return try {
-            val latestParts = latest.split(".").map { it.toInt() }
-            val currentParts = current.split(".").map { it.toInt() }
-
-            for (i in 0 until minOf(latestParts.size, currentParts.size)) {
-                if (latestParts[i] > currentParts[i]) return true
-                if (latestParts[i] < currentParts[i]) return false
-            }
-            latestParts.size >= currentParts.size
-        } catch (e: Exception) {
-            true // Fallback to allow if string comparison fails
-        }
-    }
+    // isNewerOrEqualVersion() removed — was dead code, never called
 
 
 private fun showUpdateDialog(context: Context, version: String, url: String, notes: String) {
