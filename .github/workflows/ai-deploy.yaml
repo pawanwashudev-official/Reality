@@ -1,0 +1,31 @@
+name: Deploy AI Worker
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'workers/ai/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Inject KV Namespace ID from GitHub secrets before deploying
+      - name: Inject KV Namespace ID
+        run: |
+          sed -i 's/id = "" # Injected by GitHub Action or set manually/id = "${{ secrets.KV_RATE_LIMIT_ID }}"/' workers/ai/wrangler.toml
+
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'workers/ai'
+          # NOTE: AI Worker requires secrets to be set via Cloudflare Dashboard
+          # Go to Workers > neubofy-assistant > Settings > Variables
+          # Required secrets: APP_SECRET_PEPPER

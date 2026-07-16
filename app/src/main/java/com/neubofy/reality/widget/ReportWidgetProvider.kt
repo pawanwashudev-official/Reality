@@ -13,7 +13,8 @@ import com.neubofy.reality.R
 import com.neubofy.reality.data.repository.NightlyRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -64,7 +65,8 @@ class ReportWidgetProvider : AppWidgetProvider() {
         val views = RemoteViews(context.packageName, R.layout.widget_report)
         
         // Background Data Check (Only to get key for Intent)
-        GlobalScope.launch(Dispatchers.Main) {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+        scope.launch {
             try {
                 // Find latest session with report content
                 val sessions = withContext(Dispatchers.IO) { 
@@ -92,7 +94,7 @@ class ReportWidgetProvider : AppWidgetProvider() {
                 
                 appWidgetManager.updateAppWidget(appWidgetId, views)
             } catch (e: Exception) {
-                 e.printStackTrace()
+                 com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             }
         }
         

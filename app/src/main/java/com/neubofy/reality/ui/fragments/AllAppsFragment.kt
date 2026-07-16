@@ -163,7 +163,7 @@ class AllAppsFragment : Fragment() {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
                 withContext(Dispatchers.Main) {
                     android.widget.Toast.makeText(
                         context, 

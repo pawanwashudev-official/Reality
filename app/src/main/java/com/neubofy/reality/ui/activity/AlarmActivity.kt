@@ -209,7 +209,7 @@ class AlarmActivity : BaseActivity() {
                 com.neubofy.reality.utils.TerminalLogger.log("ALARM: Dismissed $originalId ($source)")
             } catch (e: Exception) { 
                 com.neubofy.reality.utils.TerminalLogger.log("ALARM ERROR: ${e.message}")
-                e.printStackTrace() 
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}") 
             }
         }
         
@@ -221,7 +221,7 @@ class AlarmActivity : BaseActivity() {
             val stopIntent = Intent(this, com.neubofy.reality.services.AlarmService::class.java)
             stopIntent.action = "STOP"
             startService(stopIntent)
-        } catch (e: Exception) { e.printStackTrace() }
+        } catch (e: Exception) { com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}") }
     }
 
     private fun scheduleSnoozeAlarm(id: String?, title: String, url: String?, mins: Int) {
@@ -283,7 +283,7 @@ class AlarmActivity : BaseActivity() {
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 startActivity(intent)
             } catch (e: Exception) {
-                e.printStackTrace()
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             }
         }
     }

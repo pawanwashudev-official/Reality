@@ -26,7 +26,7 @@ object InternetTime {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
         }
         return@withContext System.currentTimeMillis()
     }

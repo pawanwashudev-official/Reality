@@ -291,7 +291,7 @@ class AppBlockerService : BaseBlockingService() {
                              try {
                                  checkUrl(packageName, rootNode)
                              } catch (e: Exception) {
-                                e.printStackTrace()
+                                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
                              } finally {
                                 try { rootNode.recycle() } catch (e: Exception) {}
                              }
@@ -417,7 +417,7 @@ class AppBlockerService : BaseBlockingService() {
 
             windowManager.addView(warningOverlay, params)
         } catch (e: Exception) {
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
         }
     }
 
@@ -602,7 +602,7 @@ class AppBlockerService : BaseBlockingService() {
                     try {
                         handleStrictSettingsProtection(rootNode)
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
                     } finally {
                         try { rootNode.recycle() } catch (e: Exception) {}
                     }
@@ -620,7 +620,7 @@ class AppBlockerService : BaseBlockingService() {
                             try {
                                 handleStrictSettingsProtection(rootNode2)
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
                             } finally {
                                 try { rootNode2.recycle() } catch (e: Exception) {}
                             }
@@ -1066,7 +1066,7 @@ class AppBlockerService : BaseBlockingService() {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
         }
 
         // Kill Process for stronger block

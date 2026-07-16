@@ -93,7 +93,7 @@ class LauncherActivity : BaseActivity() {
                 Toast.makeText(context, "App not found", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
-            e.printStackTrace() // Handle any exceptions
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}") // Handle any exceptions
             Toast.makeText(context, "Error launching app", Toast.LENGTH_SHORT).show()
         }
     }
@@ -146,7 +146,7 @@ class LauncherActivity : BaseActivity() {
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             Toast.makeText(context, "Unable to open app info", Toast.LENGTH_SHORT).show()
         }
     }

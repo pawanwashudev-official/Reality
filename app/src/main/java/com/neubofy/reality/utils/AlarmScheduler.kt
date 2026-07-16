@@ -67,7 +67,7 @@ object AlarmScheduler {
                 scheduleNextAlarmInternal(context)
             } catch (e: Exception) {
                 TerminalLogger.log("ALARM ERROR: ${e.message}")
-                e.printStackTrace()
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             }
         }
     }
@@ -247,7 +247,7 @@ object AlarmScheduler {
             TerminalLogger.log("SNOOZE: Scheduled '$title' at $timeStr (in $snoozeMins min)")
         } catch (e: Exception) {
             TerminalLogger.log("SNOOZE ERROR: ${e.message}")
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
         }
     }
     
@@ -310,7 +310,7 @@ object AlarmScheduler {
             TerminalLogger.log("ALARM: Canceled main + $canceledCount snooze alarms")
         } catch (e: Exception) {
             TerminalLogger.log("ALARM CANCEL ERROR: ${e.message}")
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
         }
     }
 

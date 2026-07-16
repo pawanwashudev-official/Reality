@@ -107,7 +107,7 @@ class ReminderReceiver : BroadcastReceiver() {
             }
         } catch (e: Exception) {
             TerminalLogger.log("ERROR starting AlarmService: ${e.message}")
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
         }
         
         // Reschedule for next reminder after this one fires
@@ -115,7 +115,7 @@ class ReminderReceiver : BroadcastReceiver() {
             AlarmScheduler.scheduleNextAlarm(context)
         } catch(e: Exception) {
             TerminalLogger.log("ERROR rescheduling: ${e.message}")
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
         }
     }
     

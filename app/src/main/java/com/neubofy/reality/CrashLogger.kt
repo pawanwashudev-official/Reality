@@ -49,7 +49,7 @@ class CrashLogger(private val context: Context) : Thread.UncaughtExceptionHandle
             writer.flush()
             writer.close()
         } catch (e: Exception) {
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
         }
 
         defaultHandler?.uncaughtException(thread, throwable) // Let the system handle the crash

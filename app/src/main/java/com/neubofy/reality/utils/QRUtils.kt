@@ -32,7 +32,7 @@ object QRUtils {
             }
             bitmap
         } catch (e: Exception) {
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             null
         }
     }

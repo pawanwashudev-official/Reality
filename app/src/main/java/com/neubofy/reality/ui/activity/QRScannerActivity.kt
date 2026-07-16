@@ -94,7 +94,7 @@ class QRScannerActivity : BaseActivity() {
                     this, cameraSelector, preview, imageAnalyzer
                 )
             } catch (exc: Exception) {
-                exc.printStackTrace()
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${exc.message}")
             }
 
         }, ContextCompat.getMainExecutor(this))

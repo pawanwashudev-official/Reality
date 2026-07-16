@@ -1,0 +1,20 @@
+name = "neubofy-assitant"
+main = "worker.js"
+compatibility_date = "2026-07-04"
+
+[ai]
+binding = "AI"
+
+# KV namespace for server-side rate limiting
+# Create via: wrangler kv namespace create "RATE_LIMIT"
+# Then paste the ID below
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "" # Injected by GitHub Action or set manually
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+[observability.traces]
+enabled = true

@@ -99,7 +99,7 @@ Reality integrates a local-first agent designed for in-app command execution and
 * **Capabilities**:
   * Utilizes Model Context Protocol (MCP) tool registrations defined in [ToolRegistry.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/utils/ToolRegistry.kt) to execute actions like alarm changes, task additions, and app blocks.
   * Leverages a local context sliding window using [ConversationMemoryManager.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/utils/ConversationMemoryManager.kt) to count tokens locally.
-  * Connects to private, secure edge servers ([cloudflare/worker.js](https://github.com/pawanwashudev-official/Reality/blob/main/cloudflare/worker.js)) with BYOK (Bring-Your-Own-Key) support.
+  * Connects to private, secure edge servers ([workers/identity/worker.js](https://github.com/pawanwashudev-official/Reality/blob/main/workers/identity/worker.js)) with BYOK (Bring-Your-Own-Key) support.
 
 ### 7. **🎨 Cinematic Theme Customization**
 A fully customized UI rendering module allows personalizing fonts, layouts, and gradients to make your Life OS look premium.
@@ -118,7 +118,7 @@ Reality works without developer servers. You can host your own sync endpoints us
 
 ### Secure Identity & Encryption
 * Encrypted database storage is implemented via [Room](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/data/) and Android's native `EncryptedSharedPreferences`.
-* Backups and keys are secured deterministically using JIT calculations at the Cloudflare edge ([cloudflare/worker.js](https://github.com/pawanwashudev-official/Reality/blob/main/cloudflare/worker.js)) to safeguard keys against physical client-side memory extraction.
+* Backups and keys are secured deterministically using JIT calculations at the Cloudflare edge ([workers/identity/worker.js](https://github.com/pawanwashudev-official/Reality/blob/main/workers/identity/worker.js)) to safeguard keys against physical client-side memory extraction.
 
 ---
 

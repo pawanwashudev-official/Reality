@@ -5,12 +5,16 @@ export default {
       return new Response(null, {
         status: 204,
         headers: {
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": "https://reality.neubofy.in",
           "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization"
         }
       });
     }
+
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "https://reality.neubofy.in"
+    };
 
     // Handle GET request to retrieve allowed models dynamically
     if (request.method === "GET") {
@@ -22,7 +26,7 @@ export default {
         status: 200,
         headers: { 
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
+          ...corsHeaders
         },
       });
     }
@@ -31,7 +35,7 @@ export default {
     if (request.method !== "POST") {
       return new Response(JSON.stringify({ error: "Send a POST request" }), {
         status: 405,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
@@ -44,7 +48,7 @@ export default {
       if (!userId || !password) {
         return new Response(JSON.stringify({ error: "Missing authentication fields." }), {
             status: 401,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
         });
       }
 
@@ -52,16 +56,37 @@ export default {
       if (!isAuthorized) {
         return new Response(JSON.stringify({ error: "Unauthorized. Invalid credentials." }), {
             status: 401,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
         });
       }
 
-      const requestCount = body.requestCount || 0;
-      if (requestCount >= 75) {
-        return new Response(JSON.stringify({ error: "Daily limit of 75 AI requests reached." }), {
-            status: 429,
-            headers: { "Content-Type": "application/json" },
-        });
+      // ============================================================
+      // SERVER-SIDE RATE LIMITING
+      // Uses Cloudflare KV to track daily request counts per userId.
+      // Requires KV namespace binding "RATE_LIMIT" in wrangler.toml.
+      // Falls back to allowing requests if KV is unavailable.
+      // ============================================================
+      const DAILY_LIMIT = 75;
+      if (env.RATE_LIMIT) {
+        try {
+          const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+          const rateLimitKey = `ai_rate:${userId}:${today}`;
+          const currentCountStr = await env.RATE_LIMIT.get(rateLimitKey);
+          const currentCount = currentCountStr ? parseInt(currentCountStr, 10) : 0;
+
+          if (currentCount >= DAILY_LIMIT) {
+            return new Response(JSON.stringify({ error: "Daily limit of 75 AI requests reached." }), {
+              status: 429,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            });
+          }
+
+          // Increment count with 24h TTL (auto-cleanup)
+          await env.RATE_LIMIT.put(rateLimitKey, String(currentCount + 1), { expirationTtl: 86400 });
+        } catch (e) {
+          // KV error — allow request but log
+          console.error("Rate limit KV error:", e.message);
+        }
       }
 
       // Allowed models list (strictly gpt-oss-120b and gpt-oss-20b)
@@ -107,12 +132,12 @@ export default {
       const response = await env.AI.run(modelToUse, options);
 
       return new Response(JSON.stringify(response), {
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     } catch (error) {
       return new Response(JSON.stringify({ error: "AI inference failed", details: error.message }), {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
   },

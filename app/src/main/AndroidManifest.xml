@@ -114,6 +114,7 @@
         <activity
             android:name=".ui.activity.UnifiedBlocklistActivity"
             android:screenOrientation="portrait"
+            android:exported="false"
             android:theme="@style/Theme.Reality" />
         <activity
             android:name=".ui.activity.AppearanceActivity"
@@ -220,7 +221,7 @@
             
         <activity
             android:name=".ui.activity.PopupAIChatActivity"
-            android:exported="true"
+            android:exported="false"
             android:theme="@style/Theme.Reality.TransparentDialog"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize"
@@ -560,12 +561,12 @@
                 android:value="true" />
         </service>
 
-            <receiver
+        <receiver
             android:name=".receivers.WakeupAlarmReceiver"
             android:exported="false" />
         <service android:name=".services.WakeupAlarmService" android:foregroundServiceType="mediaPlayback" />
 
-            <activity
+        <activity
             android:name=".ui.activity.EncryptionSetupActivity"
             android:screenOrientation="portrait"
             android:exported="false"

@@ -117,7 +117,7 @@ class AppLimitsFragment : Fragment() {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             }
         }
     }
@@ -205,7 +205,7 @@ class AppLimitsFragment : Fragment() {
                     dialog.show()
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, "Error loading apps: ${e.message}", Toast.LENGTH_SHORT).show()
                 }

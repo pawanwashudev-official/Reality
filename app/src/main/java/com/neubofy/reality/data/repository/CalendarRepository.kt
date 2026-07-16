@@ -139,7 +139,7 @@ class CalendarRepository(private val context: Context) {
             val uri = context.contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)
             return uri?.lastPathSegment?.toLongOrNull() ?: -1
         } catch (e: Exception) {
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             return -1
         }
     }

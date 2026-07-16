@@ -90,7 +90,7 @@ class NightlyWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                 Result.success()
             } catch (e: Exception) {
                 TerminalLogger.log("WORKER FATAL: ${e.message}")
-                e.printStackTrace()
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
                 Result.failure()
             }
         }

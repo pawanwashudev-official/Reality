@@ -26,7 +26,7 @@ import com.neubofy.reality.utils.QRUtils
 import com.neubofy.reality.utils.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.GlobalScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.OutputStreamWriter
@@ -139,7 +139,7 @@ class PaymentVerificationActivity : BaseActivity() {
     }
 
     private fun submitPaymentRequest(transactionId: String, customNote: String) {
-        GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@PaymentVerificationActivity.applicationContext) }
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@PaymentVerificationActivity.applicationContext) }
         val workerUrl = BuildConfig.WORKER_URL
 
         if (workerUrl.isEmpty()) {

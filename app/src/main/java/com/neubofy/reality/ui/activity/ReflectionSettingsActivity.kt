@@ -103,7 +103,7 @@ class ReflectionSettingsActivity : BaseActivity() {
                 showLevelEditorDialog()
             } catch (e: Exception) {
                 Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                e.printStackTrace()
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             }
         }
 

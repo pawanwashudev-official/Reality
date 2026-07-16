@@ -119,7 +119,7 @@ class CalendarSyncWorker(context: Context, params: WorkerParameters) : Coroutine
             Result.success()
         } catch (e: Exception) {
             TerminalLogger.log("CALENDAR SYNC ERROR: ${e.message}")
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             Result.retry()
         }
     }

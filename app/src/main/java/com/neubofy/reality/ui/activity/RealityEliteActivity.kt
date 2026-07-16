@@ -24,7 +24,7 @@ import com.neubofy.reality.utils.IdentityManager
 import com.neubofy.reality.utils.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.GlobalScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.OutputStreamWriter
@@ -404,7 +404,7 @@ class RealityEliteActivity : BaseActivity() {
     }
 
     private fun verifyCode(isSilentCheck: Boolean = false) {
-        GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityEliteActivity.applicationContext) }
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityEliteActivity.applicationContext) }
         val email = GoogleAuthManager.getUserEmail(this) ?: ""
         if (email.isEmpty()) {
             if (!isSilentCheck) Toast.makeText(this, "Please sign in with Google in the Profile page first.", Toast.LENGTH_LONG).show()

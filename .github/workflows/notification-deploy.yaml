@@ -3,7 +3,7 @@ name: Deploy Notification Worker
 on:
   push:
     paths:
-      - 'Notification/**'  # Only triggers if changes occur in the Notification folder
+      - 'workers/notification/**'
   workflow_dispatch:       # Enable manual trigger from GitHub UI
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          account_Id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: 'Notification'
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'workers/notification'
           # FIREBASE_SERVICE_ACCOUNT is stored directly as a Cloudflare secret via Dashboard
           # After first deploy: go to Workers > reality-notification-bridge > Settings > Variables > Add Secret

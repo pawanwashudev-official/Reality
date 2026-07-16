@@ -62,7 +62,7 @@ class AboutActivity : BaseActivity() {
             val version = pInfo.versionName
             binding.tvVersion.text = "Version $version"
         } catch (e: PackageManager.NameNotFoundException) {
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             binding.tvVersion.text = "Version Unknown"
         }
 
@@ -206,7 +206,7 @@ class AboutActivity : BaseActivity() {
                     prefs.edit().putString("markdown_content", content).apply()
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             }
         }
     }

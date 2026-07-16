@@ -12,7 +12,8 @@ import com.neubofy.reality.R
 import com.neubofy.reality.data.repository.NightlyRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -64,7 +65,8 @@ class PlanWidgetProvider : AppWidgetProvider() {
         val views = RemoteViews(context.packageName, R.layout.widget_plan)
 
         // Find valid session
-        GlobalScope.launch(Dispatchers.Main) {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+        scope.launch {
             try {
                 // Logic: Find latest session where Step 9 has resultJson with items
                 val sessions = withContext(Dispatchers.IO) { 
@@ -105,7 +107,7 @@ class PlanWidgetProvider : AppWidgetProvider() {
 
                 appWidgetManager.updateAppWidget(appWidgetId, views)
             } catch (e: Exception) {
-                 e.printStackTrace()
+                 com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             }
         }
         

@@ -202,7 +202,7 @@ object GoogleAuthManager {
                 return@withContext code
             } catch (e: Exception) {
                 TerminalLogger.log("GOOGLE AUTH: Server error or timeout - ${e.message}")
-                e.printStackTrace()
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
                 null
             } finally {
                 try {
@@ -294,7 +294,7 @@ object GoogleAuthManager {
                 }
             } catch (e: Exception) {
                 TerminalLogger.log("GOOGLE AUTH: Token exchange failed - ${e.message}")
-                e.printStackTrace()
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             }
             return@withContext false
         }

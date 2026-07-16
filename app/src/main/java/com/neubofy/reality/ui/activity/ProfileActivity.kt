@@ -404,14 +404,14 @@ class ProfileActivity : BaseActivity() {
                     val stackTrace = android.util.Log.getStackTraceString(t)
                     TerminalLogger.log("PROFILE: $serviceName CRASHED - $errorMessage\n$stackTrace")
                     Toast.makeText(this@ProfileActivity, "$serviceName: $errorMessage", Toast.LENGTH_LONG).show()
-                    t.printStackTrace()
+                    com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${t.message}")
                 }
             }
         } catch (t: Throwable) {
             val crashMessage = t.message ?: t.javaClass.simpleName
             TerminalLogger.log("PROFILE: $serviceName CRITICAL ERROR - $crashMessage")
             Toast.makeText(this, "$serviceName: $crashMessage", Toast.LENGTH_LONG).show()
-            t.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${t.message}")
         }
     }
     
@@ -812,7 +812,7 @@ class ProfileActivity : BaseActivity() {
 
             } catch (e: Exception) {
                 log("❌ Error: ${e.message}")
-                e.printStackTrace()
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
                 progressBar.isIndeterminate = false
                 kotlinx.coroutines.delay(2000)
                 dialog.dismiss()

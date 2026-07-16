@@ -1,12 +1,14 @@
 export default {
   async fetch(request, env) {
+    const CORS_ORIGIN = "https://reality.neubofy.in";
+
     // Handle CORS preflight requests universally
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": CORS_ORIGIN,
           "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Headers": "Content-Type, x-worker-secret",
         },
       });
     }
@@ -24,7 +26,7 @@ export default {
         } catch (e) {
           return new Response(JSON.stringify({ error: "Invalid JSON payload" }), {
             status: 400,
-            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
           });
         }
 
@@ -32,7 +34,7 @@ export default {
         if (!idToken || typeof idToken !== "string") {
           return new Response(JSON.stringify({ error: "idToken string is required" }), {
             status: 400,
-            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
           });
         }
 
@@ -46,14 +48,14 @@ export default {
         } catch (e) {
           return new Response(JSON.stringify({ error: "Failed to verify idToken", details: e.message }), {
             status: 400,
-            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
           });
         }
 
         if (!env.APP_SECRET_PEPPER) {
           return new Response(JSON.stringify({ error: "Server misconfiguration: missing secret pepper" }), {
             status: 500,
-            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
           });
         }
 
@@ -152,7 +154,7 @@ export default {
           }),
           { 
             status: 200, 
-            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } 
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } 
           }
         );
       }
@@ -208,7 +210,7 @@ export default {
         const tokens = await googleResponse.text();
         return new Response(tokens, {
           status: googleResponse.status,
-          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
         });
       }
 
@@ -220,7 +222,7 @@ export default {
         if (!secretHeader || secretHeader !== env.WORKER_CONNECTION_SECRET) {
           return new Response(JSON.stringify({ error: "Unauthorized access" }), {
             status: 401,
-            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
           });
         }
 
@@ -235,7 +237,7 @@ export default {
           JSON.stringify({ totalMembers, members: results }),
           {
             status: 200,
-            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
           }
         );
       }
@@ -251,12 +253,12 @@ export default {
           const password = url.searchParams.get("password");
 
           if (!userId || !password) {
-            return new Response(JSON.stringify({ status: "INVALID" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+            return new Response(JSON.stringify({ status: "INVALID" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
           }
 
           const isAuthorized = await this.verifyAuth(userId, password, env.APP_SECRET_PEPPER);
           if (!isAuthorized) {
-            return new Response(JSON.stringify({ status: "UNAUTHORIZED" }), { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+            return new Response(JSON.stringify({ status: "UNAUTHORIZED" }), { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
           }
 
           const row = await env.DB.prepare(
@@ -264,7 +266,7 @@ export default {
           ).bind(userId).first();
 
           if (!row) {
-            return new Response(JSON.stringify({ status: "NOT_FOUND" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+            return new Response(JSON.stringify({ status: "NOT_FOUND" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
           }
 
           if (row.userId === userId && row.status === "V") {
@@ -274,9 +276,9 @@ export default {
               if (parts.length === 2) {
                 const expiryUnix = parseInt(parts[0], 10);
                 if (expiryUnix < Date.now()) {
-                   return new Response(JSON.stringify({ status: "EXPIRED" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+                   return new Response(JSON.stringify({ status: "EXPIRED" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
                 }
-                return new Response(JSON.stringify({ status: "SUCCESS", expiryDate: row.expiryDate }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+                return new Response(JSON.stringify({ status: "SUCCESS", expiryDate: row.expiryDate }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
               } else if (parts.length === 4) {
                 const yyyy = parseInt(parts[0], 10);
                 const mm = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
@@ -284,17 +286,17 @@ export default {
                 const expiryDateObj = new Date(Date.UTC(yyyy, mm, dd));
 
                 if (expiryDateObj.getTime() < Date.now()) {
-                   return new Response(JSON.stringify({ status: "EXPIRED" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+                   return new Response(JSON.stringify({ status: "EXPIRED" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
                 }
-                return new Response(JSON.stringify({ status: "SUCCESS", expiryDate: row.expiryDate }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+                return new Response(JSON.stringify({ status: "SUCCESS", expiryDate: row.expiryDate }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
               }
             }
             // fallback
-            return new Response(JSON.stringify({ status: "SUCCESS" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+            return new Response(JSON.stringify({ status: "SUCCESS" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
           } else if (row.userId === userId && row.status === "P") {
-            return new Response(JSON.stringify({ status: "PENDING" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+            return new Response(JSON.stringify({ status: "PENDING" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
           } else {
-            return new Response(JSON.stringify({ status: "INVALID" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+            return new Response(JSON.stringify({ status: "INVALID" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
           }
         }
 
@@ -306,7 +308,7 @@ export default {
           } catch (e) {
             return new Response(JSON.stringify({ status: "ERROR", message: "Invalid JSON payload" }), {
               status: 400,
-              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
             });
           }
 
@@ -316,7 +318,7 @@ export default {
           if (!userId || !password) {
              return new Response(JSON.stringify({ status: "ERROR", message: "Missing auth fields" }), {
               status: 400,
-              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
             });
           }
 
@@ -324,7 +326,7 @@ export default {
           if (!isAuthorized) {
             return new Response(JSON.stringify({ status: "ERROR", message: "Unauthorized" }), {
               status: 401,
-              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
             });
           }
 
@@ -340,7 +342,7 @@ export default {
             if (existingRow) {
                return new Response(
                  JSON.stringify({ status: "ALREADY_REGISTERED" }),
-                 { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+                 { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } }
                );
             }
 
@@ -351,7 +353,7 @@ export default {
 
              return new Response(
               JSON.stringify({ status: "SUCCESS" }),
-              { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+              { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } }
              );
           }
 
@@ -363,7 +365,7 @@ export default {
                 if (expiryUnix > Date.now()) {
                    return new Response(JSON.stringify({ status: "ACTIVE_SUBSCRIPTION", message: "You already have an active subscription.", code: "ACTIVE_SUBSCRIPTION" }), {
                       status: 200,
-                      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+                      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
                    });
                 }
               } else if (parts.length === 4) {
@@ -374,7 +376,7 @@ export default {
                 if (expiryDateObj.getTime() > Date.now()) {
                    return new Response(JSON.stringify({ status: "ACTIVE_SUBSCRIPTION", message: "You already have an active subscription.", code: "ACTIVE_SUBSCRIPTION" }), {
                       status: 200,
-                      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+                      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
                    });
                 }
               }
@@ -392,7 +394,7 @@ export default {
           if (!transactionId) {
             return new Response(JSON.stringify({ status: "ERROR", message: "Missing transactionId for purchase" }), {
               status: 400,
-              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
             });
           }
 
@@ -420,7 +422,7 @@ export default {
             JSON.stringify({ status: "SUCCESS", verificationCode: "REGISTERED" }),
             { 
               status: 200, 
-              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } 
+              headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } 
             }
           );
         }
@@ -430,7 +432,7 @@ export default {
     } catch (error) {
       return new Response(JSON.stringify({ error: "Proxy failure", details: error.message }), { 
         status: 500,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
       });
     }
 

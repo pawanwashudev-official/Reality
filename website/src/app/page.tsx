@@ -33,7 +33,7 @@ import {
 
 export default async function Home() {
 
-  let latestVersion = "1.0.7";
+  let latestVersion = "1.0.9";
   let downloadCount = "1000+";
 
   try {
@@ -357,8 +357,8 @@ export default async function Home() {
                     <li><strong className="text-white">Encrypted Injection:</strong> Directly writes verified variables into Android&apos;s EncryptedSharedPreferences container.</li>
                   </ul>
                   <div className="pt-2">
-                    <a href="https://github.com/pawanwashudev-official/Reality/blob/main/cloudflare/worker.js" target="_blank" rel="noopener noreferrer" className="text-neural-cyan hover:underline font-mono text-xs flex items-center gap-1">
-                      cloudflare/worker.js <ArrowUpRight size={12}/>
+                    <a href="https://github.com/pawanwashudev-official/Reality/blob/main/workers/identity/worker.js" target="_blank" rel="noopener noreferrer" className="text-neural-cyan hover:underline font-mono text-xs flex items-center gap-1">
+                      workers/identity/worker.js <ArrowUpRight size={12}/>
                     </a>
                   </div>
                 </div>

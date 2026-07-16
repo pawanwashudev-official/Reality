@@ -5,6 +5,8 @@
 //   POST /webhook/calendar        → Google Calendar change webhook
 // ============================================================
 
+const CORS_ORIGIN = "https://reality.neubofy.in";
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -12,7 +14,7 @@ export default {
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": CORS_ORIGIN,
           "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type",
         },
@@ -312,13 +314,13 @@ function base64ToArrayBuffer(b64) {
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
   });
 }
 
 function jsonError(message, status = 400) {
   return new Response(JSON.stringify({ error: message }), {
     status,
-    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
   });
 }

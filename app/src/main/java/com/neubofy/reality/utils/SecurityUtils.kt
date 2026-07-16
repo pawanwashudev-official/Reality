@@ -61,7 +61,7 @@ object SecurityUtils {
 
             return MessageDigest.isEqual(storedHashBytes, computedHash)
         } catch (e: Exception) {
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             return false
         }
     }
@@ -73,7 +73,7 @@ object SecurityUtils {
      */
     fun validatePassword(password: String): Pair<Boolean, String> {
         return when {
-            password.length < 4 -> Pair(false, "Password must be at least 4 characters")
+            password.length < 6 -> Pair(false, "Password must be at least 6 characters")
             password.length > 50 -> Pair(false, "Password too long")
             else -> Pair(true, "")
         }

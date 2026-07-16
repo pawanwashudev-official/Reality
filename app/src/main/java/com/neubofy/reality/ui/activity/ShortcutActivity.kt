@@ -48,7 +48,7 @@ class ShortcutActivity : BaseActivity() {
             intent.putExtra(":settings:fragment_args_key", componentName.flattenToString())
             startActivity(intent)
         } catch (e: Exception) {
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             // Fallback to general Accessibility Settings
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }

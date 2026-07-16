@@ -462,7 +462,7 @@ class TapasyaActivity : BaseActivity() {
                     binding.swipeRefresh.isRefreshing = false
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
                 withContext(Dispatchers.Main) { 
                     binding.swipeRefresh.isRefreshing = false 
                     android.widget.Toast.makeText(this@TapasyaActivity, "Sync Error: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()

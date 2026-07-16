@@ -127,7 +127,7 @@ android {
     }
     
     lint {
-        checkReleaseBuilds = false
+        checkReleaseBuilds = true
         abortOnError = false
     }
 }
@@ -162,6 +162,7 @@ dependencies {
     // WorkManager
     implementation(libs.work.runtime.ktx)
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.airbnb.android:lottie:6.0.0")
     
     // QR Code Generation (lightweight, open-source)

@@ -18,14 +18,10 @@ object BackupEncryption {
 
 
     fun getSecretKeyFromPassword(password: String?): SecretKey {
-        val keyMaterial = if (password != null) {
-            password.toByteArray()
-        } else {
-            "com.neubofy.reality.backup.key.v1".toByteArray()
-        }
+        require(!password.isNullOrEmpty()) { "Encryption password must not be null or empty" }
 
         val md = java.security.MessageDigest.getInstance("SHA-256")
-        val rawKey = md.digest(keyMaterial)
+        val rawKey = md.digest(password.toByteArray())
         return javax.crypto.spec.SecretKeySpec(rawKey, "AES")
     }
 
@@ -67,7 +63,7 @@ object BackupEncryption {
             val decryptedData = cipher.doFinal(encryptedData)
             return String(decryptedData, Charsets.UTF_8)
         } catch (e: Exception) {
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             // Return original if decryption fails (might be plain text that happened to start with ENC:)
             return encryptedString
         }

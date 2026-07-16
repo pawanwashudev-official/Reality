@@ -139,7 +139,7 @@ class WakeupAlarmService : Service() {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
         }
     }
 
@@ -172,7 +172,7 @@ class WakeupAlarmService : Service() {
             mediaPlayer = null
             vibrator?.cancel()
         } catch (e: Exception) {
-            e.printStackTrace()
+            com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
         }
     }
 

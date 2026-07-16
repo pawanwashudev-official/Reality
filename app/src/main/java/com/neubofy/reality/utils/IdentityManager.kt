@@ -5,7 +5,7 @@ import com.neubofy.reality.BuildConfig
 import com.neubofy.reality.google.GoogleAuthManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.GlobalScope
+
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -28,7 +28,8 @@ object IdentityManager {
             return cachedId
         }
 
-        return kotlinx.coroutines.runBlocking(Dispatchers.IO) { generateAndCacheIdentity(context); prefs.getString(KEY_USER_ID, "Unknown") ?: "Unknown" }
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { generateAndCacheIdentity(context) }
+        return "Unknown"
     }
 
     /**
@@ -41,7 +42,8 @@ object IdentityManager {
             return cachedPassword
         }
 
-        return kotlinx.coroutines.runBlocking(Dispatchers.IO) { generateAndCacheIdentity(context); prefs.getString(KEY_BACKUP_PASSWORD, "Unknown") ?: "Unknown" }
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { generateAndCacheIdentity(context) }
+        return "Unknown"
     }
 
     suspend fun refreshIdentity(context: Context) {
@@ -118,7 +120,6 @@ object IdentityManager {
                         proEditor.putBoolean("is_registered_for_$userId", true)
 
                         // Parse status and update features locally to avoid multiple requests
-                        val status = responseJson.optString("status")
                         val expiryDate = responseJson.optString("expiryDate")
 
                         if (status == "P" || status == "V") {
@@ -147,7 +148,7 @@ object IdentityManager {
                                         featuresEditor.putLong("feature_reality_pro_verified_until_$userId", expiryUnix)
                                     }
                                 } catch (e: Exception) {
-                                    e.printStackTrace()
+                                    com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
                                 }
                             }
                         } else {
@@ -162,7 +163,7 @@ object IdentityManager {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             }
         }
     }

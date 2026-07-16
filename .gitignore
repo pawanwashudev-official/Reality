@@ -57,10 +57,7 @@ build_error.txt
 final_build_log.txt
 build_log*.txt
 kotlin_errors.txt
-*.py
-*.patch
 .gradle
 build
 build_v4
 build_helper.bat
-

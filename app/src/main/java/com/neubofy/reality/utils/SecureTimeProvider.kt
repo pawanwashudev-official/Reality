@@ -36,7 +36,7 @@ object SecureTimeProvider {
         val systemTime = System.currentTimeMillis()
         val elapsedRealtime = SystemClock.elapsedRealtime()
 
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = SecurePreferences.get(context, PREFS_NAME)
         
         // Load offset
         val offset = cachedOffset ?: synchronized(this) {
@@ -110,7 +110,7 @@ object SecureTimeProvider {
                         cachedOffset = offset
                     }
 
-                    context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                    SecurePreferences.get(context, PREFS_NAME).edit()
                         .putLong(KEY_TIME_OFFSET, offset)
                         .putLong(KEY_LAST_KNOWN_ELAPSED, elapsedRealtime)
                         .putLong(KEY_LAST_RECORDED_TIME, networkTime)
