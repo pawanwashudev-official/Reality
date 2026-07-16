@@ -144,6 +144,7 @@ dependencies {
 
     implementation(libs.gson)
     implementation("com.getkeepsafe.taptargetview:taptargetview:1.13.3")
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

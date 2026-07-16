@@ -328,16 +328,31 @@ object SleepInferenceHelper {
         // Immediately mark as checked so we ONLY run this heavy inference once a day
         prefs.edit().putString("last_notified_date", todayStr).apply()
         
-        val inferred = inferSleepSession(context, today, force = true)
-        if (inferred != null) {
-            TerminalLogger.log("SmartSleep: Inferred sleep from ${inferred.first} to ${inferred.second}, sending notification")
-            
-            // Format time for notification
+        val googleStart = prefs.getLong("google_sleep_start", 0L)
+        val googleEnd = prefs.getLong("google_sleep_end", 0L)
+        
+        if (googleStart > 0 && googleEnd > 0) {
             val formatter = java.time.format.DateTimeFormatter.ofPattern("h:mm a").withZone(ZoneId.systemDefault())
-            val startStr = formatter.format(inferred.first)
-            val endStr = formatter.format(inferred.second)
+            val startStr = formatter.format(Instant.ofEpochMilli(googleStart))
+            val endStr = formatter.format(Instant.ofEpochMilli(googleEnd))
             
-            sendSleepNotification(context, "Reality detected sleep from $startStr to $endStr. Tap to review and save.")
+            TerminalLogger.log("SmartSleep: Google Sleep API detected sleep, sending notification")
+            sendSleepNotification(context, "Reality detected sleep from $startStr to $endStr using Google Sleep API. Tap to review and save.")
+            
+            // Clear the Google sleep data so we don't process it again tomorrow
+            prefs.edit().remove("google_sleep_start").remove("google_sleep_end").apply()
+        } else {
+            val inferred = inferSleepSession(context, today, force = true)
+            if (inferred != null) {
+                TerminalLogger.log("SmartSleep: Inferred sleep from ${inferred.first} to ${inferred.second}, sending notification")
+                
+                // Format time for notification
+                val formatter = java.time.format.DateTimeFormatter.ofPattern("h:mm a").withZone(ZoneId.systemDefault())
+                val startStr = formatter.format(inferred.first)
+                val endStr = formatter.format(inferred.second)
+                
+                sendSleepNotification(context, "Reality detected sleep from $startStr to $endStr. Tap to review and save.")
+            }
         }
     }
     
