@@ -34,14 +34,10 @@ import java.net.URL
 class RealityEliteActivity : BaseActivity() {
 
     private lateinit var btnUnifiedSignin: MaterialButton
-    private lateinit var cardStep2: MaterialCardView
-    private lateinit var btnPayUpi: MaterialButton
-    private lateinit var cardStep3: MaterialCardView
-    private lateinit var btnVerify: MaterialButton
     private lateinit var btnCancel: MaterialButton
     private lateinit var btnSyncIdentity: MaterialButton
-    private lateinit var spinnerDuration: android.widget.AutoCompleteTextView
-    private var selectedMonths = 12
+    private lateinit var btnEnrollRenew: MaterialButton
+    private lateinit var tvRefreshPrompt: android.widget.TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)
@@ -60,22 +56,10 @@ class RealityEliteActivity : BaseActivity() {
             startActivity(android.content.Intent(this, WhyGooglePermissionActivity::class.java))
         }
 
-        cardStep2 = findViewById(R.id.card_step2)
-        btnPayUpi = findViewById(R.id.btn_pay_upi)
-        cardStep3 = findViewById(R.id.card_step3)
-        btnVerify = findViewById(R.id.btn_verify)
         btnCancel = findViewById(R.id.btn_cancel)
         btnSyncIdentity = findViewById(R.id.btn_sync_identity)
-        spinnerDuration = findViewById(R.id.spinner_duration)
-
-        val monthsOptions = (1..36).map { "$it Months" }.toTypedArray()
-        val adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, monthsOptions)
-        spinnerDuration.setAdapter(adapter)
-
-        spinnerDuration.setOnItemClickListener { _, _, position, _ ->
-            selectedMonths = position + 1
-            updateUpiButtonText()
-        }
+        btnEnrollRenew = findViewById(R.id.btn_enroll_renew)
+        tvRefreshPrompt = findViewById(R.id.tv_refresh_prompt)
 
 
 
@@ -91,7 +75,9 @@ class RealityEliteActivity : BaseActivity() {
                 try {
                     IdentityManager.refreshIdentity(this@RealityEliteActivity)
                 } catch (e: Exception) {
-                    com.neubofy.reality.utils.TerminalLogger.log("Manual sync error: ${e.message}")
+                    if (e.message != "RATE_LIMIT") {
+                        com.neubofy.reality.utils.TerminalLogger.log("Manual sync error: ${e.message}")
+                    }
                 }
                 withContext(Dispatchers.Main) {
                     btnSyncIdentity.text = "Sync Identity"
@@ -110,28 +96,12 @@ class RealityEliteActivity : BaseActivity() {
             }
         })
 
-        btnPayUpi.setOnClickListener {
-            showUpiPaymentDialog()
-        }
-
-        btnVerify.setOnClickListener {
-            showVerifyDialog()
-        }
-
         btnCancel.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             startActivity(intent)
             finish()
         }
-    }
-
-
-
-    private fun updateUpiButtonText() {
-        if (!GoogleAuthManager.isSignedIn(this)) return
-        val price = ((99.0 / 12.0) * selectedMonths).roundToInt()
-        btnPayUpi.text = "UPI (₹$price)"
     }
 
     private fun showKeySelectionDialog() {
@@ -259,8 +229,6 @@ class RealityEliteActivity : BaseActivity() {
         val tvPaidPlanHeader = findViewById<android.widget.TextView>(R.id.tv_paid_plan_header)
         val tvPaidStart = findViewById<android.widget.TextView>(R.id.tv_paid_start_date)
         val tvPaidExpiry = findViewById<android.widget.TextView>(R.id.tv_paid_expiry_date)
-        val cardStep2 = findViewById<android.view.View>(R.id.card_step2)
-        val cardStep3 = findViewById<android.view.View>(R.id.card_step3)
 
         // Unified Sign In Logic
         if (isSignedIn && userId != null) {
@@ -280,6 +248,26 @@ class RealityEliteActivity : BaseActivity() {
         // --- Active Plan Card Visibility Logic ---
         val isProActive = featureManager.isRealityProVerified()
         val isTrialActive = featureManager.isTrialActive()
+
+        // Setup Enroll/Renew button text and visibility
+        btnEnrollRenew.visibility = if (isSignedIn && userId != null) android.view.View.VISIBLE else android.view.View.GONE
+        if (isProActive || isExpiredPaid) {
+            btnEnrollRenew.text = "Renew Membership"
+            // If they have an active plan but Identity says status is NOT 'V', show prompt
+            val activeStatus = IdentityManager.getActiveStatus(this)
+            if (activeStatus != "V") {
+                tvRefreshPrompt.visibility = android.view.View.VISIBLE
+            } else {
+                tvRefreshPrompt.visibility = android.view.View.GONE
+            }
+        } else {
+            btnEnrollRenew.text = "Enroll as Elite Member"
+            tvRefreshPrompt.visibility = android.view.View.GONE
+        }
+
+        btnEnrollRenew.setOnClickListener {
+            showPaymentPopup()
+        }
 
         // Prioritize Paid Plan details (active or expired)
         if (isProActive || isExpiredPaid) {
@@ -311,231 +299,43 @@ class RealityEliteActivity : BaseActivity() {
         } else {
             cardPaidPlanActive?.visibility = android.view.View.GONE
         }
+    }
 
-        // --- Buying and Verification Card State (Always visible/unlocked when signed in) ---
-        if (isSignedIn && userId != null) {
-            cardStep2?.visibility = android.view.View.VISIBLE
-            cardStep3?.visibility = android.view.View.VISIBLE
-            cardStep2?.alpha = 1.0f
-            cardStep3?.alpha = 1.0f
-            btnPayUpi.isEnabled = true
-            btnVerify.isEnabled = true
-            updateUpiButtonText()
-        } else {
-            cardStep2?.visibility = android.view.View.VISIBLE
-            cardStep3?.visibility = android.view.View.VISIBLE
-            cardStep2?.alpha = 0.5f
-            cardStep3?.alpha = 0.5f
-            btnPayUpi.isEnabled = false
-            btnVerify.isEnabled = false
+    private fun showPaymentPopup() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_payment_method, null)
+        val spinnerDurationPopup = dialogView.findViewById<android.widget.AutoCompleteTextView>(R.id.spinner_duration)
+        val btnPayUpiPopup = dialogView.findViewById<MaterialButton>(R.id.btn_pay_upi)
+        
+        var popupSelectedMonths = 12
+        val monthsOptions = (1..36).map { "$it Months" }.toTypedArray()
+        val adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, monthsOptions)
+        spinnerDurationPopup.setAdapter(adapter)
+        spinnerDurationPopup.setText("12 Months", false)
+
+        val updateUpiPrice = {
+            val price = ((99.0 / 12.0) * popupSelectedMonths).roundToInt()
+            btnPayUpiPopup.text = "UPI (₹$price)"
+        }
+        updateUpiPrice()
+
+        spinnerDurationPopup.setOnItemClickListener { _, _, position, _ ->
+            popupSelectedMonths = position + 1
+            updateUpiPrice()
+        }
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle("Select Subscription Duration")
+            .setView(dialogView)
+            .show()
+
+        btnPayUpiPopup.setOnClickListener {
+            dialog.dismiss()
+            val intent = Intent(this, PaymentVerificationActivity::class.java)
+            intent.putExtra("months", popupSelectedMonths)
+            startActivity(intent)
         }
     }
 
 
-
-    private fun showUpiPaymentDialog() {
-        val intent = Intent(this, PaymentVerificationActivity::class.java)
-        intent.putExtra("months", selectedMonths)
-        startActivity(intent)
-    }
-
-    private fun showVerifyDialog() {
-        val email = GoogleAuthManager.getUserEmail(this) ?: return
-        val userId = IdentityManager.getUserId(this)
-        verifyCode(false)
-    }
-    private fun verifyCode(isSilentCheck: Boolean = false) {
-        val email = GoogleAuthManager.getUserEmail(this) ?: ""
-        if (email.isEmpty()) {
-            if (!isSilentCheck) Toast.makeText(this, "Please sign in with Google in the Profile page first.", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        val userId = IdentityManager.getUserId(this)
-        if (userId.isEmpty()) {
-            if (!isSilentCheck) Toast.makeText(this, "Identity is still syncing. Please wait or press Sync Identity.", Toast.LENGTH_LONG).show()
-            return
-        }
-        val workerUrl = BuildConfig.WORKER_URL
-
-        if (workerUrl.isEmpty()) {
-            if (!isSilentCheck) Toast.makeText(this, "Worker URL not configured in build.", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val cleanWorkerUrl = workerUrl.removeSuffix("/")
-        val baseUrl = "$cleanWorkerUrl/license"
-
-        if (!isSilentCheck) {
-            findViewById<MaterialButton>(R.id.btn_verify).isEnabled = false
-            findViewById<MaterialButton>(R.id.btn_verify).text = "Verifying..."
-        }
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                // Use POST instead of GET to avoid leaking password in URL (server logs, caches)
-                val url = URL(baseUrl)
-                var conn = url.openConnection() as HttpURLConnection
-                conn.requestMethod = "POST"
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.doOutput = true
-                conn.instanceFollowRedirects = false
-                conn.connectTimeout = 10000
-                conn.readTimeout = 10000
-
-                val jsonBody = org.json.JSONObject()
-                jsonBody.put("userId", userId)
-                jsonBody.put("password", IdentityManager.getBackupPassword(this@RealityEliteActivity))
-                jsonBody.put("activeExpiry", IdentityManager.getActiveExpiry(this@RealityEliteActivity))
-                jsonBody.put("activeDuration", IdentityManager.getActiveDuration(this@RealityEliteActivity))
-                jsonBody.put("activeStatus", IdentityManager.getActiveStatus(this@RealityEliteActivity))
-                jsonBody.put("planType", IdentityManager.getActivePlanType(this@RealityEliteActivity))
-                jsonBody.put("action", "verify")
-
-                java.io.OutputStreamWriter(conn.outputStream).use { writer ->
-                    writer.write(jsonBody.toString())
-                    writer.flush()
-                }
-
-                var responseCode = conn.responseCode
-                if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_SEE_OTHER) {
-                    val newUrl = conn.getHeaderField("Location")
-                    conn = URL(newUrl).openConnection() as HttpURLConnection
-                    conn.requestMethod = "GET"
-                    conn.connectTimeout = 10000
-                    conn.readTimeout = 10000
-                    responseCode = conn.responseCode
-                }
-
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    val responseStr = conn.inputStream.bufferedReader().use { it.readText() }.trim()
-
-                    withContext(Dispatchers.Main) {
-                        try {
-                            val jsonResponse = JSONObject(responseStr)
-                            val status = jsonResponse.optString("status", "")
-                            if (status.equals("SUCCESS", ignoreCase = true)) {
-                                val newPassword = jsonResponse.optString("password", "")
-                                val newBackupKey = jsonResponse.optString("backupKey", "")
-                                val newActiveExpiry = jsonResponse.optString("activeExpiry", "0")
-                                val newActiveDuration = jsonResponse.optString("activeDuration", "0")
-                                val newActiveStatus = jsonResponse.optString("activeStatus", "N")
-                                val newPlanType = jsonResponse.optString("planType", "none")
-
-                                if (newPassword.isNotEmpty()) {
-                                    IdentityManager.updateCredentials(
-                                        this@RealityEliteActivity,
-                                        newPassword,
-                                        newBackupKey,
-                                        newActiveExpiry,
-                                        newActiveDuration,
-                                        newActiveStatus,
-                                        newPlanType
-                                    )
-                                }
-
-                                val featuresPrefs = SecurePreferences.get(this@RealityEliteActivity, "reality_features")
-                                val featuresEditor = featuresPrefs.edit()
-
-                                // Clear prior settings to avoid caching obsolete state
-                                featuresEditor.putBoolean("feature_reality_pro", false)
-                                featuresEditor.remove("feature_reality_pro_start_time_$userId")
-                                featuresEditor.remove("feature_reality_pro_verified_until_$userId")
-                                featuresEditor.remove("trial_start_time_$userId")
-                                featuresEditor.remove("trial_end_time_$userId")
-
-                                if (newActiveStatus == "V") {
-                                    try {
-                                        val expiryUnix = newActiveExpiry.toLong()
-                                        if (expiryUnix > System.currentTimeMillis()) {
-                                            featuresEditor.putBoolean("feature_reality_pro", true)
-                                            val duration = newActiveDuration.toLong()
-                                            if (newPlanType == "paid") {
-                                                // Paid subscription
-                                                val durationMs = (365L / 12) * duration * 24 * 60 * 60 * 1000
-                                                val startTime = expiryUnix - durationMs
-                                                featuresEditor.putLong("feature_reality_pro_start_time_$userId", startTime)
-                                                featuresEditor.putLong("feature_reality_pro_verified_until_$userId", expiryUnix)
-                                            } else {
-                                                // Trial
-                                                val startTime = expiryUnix - (duration * 24 * 60 * 60 * 1000)
-                                                featuresEditor.putLong("trial_end_time_$userId", expiryUnix)
-                                                featuresEditor.putLong("trial_start_time_$userId", startTime)
-                                            }
-                                        }
-                                    } catch (e: Exception) {
-                                        com.neubofy.reality.utils.TerminalLogger.log("ERROR parsing active subscription: ${e.message}")
-                                    }
-                                }
-                                featuresEditor.apply()
-
-                                Toast.makeText(this@RealityEliteActivity, "Active Reality Elite Member License Found and Restored!", Toast.LENGTH_LONG).show()
-
-                                val intent = Intent(this@RealityEliteActivity, MainActivity::class.java)
-                                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                                startActivity(intent)
-                                finish()
-                            } else if (status.equals("EXPIRED", ignoreCase = true)) {
-                                if (isSilentCheck) {
-                                    handleSilentCheckFallback(userId)
-                                } else {
-                                    Toast.makeText(this@RealityEliteActivity, "Your subscription has expired.", Toast.LENGTH_LONG).show()
-                                    resetVerifyButton()
-                                }
-                            } else {
-                                if (isSilentCheck) {
-                                    handleSilentCheckFallback(userId)
-                                } else {
-                                    Toast.makeText(this@RealityEliteActivity, "We haven't verified your payment yet. Please check back later.", Toast.LENGTH_LONG).show()
-                                    resetVerifyButton()
-                                }
-                            }
-                        } catch (e: Exception) {
-                            if (isSilentCheck) {
-                                handleSilentCheckFallback(userId)
-                            } else {
-                                Toast.makeText(this@RealityEliteActivity, "Invalid server response.", Toast.LENGTH_LONG).show()
-                                resetVerifyButton()
-                            }
-                        }
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        if (isSilentCheck) {
-                            handleSilentCheckFallback(userId)
-                        } else {
-                            Toast.makeText(this@RealityEliteActivity, "Server Error: $responseCode", Toast.LENGTH_LONG).show()
-                            resetVerifyButton()
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    if (isSilentCheck) {
-                        handleSilentCheckFallback(userId)
-                    } else {
-                        Toast.makeText(this@RealityEliteActivity, "Network Error: ${e.message}", Toast.LENGTH_LONG).show()
-                        resetVerifyButton()
-                    }
-                }
-            }
-        }
-    }
-
-    private fun handleSilentCheckFallback(userId: String) {
-        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
-        prefs.edit().remove("pro_saved_verification_code_for_$userId").apply()
-
-        cardStep2.alpha = 1.0f
-        btnPayUpi.isEnabled = true
-        updateUpiButtonText()
-
-        cardStep3.alpha = 0.5f
-        btnVerify.isEnabled = false
-    }
-
-    private fun resetVerifyButton() {
-        findViewById<MaterialButton>(R.id.btn_verify).isEnabled = true
-        findViewById<MaterialButton>(R.id.btn_verify).text = "Verify Status"
-    }
 
 }

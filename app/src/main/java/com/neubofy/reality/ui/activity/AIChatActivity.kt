@@ -290,8 +290,13 @@ open class AIChatActivity : BaseActivity() {
                 // Construct API Request with Dynamic Tools
                 val jsonBody = org.json.JSONObject().apply {
                     if (!isMeshModel) {
-                        put("userId", com.neubofy.reality.utils.IdentityManager.getUserId(this@AIChatActivity))
-                        put("password", com.neubofy.reality.utils.IdentityManager.getBackupPassword(this@AIChatActivity))
+                        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(this@AIChatActivity)
+                        val password = com.neubofy.reality.utils.IdentityManager.getBackupPassword(this@AIChatActivity)
+                        if (userId.isEmpty() || password.isEmpty()) {
+                            return@withContext "You are signed in but your identity is not verified. Please go to the Profile page and click 'Refresh Identity & Subscription' to continue."
+                        }
+                        put("userId", userId)
+                        put("password", password)
                         put("requestCount", com.neubofy.reality.utils.IdentityManager.getAndIncrementDailyAICount(this@AIChatActivity))
                     }
                     put("messages", messagesJson)

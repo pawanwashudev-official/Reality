@@ -429,6 +429,7 @@ class ProfileActivity : BaseActivity() {
         val isAllConnected = tasksConnected && driveConnected && docsConnected && calendarConnected
 
         val cardSecureIdentity = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_secure_identity)
+        val btnRefreshIdentity = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_refresh_identity)
         if (isSignedIn && email.isNotEmpty()) {
             val userId = com.neubofy.reality.utils.IdentityManager.getUserId(this)
 
@@ -437,6 +438,29 @@ class ProfileActivity : BaseActivity() {
 
             tvUserId?.text = userId
             cardSecureIdentity?.visibility = View.VISIBLE
+            
+            btnRefreshIdentity?.visibility = View.VISIBLE
+            btnRefreshIdentity?.setOnClickListener {
+                Toast.makeText(this, "Refreshing Identity & Subscription...", Toast.LENGTH_SHORT).show()
+                btnRefreshIdentity.isEnabled = false
+                lifecycleScope.launch {
+                    try {
+                        com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@ProfileActivity)
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(this@ProfileActivity, "Refresh Complete", Toast.LENGTH_SHORT).show()
+                            btnRefreshIdentity.isEnabled = true
+                            updateUI()
+                        }
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) {
+                            btnRefreshIdentity.isEnabled = true
+                            if (e.message != "RATE_LIMIT") {
+                                Toast.makeText(this@ProfileActivity, "Refresh Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            }
 
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
 
@@ -449,6 +473,7 @@ class ProfileActivity : BaseActivity() {
             btnCopyId?.setOnClickListener(copyIdAction)
         } else {
             cardSecureIdentity?.visibility = View.GONE
+            btnRefreshIdentity?.visibility = View.GONE
         }
 
         if (isSignedIn) {
