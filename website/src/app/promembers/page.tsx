@@ -120,27 +120,53 @@ export default async function ProMembersPage({ searchParams }: PageProps) {
   const currentPage = parseInt(searchParams?.page || '1', 10);
   const pageSize = 50;
 
-  // 1. Filter
-  let filtered = allMembers;
-  if (searchQuery) {
-    filtered = allMembers.filter(m => m.userId.toLowerCase().includes(searchQuery));
-  }
-
   // Helper to score plan priority for sorting
-  const getPlanScore = (member: typeof allMembers[0]) => {
-    if (member.status === 'V') return 4;
-    if (member.status === 'P') return 3;
-    if (member.status === 'N' || (member.expiryDate && member.status === 'N')) return 2;
-    if (member.trial_plan) return 1;
+  const getPlanScore = (status: string) => {
+    if (status === 'ELITE') return 2;
+    if (status === 'TRIAL') return 1;
     return 0;
   };
 
-  // 2. Sort: prioritize paid plans (active/expired), then trial, then standard
+  // Map and compute status securely on the server
+  const classifiedMembers = allMembers.map(m => {
+    let computedStatus = 'STANDARD';
+    if (m.expiryDate) {
+      const parts = m.expiryDate.split('-');
+      if (parts.length === 2) {
+        const expiryUnix = parseInt(parts[0], 10);
+        if (!isNaN(expiryUnix) && expiryUnix > Date.now()) {
+          computedStatus = 'ELITE';
+        }
+      }
+    }
+    if (computedStatus === 'STANDARD' && m.trial_plan) {
+      const parts = m.trial_plan.split('-');
+      if (parts.length === 2) {
+        const trialExpiryUnix = parseInt(parts[0], 10);
+        if (!isNaN(trialExpiryUnix) && trialExpiryUnix > Date.now()) {
+          computedStatus = 'TRIAL';
+        }
+      }
+    }
+    return {
+      userId: m.userId,
+      dateJoined: m.dateJoined,
+      status: computedStatus
+    };
+  });
+
+  // 1. Filter
+  let filtered = classifiedMembers;
+  if (searchQuery) {
+    filtered = classifiedMembers.filter(m => m.userId.toLowerCase().includes(searchQuery));
+  }
+
+  // 2. Sort: prioritize Paid (ELITE), then Trial (TRIAL), then Standard
   filtered.sort((a, b) => {
-    const scoreA = getPlanScore(a);
-    const scoreB = getPlanScore(b);
+    const scoreA = getPlanScore(a.status);
+    const scoreB = getPlanScore(b.status);
     if (scoreA !== scoreB) {
-      return scoreB - scoreA; // Higher plan priority score first
+      return scoreB - scoreA;
     }
     const dateA = new Date(a.dateJoined).getTime();
     const dateB = new Date(b.dateJoined).getTime();
@@ -153,15 +179,8 @@ export default async function ProMembersPage({ searchParams }: PageProps) {
   const startIndex = (currentPage - 1) * pageSize;
   const paginated = filtered.slice(startIndex, startIndex + pageSize);
 
-  // Strip sensitive info before sending to client component
-  const safeMembers = paginated.map(m => ({
-    userId: m.userId,
-    dateJoined: m.dateJoined,
-    hasAccess: m.hasAccess,
-    trial_plan: m.trial_plan,
-    status: m.status,
-    expiryDate: m.expiryDate
-  }));
+  // Strip sensitive parameters; send only safe computed status to user browser
+  const safeMembers = paginated;
 
   return (
     <div className="min-h-screen bg-neural-bg font-outfit text-gray-100 selection:bg-neural-cyan selection:text-black">

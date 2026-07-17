@@ -9,7 +9,7 @@ import { fetchSensitiveMemberData } from './actions';
 interface ProMember {
   userId: string;
   dateJoined: string;
-  hasAccess: boolean;
+  hasAccess?: boolean;
   status?: string | null;
   expiryDate?: string | null;
   trial_plan?: string | null;
@@ -381,6 +381,48 @@ function MemberCard({ member, searchQuery, isAdmin, onGenerateCard }: { member: 
     }
   }
 
+  // 1. Determine active subscription state (prioritize paid, ignore trial on paid users)
+  let displayStatus = 'STANDARD';
+  
+  if (member.status === 'ELITE' || member.status === 'V') {
+    if (member.expiryDate) {
+      const parts = member.expiryDate.split('-');
+      if (parts.length === 2) {
+        const expiryUnix = parseInt(parts[0], 10);
+        if (!isNaN(expiryUnix) && expiryUnix > Date.now()) {
+          displayStatus = 'ELITE';
+        }
+      }
+    } else {
+      // Public view loads with server-computed classification
+      displayStatus = 'ELITE';
+    }
+  }
+
+  // If not active paid, check trial plan
+  if (displayStatus === 'STANDARD' && (member.status === 'TRIAL' || member.trial_plan)) {
+    const hasPaidPlan = !!member.expiryDate;
+    if (!hasPaidPlan) {
+      if (member.trial_plan) {
+        const parts = member.trial_plan.split('-');
+        if (parts.length === 2) {
+          const trialExpiryUnix = parseInt(parts[0], 10);
+          if (!isNaN(trialExpiryUnix) && trialExpiryUnix > Date.now()) {
+            displayStatus = 'TRIAL';
+          }
+        }
+      } else {
+        // Public view loads with server-computed classification
+        displayStatus = 'TRIAL';
+      }
+    }
+  }
+
+  // If pending activation (Vercel D1 check fallback for admin)
+  if (member.status === 'P') {
+     displayStatus = 'PENDING';
+  }
+
   let statusText = 'STANDARD';
   let statusColor = 'text-cyan-400 bg-cyan-950/40 border-cyan-800/40';
   let dotColor = 'bg-cyan-400 shadow-[0_0_8px_#00e5ff]';
@@ -389,7 +431,7 @@ function MemberCard({ member, searchQuery, isAdmin, onGenerateCard }: { member: 
   let statusIcon = <Shield className="text-cyan-400 shrink-0" size={14} />;
   let showSubDetails = false;
 
-  if (member.status === 'V') {
+  if (displayStatus === 'ELITE') {
     statusText = 'ELITE PRO';
     statusColor = 'text-yellow-400 bg-yellow-950/40 border-yellow-800/40';
     dotColor = 'bg-yellow-400 shadow-[0_0_8px_#fbbf24]';
@@ -397,40 +439,34 @@ function MemberCard({ member, searchQuery, isAdmin, onGenerateCard }: { member: 
     cardBg = 'from-[#1A1305] to-[#0A0702]';
     statusIcon = <Crown className="text-yellow-400 shrink-0" size={14} />;
     showSubDetails = !!member.expiryDate;
-  } else if (member.status === 'P') {
+  } else if (displayStatus === 'PENDING') {
     statusText = 'PENDING';
     statusColor = 'text-amber-500 bg-amber-950/40 border-amber-800/40';
     dotColor = 'bg-amber-500 shadow-[0_0_8px_#f59e0b]';
     cardBorder = showDetails ? 'border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.15)]' : 'border-gray-800 hover:border-amber-500/30';
     cardBg = 'from-[#1A1005] to-[#0A0602]';
     statusIcon = <Clock className="text-amber-500 shrink-0" size={14} />;
-  } else if (member.status === 'N') {
-    statusText = 'EXPIRED ELITE';
-    statusColor = 'text-red-400 bg-red-950/40 border-red-800/40';
-    dotColor = 'bg-red-400 shadow-[0_0_8px_#ef4444]';
-    cardBorder = showDetails ? 'border-red-500/50 shadow-[0_0_25px_rgba(239,68,68,0.15)]' : 'border-gray-800 hover:border-red-500/30';
-    cardBg = 'from-[#1A0505] to-[#0A0202]';
-    statusIcon = <Shield className="text-red-400 shrink-0" size={14} />;
-    showSubDetails = !!member.expiryDate;
-  } else if (member.trial_plan) {
+  } else if (displayStatus === 'TRIAL') {
     statusText = 'TRIAL';
     statusColor = 'text-purple-400 bg-purple-950/40 border-purple-800/40';
     dotColor = 'bg-purple-400 shadow-[0_0_8px_#c084fc]';
     cardBorder = showDetails ? 'border-purple-500/50 shadow-[0_0_20px_rgba(192,132,252,0.15)]' : 'border-gray-800 hover:border-purple-500/30';
     cardBg = 'from-[#130A1A] to-[#07020A]';
     statusIcon = <Sparkles className="text-purple-400 shrink-0" size={14} />;
-    showSubDetails = true;
+    showSubDetails = !!member.trial_plan;
     
-    const parts = member.trial_plan.split('-');
-    if (parts.length >= 2) {
-      const expiryUnix = parseInt(parts[0], 10);
-      const days = parseInt(parts[1], 10);
-      if (!isNaN(expiryUnix) && !isNaN(days)) {
-         subMonths = `${days} day${days > 1 ? 's' : ''}`;
-         const endD = new Date(expiryUnix);
-         subEndDate = endD.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-         const startD = new Date(expiryUnix - (days * 24 * 60 * 60 * 1000));
-         subStartDate = startD.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    if (member.trial_plan) {
+      const parts = member.trial_plan.split('-');
+      if (parts.length >= 2) {
+        const expiryUnix = parseInt(parts[0], 10);
+        const days = parseInt(parts[1], 10);
+        if (!isNaN(expiryUnix) && !isNaN(days)) {
+           subMonths = `${days} day${days > 1 ? 's' : ''}`;
+           const endD = new Date(expiryUnix);
+           subEndDate = endD.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+           const startD = new Date(expiryUnix - (days * 24 * 60 * 60 * 1000));
+           subStartDate = startD.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
       }
     }
   }
@@ -442,9 +478,9 @@ function MemberCard({ member, searchQuery, isAdmin, onGenerateCard }: { member: 
       <div className="absolute inset-0 w-[200%] translate-x-[-100%] group-hover:translate-x-[100%] bg-gradient-to-r from-transparent via-white/5 to-transparent transition-all duration-1000 ease-in-out pointer-events-none z-10" />
 
       {/* Floating Sparkles for Elite / Trial / Pending members */}
-      {(member.status === 'V' || member.status === 'P' || member.trial_plan) && (
+      {(displayStatus === 'ELITE' || displayStatus === 'PENDING' || displayStatus === 'TRIAL') && (
         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
-          <Sparkles className={member.status === 'V' ? 'text-yellow-500' : member.status === 'P' ? 'text-amber-500' : 'text-purple-500'} size={32} />
+          <Sparkles className={displayStatus === 'ELITE' ? 'text-yellow-500' : displayStatus === 'PENDING' ? 'text-amber-500' : 'text-purple-500'} size={32} />
         </div>
       )}
 

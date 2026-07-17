@@ -62,12 +62,36 @@ export default function ShareCertificateModal({ isOpen, onClose, preVerifiedMemb
   // Fixed card dimensions — NEVER change these; they determine the output image size
   const CARD_W = 560;
 
+  const checkIsPro = (member: any) => {
+    if (!member) return false;
+    if (member.expiryDate) {
+      const parts = member.expiryDate.split('-');
+      if (parts.length === 2) {
+        const expiryUnix = parseInt(parts[0], 10);
+        if (!isNaN(expiryUnix) && expiryUnix > Date.now()) {
+          return true;
+        }
+      }
+      return false;
+    }
+    if (member.trial_plan) {
+      const parts = member.trial_plan.split('-');
+      if (parts.length === 2) {
+        const trialExpiryUnix = parseInt(parts[0], 10);
+        if (!isNaN(trialExpiryUnix) && trialExpiryUnix > Date.now()) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   // Jump to customize step if pre-verified member is passed
   useEffect(() => {
     if (isOpen) {
       if (preVerifiedMember) {
         setVerifiedMember(preVerifiedMember);
-        setIsPro(preVerifiedMember.status === 'V' || preVerifiedMember.status === 'P' || preVerifiedMember.status === 'N' || !!preVerifiedMember.trial_plan);
+        setIsPro(checkIsPro(preVerifiedMember));
         setUserId(preVerifiedMember.userId);
         setStep(2);
       } else {
@@ -118,7 +142,7 @@ export default function ShareCertificateModal({ isOpen, onClose, preVerifiedMemb
       const res = await verifyMemberId(userId.trim());
       if (res.success && res.member) {
         setVerifiedMember(res.member as VerifiedMember);
-        setIsPro(res.member.status === 'V' || res.member.status === 'P' || res.member.status === 'N' || !!res.member.trial_plan);
+        setIsPro(checkIsPro(res.member));
         setStep(2);
       } else {
         setVerifyError(res.error || 'User ID not found. Please check and try again.');
@@ -538,7 +562,9 @@ export default function ShareCertificateModal({ isOpen, onClose, preVerifiedMemb
                     }}>
                       <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: isPro ? '#fbbf24' : '#00E5FF' }} />
                       <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: isPro ? '#fbbf24' : '#00E5FF' }}>
-                        {verifiedMember?.status === 'N' ? 'Expired Elite Pro' : isPro ? 'Verified Elite Pro' : 'Verified Member'}
+                        {isPro 
+                          ? (verifiedMember?.expiryDate ? 'Verified Elite Pro' : 'Verified Trial Pro') 
+                          : 'Verified Member'}
                       </span>
                     </div>
                   </div>
