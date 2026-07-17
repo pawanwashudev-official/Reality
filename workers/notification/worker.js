@@ -40,30 +40,26 @@ export default {
       }
 
       const { userId, backupPassword, fcmToken } = body;
+      const activeExpiry = body.activeExpiry || "0";
+      const activeDuration = body.activeDuration || "0";
+      const activeStatus = body.activeStatus || "N";
 
       if (!userId || !backupPassword || !fcmToken) {
         return jsonError("Missing required fields: userId, backupPassword, fcmToken", 400);
       }
 
       // Verify credentials using same HMAC logic as proxy worker
-      const verified = await verifyUserCredentials(userId, backupPassword, env);
+      const verified = await verifyUserCredentials(userId, backupPassword, activeExpiry, activeDuration, activeStatus, env);
       if (!verified) {
         return jsonError("Invalid credentials", 401);
       }
 
       // Check user has active elite subscription
-      if (!env.DB) return jsonError("DB not configured", 500);
-
-      let userRow;
-      try {
-        userRow = await env.DB.prepare(
-          'SELECT status, fcmToken FROM "Reality Elite members management" WHERE userId = ?'
-        ).bind(userId).first();
-      } catch (e) {
-        return jsonError("DB error: " + e.message, 500);
+      if (activeStatus !== "V" || parseInt(activeExpiry, 10) < Date.now()) {
+        return jsonError("Access Denied: Elite Member subscription is expired or inactive.", 403);
       }
 
-      if (!userRow) return jsonError("User not found", 404);
+      if (!env.DB) return jsonError("DB not configured", 500);
 
       // Store FCM token
       try {
@@ -150,36 +146,32 @@ export default {
 // ============================================================
 // HELPER: Verify userId + backupPassword (same HMAC as proxy worker)
 // ============================================================
-async function verifyUserCredentials(userId, backupPassword, env) {
-  if (!env.APP_SECRET_PEPPER) return false;
+async function generatePassword(userId, expiry, duration, status, env) {
+  if (!userId || !env.APP_SECRET_PEPPER) return "";
+  const expiryStr = String(expiry || "0");
+  const durationStr = String(duration || "0");
+  const statusStr = String(status || "N");
+  
+  const encoder = new TextEncoder();
+  const secretKeyData = encoder.encode(env.APP_SECRET_PEPPER);
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw", secretKeyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const msg = `${userId}:${expiryStr}:${durationStr}:${statusStr}`;
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(msg));
+  return Array.from(new Uint8Array(signature))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('').substring(0, 32);
+}
 
-  try {
-    const encoder = new TextEncoder();
-    const secretKeyData = encoder.encode(env.APP_SECRET_PEPPER);
-
-    const cryptoKey = await crypto.subtle.importKey(
-      "raw",
-      secretKeyData,
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["sign"]
-    );
-
-    // Re-derive expected backupPassword from userId using same logic as proxy
-    const pwSignature = await crypto.subtle.sign(
-      "HMAC",
-      cryptoKey,
-      encoder.encode(userId)
-    );
-    const pwHashHex = Array.from(new Uint8Array(pwSignature))
-      .map(b => b.toString(16).padStart(2, "0"))
-      .join("");
-    const expectedPassword = pwHashHex.substring(0, 32);
-
-    return backupPassword === expectedPassword;
-  } catch {
-    return false;
+async function verifyUserCredentials(userId, backupPassword, expiry, duration, status, env) {
+  if (!userId || !backupPassword || !env.APP_SECRET_PEPPER) return false;
+  const expectedPassword = await generatePassword(userId, expiry, duration, status, env);
+  const matched = backupPassword === expectedPassword;
+  if (!matched) {
+    console.warn(`[SECURITY] Unauthorized access detected: Hashed credentials mismatch! User ID: ${userId}, Expiry: ${expiry}, Duration: ${duration}, Status: ${status}. Attempts to bypass subscription verification logic may result in account termination and legal action.`);
   }
+  return matched;
 }
 
 // ============================================================

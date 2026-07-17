@@ -207,7 +207,7 @@
             android:screenOrientation="portrait" />
 
         <activity
-            android:name=".ui.activity.AlarmActivity"
+            android:name=".ui.activity.ReminderAlarmActivity"
             android:exported="false"
             android:launchMode="singleInstance"
             android:excludeFromRecents="true"
@@ -395,7 +395,7 @@
         <!-- GeneralFeaturesService REMOVED - logic merged into AppBlockerService -->
 
         <service
-            android:name=".services.AlarmService"
+            android:name=".services.ReminderAlarmService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />

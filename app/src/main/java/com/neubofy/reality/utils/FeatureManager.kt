@@ -112,59 +112,7 @@ class FeatureManager(private val context: Context) {
         return false
     }
 
-    suspend fun activateTrial(currentTimeMs: Long = System.currentTimeMillis()): Boolean = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        val userEmail = com.neubofy.reality.google.GoogleAuthManager.getUserEmail(context) ?: return@withContext false
-        val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
-        val password = com.neubofy.reality.utils.IdentityManager.getBackupPassword(context)
-        
-        try {
-            val workerUrl = com.neubofy.reality.BuildConfig.WORKER_URL.removeSuffix("/")
-            val url = java.net.URL("$workerUrl/api/trial")
-            val conn = url.openConnection() as java.net.HttpURLConnection
-            conn.requestMethod = "POST"
-            conn.connectTimeout = 10000
-            conn.readTimeout = 10000
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.doOutput = true
-            
-            val jsonBody = org.json.JSONObject()
-            jsonBody.put("userId", userId)
-            jsonBody.put("password", password)
-            jsonBody.put("durationDays", 3)
-            
-            java.io.OutputStreamWriter(conn.outputStream).use { writer ->
-                writer.write(jsonBody.toString())
-                writer.flush()
-            }
-            
-            if (conn.responseCode == java.net.HttpURLConnection.HTTP_OK) {
-                val responseStr = conn.inputStream.bufferedReader().use { it.readText() }
-                val responseJson = org.json.JSONObject(responseStr)
-                val status = responseJson.optString("status")
-                val trialPlan = responseJson.optString("trialPlan")
-                
-                if (trialPlan.isNotEmpty() && trialPlan != "null") {
-                    val parts = trialPlan.split("-")
-                    if (parts.size >= 2) {
-                        val trialEndTime = parts[0].toLong()
-                        val days = parts[1].toLong()
-                        val trialStartTime = trialEndTime - (days * 24 * 60 * 60 * 1000)
-                        
-                        val editor = prefs.edit()
-                        editor.putLong("trial_end_time_$userId", trialEndTime)
-                        if (prefs.getLong("trial_start_time_$userId", 0L) == 0L) {
-                            editor.putLong("trial_start_time_$userId", trialStartTime)
-                        }
-                        editor.apply()
-                    }
-                }
-                return@withContext status == "SUCCESS" || status == "ALREADY_USED"
-            }
-        } catch (e: Exception) {
-            com.neubofy.reality.utils.TerminalLogger.log("TRIAL API ERROR: ${e.message}")
-        }
-        return@withContext false
-    }
+
 
 
     fun isTapasyaEnabled(): Boolean = prefs.getBoolean("feature_tapasya", false)

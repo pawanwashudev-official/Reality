@@ -38,15 +38,32 @@
             android:textSize="13sp"
             android:layout_marginBottom="8dp" />
 
-        <!-- Instruction -->
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- Instruction Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Navigate to the page you want to block"
-            android:textColor="#CCCCCC"
-            android:textSize="12sp"
-            android:gravity="center"
-            android:layout_marginBottom="12dp" />
+            android:orientation="vertical"
+            android:background="#1500E5FF"
+            android:padding="10dp"
+            android:layout_marginBottom="12dp">
+            
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="💡 Page Selection Guidelines:"
+                android:textColor="#00E5FF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1. Navigate to the exact Settings page.\n2. Tap 'Scan' to list page words.\n3. Tap to select keywords UNIQUE to this page (e.g. 'Grayscale', 'Vibration').\n❌ Avoid generic words like 'Settings', 'On', 'Off' to prevent false blocks of other pages."
+                android:textColor="#DDDDDD"
+                android:textSize="10.5sp"
+                android:lineSpacingMultiplier="1.2" />
+        </LinearLayout>
 
         <!-- SMART KEYWORDS SECTION -->
         <LinearLayout
@@ -54,7 +71,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="#20FFFFFF"
+            android:background="#12FFFFFF"
             android:padding="8dp"
             android:layout_marginBottom="12dp"
             android:visibility="gone">
@@ -62,20 +79,31 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🧠 Detected Keywords (tap to add):"
+                android:text="🧠 Tap to select unique keywords:"
                 android:textColor="#00FF88"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="6dp" />
             
-            <!-- Extracted keywords will be added here -->
+            <!-- Extracted keywords will be added here in two scrollable rows for easier selection -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginBottom="6dp">
+                <LinearLayout
+                    android:id="@+id/chipsContainerRow1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+            
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:scrollbars="none">
-                
                 <LinearLayout
-                    android:id="@+id/chipsContainer"
+                    android:id="@+id/chipsContainerRow2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal" />
@@ -89,7 +117,7 @@
                 android:text=""
                 android:textColor="#88CC88"
                 android:textSize="10sp"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="8dp"
                 android:visibility="gone" />
         </LinearLayout>
 

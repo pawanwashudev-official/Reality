@@ -29,11 +29,13 @@ object SecureTimeProvider {
     @Volatile
     private var cachedOffset: Long? = null
 
+    @Volatile
+    private var lastSaveTime = 0L
+
     /**
      * Get the current time in milliseconds. Guaranteed to be monotonic and protected against clock manipulation.
      */
     fun currentTimeMillis(context: Context): Long {
-        val systemTime = System.currentTimeMillis()
         val elapsedRealtime = SystemClock.elapsedRealtime()
 
         val prefs = SecurePreferences.get(context, PREFS_NAME)
@@ -72,11 +74,15 @@ object SecureTimeProvider {
                 calculatedTime = lastRecordedTime
             }
             
-            // Save state periodically / incrementally
-            prefs.edit()
-                .putLong(KEY_LAST_KNOWN_ELAPSED, elapsedRealtime)
-                .putLong(KEY_LAST_RECORDED_TIME, calculatedTime)
-                .apply()
+            // Save state periodically / incrementally (at most once every 15 seconds to prevent hammering disk/prefs)
+            val currentElapsed = SystemClock.elapsedRealtime()
+            if (currentElapsed - lastSaveTime > 15000) {
+                lastSaveTime = currentElapsed
+                prefs.edit()
+                    .putLong(KEY_LAST_KNOWN_ELAPSED, elapsedRealtime)
+                    .putLong(KEY_LAST_RECORDED_TIME, calculatedTime)
+                    .apply()
+            }
         }
 
         return calculatedTime

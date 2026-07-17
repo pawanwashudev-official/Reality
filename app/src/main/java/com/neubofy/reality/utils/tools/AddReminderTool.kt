@@ -2,7 +2,7 @@ package com.neubofy.reality.utils.tools
 
 import android.content.Context
 import com.neubofy.reality.utils.SavedPreferencesLoader
-import com.neubofy.reality.utils.AlarmScheduler
+import com.neubofy.reality.utils.ReminderScheduler
 import org.json.JSONObject
 
 class AddReminderTool : AgentTool {
@@ -49,7 +49,7 @@ class AddReminderTool : AgentTool {
         reminders.add(newReminder)
         prefs.saveCustomReminders(reminders)
 
-        com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(context)
+        com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(context)
 
         val timeStr = String.format("%02d:%02d", hour, minute)
         return "✅ Reminder set for $timeStr: \"$title\""

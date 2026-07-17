@@ -49,6 +49,9 @@ class RealityFCMService : FirebaseMessagingService() {
                     val json = JSONObject().apply {
                         put("userId", userId)
                         put("backupPassword", backupPassword)
+                        put("activeExpiry", com.neubofy.reality.utils.IdentityManager.getActiveExpiry(context))
+                        put("activeDuration", com.neubofy.reality.utils.IdentityManager.getActiveDuration(context))
+                        put("activeStatus", com.neubofy.reality.utils.IdentityManager.getActiveStatus(context))
                         put("fcmToken", fcmToken)
                     }
 

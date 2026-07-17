@@ -17,13 +17,13 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.core.app.NotificationCompat
 import com.neubofy.reality.R
-import com.neubofy.reality.ui.activity.AlarmActivity
+import com.neubofy.reality.ui.activity.ReminderAlarmActivity
 
-class AlarmService : Service() {
+class ReminderAlarmService : Service() {
 
     companion object {
         private const val NOTIFICATION_ID = 9001  // Fixed ID for proper stop
-        var instance: AlarmService? = null
+        var instance: ReminderAlarmService? = null
     }
 
     private var mediaPlayer: MediaPlayer? = null
@@ -79,7 +79,7 @@ class AlarmService : Service() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        val fullScreenIntent = Intent(this, AlarmActivity::class.java).apply {
+        val fullScreenIntent = Intent(this, ReminderAlarmActivity::class.java).apply {
             this.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("id", id)
             putExtra("title", title)

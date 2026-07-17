@@ -86,10 +86,13 @@ object KeywordSuggestions {
             node.text?.toString()?.takeIf { it.isNotBlank() }?.let { result.add(it) }
             node.contentDescription?.toString()?.takeIf { it.isNotBlank() }?.let { result.add(it) }
             
-            // Recurse into children
+            // Recurse into children with safe recycling
             for (i in 0 until node.childCount) {
-                node.getChild(i)?.let { child ->
+                val child = try { node.getChild(i) } catch (e: Exception) { null } ?: continue
+                try {
                     collectTextsFromNode(child, result, depth + 1, maxDepth)
+                } finally {
+                    try { child.recycle() } catch (e: Exception) {}
                 }
             }
         } catch (e: Exception) {

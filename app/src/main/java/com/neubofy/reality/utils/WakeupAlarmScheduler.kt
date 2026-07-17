@@ -78,7 +78,7 @@ object WakeupAlarmScheduler {
                 putExtra("vibrationEnabled", vibrationEnabled)
             }
             val pendingIntent = PendingIntent.getBroadcast(
-                context, 1001, intent,
+                context, 2001, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
@@ -105,9 +105,9 @@ object WakeupAlarmScheduler {
             putExtra("vibrationEnabled", vibrationEnabled)
         }
         val triggerTime = System.currentTimeMillis() + (snoozeIntervalMins * 60 * 1000L)
-        // Use 1001 to OVERWRITE the main alarm. Single source of truth.
+        // Use 2001 to OVERWRITE the main alarm. Single source of truth.
         val pendingIntent = PendingIntent.getBroadcast(
-            context, 1001, intent,
+            context, 2001, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -125,7 +125,7 @@ object WakeupAlarmScheduler {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, WakeupAlarmReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
-            context, 1001, intent,
+            context, 2001, intent,
             PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         )
         pendingIntent?.let { alarmManager.cancel(it) }

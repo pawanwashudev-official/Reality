@@ -370,7 +370,7 @@ class ScheduleListActivity : BaseActivity() {
                     prefs.saveAutoFocusHoursList(manualList)
                     sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
                     // Reschedule reminders since schedule changed
-                    com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(this)
+                    com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(this)
                     loadSchedules()
                 }
             }
@@ -456,7 +456,7 @@ class ScheduleListActivity : BaseActivity() {
                         
                         sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
                         // Reschedule reminders since new schedule added
-                        com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(this)
+                        com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(this)
                         loadSchedules()
                         dialog.dismiss()
                     }
@@ -557,7 +557,7 @@ class ScheduleListActivity : BaseActivity() {
                     com.neubofy.reality.utils.FiredEventsCache.clearFired(this, oldScheduleId)
                     
                     // Reschedule reminders since schedule edited
-                    com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(this)
+                    com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(this)
                     loadSchedules()
                     dialog.dismiss()
                 }

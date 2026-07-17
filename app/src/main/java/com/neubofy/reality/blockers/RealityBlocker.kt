@@ -8,6 +8,17 @@ import java.util.Calendar
 
 class RealityBlocker {
 
+    companion object {
+        val SYSTEM_WHITELIST = setOf(
+            "com.android.calculator2", "com.google.android.calculator",
+            "com.android.dialer", "com.google.android.dialer",
+            "com.android.contacts", "com.google.android.contacts",
+            "com.android.deskclock", "com.google.android.deskclock",
+            "com.android.systemui", 
+            "com.google.android.packageinstaller", "com.android.packageinstaller"
+        )
+    }
+
     data class FocusModeData(
         var isTurnedOn: Boolean = false,
         var endTime: Long = -1,
@@ -79,15 +90,7 @@ class RealityBlocker {
         }
         
         // 2. Expanded System Whitelist (Safety Net)
-        val expandedWhitelist = setOf(
-            "com.android.calculator2", "com.google.android.calculator",
-            "com.android.dialer", "com.google.android.dialer",
-            "com.android.contacts", "com.google.android.contacts",
-            "com.android.deskclock", "com.google.android.deskclock",
-            "com.android.systemui", 
-            "com.google.android.packageinstaller", "com.android.packageinstaller"
-        )
-        if (expandedWhitelist.contains(packageName)) {
+        if (SYSTEM_WHITELIST.contains(packageName)) {
             return BlockerResult(isBlocked = false, isEmergency = false)
         }
         
@@ -330,15 +333,7 @@ class RealityBlocker {
     fun getBlockReason(packageName: String): String? {
         // 1. Universal Whitelist Check
         if (whitelistedPackages.contains(packageName)) return null
-        val expandedWhitelist = setOf(
-            "com.android.calculator2", "com.google.android.calculator",
-            "com.android.dialer", "com.google.android.dialer",
-            "com.android.contacts", "com.google.android.contacts",
-            "com.android.deskclock", "com.google.android.deskclock",
-            "com.android.systemui", 
-            "com.google.android.packageinstaller", "com.android.packageinstaller"
-        )
-        if (expandedWhitelist.contains(packageName)) return null
+        if (SYSTEM_WHITELIST.contains(packageName)) return null
         if (com.neubofy.reality.utils.StrictLockUtils.isMaintenanceWindow()) return null
         // Note: Emergency mode end time check. BlockCache.shouldBlock() is the enforcement point
         // and already uses SecureTimeProvider. This is a UI-facing reason string helper.

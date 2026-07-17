@@ -24,13 +24,6 @@ export async function fetchSensitiveMemberData(
     }
   }
 
-  // 2. Legacy fallback to workerSecret substring for backward compatibility
-  if (!isAdmin && adminPassword && workerSecret) {
-    const adminSecretHalf = workerSecret.substring(0, 16);
-    if (adminPassword === adminSecretHalf) {
-      isAdmin = true;
-    }
-  }
 
   // If not admin and no userId is provided, unauthorized
   if (!isAdmin && !userId) {

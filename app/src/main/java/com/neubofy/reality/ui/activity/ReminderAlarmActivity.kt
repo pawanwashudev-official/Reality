@@ -25,7 +25,7 @@ import kotlin.math.abs
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
-class AlarmActivity : BaseActivity() {
+class ReminderAlarmActivity : BaseActivity() {
 
 
     private var isHandled = false
@@ -218,14 +218,14 @@ class AlarmActivity : BaseActivity() {
 
     private fun stopAlarmService() {
         try {
-            val stopIntent = Intent(this, com.neubofy.reality.services.AlarmService::class.java)
+            val stopIntent = Intent(this, com.neubofy.reality.services.ReminderAlarmService::class.java)
             stopIntent.action = "STOP"
             startService(stopIntent)
         } catch (e: Exception) { com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}") }
     }
 
     private fun scheduleSnoozeAlarm(id: String?, title: String, url: String?, mins: Int) {
-        com.neubofy.reality.utils.AlarmScheduler.scheduleSnooze(
+        com.neubofy.reality.utils.ReminderScheduler.scheduleSnooze(
             this,
             id ?: "unknown",
             title,

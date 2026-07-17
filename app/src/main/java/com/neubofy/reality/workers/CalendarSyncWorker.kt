@@ -109,7 +109,7 @@ class CalendarSyncWorker(context: Context, params: WorkerParameters) : Coroutine
             }
             
             // Trigger reminders refresh
-            com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(applicationContext)
+            com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(applicationContext)
             
             // Notify AppBlockerService to refresh
             val intent = android.content.Intent("com.neubofy.reality.refresh.focus_mode")

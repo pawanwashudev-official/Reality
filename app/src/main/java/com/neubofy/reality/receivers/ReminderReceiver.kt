@@ -5,8 +5,8 @@ import android.content.Context
 import android.content.Intent
 import com.neubofy.reality.utils.TerminalLogger
 import android.os.PowerManager
-import com.neubofy.reality.services.AlarmService
-import com.neubofy.reality.utils.AlarmScheduler
+import com.neubofy.reality.services.ReminderAlarmService
+import com.neubofy.reality.utils.ReminderScheduler
 import com.neubofy.reality.utils.FiredEventsCache
 import kotlinx.coroutines.launch
 class ReminderReceiver : BroadcastReceiver() {
@@ -27,7 +27,7 @@ class ReminderReceiver : BroadcastReceiver() {
                     com.neubofy.reality.utils.BlockCache.rebuildBox(context)
                 } catch (e: Exception) {}
             }
-            AlarmScheduler.scheduleMidnightReset(context)
+            ReminderScheduler.scheduleMidnightReset(context)
             return
         }
 
@@ -77,7 +77,7 @@ class ReminderReceiver : BroadcastReceiver() {
             
             // Re-schedule next if needed (important for recurring checks)
             try {
-                AlarmScheduler.scheduleNextAlarm(context)
+                ReminderScheduler.scheduleNextAlarm(context)
             } catch(e: Exception) {
                 TerminalLogger.log("ERROR rescheduling: ${e.message}")
             }
@@ -101,7 +101,7 @@ class ReminderReceiver : BroadcastReceiver() {
         val source = intent.getStringExtra("source") ?: "MANUAL"
 
         // Start Alarm Service (Foreground - Guaranteed Sound)
-        val serviceIntent = Intent(context, AlarmService::class.java).apply {
+        val serviceIntent = Intent(context, ReminderAlarmService::class.java).apply {
             putExtra("id", id)
             putExtra("title", title)
             putExtra("url", url)
@@ -120,13 +120,13 @@ class ReminderReceiver : BroadcastReceiver() {
                 context.startService(serviceIntent)
             }
         } catch (e: Exception) {
-            TerminalLogger.log("ERROR starting AlarmService: ${e.message}")
+            TerminalLogger.log("ERROR starting ReminderAlarmService: ${e.message}")
             com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
         }
         
         // Reschedule for next reminder after this one fires
         try {
-            AlarmScheduler.scheduleNextAlarm(context)
+            ReminderScheduler.scheduleNextAlarm(context)
         } catch(e: Exception) {
             TerminalLogger.log("ERROR rescheduling: ${e.message}")
             com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
@@ -135,7 +135,7 @@ class ReminderReceiver : BroadcastReceiver() {
     
     private fun handleDismiss(context: Context, intent: Intent) {
          // Stop Sound
-         val stopIntent = Intent(context, AlarmService::class.java).apply {
+         val stopIntent = Intent(context, ReminderAlarmService::class.java).apply {
              action = "STOP"
          }
          context.startService(stopIntent)
@@ -172,9 +172,8 @@ class ReminderReceiver : BroadcastReceiver() {
                  val snoozeIntervalMins = intent.getIntExtra("snoozeIntervalMins", 5)
                  
                  // Pass source for proper dismissal handling later
-                 AlarmScheduler.scheduleSnooze(context, originalId, title, url, snoozeIntervalMins, sourceName)
+                 ReminderScheduler.scheduleSnooze(context, originalId, title, url, snoozeIntervalMins, sourceName)
              }
          }
     }
 }
-

@@ -105,7 +105,7 @@ class ReminderActivity : BaseActivity() {
             prefs.edit().putBoolean("reminders_global_enabled", isChecked).apply()
             updateStatusText()
             if (isChecked) {
-                com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(this)
+                com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(this)
             }
         }
         
@@ -171,7 +171,7 @@ class ReminderActivity : BaseActivity() {
                     
                     // FIX: Do NOT filter out past events here.
                     // If a schedule started at 9 AM and it's 10 AM, we still want to show it in the list (unless dismissed).
-                    // The AlarmScheduler will handle not firing the alarm if it's too late.
+                    // The ReminderScheduler will handle not firing the alarm if it's too late.
                     // But in the UI, we want to see "Today's Schedule".
                     
                     val sourceLabel = when(event.source) {
@@ -352,7 +352,7 @@ class ReminderActivity : BaseActivity() {
                 com.neubofy.reality.utils.FiredEventsCache.clearFired(this, reminder.id)
                 
                 loadCustomReminders()
-                com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(this)
+                com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(this)
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -441,7 +441,7 @@ class ReminderActivity : BaseActivity() {
         saveRecycleBin(recycleBin)
         
         loadCustomReminders()
-        com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(this)
+        com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(this)
         
         android.widget.Toast.makeText(this, "Moved to recycle bin", android.widget.Toast.LENGTH_SHORT).show()
     }
@@ -507,7 +507,7 @@ class ReminderActivity : BaseActivity() {
         savedPreferencesLoader.saveCustomReminders(list)
         
         loadCustomReminders()
-        com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(this)
+        com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(this)
         
         android.widget.Toast.makeText(this, "Restored: ${deleted.reminder.title}", android.widget.Toast.LENGTH_SHORT).show()
     }

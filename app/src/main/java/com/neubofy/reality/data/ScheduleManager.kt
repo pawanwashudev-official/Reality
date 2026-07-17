@@ -166,7 +166,7 @@ object ScheduleManager {
                         // If it's a non-repeating schedule, disable it after dismissal
                         // (Empty repeatDays means it runs every day, which IS repeating)
                         // Single-occurrence schedules would have no repeat days AND a specific date
-                        // For now, we just mark it dismissed - it will be filtered by AlarmScheduler
+                        // For now, we just mark it dismissed - it will be filtered by ReminderScheduler
                         
                         com.neubofy.reality.utils.TerminalLogger.log("SCHEDULE: Dismissed '${item.title}' until next repeat")
                         break
@@ -205,7 +205,7 @@ object ScheduleManager {
         }
         
         // Recalculate next alarm immediately
-        com.neubofy.reality.utils.AlarmScheduler.scheduleNextAlarm(context)
+        com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(context)
     }
     
     // === CALENDAR DISMISSAL PERSISTENCE & CLEANUP ===

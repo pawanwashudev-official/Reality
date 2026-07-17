@@ -24,6 +24,7 @@ import com.neubofy.reality.utils.FeatureManager
 import com.neubofy.reality.utils.IdentityManager
 import com.neubofy.reality.utils.QRUtils
 import com.neubofy.reality.utils.ThemeManager
+import com.neubofy.reality.utils.SecurePreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -164,6 +165,9 @@ class PaymentVerificationActivity : BaseActivity() {
                 val jsonBody = JSONObject()
                 jsonBody.put("userId", userId)
                 jsonBody.put("password", IdentityManager.getBackupPassword(this@PaymentVerificationActivity))
+                jsonBody.put("activeExpiry", IdentityManager.getActiveExpiry(this@PaymentVerificationActivity))
+                jsonBody.put("activeDuration", IdentityManager.getActiveDuration(this@PaymentVerificationActivity))
+                jsonBody.put("activeStatus", IdentityManager.getActiveStatus(this@PaymentVerificationActivity))
                 jsonBody.put("transactionId", transactionId)
                 jsonBody.put("durationDays", (selectedMonths * 30.416).toInt())
                 jsonBody.put("months", selectedMonths) // keep for backwards compatibility if needed
@@ -193,29 +197,63 @@ class PaymentVerificationActivity : BaseActivity() {
                         try {
                             val jsonResponse = JSONObject(responseStr)
                             val status = jsonResponse.optString("status", "")
-                            val code = jsonResponse.optString("verificationCode", "")
 
-                            if (status.equals("SUCCESS", ignoreCase = true) && code.isNotEmpty()) {
-                                lifecycleScope.launch {
-                                    val internetTime = com.neubofy.reality.utils.InternetTime.getTime()
-                                    withContext(Dispatchers.Main) {
-                                        val featureManager = FeatureManager(this@PaymentVerificationActivity)
-                                        featureManager.setRealityProStartTime(internetTime)
-                                        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@PaymentVerificationActivity, "reality_pro_prefs")
-                                        prefs.edit().putString("pro_saved_verification_code_for_$userId", code).apply()
-                                        Toast.makeText(this@PaymentVerificationActivity, "Request Submitted Successfully!", Toast.LENGTH_LONG).show()
-                                        finish()
+                            if (status.equals("SUCCESS", ignoreCase = true)) {
+                                val newPassword = jsonResponse.optString("password", "")
+                                val newActiveExpiry = jsonResponse.optString("activeExpiry", "0")
+                                val newActiveDuration = jsonResponse.optString("activeDuration", "0")
+                                val newActiveStatus = jsonResponse.optString("activeStatus", "N")
+
+                                if (newPassword.isNotEmpty()) {
+                                    IdentityManager.updateCredentials(
+                                        this@PaymentVerificationActivity,
+                                        newPassword,
+                                        newActiveExpiry,
+                                        newActiveDuration,
+                                        newActiveStatus
+                                    )
+                                }
+
+                                val featuresPrefs = SecurePreferences.get(this@PaymentVerificationActivity, "reality_features")
+                                val featuresEditor = featuresPrefs.edit()
+
+                                // Clear prior settings to avoid caching obsolete state
+                                featuresEditor.putBoolean("feature_reality_pro", false)
+                                featuresEditor.remove("feature_reality_pro_start_time_$userId")
+                                featuresEditor.remove("feature_reality_pro_verified_until_$userId")
+                                featuresEditor.remove("trial_start_time_$userId")
+                                featuresEditor.remove("trial_end_time_$userId")
+
+                                if (newActiveStatus == "V") {
+                                    try {
+                                        val expiryUnix = newActiveExpiry.toLong()
+                                        if (expiryUnix > System.currentTimeMillis()) {
+                                            featuresEditor.putBoolean("feature_reality_pro", true)
+                                            val duration = newActiveDuration.toLong()
+                                            if (duration > 3) {
+                                                // Paid subscription
+                                                val durationMs = (365L / 12) * duration * 24 * 60 * 60 * 1000
+                                                val startTime = expiryUnix - durationMs
+                                                featuresEditor.putLong("feature_reality_pro_start_time_$userId", startTime)
+                                                featuresEditor.putLong("feature_reality_pro_verified_until_$userId", expiryUnix)
+                                            } else {
+                                                // Trial
+                                                val startTime = expiryUnix - (duration * 24 * 60 * 60 * 1000)
+                                                featuresEditor.putLong("trial_end_time_$userId", expiryUnix)
+                                                featuresEditor.putLong("trial_start_time_$userId", startTime)
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        com.neubofy.reality.utils.TerminalLogger.log("ERROR parsing active subscription: ${e.message}")
                                     }
                                 }
-                            } else if (status.equals("ACTIVE_SUBSCRIPTION", ignoreCase = true) || jsonResponse.optString("code") == "ACTIVE_SUBSCRIPTION") {
-                                lifecycleScope.launch {
-                                    withContext(Dispatchers.Main) {
-                                        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@PaymentVerificationActivity, "reality_pro_prefs")
-                                        prefs.edit().putString("pro_saved_verification_code_for_$userId", "ACTIVE").apply()
-                                        Toast.makeText(this@PaymentVerificationActivity, "You already have an active subscription! Please verify it.", Toast.LENGTH_LONG).show()
-                                        finish()
-                                    }
-                                }
+                                featuresEditor.apply()
+
+                                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@PaymentVerificationActivity, "reality_pro_prefs")
+                                prefs.edit().putString("pro_saved_verification_code_for_$userId", "ACTIVE").apply()
+
+                                Toast.makeText(this@PaymentVerificationActivity, "Subscription Purchased/Extended Successfully!", Toast.LENGTH_LONG).show()
+                                finish()
                             } else {
                                 val errorMsg = jsonResponse.optString("error", "Unknown error")
                                 Toast.makeText(this@PaymentVerificationActivity, "Submission failed: $errorMsg", Toast.LENGTH_LONG).show()

@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
  * Unified Alarm Scheduler - Single source of truth for ALL reminders.
  * Handles: Manual Schedules, Calendar Events, Custom Reminders, and Snooze.
  */
-object AlarmScheduler {
+object ReminderScheduler {
     
     private const val ALARM_REQUEST_CODE = 1001
     private const val SNOOZE_REQUEST_CODE = 1002

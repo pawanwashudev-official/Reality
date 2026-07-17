@@ -22,6 +22,7 @@ import com.neubofy.reality.ui.base.BaseActivity
 import com.neubofy.reality.utils.FeatureManager
 import com.neubofy.reality.utils.IdentityManager
 import com.neubofy.reality.utils.ThemeManager
+import com.neubofy.reality.utils.SecurePreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -74,46 +75,7 @@ class RealityEliteActivity : BaseActivity() {
             updateUpiButtonText()
         }
 
-        findViewById<android.view.View>(R.id.btn_trial_activation)?.setOnClickListener {
-            val email = GoogleAuthManager.getUserEmail(this)
-            if (email == null) {
-                Toast.makeText(this, "Please sign in first (Step 1) to start trial", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
 
-            val featureManager = FeatureManager(this)
-            if (featureManager.hasUsedTrial()) {
-                if (featureManager.isTrialActive()) {
-                    Toast.makeText(this, "Your trial is already active!", Toast.LENGTH_SHORT).show()
-                    startActivity(Intent(this, MainActivity::class.java))
-                    finish()
-                } else {
-                    Toast.makeText(this, "Trial has expired. Please purchase Pro to continue.", Toast.LENGTH_LONG).show()
-                }
-            } else {
-                val btn = it as? com.google.android.material.button.MaterialButton
-                btn?.isEnabled = false
-                btn?.text = "Activating..."
-                lifecycleScope.launch {
-                    val internetTime = com.neubofy.reality.utils.InternetTime.getTime()
-                    withContext(Dispatchers.Main) {
-                        val success = withContext(Dispatchers.IO) {
-                            featureManager.activateTrial(internetTime)
-                        }
-                        if (success) {
-                            Toast.makeText(this@RealityEliteActivity, "3-Day Trial Activated! Enjoy Elite Member features.", Toast.LENGTH_LONG).show()
-                            featureManager.setRealityProEnabled(true)
-                            startActivity(Intent(this@RealityEliteActivity, MainActivity::class.java))
-                            finish()
-                        } else {
-                            Toast.makeText(this@RealityEliteActivity, "Failed to activate trial. Please check your connection.", Toast.LENGTH_LONG).show()
-                            btn?.isEnabled = true
-                            btn?.text = "Start 3-Day Free Trial"
-                        }
-                    }
-                }
-            }
-        }
 
 
         btnUnifiedSignin.setOnClickListener {
@@ -269,11 +231,6 @@ class RealityEliteActivity : BaseActivity() {
         val dateFormat = java.text.SimpleDateFormat("MMM dd, yyyy HH:mm", java.util.Locale.getDefault())
 
         // UI Elements
-        val btnTrialActivation = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_trial_activation)
-        val llTrialDates = findViewById<android.widget.LinearLayout>(R.id.ll_trial_dates)
-        val tvTrialStart = findViewById<android.widget.TextView>(R.id.tv_trial_start_date)
-        val tvTrialExpiry = findViewById<android.widget.TextView>(R.id.tv_trial_expiry_date)
-
         val cardPaidPlanActive = findViewById<android.view.View>(R.id.card_paid_plan_active)
         val tvPaidPlanHeader = findViewById<android.widget.TextView>(R.id.tv_paid_plan_header)
         val tvPaidStart = findViewById<android.widget.TextView>(R.id.tv_paid_start_date)
@@ -286,112 +243,50 @@ class RealityEliteActivity : BaseActivity() {
         if (isSignedIn && userId != null) {
             btnUnifiedSignin.text = "Signed In"
             btnUnifiedSignin.isEnabled = false
-            btnTrialActivation.visibility = android.view.View.VISIBLE
         } else {
             btnUnifiedSignin.text = "Sign In with Google"
             btnUnifiedSignin.isEnabled = true
-            btnTrialActivation.visibility = android.view.View.GONE
         }
 
-        // --- Mutually Exclusive Visibility Logic ---
+        // --- Active Plan Card Visibility Logic ---
+        val isProActive = featureManager.isRealityProVerified()
+        val isTrialActive = featureManager.isTrialActive()
 
-        if (featureManager.isTrialActive()) {
-            // TRIAL IS ACTIVE: Show trial active UI, hide/lock paid plan completely
-            llTrialDates?.visibility = android.view.View.VISIBLE
-            val start = featureManager.getTrialStartTime()
-            val end = featureManager.getTrialEndTime()
-            tvTrialStart?.text = "Started: " + if (start > 0) dateFormat.format(java.util.Date(start)) else "Unknown"
-            tvTrialExpiry?.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
-
-            btnTrialActivation.text = "Trial Active"
-            btnTrialActivation.isEnabled = false
-
-            // Paid plan becomes locked
+        if (isProActive || isTrialActive) {
             cardPaidPlanActive?.visibility = android.view.View.VISIBLE
-            tvPaidPlanHeader?.text = "Paid Plan Locked (Trial Active)"
-            findViewById<android.view.View>(R.id.ll_paid_dates)?.visibility = android.view.View.GONE
-            tvYearlySubscriptionTitle?.visibility = android.view.View.GONE
-            cardStep2?.visibility = android.view.View.GONE
-            cardStep3?.visibility = android.view.View.GONE
-
-        } else if (featureManager.isRealityProVerified()) {
-            // PAID PLAN IS ACTIVE: Show paid plan active UI, hide/lock trial completely
-            llTrialDates?.visibility = android.view.View.GONE
-            if (isSignedIn && userId != null) {
-                btnTrialActivation.text = "Trial Locked (Paid Plan Active)"
-                btnTrialActivation.isEnabled = false
-            }
-
-            cardPaidPlanActive?.visibility = android.view.View.VISIBLE
-            tvPaidPlanHeader?.text = "Paid Plan Active"
-            findViewById<android.view.View>(R.id.ll_paid_dates)?.visibility = android.view.View.VISIBLE
-            val start = featureManager.getRealityProStartTime()
-            val end = featureManager.getRealityProEndTime()
-            tvPaidStart?.text = "Activated: " + if (start > 0) dateFormat.format(java.util.Date(start)) else "Unknown"
-            tvPaidExpiry?.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
-
-            tvYearlySubscriptionTitle?.visibility = android.view.View.GONE
-            cardStep2?.visibility = android.view.View.GONE
-            cardStep3?.visibility = android.view.View.GONE
-
-        } else {
-            // NEITHER ACTIVE: Both are available to purchase/start
-            cardPaidPlanActive?.visibility = android.view.View.GONE
-            tvYearlySubscriptionTitle?.visibility = android.view.View.VISIBLE
-            cardStep2?.visibility = android.view.View.VISIBLE
-            cardStep3?.visibility = android.view.View.VISIBLE
-
-            if (featureManager.hasUsedTrial()) {
-                llTrialDates?.visibility = android.view.View.VISIBLE
+            if (isProActive) {
+                tvPaidPlanHeader?.text = "Paid Plan Active"
+                val start = featureManager.getRealityProStartTime()
+                val end = featureManager.getRealityProEndTime()
+                tvPaidStart?.text = "Activated: " + if (start > 0) dateFormat.format(java.util.Date(start)) else "Unknown"
+                tvPaidExpiry?.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
+            } else {
+                tvPaidPlanHeader?.text = "Trial Active"
                 val start = featureManager.getTrialStartTime()
                 val end = featureManager.getTrialEndTime()
-                tvTrialStart?.text = "Started: " + if (start > 0) dateFormat.format(java.util.Date(start)) else "Unknown"
-                tvTrialExpiry?.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
-
-                if (isSignedIn && userId != null) {
-                    btnTrialActivation.text = "Trial Credit Used"
-                    btnTrialActivation.isEnabled = false
-                }
-            } else {
-                llTrialDates?.visibility = android.view.View.GONE
-                if (isSignedIn && userId != null) {
-                    btnTrialActivation.text = "Start 3-Day Trial"
-                    btnTrialActivation.isEnabled = true
-                }
+                tvPaidStart?.text = "Started: " + if (start > 0) dateFormat.format(java.util.Date(start)) else "Unknown"
+                tvPaidExpiry?.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
             }
+        } else {
+            cardPaidPlanActive?.visibility = android.view.View.GONE
+        }
 
-
-
-            if (userId != null && userId != "Unknown" && userId.isNotEmpty()) {
-                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
-                val isRegistered = prefs.getBoolean("is_registered_for_$userId", false)
-
-                if (isRegistered) {
-                    cardStep2.alpha = 1.0f
-                    cardStep2.alpha = 1.0f
-                    btnPayUpi.isEnabled = true
-                    updateUpiButtonText()
-                } else {
-                    cardStep2.alpha = 0.5f
-                    btnPayUpi.isEnabled = false
-                }
-
-                val hasSubmitted = prefs.getString("pro_saved_verification_code_for_$userId", null) != null
-                if (hasSubmitted) {
-                    btnPayUpi.isEnabled = false
-                    btnPayUpi.text = "Submitted"
-                    cardStep3.alpha = 1.0f
-                    btnVerify.isEnabled = true
-                } else {
-                    cardStep3.alpha = 0.5f
-                    btnVerify.isEnabled = false
-                }
-            } else {
-                cardStep2.alpha = 0.5f
-                btnPayUpi.isEnabled = false
-                cardStep3.alpha = 0.5f
-                btnVerify.isEnabled = false
-            }
+        // --- Buying and Verification Card State (Always visible/unlocked when signed in) ---
+        if (isSignedIn && userId != null) {
+            cardStep2?.visibility = android.view.View.VISIBLE
+            cardStep3?.visibility = android.view.View.VISIBLE
+            cardStep2?.alpha = 1.0f
+            cardStep3?.alpha = 1.0f
+            btnPayUpi.isEnabled = true
+            btnVerify.isEnabled = true
+            updateUpiButtonText()
+        } else {
+            cardStep2?.visibility = android.view.View.VISIBLE
+            cardStep3?.visibility = android.view.View.VISIBLE
+            cardStep2?.alpha = 0.5f
+            cardStep3?.alpha = 0.5f
+            btnPayUpi.isEnabled = false
+            btnVerify.isEnabled = false
         }
     }
 
@@ -408,9 +303,7 @@ class RealityEliteActivity : BaseActivity() {
         val userId = IdentityManager.getUserId(this)
         verifyCode(false)
     }
-
     private fun verifyCode(isSilentCheck: Boolean = false) {
-        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@RealityEliteActivity.applicationContext) }
         val email = GoogleAuthManager.getUserEmail(this) ?: ""
         if (email.isEmpty()) {
             if (!isSilentCheck) Toast.makeText(this, "Please sign in with Google in the Profile page first.", Toast.LENGTH_LONG).show()
@@ -447,6 +340,9 @@ class RealityEliteActivity : BaseActivity() {
                 val jsonBody = org.json.JSONObject()
                 jsonBody.put("userId", userId)
                 jsonBody.put("password", IdentityManager.getBackupPassword(this@RealityEliteActivity))
+                jsonBody.put("activeExpiry", IdentityManager.getActiveExpiry(this@RealityEliteActivity))
+                jsonBody.put("activeDuration", IdentityManager.getActiveDuration(this@RealityEliteActivity))
+                jsonBody.put("activeStatus", IdentityManager.getActiveStatus(this@RealityEliteActivity))
                 jsonBody.put("action", "verify")
 
                 java.io.OutputStreamWriter(conn.outputStream).use { writer ->
@@ -472,41 +368,62 @@ class RealityEliteActivity : BaseActivity() {
                             val jsonResponse = JSONObject(responseStr)
                             val status = jsonResponse.optString("status", "")
                             if (status.equals("SUCCESS", ignoreCase = true)) {
-                                val expiryDate = jsonResponse.optString("expiryDate", "")
-                                var durationMonths = 12
+                                val newPassword = jsonResponse.optString("password", "")
+                                val newActiveExpiry = jsonResponse.optString("activeExpiry", "0")
+                                val newActiveDuration = jsonResponse.optString("activeDuration", "0")
+                                val newActiveStatus = jsonResponse.optString("activeStatus", "N")
 
-                                var expiryUnix = 0L
-                                if (expiryDate.isNotEmpty()) {
-                                    val parts = expiryDate.split("-")
-                                    if (parts.size == 2) {
-                                        expiryUnix = parts[0].toLongOrNull() ?: 0L
-                                        durationMonths = parts[1].toIntOrNull() ?: 12
-                                    } else if (parts.size == 4) {
-                                        val days = parts[3].toIntOrNull() ?: 365
-                                        durationMonths = Math.max(1, Math.round(days / 30.416).toInt())
-                                        // No expiryUnix for legacy, so startTime will default to netTime
-                                    }
+                                if (newPassword.isNotEmpty()) {
+                                    IdentityManager.updateCredentials(
+                                        this@RealityEliteActivity,
+                                        newPassword,
+                                        newActiveExpiry,
+                                        newActiveDuration,
+                                        newActiveStatus
+                                    )
                                 }
 
-                                lifecycleScope.launch {
-                                    val netTime = com.neubofy.reality.utils.InternetTime.getTime()
-                                    withContext(Dispatchers.Main) {
-                                        val featureManager = FeatureManager(this@RealityEliteActivity)
-                                        val startTime = if (expiryUnix > 0) {
-                                            expiryUnix - ((365L / 12) * durationMonths.toLong() * 24L * 60L * 60L * 1000L)
-                                        } else {
-                                            netTime
+                                val featuresPrefs = SecurePreferences.get(this@RealityEliteActivity, "reality_features")
+                                val featuresEditor = featuresPrefs.edit()
+
+                                // Clear prior settings to avoid caching obsolete state
+                                featuresEditor.putBoolean("feature_reality_pro", false)
+                                featuresEditor.remove("feature_reality_pro_start_time_$userId")
+                                featuresEditor.remove("feature_reality_pro_verified_until_$userId")
+                                featuresEditor.remove("trial_start_time_$userId")
+                                featuresEditor.remove("trial_end_time_$userId")
+
+                                if (newActiveStatus == "V") {
+                                    try {
+                                        val expiryUnix = newActiveExpiry.toLong()
+                                        if (expiryUnix > System.currentTimeMillis()) {
+                                            featuresEditor.putBoolean("feature_reality_pro", true)
+                                            val duration = newActiveDuration.toLong()
+                                            if (duration > 3) {
+                                                // Paid subscription
+                                                val durationMs = (365L / 12) * duration * 24 * 60 * 60 * 1000
+                                                val startTime = expiryUnix - durationMs
+                                                featuresEditor.putLong("feature_reality_pro_start_time_$userId", startTime)
+                                                featuresEditor.putLong("feature_reality_pro_verified_until_$userId", expiryUnix)
+                                            } else {
+                                                // Trial
+                                                val startTime = expiryUnix - (duration * 24 * 60 * 60 * 1000)
+                                                featuresEditor.putLong("trial_end_time_$userId", expiryUnix)
+                                                featuresEditor.putLong("trial_start_time_$userId", startTime)
+                                            }
                                         }
-                                        featureManager.setRealityProStartTime(startTime)
-                                        featureManager.setRealityProVerified(true, startTime, durationMonths)
-                                        Toast.makeText(this@RealityEliteActivity, "Active Reality Elite Member License Found and Restored!", Toast.LENGTH_LONG).show()
-
-                                        val intent = Intent(this@RealityEliteActivity, MainActivity::class.java)
-                                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                                        startActivity(intent)
-                                        finish()
+                                    } catch (e: Exception) {
+                                        com.neubofy.reality.utils.TerminalLogger.log("ERROR parsing active subscription: ${e.message}")
                                     }
                                 }
+                                featuresEditor.apply()
+
+                                Toast.makeText(this@RealityEliteActivity, "Active Reality Elite Member License Found and Restored!", Toast.LENGTH_LONG).show()
+
+                                val intent = Intent(this@RealityEliteActivity, MainActivity::class.java)
+                                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                                startActivity(intent)
+                                finish()
                             } else if (status.equals("EXPIRED", ignoreCase = true)) {
                                 if (isSilentCheck) {
                                     handleSilentCheckFallback(userId)

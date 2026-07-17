@@ -43,6 +43,9 @@ export default {
       const body = await request.json();
       const userId = body.userId;
       const password = body.password;
+      const activeExpiry = body.activeExpiry || "0";
+      const activeDuration = body.activeDuration || "0";
+      const activeStatus = body.activeStatus || "N";
 
       // Extract and verify userId and password
       if (!userId || !password) {
@@ -52,10 +55,18 @@ export default {
         });
       }
 
-      const isAuthorized = await this.verifyAuth(userId, password, env.APP_SECRET_PEPPER);
+      const isAuthorized = await this.verifyAuth(userId, password, activeExpiry, activeDuration, activeStatus, env.APP_SECRET_PEPPER);
       if (!isAuthorized) {
         return new Response(JSON.stringify({ error: "Unauthorized. Invalid credentials." }), {
             status: 401,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      // Verify that subscription is currently active and not expired
+      if (activeStatus !== "V" || parseInt(activeExpiry, 10) < Date.now()) {
+        return new Response(JSON.stringify({ error: "Access Denied: Elite Member subscription is expired or inactive." }), {
+            status: 403,
             headers: { "Content-Type": "application/json", ...corsHeaders },
         });
       }
@@ -156,17 +167,31 @@ export default {
     }
   },
 
-  async verifyAuth(userId, providedPassword, secretPepper) {
-    if (!userId || !providedPassword || !secretPepper) return false;
+  async generatePassword(userId, expiry, duration, status, secretPepper) {
+    if (!userId || !secretPepper) return "";
+    const expiryStr = String(expiry || "0");
+    const durationStr = String(duration || "0");
+    const statusStr = String(status || "N");
+    
     const encoder = new TextEncoder();
     const secretKeyData = encoder.encode(secretPepper);
     const cryptoKey = await crypto.subtle.importKey(
       "raw", secretKeyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
     );
-    const pwSignature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(userId));
-    const expectedPassword = Array.from(new Uint8Array(pwSignature))
+    const msg = `${userId}:${expiryStr}:${durationStr}:${statusStr}`;
+    const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(msg));
+    return Array.from(new Uint8Array(signature))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('').substring(0, 32);
-    return providedPassword === expectedPassword;
+  },
+
+  async verifyAuth(userId, providedPassword, expiry, duration, status, secretPepper) {
+    if (!userId || !providedPassword || !secretPepper) return false;
+    const expectedPassword = await this.generatePassword(userId, expiry, duration, status, secretPepper);
+    const matched = providedPassword === expectedPassword;
+    if (!matched) {
+      console.warn(`[SECURITY] Unauthorized access detected: Hashed credentials mismatch! User ID: ${userId}, Expiry: ${expiry}, Duration: ${duration}, Status: ${status}. Attempts to bypass subscription verification logic may result in account termination and legal action.`);
+    }
+    return matched;
   }
 };
