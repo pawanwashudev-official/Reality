@@ -293,10 +293,14 @@ open class AIChatActivity : BaseActivity() {
                         val userId = com.neubofy.reality.utils.IdentityManager.getUserId(this@AIChatActivity)
                         val password = com.neubofy.reality.utils.IdentityManager.getBackupPassword(this@AIChatActivity)
                         if (userId.isEmpty() || password.isEmpty()) {
-                            return@withContext "You are signed in but your identity is not verified. Please go to the Profile page and click 'Refresh Identity & Subscription' to continue."
+                            return@withContext "You are signed in but your identity is not verified. Please go to the Elite Member page and tap 'Refresh Identity & Subscription' to continue."
                         }
                         put("userId", userId)
                         put("password", password)
+                        put("activeExpiry", com.neubofy.reality.utils.IdentityManager.getActiveExpiry(this@AIChatActivity))
+                        put("activeDuration", com.neubofy.reality.utils.IdentityManager.getActiveDuration(this@AIChatActivity))
+                        put("activeStatus", com.neubofy.reality.utils.IdentityManager.getActiveStatus(this@AIChatActivity))
+                        put("planType", com.neubofy.reality.utils.IdentityManager.getActivePlanType(this@AIChatActivity))
                         put("requestCount", com.neubofy.reality.utils.IdentityManager.getAndIncrementDailyAICount(this@AIChatActivity))
                     }
                     put("messages", messagesJson)
