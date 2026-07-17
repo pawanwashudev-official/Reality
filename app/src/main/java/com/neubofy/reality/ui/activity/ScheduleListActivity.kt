@@ -580,69 +580,51 @@ class ScheduleListActivity : BaseActivity() {
     private fun showSyncSettingsDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_calendar_settings, null)
         val switchAutoSync = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switchAutoSync)
-        val btnSetupRealTimeSync = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSetupRealTimeSync)
-
-        val isAutoSync = prefs.getBoolean("calendar_sync_auto_enabled", true)
-        switchAutoSync.isChecked = isAutoSync
-
-        // Check if real-time sync is already configured
-        val isRealTimeActive = getSharedPreferences("reality_prefs", android.content.Context.MODE_PRIVATE)
-            .getBoolean("calendar_realtime_sync_enabled", false)
-        if (isRealTimeActive) {
-            btnSetupRealTimeSync.text = "Real-Time Sync: Active"
-            btnSetupRealTimeSync.setIconResource(R.drawable.ic_check_circle)
-            btnSetupRealTimeSync.isEnabled = false // Disable to prevent spamming
-            btnSetupRealTimeSync.alpha = 0.8f
-        }
-
         val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
             .setView(dialogView)
             .show()
 
-        // Auto-sync toggle (enables 15-min heartbeat sync)
+        // Auto-sync toggle (enables 15-min heartbeat sync AND sets up real-time sync on toggle ON)
         switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
             prefs.saveBoolean("calendar_sync_auto_enabled", isChecked)
-        }
 
-        // Real-time sync setup (FCM webhook registration)
-        btnSetupRealTimeSync.setOnClickListener {
-            val isSignedIn = com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)
-            val userId = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getUserId(this) else null
-            val backupPassword = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getBackupPassword(this) else null
-            val fcmToken = getSharedPreferences("reality_prefs", android.content.Context.MODE_PRIVATE)
-                .getString(com.neubofy.reality.services.RealityFCMService.PREF_FCM_TOKEN, null)
-            val workerUrl = com.neubofy.reality.BuildConfig.NOTIFICATION_WORKER_URL
+            if (isChecked) {
+                val isSignedIn = com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)
+                val userId = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getUserId(this) else null
+                val backupPassword = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getBackupPassword(this) else null
+                val fcmToken = getSharedPreferences("reality_prefs", android.content.Context.MODE_PRIVATE)
+                    .getString(com.neubofy.reality.services.RealityFCMService.PREF_FCM_TOKEN, null)
+                val workerUrl = com.neubofy.reality.BuildConfig.NOTIFICATION_WORKER_URL
 
-            // Fetch Google access token for webhook registration
-            val googleAuthPrefs = com.neubofy.reality.utils.SecurePreferences.get(this, "google_auth_prefs")
-            val googleAccessToken = googleAuthPrefs.getString("access_token", null)
+                // Fetch Google access token for webhook registration
+                val googleAuthPrefs = com.neubofy.reality.utils.SecurePreferences.get(this, "google_auth_prefs")
+                val googleAccessToken = googleAuthPrefs.getString("access_token", null)
 
-            if (userId.isNullOrEmpty() || backupPassword.isNullOrEmpty() || googleAccessToken.isNullOrEmpty()) {
-                android.widget.Toast.makeText(this, "Sign in to your Google/Reality account first.", android.widget.Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+                if (userId.isNullOrEmpty() || backupPassword.isNullOrEmpty() || googleAccessToken.isNullOrEmpty()) {
+                    android.widget.Toast.makeText(this, "Sign in to your Google/Reality account first.", android.widget.Toast.LENGTH_SHORT).show()
+                    switchAutoSync.isChecked = false
+                    return@setOnCheckedChangeListener
+                }
+
+                if (fcmToken.isNullOrEmpty()) {
+                    android.widget.Toast.makeText(this, "Waiting for device token... try again in a moment.", android.widget.Toast.LENGTH_SHORT).show()
+                    switchAutoSync.isChecked = false
+                    return@setOnCheckedChangeListener
+                }
+                if (workerUrl.isEmpty()) {
+                    android.widget.Toast.makeText(this, "Notification service not configured.", android.widget.Toast.LENGTH_SHORT).show()
+                    switchAutoSync.isChecked = false
+                    return@setOnCheckedChangeListener
+                }
+
+                // 1. Register FCM token with notification worker
+                com.neubofy.reality.services.RealityFCMService.registerTokenWithWorker(applicationContext, workerUrl, userId, backupPassword, fcmToken)
+                
+                // 2. Register Webhook Watch channel with Google Calendar API
+                com.neubofy.reality.services.RealityFCMService.registerCalendarWebhook(applicationContext, workerUrl, userId, googleAccessToken)
+
+                android.widget.Toast.makeText(this, "\uD83D\uDD14 Real-time sync setup started...", android.widget.Toast.LENGTH_SHORT).show()
             }
-
-            if (fcmToken.isNullOrEmpty()) {
-                android.widget.Toast.makeText(this, "Waiting for device token... try again in a moment.", android.widget.Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            if (workerUrl.isEmpty()) {
-                android.widget.Toast.makeText(this, "Notification service not configured.", android.widget.Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            // Prevent spamming
-            btnSetupRealTimeSync.isEnabled = false
-            btnSetupRealTimeSync.alpha = 0.5f
-
-            // 1. Register FCM token with notification worker
-            com.neubofy.reality.services.RealityFCMService.registerTokenWithWorker(applicationContext, workerUrl, userId, backupPassword, fcmToken)
-            
-            // 2. Register Webhook Watch channel with Google Calendar API
-            com.neubofy.reality.services.RealityFCMService.registerCalendarWebhook(applicationContext, workerUrl, userId, googleAccessToken)
-
-            android.widget.Toast.makeText(this, "\uD83D\uDD14 Real-time sync setup started...", android.widget.Toast.LENGTH_SHORT).show()
-            dialog.dismiss()
         }
     }
 

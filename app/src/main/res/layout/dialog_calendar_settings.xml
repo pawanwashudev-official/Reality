@@ -60,12 +60,5 @@
                 android:layout_height="wrap_content" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnSetupRealTimeSync"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Setup Real-Time Sync"
-        android:layout_marginBottom="8dp"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
 </LinearLayout>
