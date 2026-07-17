@@ -217,7 +217,11 @@ class MainActivity : BaseActivity() {
             }
         }
     }
-    
+
+    override fun onIdentityUpdated() {
+        applyFeatureToggles()
+    }
+
     private fun applyFeatureToggles() {
         // Features are now always visible on the home screen.
         // Pro access is strictly checked only when the user taps on these cards to open the pages.

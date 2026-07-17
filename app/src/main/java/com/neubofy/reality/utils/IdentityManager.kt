@@ -295,6 +295,16 @@ object IdentityManager {
                         featuresEditor.apply()
                         proEditor.apply()
 
+                        val intent = android.content.Intent("com.neubofy.reality.IDENTITY_UPDATED").apply {
+                            putExtra("userId", userId)
+                            putExtra("backupPassword", backupPassword.ifEmpty { connectionSecret })
+                            putExtra("activeExpiry", activeExpiry)
+                            putExtra("activeDuration", activeDuration)
+                            putExtra("activeStatus", activeStatus)
+                            putExtra("planType", planType)
+                        }
+                        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(context).sendBroadcast(intent)
+
                         return@withContext IdentityResult(
                             userId = userId,
                             backupPassword = backupPassword.ifEmpty { connectionSecret },

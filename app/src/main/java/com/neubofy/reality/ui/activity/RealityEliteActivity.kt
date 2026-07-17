@@ -215,6 +215,10 @@ class RealityEliteActivity : BaseActivity() {
         updateStateUI()
     }
 
+    override fun onIdentityUpdated() {
+        updateStateUI()
+    }
+
     private fun updateStateUI() {
         val email = GoogleAuthManager.getUserEmail(this) ?: ""
         val isSignedIn = GoogleAuthManager.isSignedIn(this) && email.isNotEmpty()
