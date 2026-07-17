@@ -11,10 +11,10 @@ import nl.joery.timerangepicker.TimeRangePicker
 open class BaseDialog(val savedPreferencesLoader: SavedPreferencesLoader? = null) :
     DialogFragment() {
     fun sendRefreshRequest(action: String) {
-        val intent = Intent(action)
-        context?.let {
-            androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(it).sendBroadcast(intent)
+        val intent = Intent(action).apply {
+            context?.let { setPackage(it.packageName) }
         }
+        context?.sendBroadcast(intent)
     }
 
 
