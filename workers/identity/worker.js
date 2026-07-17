@@ -272,9 +272,9 @@ export default {
 
           return new Response(
             JSON.stringify({
+              ...identityData,
               status: "SUCCESS",
-              verificationCode: "REGISTERED",
-              ...identityData
+              verificationCode: "REGISTERED"
             }),
             { 
               status: 200, 

@@ -206,62 +206,14 @@ class PaymentVerificationActivity : BaseActivity() {
                             val status = jsonResponse.optString("status", "")
 
                             if (status.equals("SUCCESS", ignoreCase = true)) {
-                                val newPassword = jsonResponse.optString("connectionSecret", "")
-                                val newBackupKey = jsonResponse.optString("backupPassword", "")
-                                val newActiveExpiry = jsonResponse.optString("activeExpiry", "0")
-                                val newActiveDuration = jsonResponse.optString("activeDuration", "0")
-                                val newActiveStatus = jsonResponse.optString("activeStatus", "N")
-                                val newPlanType = jsonResponse.optString("planType", "none")
-
-                                if (newPassword.isNotEmpty()) {
-                                    IdentityManager.updateCredentials(
-                                        this@PaymentVerificationActivity,
-                                        newPassword,
-                                        newBackupKey,
-                                        newActiveExpiry,
-                                        newActiveDuration,
-                                        newActiveStatus,
-                                        newPlanType
-                                    )
-                                }
-
-                                val featuresPrefs = SecurePreferences.get(this@PaymentVerificationActivity, "reality_features")
-                                val featuresEditor = featuresPrefs.edit()
-
-                                // Clear prior settings to avoid caching obsolete state
-                                featuresEditor.putBoolean("feature_reality_pro", false)
-                                featuresEditor.remove("feature_reality_pro_start_time_$userId")
-                                featuresEditor.remove("feature_reality_pro_verified_until_$userId")
-                                featuresEditor.remove("trial_start_time_$userId")
-                                featuresEditor.remove("trial_end_time_$userId")
-
-                                if (newActiveStatus == "V") {
+                                // Auto-trigger refresh identity in background to load new subscription details
+                                kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                                     try {
-                                        val expiryUnix = newActiveExpiry.toLong()
-                                        if (expiryUnix > System.currentTimeMillis()) {
-                                            featuresEditor.putBoolean("feature_reality_pro", true)
-                                            val duration = newActiveDuration.toLong()
-                                            if (newPlanType == "paid") {
-                                                // Paid subscription
-                                                val durationMs = (365L / 12) * duration * 24 * 60 * 60 * 1000
-                                                val startTime = expiryUnix - durationMs
-                                                featuresEditor.putLong("feature_reality_pro_start_time_$userId", startTime)
-                                                featuresEditor.putLong("feature_reality_pro_verified_until_$userId", expiryUnix)
-                                            } else {
-                                                // Trial
-                                                val startTime = expiryUnix - (duration * 24 * 60 * 60 * 1000)
-                                                featuresEditor.putLong("trial_end_time_$userId", expiryUnix)
-                                                featuresEditor.putLong("trial_start_time_$userId", startTime)
-                                            }
-                                        }
+                                        IdentityManager.refreshIdentity(this@PaymentVerificationActivity.applicationContext)
                                     } catch (e: Exception) {
-                                        com.neubofy.reality.utils.TerminalLogger.log("ERROR parsing active subscription: ${e.message}")
+                                        com.neubofy.reality.utils.TerminalLogger.log("PaymentVerification: Auto-refresh failed: ${e.message}")
                                     }
                                 }
-                                featuresEditor.apply()
-
-                                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this@PaymentVerificationActivity, "reality_pro_prefs")
-                                prefs.edit().putString("pro_saved_verification_code_for_$userId", "ACTIVE").apply()
 
                                 Toast.makeText(this@PaymentVerificationActivity, "Subscription Purchased/Extended Successfully!", Toast.LENGTH_LONG).show()
                                 finish()
