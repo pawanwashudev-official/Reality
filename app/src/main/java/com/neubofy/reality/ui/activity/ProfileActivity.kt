@@ -420,8 +420,6 @@ class ProfileActivity : BaseActivity() {
         
         // Handle User ID logic
         val email = GoogleAuthManager.getUserEmail(this) ?: ""
-        val tvUserId = findViewById<android.widget.TextView>(R.id.tv_user_id)
-        val btnCopyId = findViewById<android.widget.ImageView>(R.id.btn_copy_id)
 
         val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "google_connector_prefs")
         val tasksConnected = prefs.getBoolean(KEY_TASKS_CONNECTED, false)
@@ -429,9 +427,6 @@ class ProfileActivity : BaseActivity() {
         val docsConnected = prefs.getBoolean(KEY_DOCS_CONNECTED, false)
         val calendarConnected = prefs.getBoolean(KEY_CALENDAR_CONNECTED, false)
         val isAllConnected = tasksConnected && driveConnected && docsConnected && calendarConnected
-
-        val isBasicSignIn = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_features")
-            .getBoolean("reality_pro_basic_sign_in", false)
 
         val cardSecureIdentity = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_secure_identity)
         if (isSignedIn && email.isNotEmpty()) {

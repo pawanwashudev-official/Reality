@@ -124,6 +124,28 @@ class ReminderReceiver : BroadcastReceiver() {
             com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
         }
         
+        // Android 10+ restricts starting activities from background unless app has SYSTEM_ALERT_WINDOW
+        if (android.provider.Settings.canDrawOverlays(context)) {
+            try {
+                val fullScreenIntent = Intent(context, com.neubofy.reality.ui.activity.ReminderAlarmActivity::class.java).apply {
+                    this.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    putExtra("id", id)
+                    putExtra("title", title)
+                    putExtra("url", url)
+                    putExtra("mins", mins)
+                    putExtra("source", source)
+                    putExtra("snoozeEnabled", snoozeEnabled)
+                    putExtra("snoozeIntervalMins", snoozeIntervalMins)
+                    putExtra("autoSnoozeEnabled", autoSnoozeEnabled)
+                    putExtra("autoSnoozeTimeoutSecs", autoSnoozeTimeoutSecs)
+                }
+                context.startActivity(fullScreenIntent)
+                TerminalLogger.log("ALARM: Force launched ReminderAlarmActivity via overlay permission")
+            } catch (e: Exception) {
+                TerminalLogger.log("ERROR launching ReminderAlarmActivity: ${e.message}")
+            }
+        }
+        
         // Reschedule for next reminder after this one fires
         try {
             ReminderScheduler.scheduleNextAlarm(context)

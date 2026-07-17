@@ -101,6 +101,15 @@ class RealityEliteActivity : BaseActivity() {
             }
         }
 
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val intent = Intent(this@RealityEliteActivity, MainActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                startActivity(intent)
+                finish()
+            }
+        })
+
         btnPayUpi.setOnClickListener {
             showUpiPaymentDialog()
         }
@@ -200,9 +209,8 @@ class RealityEliteActivity : BaseActivity() {
             lifecycleScope.launch {
                 val autoCode = GoogleAuthManager.startLocalServerAndGetCode()
 
-                var success = false
                 if (autoCode != null) {
-                    success = GoogleAuthManager.exchangeCodeForTokens(this@RealityEliteActivity, autoCode)
+                    val success = GoogleAuthManager.exchangeCodeForTokens(this@RealityEliteActivity, autoCode)
                     if (success) {
                         withContext(Dispatchers.Main) {
                             com.neubofy.reality.utils.SecurePreferences.get(this@RealityEliteActivity, "reality_features").edit()
@@ -251,7 +259,6 @@ class RealityEliteActivity : BaseActivity() {
         val tvPaidPlanHeader = findViewById<android.widget.TextView>(R.id.tv_paid_plan_header)
         val tvPaidStart = findViewById<android.widget.TextView>(R.id.tv_paid_start_date)
         val tvPaidExpiry = findViewById<android.widget.TextView>(R.id.tv_paid_expiry_date)
-        val tvYearlySubscriptionTitle = findViewById<android.widget.TextView>(R.id.tv_or_yearly_subscription)
         val cardStep2 = findViewById<android.view.View>(R.id.card_step2)
         val cardStep3 = findViewById<android.view.View>(R.id.card_step3)
 
@@ -531,12 +538,4 @@ class RealityEliteActivity : BaseActivity() {
         findViewById<MaterialButton>(R.id.btn_verify).text = "Verify Status"
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        super.onBackPressed()
-        val intent = Intent(this, MainActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        startActivity(intent)
-        finish()
-    }
 }

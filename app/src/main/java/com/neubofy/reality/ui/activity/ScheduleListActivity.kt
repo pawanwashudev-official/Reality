@@ -583,6 +583,26 @@ class ScheduleListActivity : BaseActivity() {
         val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
             .setView(dialogView)
             .show()
+            
+        val isAutoSync = prefs.getBoolean("calendar_sync_auto_enabled", true)
+        
+        val realityPrefs = getSharedPreferences("reality_prefs", android.content.Context.MODE_PRIVATE)
+        val currentFcmToken = realityPrefs.getString(com.neubofy.reality.services.RealityFCMService.PREF_FCM_TOKEN, null)
+        val registeredFcmToken = realityPrefs.getString("registered_fcm_token", null)
+
+        if (isAutoSync && currentFcmToken != null && currentFcmToken != registeredFcmToken) {
+            // Token changed (key rotated), force the user to toggle it off and on to re-register
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("Sync Key Rotated")
+                .setMessage("Your device's Google Play Services sync key was recently rotated. Please toggle Auto-Sync OFF and then ON again to re-establish the connection.")
+                .setPositiveButton("OK", null)
+                .show()
+                
+            switchAutoSync.isChecked = false
+            prefs.saveBoolean("calendar_sync_auto_enabled", false)
+        } else {
+            switchAutoSync.isChecked = isAutoSync
+        }
 
         // Auto-sync toggle (enables 15-min heartbeat sync AND sets up real-time sync on toggle ON)
         switchAutoSync.setOnCheckedChangeListener { _, isChecked ->

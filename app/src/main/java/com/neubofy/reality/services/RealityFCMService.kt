@@ -69,10 +69,11 @@ class RealityFCMService : FirebaseMessagingService() {
 
                     if (response.isSuccessful) {
                         TerminalLogger.log("FCM: Token registered with notification worker successfully")
-                        // Persist registration status
+                        // Persist registration status and the exact token that was registered
                         context.getSharedPreferences("reality_prefs", android.content.Context.MODE_PRIVATE)
                             .edit()
                             .putBoolean("calendar_realtime_sync_enabled", true)
+                            .putString("registered_fcm_token", fcmToken)
                             .apply()
                     } else {
                         TerminalLogger.log("FCM: Token registration failed (${response.code}): $responseBody")

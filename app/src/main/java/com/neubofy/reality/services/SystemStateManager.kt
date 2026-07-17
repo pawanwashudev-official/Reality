@@ -11,8 +11,25 @@ class SystemStateManager(private val context: Context) {
     private val savedPreferencesLoader = SavedPreferencesLoader(context)
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-    var wasDndEnabledByApp = false
-    var wasSleepEnabledByApp = false
+    fun setWasDndEnabledByApp(enabled: Boolean) {
+        val prefs = context.getSharedPreferences("system_state_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("was_dnd_enabled_by_app", enabled).apply()
+    }
+
+    fun getWasDndEnabledByApp(): Boolean {
+        val prefs = context.getSharedPreferences("system_state_prefs", Context.MODE_PRIVATE)
+        return prefs.getBoolean("was_dnd_enabled_by_app", false)
+    }
+
+    fun setWasSleepEnabledByApp(enabled: Boolean) {
+        val prefs = context.getSharedPreferences("system_state_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("was_sleep_enabled_by_app", enabled).apply()
+    }
+
+    fun getWasSleepEnabledByApp(): Boolean {
+        val prefs = context.getSharedPreferences("system_state_prefs", Context.MODE_PRIVATE)
+        return prefs.getBoolean("was_sleep_enabled_by_app", false)
+    }
 
     fun toggleDnd(enable: Boolean) {
         try {
@@ -34,14 +51,16 @@ class SystemStateManager(private val context: Context) {
         try {
             if (savedPreferencesLoader.isAutoDndEnabled()) {
                 val currentFilter = notificationManager.currentInterruptionFilter
-                val isDndOn = currentFilter == NotificationManager.INTERRUPTION_FILTER_PRIORITY
+                val isDndOn = currentFilter == NotificationManager.INTERRUPTION_FILTER_PRIORITY || 
+                              currentFilter == NotificationManager.INTERRUPTION_FILTER_ALARMS || 
+                              currentFilter == NotificationManager.INTERRUPTION_FILTER_NONE
                 
                 if (isAnyModeActive && !isDndOn) {
                     toggleDnd(true)
-                    wasDndEnabledByApp = true
-                } else if (!isAnyModeActive && isDndOn) {
+                    setWasDndEnabledByApp(true)
+                } else if (!isAnyModeActive && getWasDndEnabledByApp()) {
                     toggleDnd(false)
-                    wasDndEnabledByApp = false
+                    setWasDndEnabledByApp(false)
                 }
             }
         } catch (e: Exception) {
@@ -54,14 +73,14 @@ class SystemStateManager(private val context: Context) {
             if (savedPreferencesLoader.isRealitySleepEnabled() && ZenModeManager.isSupported()) {
                 val isBedtime = BlockCache.isBedtimeCurrentlyActive
                 if (isBedtime) {
-                    if (!wasSleepEnabledByApp) {
+                    if (!getWasSleepEnabledByApp()) {
                         ZenModeManager.setZenState(context, true)
-                        wasSleepEnabledByApp = true
+                        setWasSleepEnabledByApp(true)
                     }
                 } else {
-                    if (wasSleepEnabledByApp) {
+                    if (getWasSleepEnabledByApp()) {
                         ZenModeManager.setZenState(context, false)
-                        wasSleepEnabledByApp = false
+                        setWasSleepEnabledByApp(false)
                     }
                 }
             }
@@ -76,7 +95,7 @@ class SystemStateManager(private val context: Context) {
                 val isBedtime = BlockCache.isBedtimeCurrentlyActive
                 if (isBedtime) {
                     ZenModeManager.setZenState(context, true)
-                    wasSleepEnabledByApp = true
+                    setWasSleepEnabledByApp(true)
                     TerminalLogger.log("BYPASS CHECK: Sleep mode forced ON (bedtime active)")
                 }
             }
