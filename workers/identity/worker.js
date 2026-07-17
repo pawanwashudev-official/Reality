@@ -314,7 +314,7 @@ export default {
         // Handles verification (GET) - Step 3 (Stateless, Database-free verification)
         if (request.method === "GET") {
           const userId = url.searchParams.get("userId");
-          const password = url.searchParams.get("password");
+          const password = url.searchParams.get("password") || url.searchParams.get("connectionSecret");
           const activeExpiry = url.searchParams.get("activeExpiry") || "0";
           const activeDuration = url.searchParams.get("activeDuration") || "0";
           const activeStatus = url.searchParams.get("activeStatus") || "N";
@@ -349,7 +349,7 @@ export default {
           }
 
           const userId = incomingData.userId;
-          const password = incomingData.password;
+          const password = incomingData.password || incomingData.connectionSecret;
           const activeExpiry = incomingData.activeExpiry || "0";
           const activeDuration = incomingData.activeDuration || "0";
           const activeStatus = incomingData.activeStatus || "N";
