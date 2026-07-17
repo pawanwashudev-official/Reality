@@ -168,6 +168,7 @@ class PaymentVerificationActivity : BaseActivity() {
                 jsonBody.put("activeExpiry", IdentityManager.getActiveExpiry(this@PaymentVerificationActivity))
                 jsonBody.put("activeDuration", IdentityManager.getActiveDuration(this@PaymentVerificationActivity))
                 jsonBody.put("activeStatus", IdentityManager.getActiveStatus(this@PaymentVerificationActivity))
+                jsonBody.put("planType", IdentityManager.getActivePlanType(this@PaymentVerificationActivity))
                 jsonBody.put("transactionId", transactionId)
                 jsonBody.put("durationDays", (selectedMonths * 30.416).toInt())
                 jsonBody.put("months", selectedMonths) // keep for backwards compatibility if needed
@@ -203,6 +204,7 @@ class PaymentVerificationActivity : BaseActivity() {
                                 val newActiveExpiry = jsonResponse.optString("activeExpiry", "0")
                                 val newActiveDuration = jsonResponse.optString("activeDuration", "0")
                                 val newActiveStatus = jsonResponse.optString("activeStatus", "N")
+                                val newPlanType = jsonResponse.optString("planType", "none")
 
                                 if (newPassword.isNotEmpty()) {
                                     IdentityManager.updateCredentials(
@@ -210,7 +212,8 @@ class PaymentVerificationActivity : BaseActivity() {
                                         newPassword,
                                         newActiveExpiry,
                                         newActiveDuration,
-                                        newActiveStatus
+                                        newActiveStatus,
+                                        newPlanType
                                     )
                                 }
 
@@ -230,7 +233,7 @@ class PaymentVerificationActivity : BaseActivity() {
                                         if (expiryUnix > System.currentTimeMillis()) {
                                             featuresEditor.putBoolean("feature_reality_pro", true)
                                             val duration = newActiveDuration.toLong()
-                                            if (duration > 3) {
+                                            if (newPlanType == "paid") {
                                                 // Paid subscription
                                                 val durationMs = (365L / 12) * duration * 24 * 60 * 60 * 1000
                                                 val startTime = expiryUnix - durationMs

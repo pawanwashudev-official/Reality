@@ -61,15 +61,7 @@ class FeatureManager(private val context: Context) {
         }
 
         val secureNow = SecureTimeProvider.currentTimeMillis(context)
-        val isValid = verifiedUntil > 0 && secureNow < verifiedUntil
-        if (!isValid && verifiedUntil > 0) {
-            // Subscription expired. Wipe it out directly.
-            setRealityProVerified(false)
-            val proPrefs = com.neubofy.reality.utils.SecurePreferences.get(context, "reality_pro_prefs")
-            proPrefs.edit().remove("pro_saved_verification_code_for_$userId").apply()
-            prefs.edit().remove("feature_reality_pro_start_time_$userId").apply()
-        }
-        return isValid
+        return verifiedUntil > 0 && secureNow < verifiedUntil
     }
 
     fun setRealityProVerified(verified: Boolean, currentTimeMs: Long = SecureTimeProvider.currentTimeMillis(context), months: Int = 12) {

@@ -383,6 +383,7 @@ Analyze the user's "Plan for Tomorrow" and extract actionable items with extreme
                 put("activeExpiry", com.neubofy.reality.utils.IdentityManager.getActiveExpiry(context))
                 put("activeDuration", com.neubofy.reality.utils.IdentityManager.getActiveDuration(context))
                 put("activeStatus", com.neubofy.reality.utils.IdentityManager.getActiveStatus(context))
+                put("planType", com.neubofy.reality.utils.IdentityManager.getActivePlanType(context))
                 put("requestCount", com.neubofy.reality.utils.IdentityManager.getAndIncrementDailyAICount(context))
             }
             put("model", modelToUse)

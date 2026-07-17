@@ -343,6 +343,7 @@ class RealityEliteActivity : BaseActivity() {
                 jsonBody.put("activeExpiry", IdentityManager.getActiveExpiry(this@RealityEliteActivity))
                 jsonBody.put("activeDuration", IdentityManager.getActiveDuration(this@RealityEliteActivity))
                 jsonBody.put("activeStatus", IdentityManager.getActiveStatus(this@RealityEliteActivity))
+                jsonBody.put("planType", IdentityManager.getActivePlanType(this@RealityEliteActivity))
                 jsonBody.put("action", "verify")
 
                 java.io.OutputStreamWriter(conn.outputStream).use { writer ->
@@ -372,6 +373,7 @@ class RealityEliteActivity : BaseActivity() {
                                 val newActiveExpiry = jsonResponse.optString("activeExpiry", "0")
                                 val newActiveDuration = jsonResponse.optString("activeDuration", "0")
                                 val newActiveStatus = jsonResponse.optString("activeStatus", "N")
+                                val newPlanType = jsonResponse.optString("planType", "none")
 
                                 if (newPassword.isNotEmpty()) {
                                     IdentityManager.updateCredentials(
@@ -379,7 +381,8 @@ class RealityEliteActivity : BaseActivity() {
                                         newPassword,
                                         newActiveExpiry,
                                         newActiveDuration,
-                                        newActiveStatus
+                                        newActiveStatus,
+                                        newPlanType
                                     )
                                 }
 
@@ -399,7 +402,7 @@ class RealityEliteActivity : BaseActivity() {
                                         if (expiryUnix > System.currentTimeMillis()) {
                                             featuresEditor.putBoolean("feature_reality_pro", true)
                                             val duration = newActiveDuration.toLong()
-                                            if (duration > 3) {
+                                            if (newPlanType == "paid") {
                                                 // Paid subscription
                                                 val durationMs = (365L / 12) * duration * 24 * 60 * 60 * 1000
                                                 val startTime = expiryUnix - durationMs

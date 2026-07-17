@@ -46,6 +46,7 @@ export default {
       const activeExpiry = body.activeExpiry || "0";
       const activeDuration = body.activeDuration || "0";
       const activeStatus = body.activeStatus || "N";
+      const planType = body.planType || "none";
 
       // Extract and verify userId and password
       if (!userId || !password) {
@@ -55,7 +56,7 @@ export default {
         });
       }
 
-      const isAuthorized = await this.verifyAuth(userId, password, activeExpiry, activeDuration, activeStatus, env.APP_SECRET_PEPPER);
+      const isAuthorized = await this.verifyAuth(userId, password, activeExpiry, activeDuration, activeStatus, planType, env.APP_SECRET_PEPPER);
       if (!isAuthorized) {
         return new Response(JSON.stringify({ error: "Unauthorized. Invalid credentials." }), {
             status: 401,
@@ -167,30 +168,31 @@ export default {
     }
   },
 
-  async generatePassword(userId, expiry, duration, status, secretPepper) {
+  async generatePassword(userId, expiry, duration, status, planType, secretPepper) {
     if (!userId || !secretPepper) return "";
     const expiryStr = String(expiry || "0");
     const durationStr = String(duration || "0");
     const statusStr = String(status || "N");
+    const planTypeStr = String(planType || "none");
     
     const encoder = new TextEncoder();
     const secretKeyData = encoder.encode(secretPepper);
     const cryptoKey = await crypto.subtle.importKey(
       "raw", secretKeyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
     );
-    const msg = `${userId}:${expiryStr}:${durationStr}:${statusStr}`;
+    const msg = `${userId}:${expiryStr}:${durationStr}:${statusStr}:${planTypeStr}`;
     const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(msg));
     return Array.from(new Uint8Array(signature))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('').substring(0, 32);
   },
 
-  async verifyAuth(userId, providedPassword, expiry, duration, status, secretPepper) {
+  async verifyAuth(userId, providedPassword, expiry, duration, status, planType, secretPepper) {
     if (!userId || !providedPassword || !secretPepper) return false;
-    const expectedPassword = await this.generatePassword(userId, expiry, duration, status, secretPepper);
+    const expectedPassword = await this.generatePassword(userId, expiry, duration, status, planType, secretPepper);
     const matched = providedPassword === expectedPassword;
     if (!matched) {
-      console.warn(`[SECURITY] Unauthorized access detected: Hashed credentials mismatch! User ID: ${userId}, Expiry: ${expiry}, Duration: ${duration}, Status: ${status}. Attempts to bypass subscription verification logic may result in account termination and legal action.`);
+      console.warn(`[SECURITY] Unauthorized access detected: Hashed credentials mismatch! User ID: ${userId}, Expiry: ${expiry}, Duration: ${duration}, Status: ${status}, PlanType: ${planType}. Attempts to bypass subscription verification logic may result in account termination and legal action.`);
     }
     return matched;
   }

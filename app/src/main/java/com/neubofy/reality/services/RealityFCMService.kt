@@ -52,6 +52,7 @@ class RealityFCMService : FirebaseMessagingService() {
                         put("activeExpiry", com.neubofy.reality.utils.IdentityManager.getActiveExpiry(context))
                         put("activeDuration", com.neubofy.reality.utils.IdentityManager.getActiveDuration(context))
                         put("activeStatus", com.neubofy.reality.utils.IdentityManager.getActiveStatus(context))
+                        put("planType", com.neubofy.reality.utils.IdentityManager.getActivePlanType(context))
                         put("fcmToken", fcmToken)
                     }
 

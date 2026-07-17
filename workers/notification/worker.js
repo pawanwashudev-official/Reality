@@ -43,13 +43,14 @@ export default {
       const activeExpiry = body.activeExpiry || "0";
       const activeDuration = body.activeDuration || "0";
       const activeStatus = body.activeStatus || "N";
+      const planType = body.planType || "none";
 
       if (!userId || !backupPassword || !fcmToken) {
         return jsonError("Missing required fields: userId, backupPassword, fcmToken", 400);
       }
 
       // Verify credentials using same HMAC logic as proxy worker
-      const verified = await verifyUserCredentials(userId, backupPassword, activeExpiry, activeDuration, activeStatus, env);
+      const verified = await verifyUserCredentials(userId, backupPassword, activeExpiry, activeDuration, activeStatus, planType, env);
       if (!verified) {
         return jsonError("Invalid credentials", 401);
       }
@@ -146,30 +147,31 @@ export default {
 // ============================================================
 // HELPER: Verify userId + backupPassword (same HMAC as proxy worker)
 // ============================================================
-async function generatePassword(userId, expiry, duration, status, env) {
+async function generatePassword(userId, expiry, duration, status, planType, env) {
   if (!userId || !env.APP_SECRET_PEPPER) return "";
   const expiryStr = String(expiry || "0");
   const durationStr = String(duration || "0");
   const statusStr = String(status || "N");
+  const planTypeStr = String(planType || "none");
   
   const encoder = new TextEncoder();
   const secretKeyData = encoder.encode(env.APP_SECRET_PEPPER);
   const cryptoKey = await crypto.subtle.importKey(
     "raw", secretKeyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
   );
-  const msg = `${userId}:${expiryStr}:${durationStr}:${statusStr}`;
+  const msg = `${userId}:${expiryStr}:${durationStr}:${statusStr}:${planTypeStr}`;
   const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(msg));
   return Array.from(new Uint8Array(signature))
     .map(b => b.toString(16).padStart(2, '0'))
     .join('').substring(0, 32);
 }
 
-async function verifyUserCredentials(userId, backupPassword, expiry, duration, status, env) {
+async function verifyUserCredentials(userId, backupPassword, expiry, duration, status, planType, env) {
   if (!userId || !backupPassword || !env.APP_SECRET_PEPPER) return false;
-  const expectedPassword = await generatePassword(userId, expiry, duration, status, env);
+  const expectedPassword = await generatePassword(userId, expiry, duration, status, planType, env);
   const matched = backupPassword === expectedPassword;
   if (!matched) {
-    console.warn(`[SECURITY] Unauthorized access detected: Hashed credentials mismatch! User ID: ${userId}, Expiry: ${expiry}, Duration: ${duration}, Status: ${status}. Attempts to bypass subscription verification logic may result in account termination and legal action.`);
+    console.warn(`[SECURITY] Unauthorized access detected: Hashed credentials mismatch! User ID: ${userId}, Expiry: ${expiry}, Duration: ${duration}, Status: ${status}, PlanType: ${planType}. Attempts to bypass subscription verification logic may result in account termination and legal action.`);
   }
   return matched;
 }

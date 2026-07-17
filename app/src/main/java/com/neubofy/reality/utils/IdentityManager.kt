@@ -19,6 +19,7 @@ object IdentityManager {
     private const val KEY_ACTIVE_EXPIRY = "active_expiry"
     private const val KEY_ACTIVE_DURATION = "active_duration"
     private const val KEY_ACTIVE_STATUS = "active_status"
+    private const val KEY_ACTIVE_PLAN_TYPE = "active_plan_type"
 
     fun getActiveExpiry(context: Context): String {
         return SecurePreferences.get(context, PREFS_NAME).getString(KEY_ACTIVE_EXPIRY, "0") ?: "0"
@@ -32,18 +33,24 @@ object IdentityManager {
         return SecurePreferences.get(context, PREFS_NAME).getString(KEY_ACTIVE_STATUS, "N") ?: "N"
     }
 
+    fun getActivePlanType(context: Context): String {
+        return SecurePreferences.get(context, PREFS_NAME).getString(KEY_ACTIVE_PLAN_TYPE, "none") ?: "none"
+    }
+
     fun updateCredentials(
         context: Context,
         password: String,
         activeExpiry: String,
         activeDuration: String,
-        activeStatus: String
+        activeStatus: String,
+        activePlanType: String
     ) {
         SecurePreferences.get(context, PREFS_NAME).edit().apply {
             putString(KEY_BACKUP_PASSWORD, password)
             putString(KEY_ACTIVE_EXPIRY, activeExpiry)
             putString(KEY_ACTIVE_DURATION, activeDuration)
             putString(KEY_ACTIVE_STATUS, activeStatus)
+            putString(KEY_ACTIVE_PLAN_TYPE, activePlanType)
             apply()
         }
     }
@@ -141,6 +148,7 @@ object IdentityManager {
                     val activeExpiry = responseJson.optString("activeExpiry", "0")
                     val activeDuration = responseJson.optString("activeDuration", "0")
                     val activeStatus = responseJson.optString("activeStatus", "N")
+                    val planType = responseJson.optString("planType", "none")
 
                     if (userId.isNotEmpty() && backupPassword.isNotEmpty()) {
                         SecurePreferences.get(context, PREFS_NAME).edit().apply {
@@ -149,6 +157,7 @@ object IdentityManager {
                             putString(KEY_ACTIVE_EXPIRY, activeExpiry)
                             putString(KEY_ACTIVE_DURATION, activeDuration)
                             putString(KEY_ACTIVE_STATUS, activeStatus)
+                            putString(KEY_ACTIVE_PLAN_TYPE, planType)
                             apply()
                         }
 
@@ -178,7 +187,7 @@ object IdentityManager {
                                 if (expiryUnix > System.currentTimeMillis()) {
                                     featuresEditor.putBoolean("feature_reality_pro", true)
                                     val duration = activeDuration.toLong()
-                                    if (duration > 3) {
+                                    if (planType == "paid") {
                                         // Paid subscription (duration is in months, e.g. 12 months)
                                         val durationMs = (365L / 12) * duration * 24 * 60 * 60 * 1000
                                         val startTime = expiryUnix - durationMs

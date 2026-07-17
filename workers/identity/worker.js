@@ -156,6 +156,7 @@ export default {
         let activeExpiry = "0";
         let activeDuration = "0";
         let activeStatus = "N";
+        let planType = "none";
 
         let isPaidActive = false;
         if (userStatus === "V" && userExpiryDate) {
@@ -166,6 +167,7 @@ export default {
               activeExpiry = String(expiryUnix);
               activeDuration = parts[1];
               activeStatus = "V";
+              planType = "paid";
               isPaidActive = true;
             }
           }
@@ -179,6 +181,7 @@ export default {
               activeExpiry = String(expiryUnix);
               activeDuration = parts[1];
               activeStatus = "V";
+              planType = "trial";
             }
           }
         }
@@ -189,6 +192,7 @@ export default {
           activeExpiry,
           activeDuration,
           activeStatus,
+          planType,
           env.APP_SECRET_PEPPER
         );
 
@@ -202,7 +206,8 @@ export default {
             trial_plan: userTrialPlan,
             activeExpiry: activeExpiry,
             activeDuration: activeDuration,
-            activeStatus: activeStatus
+            activeStatus: activeStatus,
+            planType: planType
           }),
           { 
             status: 200, 
@@ -307,12 +312,13 @@ export default {
           const activeExpiry = url.searchParams.get("activeExpiry") || "0";
           const activeDuration = url.searchParams.get("activeDuration") || "0";
           const activeStatus = url.searchParams.get("activeStatus") || "N";
+          const planType = url.searchParams.get("planType") || "none";
 
           if (!userId || !password) {
             return new Response(JSON.stringify({ status: "INVALID" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
           }
 
-          const isAuthorized = await this.verifyAuth(userId, password, activeExpiry, activeDuration, activeStatus, env.APP_SECRET_PEPPER);
+          const isAuthorized = await this.verifyAuth(userId, password, activeExpiry, activeDuration, activeStatus, planType, env.APP_SECRET_PEPPER);
           if (!isAuthorized) {
             return new Response(JSON.stringify({ status: "UNAUTHORIZED" }), { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
           }
@@ -341,6 +347,7 @@ export default {
           const activeExpiry = incomingData.activeExpiry || "0";
           const activeDuration = incomingData.activeDuration || "0";
           const activeStatus = incomingData.activeStatus || "N";
+          const planType = incomingData.planType || "none";
 
           if (!userId || !password) {
              return new Response(JSON.stringify({ status: "ERROR", message: "Missing auth fields" }), {
@@ -349,7 +356,7 @@ export default {
             });
           }
 
-          const isAuthorized = await this.verifyAuth(userId, password, activeExpiry, activeDuration, activeStatus, env.APP_SECRET_PEPPER);
+          const isAuthorized = await this.verifyAuth(userId, password, activeExpiry, activeDuration, activeStatus, planType, env.APP_SECRET_PEPPER);
           if (!isAuthorized) {
             return new Response(JSON.stringify({ status: "ERROR", message: "Unauthorized" }), {
               status: 401,
@@ -371,7 +378,7 @@ export default {
             let latestExpiryDate = existingRow.expiryDate;
             let latestTrialPlan = existingRow.trial_plan;
 
-            // Handle expiry checking and reset in DB
+            // Handle expiry checking (no DB write/clearance as requested to keep history intact)
             if (latestExpiryDate) {
               const parts = latestExpiryDate.split("-");
               let isExpired = false;
@@ -385,22 +392,13 @@ export default {
                 const expiryDateObj = new Date(Date.UTC(yyyy, mm, dd));
                 if (expiryDateObj.getTime() < Date.now()) isExpired = true;
               }
-
-              if (isExpired) {
-                await env.DB.prepare(`
-                  UPDATE "Reality Elite members management"
-                  SET status = NULL, expiryDate = NULL
-                  WHERE userId = ?
-                `).bind(userId).run();
-                latestStatus = null;
-                latestExpiryDate = null;
-              }
             }
 
             // Determine current active subscription details
             let curActiveExpiry = "0";
             let curActiveDuration = "0";
             let curActiveStatus = "N";
+            let curPlanType = "none";
 
             let isPaidActive = false;
             if (latestStatus === "V" && latestExpiryDate) {
@@ -411,6 +409,7 @@ export default {
                   curActiveExpiry = String(expiryUnix);
                   curActiveDuration = parts[1];
                   curActiveStatus = "V";
+                  curPlanType = "paid";
                   isPaidActive = true;
                 }
               }
@@ -424,11 +423,12 @@ export default {
                   curActiveExpiry = String(expiryUnix);
                   curActiveDuration = parts[1];
                   curActiveStatus = "V";
+                  curPlanType = "trial";
                 }
               }
             }
 
-            const newPassword = await this.generatePassword(userId, curActiveExpiry, curActiveDuration, curActiveStatus, env.APP_SECRET_PEPPER);
+            const newPassword = await this.generatePassword(userId, curActiveExpiry, curActiveDuration, curActiveStatus, curPlanType, env.APP_SECRET_PEPPER);
 
             if (curActiveStatus === "V") {
               return new Response(
@@ -439,6 +439,7 @@ export default {
                   activeExpiry: curActiveExpiry,
                   activeDuration: curActiveDuration,
                   activeStatus: curActiveStatus,
+                  planType: curPlanType,
                   expiryDate: latestExpiryDate || `${curActiveExpiry}-${curActiveDuration}`
                 }),
                 { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } }
@@ -505,12 +506,14 @@ export default {
           const newActiveExpiry = String(newExpiryUnix);
           const newActiveDuration = String(months);
           const newActiveStatus = "V";
+          const newPlanType = "paid";
 
           const newPassword = await this.generatePassword(
             userId,
             newActiveExpiry,
             newActiveDuration,
             newActiveStatus,
+            newPlanType,
             env.APP_SECRET_PEPPER
           );
 
@@ -522,6 +525,7 @@ export default {
               activeExpiry: newActiveExpiry,
               activeDuration: newActiveDuration,
               activeStatus: newActiveStatus,
+              planType: newPlanType,
               expiryDate: expiryDateStr
             }),
             { 
@@ -542,30 +546,31 @@ export default {
 
   },
 
-  async generatePassword(userId, expiry, duration, status, secretPepper) {
+  async generatePassword(userId, expiry, duration, status, planType, secretPepper) {
     if (!userId || !secretPepper) return "";
     const expiryStr = String(expiry || "0");
     const durationStr = String(duration || "0");
     const statusStr = String(status || "N");
+    const planTypeStr = String(planType || "none");
     
     const encoder = new TextEncoder();
     const secretKeyData = encoder.encode(secretPepper);
     const cryptoKey = await crypto.subtle.importKey(
       "raw", secretKeyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
     );
-    const msg = `${userId}:${expiryStr}:${durationStr}:${statusStr}`;
+    const msg = `${userId}:${expiryStr}:${durationStr}:${statusStr}:${planTypeStr}`;
     const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(msg));
     return Array.from(new Uint8Array(signature))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('').substring(0, 32);
   },
 
-  async verifyAuth(userId, providedPassword, expiry, duration, status, secretPepper) {
+  async verifyAuth(userId, providedPassword, expiry, duration, status, planType, secretPepper) {
     if (!userId || !providedPassword || !secretPepper) return false;
-    const expectedPassword = await this.generatePassword(userId, expiry, duration, status, secretPepper);
+    const expectedPassword = await this.generatePassword(userId, expiry, duration, status, planType, secretPepper);
     const matched = providedPassword === expectedPassword;
     if (!matched) {
-      console.warn(`[SECURITY] Unauthorized access detected: Hashed credentials mismatch! User ID: ${userId}, Expiry: ${expiry}, Duration: ${duration}, Status: ${status}. Attempts to bypass subscription verification logic may result in account termination and legal action.`);
+      console.warn(`[SECURITY] Unauthorized access detected: Hashed credentials mismatch! User ID: ${userId}, Expiry: ${expiry}, Duration: ${duration}, Status: ${status}, PlanType: ${planType}. Attempts to bypass subscription verification logic may result in account termination and legal action.`);
     }
     return matched;
   }
