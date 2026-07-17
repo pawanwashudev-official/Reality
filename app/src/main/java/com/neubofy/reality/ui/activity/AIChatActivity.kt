@@ -291,7 +291,6 @@ open class AIChatActivity : BaseActivity() {
                 val jsonBody = org.json.JSONObject().apply {
                     if (!isMeshModel) {
                         val userId = com.neubofy.reality.utils.IdentityManager.getUserId(this@AIChatActivity)
-<<<<<<< HEAD
                         val connectionSecret = com.neubofy.reality.utils.IdentityManager.getConnectionSecret(this@AIChatActivity)
                         if (userId.isEmpty() || connectionSecret.isEmpty()) {
                             return@withContext "You are signed in but your identity is not verified. Please go to the Elite Member page and tap 'Refresh Identity & Subscription' to continue."
@@ -302,14 +301,6 @@ open class AIChatActivity : BaseActivity() {
                         put("activeDuration", com.neubofy.reality.utils.IdentityManager.getActiveDuration(this@AIChatActivity))
                         put("activeStatus", com.neubofy.reality.utils.IdentityManager.getActiveStatus(this@AIChatActivity))
                         put("planType", com.neubofy.reality.utils.IdentityManager.getActivePlanType(this@AIChatActivity))
-=======
-                        val password = com.neubofy.reality.utils.IdentityManager.getBackupPassword(this@AIChatActivity)
-                        if (userId.isEmpty() || password.isEmpty()) {
-                            return@withContext "You are signed in but your identity is not verified. Please go to the Profile page and click 'Refresh Identity & Subscription' to continue."
-                        }
-                        put("userId", userId)
-                        put("password", password)
->>>>>>> 33ad6f1cb9c6b8062dd178bde5d50b7428c28a18
                         put("requestCount", com.neubofy.reality.utils.IdentityManager.getAndIncrementDailyAICount(this@AIChatActivity))
                     }
                     put("messages", messagesJson)

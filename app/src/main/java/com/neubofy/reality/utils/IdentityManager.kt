@@ -117,19 +117,11 @@ object IdentityManager {
         return ""
     }
 
-<<<<<<< HEAD
     suspend fun refreshIdentity(context: Context): IdentityResult? {
         if (!checkRateLimit(context)) {
             throw Exception("RATE_LIMIT")
         }
         return generateAndCacheIdentity(context)
-=======
-    suspend fun refreshIdentity(context: Context) {
-        if (!checkRateLimit(context)) {
-            throw Exception("RATE_LIMIT")
-        }
-        generateAndCacheIdentity(context)
->>>>>>> 33ad6f1cb9c6b8062dd178bde5d50b7428c28a18
     }
 
     private suspend fun checkRateLimit(context: Context): Boolean {
@@ -175,13 +167,8 @@ object IdentityManager {
         return true
     }
 
-<<<<<<< HEAD
     private suspend fun generateAndCacheIdentity(context: Context): IdentityResult? {
         return withContext(Dispatchers.IO) {
-=======
-    private suspend fun generateAndCacheIdentity(context: Context) {
-        withContext(Dispatchers.IO) {
->>>>>>> 33ad6f1cb9c6b8062dd178bde5d50b7428c28a18
             val email = GoogleAuthManager.getUserEmail(context) ?: ""
             val isSignedIn = GoogleAuthManager.isSignedIn(context) && email.isNotEmpty()
             val idToken = GoogleAuthManager.getIdToken(context)

@@ -58,10 +58,6 @@ class RealityEliteActivity : BaseActivity() {
         }
 
         btnCancel = findViewById(R.id.btn_cancel)
-<<<<<<< HEAD
-=======
-        btnSyncIdentity = findViewById(R.id.btn_sync_identity)
->>>>>>> 33ad6f1cb9c6b8062dd178bde5d50b7428c28a18
         btnEnrollRenew = findViewById(R.id.btn_enroll_renew)
         tvRefreshPrompt = findViewById(R.id.tv_refresh_prompt)
 
@@ -89,7 +85,6 @@ class RealityEliteActivity : BaseActivity() {
                         }
                     }
                 } catch (e: Exception) {
-<<<<<<< HEAD
                     withContext(Dispatchers.Main) {
                         btnSyncIdentity.text = "Refresh Identity & Subscription"
                         btnSyncIdentity.isEnabled = true
@@ -98,16 +93,6 @@ class RealityEliteActivity : BaseActivity() {
                             com.neubofy.reality.utils.TerminalLogger.log("Manual sync error: ${e.message}")
                         }
                     }
-=======
-                    if (e.message != "RATE_LIMIT") {
-                        com.neubofy.reality.utils.TerminalLogger.log("Manual sync error: ${e.message}")
-                    }
-                }
-                withContext(Dispatchers.Main) {
-                    btnSyncIdentity.text = "Sync Identity"
-                    btnSyncIdentity.isEnabled = true
-                    updateStateUI()
->>>>>>> 33ad6f1cb9c6b8062dd178bde5d50b7428c28a18
                 }
             }
         }
@@ -363,7 +348,6 @@ class RealityEliteActivity : BaseActivity() {
         }
     }
 
-<<<<<<< HEAD
     private fun showIdentityResultDialog(result: IdentityManager.IdentityResult) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_identity_result, null)
         
@@ -456,8 +440,5 @@ class RealityEliteActivity : BaseActivity() {
             .setPositiveButton("Done", null)
             .show()
     }
-=======
-
->>>>>>> 33ad6f1cb9c6b8062dd178bde5d50b7428c28a18
 
 }
