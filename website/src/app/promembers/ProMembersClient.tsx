@@ -404,6 +404,14 @@ function MemberCard({ member, searchQuery, isAdmin, onGenerateCard }: { member: 
     cardBorder = showDetails ? 'border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.15)]' : 'border-gray-800 hover:border-amber-500/30';
     cardBg = 'from-[#1A1005] to-[#0A0602]';
     statusIcon = <Clock className="text-amber-500 shrink-0" size={14} />;
+  } else if (member.status === 'N') {
+    statusText = 'EXPIRED ELITE';
+    statusColor = 'text-red-400 bg-red-950/40 border-red-800/40';
+    dotColor = 'bg-red-400 shadow-[0_0_8px_#ef4444]';
+    cardBorder = showDetails ? 'border-red-500/50 shadow-[0_0_25px_rgba(239,68,68,0.15)]' : 'border-gray-800 hover:border-red-500/30';
+    cardBg = 'from-[#1A0505] to-[#0A0202]';
+    statusIcon = <Shield className="text-red-400 shrink-0" size={14} />;
+    showSubDetails = !!member.expiryDate;
   } else if (member.trial_plan) {
     statusText = 'TRIAL';
     statusColor = 'text-purple-400 bg-purple-950/40 border-purple-800/40';

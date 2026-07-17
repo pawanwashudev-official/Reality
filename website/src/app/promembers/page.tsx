@@ -126,8 +126,22 @@ export default async function ProMembersPage({ searchParams }: PageProps) {
     filtered = allMembers.filter(m => m.userId.toLowerCase().includes(searchQuery));
   }
 
-  // 2. Sort
+  // Helper to score plan priority for sorting
+  const getPlanScore = (member: typeof allMembers[0]) => {
+    if (member.status === 'V') return 4;
+    if (member.status === 'P') return 3;
+    if (member.status === 'N' || (member.expiryDate && member.status === 'N')) return 2;
+    if (member.trial_plan) return 1;
+    return 0;
+  };
+
+  // 2. Sort: prioritize paid plans (active/expired), then trial, then standard
   filtered.sort((a, b) => {
+    const scoreA = getPlanScore(a);
+    const scoreB = getPlanScore(b);
+    if (scoreA !== scoreB) {
+      return scoreB - scoreA; // Higher plan priority score first
+    }
     const dateA = new Date(a.dateJoined).getTime();
     const dateB = new Date(b.dateJoined).getTime();
     if (isNaN(dateA) || isNaN(dateB)) return 0;
@@ -144,7 +158,9 @@ export default async function ProMembersPage({ searchParams }: PageProps) {
     userId: m.userId,
     dateJoined: m.dateJoined,
     hasAccess: m.hasAccess,
-    trial_plan: m.trial_plan
+    trial_plan: m.trial_plan,
+    status: m.status,
+    expiryDate: m.expiryDate
   }));
 
   return (

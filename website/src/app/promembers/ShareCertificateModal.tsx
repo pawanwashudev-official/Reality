@@ -67,7 +67,7 @@ export default function ShareCertificateModal({ isOpen, onClose, preVerifiedMemb
     if (isOpen) {
       if (preVerifiedMember) {
         setVerifiedMember(preVerifiedMember);
-        setIsPro(preVerifiedMember.status === 'V' || preVerifiedMember.status === 'P' || !!preVerifiedMember.trial_plan);
+        setIsPro(preVerifiedMember.status === 'V' || preVerifiedMember.status === 'P' || preVerifiedMember.status === 'N' || !!preVerifiedMember.trial_plan);
         setUserId(preVerifiedMember.userId);
         setStep(2);
       } else {
@@ -118,6 +118,7 @@ export default function ShareCertificateModal({ isOpen, onClose, preVerifiedMemb
       const res = await verifyMemberId(userId.trim());
       if (res.success && res.member) {
         setVerifiedMember(res.member as VerifiedMember);
+        setIsPro(res.member.status === 'V' || res.member.status === 'P' || res.member.status === 'N' || !!res.member.trial_plan);
         setStep(2);
       } else {
         setVerifyError(res.error || 'User ID not found. Please check and try again.');
@@ -537,7 +538,7 @@ export default function ShareCertificateModal({ isOpen, onClose, preVerifiedMemb
                     }}>
                       <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: isPro ? '#fbbf24' : '#00E5FF' }} />
                       <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: isPro ? '#fbbf24' : '#00E5FF' }}>
-                        {isPro ? 'Verified Elite Pro' : 'Verified Member'}
+                        {verifiedMember?.status === 'N' ? 'Expired Elite Pro' : isPro ? 'Verified Elite Pro' : 'Verified Member'}
                       </span>
                     </div>
                   </div>

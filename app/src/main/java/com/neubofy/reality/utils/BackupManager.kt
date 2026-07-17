@@ -105,7 +105,11 @@ object BackupManager {
         categories: Set<BackupCategory> = BackupCategory.entries.toSet(),
         onProgress: (Float, String) -> Unit = { _, _ -> }
     ): BackupResult {
-        com.neubofy.reality.utils.IdentityManager.refreshIdentity(context.applicationContext)
+        try {
+            com.neubofy.reality.utils.IdentityManager.refreshIdentity(context.applicationContext)
+        } catch (e: Exception) {
+            TerminalLogger.log("BackupManager: Identity refresh skipped/failed: ${e.message}")
+        }
 
         return withContext(Dispatchers.IO) {
             try {
@@ -258,7 +262,11 @@ object BackupManager {
         categories: Set<BackupCategory>? = null,
         onProgress: (Float, String) -> Unit = { _, _ -> }
     ): BackupResult {
-        com.neubofy.reality.utils.IdentityManager.refreshIdentity(context.applicationContext)
+        try {
+            com.neubofy.reality.utils.IdentityManager.refreshIdentity(context.applicationContext)
+        } catch (e: Exception) {
+            TerminalLogger.log("BackupManager: Identity refresh skipped/failed: ${e.message}")
+        }
 
         return withContext(Dispatchers.IO) {
             try {
