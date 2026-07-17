@@ -139,13 +139,7 @@ class PaymentVerificationActivity : BaseActivity() {
     }
 
     private fun submitPaymentRequest(transactionId: String, customNote: String) {
-        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            try {
-                com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@PaymentVerificationActivity.applicationContext)
-            } catch (e: Exception) {
-                com.neubofy.reality.utils.TerminalLogger.log("PaymentVerification: Identity refresh failed/skipped: ${e.message}")
-            }
-        }
+
         val workerUrl = BuildConfig.WORKER_URL
 
         if (workerUrl.isEmpty()) {
