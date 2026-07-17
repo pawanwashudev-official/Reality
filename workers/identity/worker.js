@@ -1,7 +1,7 @@
+const CORS_ORIGIN = "https://reality.neubofy.in";
+
 export default {
   async fetch(request, env) {
-    const CORS_ORIGIN = "https://reality.neubofy.in";
-
     // Handle CORS preflight requests universally
     if (request.method === "OPTIONS") {
       return new Response(null, {
@@ -82,139 +82,10 @@ export default {
           .join('');
         const userId = idHashHex.substring(0, 16);
 
-        let userDate = null;
-        let userStatus = null;
-        let userExpiryDate = null;
-        let userTrialPlan = null;
-
-        if (env.DB) {
-          try {
-            const existingRow = await env.DB.prepare(
-              'SELECT date, status, expiryDate, trial_plan FROM "Reality Elite members management" WHERE userId = ?'
-            ).bind(userId).first();
-
-            const durationDays = 3;
-            const currentUnix = Date.now();
-            const durationMs = durationDays * 24 * 60 * 60 * 1000;
-            const expiryUnix = currentUnix + durationMs;
-            const autoTrialPlanStr = `${expiryUnix}-${durationDays}`;
-
-            if (!existingRow) {
-              const currentDate = new Date().toISOString();
-              await env.DB.prepare(`
-                INSERT INTO "Reality Elite members management" (userId, date, trial_plan)
-                VALUES (?, ?, ?)
-              `).bind(userId, currentDate, autoTrialPlanStr).run();
-              userDate = currentDate;
-              userTrialPlan = autoTrialPlanStr;
-            } else {
-              userDate = existingRow.date;
-              userStatus = existingRow.status;
-              userExpiryDate = existingRow.expiryDate;
-              userTrialPlan = existingRow.trial_plan;
-
-              if (!userTrialPlan) {
-                await env.DB.prepare(`
-                  UPDATE "Reality Elite members management"
-                  SET trial_plan = ?
-                  WHERE userId = ?
-                `).bind(autoTrialPlanStr, userId).run();
-                userTrialPlan = autoTrialPlanStr;
-              }
-
-              if (userExpiryDate) {
-                const parts = userExpiryDate.split("-");
-                let isExpired = false;
-                if (parts.length === 2) {
-                  const expiryUnix = parseInt(parts[0], 10);
-                  if (expiryUnix < Date.now()) isExpired = true;
-                } else if (parts.length === 4) {
-                  const yyyy = parseInt(parts[0], 10);
-                  const mm = parseInt(parts[1], 10) - 1;
-                  const dd = parseInt(parts[2], 10);
-                  const expiryDateObj = new Date(Date.UTC(yyyy, mm, dd));
-                  if (expiryDateObj.getTime() < Date.now()) isExpired = true;
-                }
-
-                if (isExpired) {
-                  await env.DB.prepare(`
-                    UPDATE "Reality Elite members management"
-                    SET status = NULL, expiryDate = NULL
-                    WHERE userId = ?
-                  `).bind(userId).run();
-                  userStatus = null;
-                  userExpiryDate = null;
-                }
-              }
-            }
-          } catch (e) {
-            console.error("DB Error in generate-identity:", e);
-          }
-        }
-
-        // Determine active subscription info state for deterministic password generation
-        let activeExpiry = "0";
-        let activeDuration = "0";
-        let activeStatus = "N";
-        let planType = "none";
-
-        let isPaidActive = false;
-        if (userStatus === "V" && userExpiryDate) {
-          const parts = userExpiryDate.split("-");
-          if (parts.length === 2) {
-            const expiryUnix = parseInt(parts[0], 10);
-            if (expiryUnix > Date.now()) {
-              activeExpiry = String(expiryUnix);
-              activeDuration = parts[1];
-              activeStatus = "V";
-              planType = "paid";
-              isPaidActive = true;
-            }
-          }
-        }
-
-        if (!isPaidActive && userTrialPlan) {
-          const parts = userTrialPlan.split("-");
-          if (parts.length === 2) {
-            const expiryUnix = parseInt(parts[0], 10);
-            if (expiryUnix > Date.now()) {
-              activeExpiry = String(expiryUnix);
-              activeDuration = parts[1];
-              activeStatus = "V";
-              planType = "trial";
-            }
-          }
-        }
-
-        // Generate connectionSecret based on active subscription details
-        const connectionSecret = await this.generateConnectionSecret(
-          userId,
-          activeExpiry,
-          activeDuration,
-          activeStatus,
-          planType,
-          env.APP_SECRET_PEPPER
-        );
-
-        const backupPassword = await this.generateBackupPassword(userId, env.APP_SECRET_PEPPER);
+        const identityData = await this.fetchUserIdentity(userId, env);
 
         return new Response(
-          JSON.stringify({
-            userId: userId,
-            connectionSecret: connectionSecret,
-            backupPassword: backupPassword,
-            // Keep legacy keys for backward compatibility
-            backupPassword_legacy: connectionSecret, // legacy mapping
-            backupKey: backupPassword, // legacy mapping
-            date: userDate,
-            status: userStatus,
-            expiryDate: userExpiryDate,
-            trial_plan: userTrialPlan,
-            activeExpiry: activeExpiry,
-            activeDuration: activeDuration,
-            activeStatus: activeStatus,
-            planType: planType
-          }),
+          JSON.stringify(identityData),
           { 
             status: 200, 
             headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } 
@@ -311,31 +182,6 @@ export default {
       // ============================================================
       if (url.pathname === "/license") {
         
-        // Handles verification (GET) - Step 3 (Stateless, Database-free verification)
-        if (request.method === "GET") {
-          const userId = url.searchParams.get("userId");
-          const password = url.searchParams.get("password") || url.searchParams.get("connectionSecret");
-          const activeExpiry = url.searchParams.get("activeExpiry") || "0";
-          const activeDuration = url.searchParams.get("activeDuration") || "0";
-          const activeStatus = url.searchParams.get("activeStatus") || "N";
-          const planType = url.searchParams.get("planType") || "none";
-
-          if (!userId || !password) {
-            return new Response(JSON.stringify({ status: "INVALID" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
-          }
-
-          const isAuthorized = await this.verifyAuth(userId, password, activeExpiry, activeDuration, activeStatus, planType, env.APP_SECRET_PEPPER);
-          if (!isAuthorized) {
-            return new Response(JSON.stringify({ status: "UNAUTHORIZED" }), { status: 401, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
-          }
-
-          if (activeStatus === "V" && parseInt(activeExpiry, 10) > Date.now()) {
-            return new Response(JSON.stringify({ status: "SUCCESS", expiryDate: `${activeExpiry}-${activeDuration}` }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
-          } else {
-            return new Response(JSON.stringify({ status: "EXPIRED" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
-          }
-        }
-
         // Handles subscription verification & submission (POST)
         if (request.method === "POST") {
           let incomingData = {};
@@ -370,96 +216,7 @@ export default {
             });
           }
 
-          // Case 1: action === "verify" (checks latest DB status, updates client's signature)
-          if (incomingData.action === "verify") {
-            const existingRow = await env.DB.prepare(
-              'SELECT status, expiryDate, trial_plan FROM "Reality Elite members management" WHERE userId = ?'
-            ).bind(userId).first();
-
-            if (!existingRow) {
-              return new Response(JSON.stringify({ status: "NOT_FOUND" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
-            }
-
-            let latestStatus = existingRow.status;
-            let latestExpiryDate = existingRow.expiryDate;
-            let latestTrialPlan = existingRow.trial_plan;
-
-            // Handle expiry checking (no DB write/clearance as requested to keep history intact)
-            if (latestExpiryDate) {
-              const parts = latestExpiryDate.split("-");
-              let isExpired = false;
-              if (parts.length === 2) {
-                const expiryUnix = parseInt(parts[0], 10);
-                if (expiryUnix < Date.now()) isExpired = true;
-              } else if (parts.length === 4) {
-                const yyyy = parseInt(parts[0], 10);
-                const mm = parseInt(parts[1], 10) - 1;
-                const dd = parseInt(parts[2], 10);
-                const expiryDateObj = new Date(Date.UTC(yyyy, mm, dd));
-                if (expiryDateObj.getTime() < Date.now()) isExpired = true;
-              }
-            }
-
-            // Determine current active subscription details
-            let curActiveExpiry = "0";
-            let curActiveDuration = "0";
-            let curActiveStatus = "N";
-            let curPlanType = "none";
-
-            let isPaidActive = false;
-            if ((latestStatus === "V" || latestStatus === "P") && latestExpiryDate) {
-              const parts = latestExpiryDate.split("-");
-              if (parts.length === 2) {
-                const expiryUnix = parseInt(parts[0], 10);
-                if (expiryUnix > Date.now()) {
-                  curActiveExpiry = String(expiryUnix);
-                  curActiveDuration = parts[1];
-                  curActiveStatus = latestStatus;
-                  curPlanType = "paid";
-                  isPaidActive = true;
-                }
-              }
-            }
-
-            if (!isPaidActive && latestTrialPlan) {
-              const parts = latestTrialPlan.split("-");
-              if (parts.length === 2) {
-                const expiryUnix = parseInt(parts[0], 10);
-                if (expiryUnix > Date.now()) {
-                  curActiveExpiry = String(expiryUnix);
-                  curActiveDuration = parts[1];
-                  curActiveStatus = "V";
-                  curPlanType = "trial";
-                }
-              }
-            }
-
-            const newPassword = await this.generateConnectionSecret(userId, curActiveExpiry, curActiveDuration, curActiveStatus, curPlanType, env.APP_SECRET_PEPPER);
-            const backupKey = await this.generateBackupPassword(userId, env.APP_SECRET_PEPPER);
-
-            if (curActiveStatus === "V" || curActiveStatus === "P") {
-              return new Response(
-                JSON.stringify({
-                  status: "SUCCESS",
-                  verificationCode: "REGISTERED",
-                  password: newPassword,
-                  backupKey: backupKey,
-                  activeExpiry: curActiveExpiry,
-                  activeDuration: curActiveDuration,
-                  activeStatus: curActiveStatus,
-                  planType: curPlanType,
-                  expiryDate: latestExpiryDate || `${curActiveExpiry}-${curActiveDuration}`
-                }),
-                { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } }
-              );
-            } else if (latestStatus === "P") {
-              return new Response(JSON.stringify({ status: "PENDING" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
-            } else {
-              return new Response(JSON.stringify({ status: "EXPIRED" }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN } });
-            }
-          }
-
-          // Case 2: Purchase submission
+          // Purchase submission
           const transactionId = incomingData.transactionId;
           let customNote = incomingData.customNote || "";
 
@@ -510,34 +267,14 @@ export default {
               status = excluded.status
           `).bind(userId, new Date().toISOString(), "V", transactionId, customNote, expiryDateStr).run();
 
-          // Compute the new signature password
-          const newActiveExpiry = String(newExpiryUnix);
-          const newActiveDuration = String(months);
-          const newActiveStatus = "V";
-          const newPlanType = "paid";
-
-          const newPassword = await this.generateConnectionSecret(
-            userId,
-            newActiveExpiry,
-            newActiveDuration,
-            newActiveStatus,
-            newPlanType,
-            env.APP_SECRET_PEPPER
-          );
-
-          const backupKey = await this.generateBackupPassword(userId, env.APP_SECRET_PEPPER);
+          // Retrieve the updated, fully-aligned subscription details using the helper
+          const identityData = await this.fetchUserIdentity(userId, env);
 
           return new Response(
             JSON.stringify({
               status: "SUCCESS",
               verificationCode: "REGISTERED",
-              password: newPassword,
-              backupKey: backupKey,
-              activeExpiry: newActiveExpiry,
-              activeDuration: newActiveDuration,
-              activeStatus: newActiveStatus,
-              planType: newPlanType,
-              expiryDate: expiryDateStr
+              ...identityData
             }),
             { 
               status: 200, 
@@ -607,5 +344,140 @@ export default {
     return Array.from(new Uint8Array(signature))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('').substring(0, 32);
+  },
+
+  async fetchUserIdentity(userId, env) {
+    let userDate = null;
+    let userStatus = null;
+    let userExpiryDate = null;
+    let userTrialPlan = null;
+
+    if (env.DB) {
+      try {
+        const existingRow = await env.DB.prepare(
+          'SELECT date, status, expiryDate, trial_plan FROM "Reality Elite members management" WHERE userId = ?'
+        ).bind(userId).first();
+
+        const durationDays = 3;
+        const currentUnix = Date.now();
+        const durationMs = durationDays * 24 * 60 * 60 * 1000;
+        const expiryUnix = currentUnix + durationMs;
+        const autoTrialPlanStr = `${expiryUnix}-${durationDays}`;
+
+        if (!existingRow) {
+          const currentDate = new Date().toISOString();
+          await env.DB.prepare(`
+            INSERT INTO "Reality Elite members management" (userId, date, trial_plan)
+            VALUES (?, ?, ?)
+          `).bind(userId, currentDate, autoTrialPlanStr).run();
+          userDate = currentDate;
+          userTrialPlan = autoTrialPlanStr;
+        } else {
+          userDate = existingRow.date;
+          userStatus = existingRow.status;
+          userExpiryDate = existingRow.expiryDate;
+          userTrialPlan = existingRow.trial_plan;
+
+          if (!userTrialPlan) {
+            await env.DB.prepare(`
+              UPDATE "Reality Elite members management"
+              SET trial_plan = ?
+              WHERE userId = ?
+            `).bind(autoTrialPlanStr, userId).run();
+            userTrialPlan = autoTrialPlanStr;
+          }
+
+          if (userExpiryDate) {
+            const parts = userExpiryDate.split("-");
+            let isExpired = false;
+            if (parts.length === 2) {
+              const expiryUnix = parseInt(parts[0], 10);
+              if (expiryUnix < Date.now()) isExpired = true;
+            } else if (parts.length === 4) {
+              const yyyy = parseInt(parts[0], 10);
+              const mm = parseInt(parts[1], 10) - 1;
+              const dd = parseInt(parts[2], 10);
+              const expiryDateObj = new Date(Date.UTC(yyyy, mm, dd));
+              if (expiryDateObj.getTime() < Date.now()) isExpired = true;
+            }
+
+            if (isExpired) {
+              await env.DB.prepare(`
+                UPDATE "Reality Elite members management"
+                SET status = NULL, expiryDate = NULL
+                WHERE userId = ?
+              `).bind(userId).run();
+              userStatus = null;
+              userExpiryDate = null;
+            }
+          }
+        }
+      } catch (e) {
+        console.error("DB Error in fetchUserIdentity:", e);
+      }
+    }
+
+    // Determine active subscription info state for deterministic password generation
+    let activeExpiry = "0";
+    let activeDuration = "0";
+    let activeStatus = "N";
+    let planType = "none";
+
+    let isPaidActive = false;
+    if (userStatus === "V" && userExpiryDate) {
+      const parts = userExpiryDate.split("-");
+      if (parts.length === 2) {
+        const expiryUnix = parseInt(parts[0], 10);
+        if (expiryUnix > Date.now()) {
+          activeExpiry = String(expiryUnix);
+          activeDuration = parts[1];
+          activeStatus = "V";
+          planType = "paid";
+          isPaidActive = true;
+        }
+      }
+    }
+
+    if (!isPaidActive && userTrialPlan) {
+      const parts = userTrialPlan.split("-");
+      if (parts.length === 2) {
+        const expiryUnix = parseInt(parts[0], 10);
+        if (expiryUnix > Date.now()) {
+          activeExpiry = String(expiryUnix);
+          activeDuration = parts[1];
+          activeStatus = "V";
+          planType = "trial";
+        }
+      }
+    }
+
+    // Generate connectionSecret based on active subscription details
+    const connectionSecret = await this.generateConnectionSecret(
+      userId,
+      activeExpiry,
+      activeDuration,
+      activeStatus,
+      planType,
+      env.APP_SECRET_PEPPER
+    );
+
+    const backupPassword = await this.generateBackupPassword(userId, env.APP_SECRET_PEPPER);
+
+    return {
+      userId: userId,
+      connectionSecret: connectionSecret,
+      password: connectionSecret, // mapping compatibility for PaymentVerificationActivity
+      backupPassword: backupPassword,
+      backupPassword_legacy: connectionSecret, // legacy mapping
+      backupKey: backupPassword, // legacy mapping
+      date: userDate,
+      status: userStatus,
+      expiryDate: userExpiryDate,
+      trial_plan: userTrialPlan,
+      activeExpiry: activeExpiry,
+      activeDuration: activeDuration,
+      activeStatus: activeStatus,
+      planType: planType
+    };
   }
 };
