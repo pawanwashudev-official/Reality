@@ -39,6 +39,7 @@ class RealityEliteActivity : BaseActivity() {
     private lateinit var cardStep3: MaterialCardView
     private lateinit var btnVerify: MaterialButton
     private lateinit var btnCancel: MaterialButton
+    private lateinit var btnSyncIdentity: MaterialButton
     private lateinit var spinnerDuration: android.widget.AutoCompleteTextView
     private var selectedMonths = 12
 
@@ -62,8 +63,9 @@ class RealityEliteActivity : BaseActivity() {
         cardStep2 = findViewById(R.id.card_step2)
         btnPayUpi = findViewById(R.id.btn_pay_upi)
         cardStep3 = findViewById(R.id.card_step3)
-                btnVerify = findViewById(R.id.btn_verify)
+        btnVerify = findViewById(R.id.btn_verify)
         btnCancel = findViewById(R.id.btn_cancel)
+        btnSyncIdentity = findViewById(R.id.btn_sync_identity)
         spinnerDuration = findViewById(R.id.spinner_duration)
 
         val monthsOptions = (1..36).map { "$it Months" }.toTypedArray()
@@ -80,6 +82,23 @@ class RealityEliteActivity : BaseActivity() {
 
         btnUnifiedSignin.setOnClickListener {
             showKeySelectionDialog()
+        }
+
+        btnSyncIdentity.setOnClickListener {
+            btnSyncIdentity.text = "Syncing..."
+            btnSyncIdentity.isEnabled = false
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    IdentityManager.refreshIdentity(this@RealityEliteActivity)
+                } catch (e: Exception) {
+                    com.neubofy.reality.utils.TerminalLogger.log("Manual sync error: ${e.message}")
+                }
+                withContext(Dispatchers.Main) {
+                    btnSyncIdentity.text = "Sync Identity"
+                    btnSyncIdentity.isEnabled = true
+                    updateStateUI()
+                }
+            }
         }
 
         btnPayUpi.setOnClickListener {
@@ -211,22 +230,19 @@ class RealityEliteActivity : BaseActivity() {
     private fun updateStateUI() {
         val email = GoogleAuthManager.getUserEmail(this) ?: ""
         val isSignedIn = GoogleAuthManager.isSignedIn(this) && email.isNotEmpty()
-        val userId = if (isSignedIn) IdentityManager.getUserId(this) else null
+        val userIdString = IdentityManager.getUserId(this)
+        val userId = if (isSignedIn && userIdString.isNotEmpty()) userIdString else null
 
         val featureManager = FeatureManager(this)
-        if (userId != null) {
+        val isExpiredPaid = if (userId != null) {
             val endTime = featureManager.getRealityProEndTime()
-            if (endTime > 0 && com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this) > endTime) {
-                // Subscription has expired, wipe the data so they can purchase again
-                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_pro_prefs")
-                prefs.edit().remove("pro_saved_verification_code_for_$userId").remove("is_registered_for_$userId").apply()
-                // Also reset start time so it's a fresh start next time
-                val featuresPrefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_features")
-                featuresPrefs.edit().remove("feature_reality_pro_start_time_$userId").apply()
-                // Revoke pro access
-                featureManager.setRealityProVerified(false)
-            }
-        }
+            endTime > 0 && com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this) > endTime
+        } else false
+
+        val isExpiredTrial = if (userId != null && !isExpiredPaid && !featureManager.isRealityProVerified()) {
+            val trialEnd = featureManager.getTrialEndTime()
+            trialEnd > 0 && com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this) > trialEnd
+        } else false
 
         val dateFormat = java.text.SimpleDateFormat("MMM dd, yyyy HH:mm", java.util.Locale.getDefault())
 
@@ -243,30 +259,48 @@ class RealityEliteActivity : BaseActivity() {
         if (isSignedIn && userId != null) {
             btnUnifiedSignin.text = "Signed In"
             btnUnifiedSignin.isEnabled = false
+            btnSyncIdentity.visibility = android.view.View.GONE
+        } else if (isSignedIn && userIdString.isEmpty()) {
+            btnUnifiedSignin.text = "Signed In (Identity Missing)"
+            btnUnifiedSignin.isEnabled = false
+            btnSyncIdentity.visibility = android.view.View.VISIBLE
         } else {
             btnUnifiedSignin.text = "Sign In with Google"
             btnUnifiedSignin.isEnabled = true
+            btnSyncIdentity.visibility = android.view.View.GONE
         }
 
         // --- Active Plan Card Visibility Logic ---
         val isProActive = featureManager.isRealityProVerified()
         val isTrialActive = featureManager.isTrialActive()
 
-        if (isProActive || isTrialActive) {
+        // Prioritize Paid Plan details (active or expired)
+        if (isProActive || isExpiredPaid) {
             cardPaidPlanActive?.visibility = android.view.View.VISIBLE
             if (isProActive) {
                 tvPaidPlanHeader?.text = "Paid Plan Active"
-                val start = featureManager.getRealityProStartTime()
-                val end = featureManager.getRealityProEndTime()
-                tvPaidStart?.text = "Activated: " + if (start > 0) dateFormat.format(java.util.Date(start)) else "Unknown"
-                tvPaidExpiry?.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
+                tvPaidExpiry?.setTextColor(com.google.android.material.color.MaterialColors.getColor(this, com.google.android.material.R.attr.colorPrimary, 0))
             } else {
-                tvPaidPlanHeader?.text = "Trial Active"
-                val start = featureManager.getTrialStartTime()
-                val end = featureManager.getTrialEndTime()
-                tvPaidStart?.text = "Started: " + if (start > 0) dateFormat.format(java.util.Date(start)) else "Unknown"
-                tvPaidExpiry?.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
+                tvPaidPlanHeader?.text = "Paid Plan Expired"
+                tvPaidExpiry?.setTextColor(com.google.android.material.color.MaterialColors.getColor(this, com.google.android.material.R.attr.colorError, 0))
             }
+            val start = featureManager.getRealityProStartTime()
+            val end = featureManager.getRealityProEndTime()
+            tvPaidStart?.text = "Activated: " + if (start > 0) dateFormat.format(java.util.Date(start)) else "Unknown"
+            tvPaidExpiry?.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
+        } else if (isTrialActive || isExpiredTrial) {
+            cardPaidPlanActive?.visibility = android.view.View.VISIBLE
+            if (isTrialActive) {
+                tvPaidPlanHeader?.text = "Trial Active"
+                tvPaidExpiry?.setTextColor(com.google.android.material.color.MaterialColors.getColor(this, com.google.android.material.R.attr.colorPrimary, 0))
+            } else {
+                tvPaidPlanHeader?.text = "Trial Expired"
+                tvPaidExpiry?.setTextColor(com.google.android.material.color.MaterialColors.getColor(this, com.google.android.material.R.attr.colorError, 0))
+            }
+            val start = featureManager.getTrialStartTime()
+            val end = featureManager.getTrialEndTime()
+            tvPaidStart?.text = "Started: " + if (start > 0) dateFormat.format(java.util.Date(start)) else "Unknown"
+            tvPaidExpiry?.text = "Expires: " + if (end > 0) dateFormat.format(java.util.Date(end)) else "Unknown"
         } else {
             cardPaidPlanActive?.visibility = android.view.View.GONE
         }
@@ -311,6 +345,10 @@ class RealityEliteActivity : BaseActivity() {
         }
 
         val userId = IdentityManager.getUserId(this)
+        if (userId.isEmpty()) {
+            if (!isSilentCheck) Toast.makeText(this, "Identity is still syncing. Please wait or press Sync Identity.", Toast.LENGTH_LONG).show()
+            return
+        }
         val workerUrl = BuildConfig.WORKER_URL
 
         if (workerUrl.isEmpty()) {

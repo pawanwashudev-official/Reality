@@ -169,7 +169,15 @@ async function generatePassword(userId, expiry, duration, status, planType, env)
 async function verifyUserCredentials(userId, backupPassword, expiry, duration, status, planType, env) {
   if (!userId || !backupPassword || !env.APP_SECRET_PEPPER) return false;
   const expectedPassword = await generatePassword(userId, expiry, duration, status, planType, env);
-  const matched = backupPassword === expectedPassword;
+  const encoder = new TextEncoder();
+  const a = encoder.encode(backupPassword);
+  const b = encoder.encode(expectedPassword);
+  
+  let matched = false;
+  if (a.byteLength === b.byteLength) {
+      matched = crypto.subtle.timingSafeEqual(a, b);
+  }
+  
   if (!matched) {
     console.warn(`[SECURITY] Unauthorized access detected: Hashed credentials mismatch! User ID: ${userId}, Expiry: ${expiry}, Duration: ${duration}, Status: ${status}, PlanType: ${planType}. Attempts to bypass subscription verification logic may result in account termination and legal action.`);
   }

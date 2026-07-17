@@ -68,7 +68,7 @@ object IdentityManager {
         // Use applicationContext to prevent Activity leak from fire-and-forget coroutine
         val appContext = context.applicationContext
         kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { generateAndCacheIdentity(appContext) }
-        return "Unknown"
+        return ""
     }
 
     /**
@@ -84,7 +84,7 @@ object IdentityManager {
         // Use applicationContext to prevent Activity leak from fire-and-forget coroutine
         val appContext = context.applicationContext
         kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { generateAndCacheIdentity(appContext) }
-        return "Unknown"
+        return ""
     }
 
     suspend fun refreshIdentity(context: Context) {
@@ -220,7 +220,7 @@ object IdentityManager {
     }
     fun getAndIncrementDailyAICount(context: Context): Int {
         val prefs = com.neubofy.reality.utils.SecurePreferences.get(context, "ai_prefs")
-        val today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Kolkata")).toString()
+        val today = java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString()
         val lastDate = prefs.getString("ai_request_date", "")
 
         var count = prefs.getInt("ai_request_count", 0)

@@ -401,14 +401,14 @@ export default {
             let curPlanType = "none";
 
             let isPaidActive = false;
-            if (latestStatus === "V" && latestExpiryDate) {
+            if ((latestStatus === "V" || latestStatus === "P") && latestExpiryDate) {
               const parts = latestExpiryDate.split("-");
               if (parts.length === 2) {
                 const expiryUnix = parseInt(parts[0], 10);
                 if (expiryUnix > Date.now()) {
                   curActiveExpiry = String(expiryUnix);
                   curActiveDuration = parts[1];
-                  curActiveStatus = "V";
+                  curActiveStatus = latestStatus;
                   curPlanType = "paid";
                   isPaidActive = true;
                 }
@@ -430,7 +430,7 @@ export default {
 
             const newPassword = await this.generatePassword(userId, curActiveExpiry, curActiveDuration, curActiveStatus, curPlanType, env.APP_SECRET_PEPPER);
 
-            if (curActiveStatus === "V") {
+            if (curActiveStatus === "V" || curActiveStatus === "P") {
               return new Response(
                 JSON.stringify({
                   status: "SUCCESS",
@@ -568,7 +568,15 @@ export default {
   async verifyAuth(userId, providedPassword, expiry, duration, status, planType, secretPepper) {
     if (!userId || !providedPassword || !secretPepper) return false;
     const expectedPassword = await this.generatePassword(userId, expiry, duration, status, planType, secretPepper);
-    const matched = providedPassword === expectedPassword;
+    const encoder = new TextEncoder();
+    const a = encoder.encode(providedPassword);
+    const b = encoder.encode(expectedPassword);
+    
+    let matched = false;
+    if (a.byteLength === b.byteLength) {
+        matched = crypto.subtle.timingSafeEqual(a, b);
+    }
+    
     if (!matched) {
       console.warn(`[SECURITY] Unauthorized access detected: Hashed credentials mismatch! User ID: ${userId}, Expiry: ${expiry}, Duration: ${duration}, Status: ${status}, PlanType: ${planType}. Attempts to bypass subscription verification logic may result in account termination and legal action.`);
     }
