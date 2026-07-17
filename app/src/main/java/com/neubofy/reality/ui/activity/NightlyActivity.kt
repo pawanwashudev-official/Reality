@@ -190,6 +190,7 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
     override fun onResume() {
         super.onResume()
         updateSetupStatus()
+        setupStepsRecyclerView() // Refreshes the list to apply setting toggles instantly
         loadPersistentState()
     }
     

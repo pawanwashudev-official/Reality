@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
+import org.json.JSONArray
 import org.json.JSONObject
 
 /**
@@ -124,31 +125,44 @@ class NightlyPhaseAnalysis(
                 )
             }
 
-            XPManager.recalculateDailyStats(context, diaryDate.toString(), externalEvents = mappedEvents)
-            val finalStats = XPManager.getDailyStats(context, diaryDate.toString())
-                ?: throw IllegalStateException("Failed to calculate stats")
-
-            NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "XP calculation complete. Total XP: ${finalStats.totalDailyXP}, Level: ${finalStats.level}, Streak: ${finalStats.streak} days.", listener)
-
-            // Sheet backup sub-permission
-            val saveToSheet = NightlyRepository.isSubFeatureEnabled(context, "save_to_reality_sheet")
-            var sheetSuccess = false
-            val prefs = context.getSharedPreferences(NightlySteps.PREFS_NAME, Context.MODE_PRIVATE)
-            val sheetId = prefs.getString("reality_sheet_id", null)
-
-            if (saveToSheet && !sheetId.isNullOrEmpty()) {
-                NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "Backing up today's stats to Reality Sheet in Drive...", listener)
-                
-                // Get Step 1 output for sheet
+                // Get Step 1 output
                 val step1Data = loadStepData(NightlySteps.STEP_FETCH_ANALYTICS)
                 val j1 = try {
                     if (step1Data.resultJson != null) JSONObject(step1Data.resultJson).optJSONObject("output") ?: JSONObject() else JSONObject()
                 } catch (e: Exception) {
                     JSONObject()
                 }
+                
+                // Reconstruct TaskStats to avoid fetching from network again
+                val dueArr = j1.optJSONArray("dueTasks") ?: JSONArray()
+                val compArr = j1.optJSONArray("completedTasks") ?: JSONArray()
+                val dueList = (0 until dueArr.length()).map { dueArr.getString(it) }
+                val compList = (0 until compArr.length()).map { compArr.getString(it) }
+                
+                val fetchedTasks = com.neubofy.reality.google.GoogleTasksManager.TaskStats(
+                    dueTasks = dueList,
+                    completedTasks = compList,
+                    pendingCount = j1.optInt("pendingCount", 0),
+                    completedCount = j1.optInt("completedCount", 0)
+                )
 
-                val totalDue = j1.optInt("pendingCount", 0) + j1.optInt("completedCount", 0)
-                val totalComp = j1.optInt("completedCount", 0)
+                XPManager.recalculateDailyStats(context, diaryDate.toString(), externalEvents = mappedEvents, fetchedTasks = fetchedTasks)
+                val finalStats = XPManager.getDailyStats(context, diaryDate.toString())
+                    ?: throw IllegalStateException("Failed to calculate stats")
+
+                NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "XP calculation complete. Total XP: ${finalStats.totalDailyXP}, Level: ${finalStats.level}, Streak: ${finalStats.streak} days.", listener)
+
+                // Sheet backup sub-permission
+                val saveToSheet = NightlyRepository.isSubFeatureEnabled(context, "save_to_reality_sheet")
+                var sheetSuccess = false
+                val prefs = context.getSharedPreferences(NightlySteps.PREFS_NAME, Context.MODE_PRIVATE)
+                val sheetId = prefs.getString("reality_sheet_id", null)
+
+                if (saveToSheet && !sheetId.isNullOrEmpty()) {
+                    NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_SAVE_ANALYTICS, "Backing up today's stats to Reality Sheet in Drive...", listener)
+
+                    val totalDue = j1.optInt("pendingCount", 0) + j1.optInt("completedCount", 0)
+                    val totalComp = j1.optInt("completedCount", 0)
 
                 val rowDataMap = mapOf(
                     "Date" to diaryDate.toString(),

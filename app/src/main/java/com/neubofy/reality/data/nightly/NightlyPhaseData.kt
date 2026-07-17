@@ -158,17 +158,19 @@ class NightlyPhaseData(
             val limitMinutes = prefs.getInt("screen_time_limit_minutes", 60)
 
             if (distractionEnabled) {
-                NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_FETCH_ANALYTICS, "Calculating distraction screen time...", listener)
+                NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_FETCH_ANALYTICS, "Calculating distraction screen time XP...", listener)
+                
+                // Use the centralized XP calculation logic instead of duplicating it
+                val xpPair = com.neubofy.reality.utils.XPManager.calculateDistractionXP(context, diaryDate.toString())
+                screenTimeXpDelta = xpPair.first
+                
+                // Calculate just the minutes for logging
                 val prefsLoader = com.neubofy.reality.utils.SavedPreferencesLoader(context)
                 val blockedApps = prefsLoader.loadBlockedApps()
                 val distractingUsageMs = com.neubofy.reality.utils.UsageUtils.getBlockedAppsUsageForDate(context, diaryDate, blockedApps)
                 screenTimeMinutes = (distractingUsageMs / 60000).toInt()
                 
-                if (limitMinutes > 0) {
-                    val diff = limitMinutes - screenTimeMinutes
-                    screenTimeXpDelta = diff * 3
-                }
-                NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_FETCH_ANALYTICS, "Distracting app usage: $screenTimeMinutes minutes.", listener)
+                NightlyRepository.logSubStep(context, diaryDate, NightlySteps.STEP_FETCH_ANALYTICS, "Distracting app usage: $screenTimeMinutes minutes. XP Delta: $screenTimeXpDelta", listener)
             } else {
                 screenTimeMinutes = 0
                 screenTimeXpDelta = 0

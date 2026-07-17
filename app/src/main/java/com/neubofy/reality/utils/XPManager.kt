@@ -184,9 +184,10 @@ object XPManager {
      * 4. Filter tasks where Due Time <= Current Time.
      * 5. +100 XP for Completed, -100 XP for Pending/Due.
      */
-    suspend fun calculateTaskXP(context: Context): Int = withContext(Dispatchers.IO) {
+    suspend fun calculateTaskXP(context: Context, preFetchedTasks: com.neubofy.reality.google.GoogleTasksManager.TaskStats? = null): Int = withContext(Dispatchers.IO) {
         val today = LocalDate.now().toString()
-        val taskStats = GoogleTasksManager.getTasksForDate(context, today)
+        // Use pre-fetched tasks to avoid redundant network calls, otherwise fallback to network
+        val taskStats = preFetchedTasks ?: GoogleTasksManager.getTasksForDate(context, today)
         
         var xp = 0
         val now = LocalTime.now()
@@ -254,7 +255,7 @@ object XPManager {
     }
     
     // --- Core Logic: Distraction Penalty (formerly Screen Time XP) ---
-    private suspend fun calculateScreenTimeXP(context: Context, date: String): Pair<Int, Int> = withContext(Dispatchers.IO) {
+    suspend fun calculateDistractionXP(context: Context, date: String): Pair<Int, Int> = withContext(Dispatchers.IO) {
         val prefs = context.getSharedPreferences("nightly_prefs", Context.MODE_PRIVATE)
         val limitMins = prefs.getInt("screen_time_limit_minutes", 0)
         
@@ -266,30 +267,9 @@ object XPManager {
         // User requested: "apply logic on those app only... list of app came from blocklist"
         if (blockedApps.isEmpty()) return@withContext Pair(0, 0)
         
+        // Centralized logic: Source distracting app usage from UsageUtils so we don't recalculate it everywhere
         val dateObj = LocalDate.parse(date)
-        val startOfDay = dateObj.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-        val endOfDay = dateObj.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
-        
-        // Use UsageStatsManager to get time for that range
-        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? android.app.usage.UsageStatsManager
-        var totalDistractedMillis = 0L
-        
-        if (usageStatsManager != null) {
-             val stats = usageStatsManager.queryUsageStats(
-                android.app.usage.UsageStatsManager.INTERVAL_DAILY,
-                startOfDay,
-                endOfDay
-            )
-             
-             for (stat in stats) {
-                if (stat.totalTimeInForeground <= 0) continue
-                // ONLY count apps in the Blocklist
-                if (blockedApps.contains(stat.packageName)) {
-                    totalDistractedMillis += stat.totalTimeInForeground
-                }
-             }
-        }
-        
+        val totalDistractedMillis = com.neubofy.reality.utils.UsageUtils.getBlockedAppsUsageForDate(context, dateObj, blockedApps)
         val distractedMins = (totalDistractedMillis / 60000).toInt()
         
         // Logic: 
@@ -376,10 +356,10 @@ object XPManager {
      * Trusted source of truth for both Live Refresh and Nightly Protocol.
      * @param externalEvents Optional list of events (e.g. from Cloud API) to override device calendar.
      */
-    suspend fun recalculateDailyStats(context: Context, date: String, externalEvents: List<com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent>? = null) {
-        calculateTaskXP(context) // Updates taskXP
+    suspend fun recalculateDailyStats(context: Context, date: String, externalEvents: List<com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent>? = null, fetchedTasks: com.neubofy.reality.google.GoogleTasksManager.TaskStats? = null) {
+        calculateTaskXP(context, fetchedTasks) // Updates taskXP
         calculateSessionXP(context, date, externalEvents) // Updates sessionXP
-        calculateScreenTimeXP(context, date) // Updates distractionXP
+        val screenXP = calculateDistractionXP(context, date).first // Updates distractionXP
         
         // Re-sum Tapasya XP
         val db = AppDatabase.getDatabase(context)
