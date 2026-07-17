@@ -129,12 +129,11 @@
 
 
 
-            <!-- Paid Plan Section -->
             <TextView
                 android:id="@+id/tv_or_yearly_subscription"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Yearly Subscription"
+                android:text="Elite Membership"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="?attr/colorPrimary"
@@ -195,142 +194,25 @@
                         android:textColor="?attr/colorError"
                         android:layout_marginTop="16dp"
                         android:layout_marginBottom="8dp"/>
-
-
-
-            <!-- Step 1 Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_step2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant"
-                app:cardBackgroundColor="?attr/colorSurfaceVariant">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
+                        
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Step 1: Payment &amp; Registration"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
-                        android:layout_marginBottom="16dp"/>
-
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Select Subscription Duration (Months)"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
-                        android:layout_marginBottom="8dp"/>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                        android:id="@+id/tv_refresh_prompt"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp">
-
-                        <AutoCompleteTextView
-                            android:id="@+id/spinner_duration"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="none"
-                            android:text="12 Months" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_pay_upi"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="UPI (₹99)"
-                        android:paddingVertical="12dp"
-                        android:layout_marginBottom="8dp"/>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_pay_stripe"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Stripe (Currently Unavailable)"
-                        android:enabled="false"
-                        android:paddingVertical="12dp"
-                        android:layout_marginBottom="8dp"/>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_pay_google"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Google Play (Currently Unavailable)"
-                        android:enabled="false"
-                        android:paddingVertical="12dp"/>
-
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Step 2 Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_step3"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="32dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant"
-                app:cardBackgroundColor="?attr/colorSurfaceVariant">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Step 2: Verify Elite Member Access"
-
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
-                        android:layout_marginBottom="8dp"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="After submitting payment, verify your status to unlock Elite Member features."
-                        android:textSize="14sp"
-                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:text="Note: If your payment is complete but status is still Pending, please go to the Profile page and tap 'Refresh Identity &amp; Subscription'."
+                        android:textSize="13sp"
+                        android:lineSpacingMultiplier="1.2"
+                        android:textColor="?attr/colorSecondary"
+                        android:visibility="gone"
                         android:layout_marginBottom="16dp"/>
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_verify"
+                        android:id="@+id/btn_enroll_renew"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Verify Status"
-                        android:paddingVertical="12dp"/>
-
-
-
-
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-
-
-            <com.google.android.material.button.MaterialButton
+                        android:text="Enroll as Elite Member"
+                        android:paddingVertical="12dp"
+                        android:layout_marginBottom="16dp"/>            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_cancel"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="match_parent"

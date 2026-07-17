@@ -52,7 +52,7 @@
                 android:layout_height="wrap_content"
                 android:lineSpacingExtra="4dp"
                 android:fontFamily="sans-serif-light"
-                android:text="We DO NOT store any of your data on our server. Not your email, not your tokens, nothing. Everything stays inside the Reality app on your device, completely local and encrypted.\n\nWe use a completely Serverless architecture (Cloudflare Workers) to securely generate an irreversible User ID and Password using a one-way mathematical hash of your email. \n\nNo one can reverse your User ID to get your email. From then on, any AI features, Elite status, or verification only uses that anonymous User ID."
+                android:text="We DO NOT store any of your data on our server. Not your email, not your tokens, nothing. Everything stays inside the Reality app on your device, completely local and encrypted.\n\nWe use a completely Serverless architecture (Cloudflare Workers) to securely generate an irreversible User ID and Password using a one-way mathematical hash of your email. \n\nNo one can reverse your User ID to get your email. From then on, any AI features, Elite Membership, or verification only uses that anonymous User ID."
                 android:layout_marginBottom="24dp"/>
 
             <TextView

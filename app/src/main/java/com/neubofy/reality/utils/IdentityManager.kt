@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import android.widget.Toast
 
 object IdentityManager {
 
@@ -105,7 +106,53 @@ object IdentityManager {
     }
 
     suspend fun refreshIdentity(context: Context) {
+        if (!checkRateLimit(context)) {
+            throw Exception("RATE_LIMIT")
+        }
         generateAndCacheIdentity(context)
+    }
+
+    private suspend fun checkRateLimit(context: Context): Boolean {
+        val prefs = SecurePreferences.get(context, "rate_limit_prefs")
+        val now = System.currentTimeMillis()
+        
+        val timestampsStr = prefs.getString("refresh_timestamps", "") ?: ""
+        val timestamps = timestampsStr.split(",").filter { it.isNotEmpty() }.mapNotNull { it.toLongOrNull() }.toMutableList()
+        
+        // Remove timestamps older than 1 hour
+        timestamps.removeAll { now - it > 60 * 60 * 1000 }
+        
+        // Check limits
+        // 1 min max 3
+        val count1Min = timestamps.count { now - it <= 60_000 }
+        if (count1Min >= 3) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Please wait a minute before refreshing again.", Toast.LENGTH_LONG).show()
+            }
+            return false
+        }
+        
+        // 5 min max 5
+        val count5Min = timestamps.count { now - it <= 300_000 }
+        if (count5Min >= 5) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Please wait a few minutes before refreshing again.", Toast.LENGTH_LONG).show()
+            }
+            return false
+        }
+        
+        // 1 hour max 10
+        val count1Hour = timestamps.count { now - it <= 3_600_000 }
+        if (count1Hour >= 10) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Rate limit exceeded. Try again in an hour.", Toast.LENGTH_LONG).show()
+            }
+            return false
+        }
+        
+        timestamps.add(now)
+        prefs.edit().putString("refresh_timestamps", timestamps.joinToString(",")).apply()
+        return true
     }
 
     private suspend fun generateAndCacheIdentity(context: Context) {
@@ -160,7 +207,7 @@ object IdentityManager {
                     val responseJson = JSONObject(responseStr)
 
                     val userId = responseJson.optString("userId")
-                    val backupPassword = responseJson.optString("backupPassword")
+                    val backupPassword = responseJson.optString("backupPassword").takeIf { it.isNotEmpty() } ?: responseJson.optString("password")
                     val backupKey = responseJson.optString("backupKey", "")
                     val status = responseJson.optString("status")
                     val activeExpiry = responseJson.optString("activeExpiry", "0")
