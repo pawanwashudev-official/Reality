@@ -13,6 +13,7 @@ class SleepReceiver : BroadcastReceiver() {
         if (SleepSegmentEvent.hasEvents(intent)) {
             val events = SleepSegmentEvent.extractEvents(intent)
             for (event in events) {
+<<<<<<< HEAD
                 val durationHours = (event.endTimeMillis - event.startTimeMillis) / (1000.0 * 60 * 60)
                 TerminalLogger.log("SleepReceiver: Detected sleep from ${Instant.ofEpochMilli(event.startTimeMillis)} to ${Instant.ofEpochMilli(event.endTimeMillis)} (${durationHours}h)")
                 
@@ -22,6 +23,10 @@ class SleepReceiver : BroadcastReceiver() {
                 } else {
                     TerminalLogger.log("SleepReceiver: Ignored unrealistic sleep duration of ${durationHours}h")
                 }
+=======
+                TerminalLogger.log("SleepReceiver: Detected sleep from ${Instant.ofEpochMilli(event.startTimeMillis)} to ${Instant.ofEpochMilli(event.endTimeMillis)}")
+                saveSleepSegment(context, event.startTimeMillis, event.endTimeMillis)
+>>>>>>> 5ada1a17fd68e40c7634256d8626644534277a42
             }
         }
     }
