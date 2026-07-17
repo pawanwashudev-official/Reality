@@ -1,0 +1,20 @@
+--- workers/identity/worker.js
++++ workers/identity/worker.js
+@@ -442,7 +442,7 @@
+                 JSON.stringify({
+                   status: "SUCCESS",
+                   verificationCode: "REGISTERED",
+-                  connectionSecret: newPassword, backupPassword: backupKey, password: newPassword,
++                  password: newPassword,
+                   backupKey: backupKey,
+                   activeExpiry: curActiveExpiry,
+                   activeDuration: curActiveDuration,
+@@ -531,7 +531,7 @@
+             JSON.stringify({
+               status: "SUCCESS",
+               verificationCode: "REGISTERED",
+-              connectionSecret: newPassword, backupPassword: backupKey, password: newPassword,
++              password: newPassword,
+               backupKey: backupKey,
+               activeExpiry: newActiveExpiry,
+               activeDuration: newActiveDuration,

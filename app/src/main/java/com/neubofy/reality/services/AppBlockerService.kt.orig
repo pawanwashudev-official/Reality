@@ -36,7 +36,7 @@ class AppBlockerService : BaseBlockingService() {
         const val INTENT_ACTION_START_LEARNING = "com.neubofy.reality.start.learning"
         const val INTENT_ACTION_STOP_LEARNING = "com.neubofy.reality.stop.learning"
         const val EXTRA_PAGE_TYPE = "page_type"
-        
+
         // Custom page learning
         const val INTENT_ACTION_START_CUSTOM_PAGE_LEARNING = "com.neubofy.reality.start.custom_page_learning"
     }
@@ -46,31 +46,31 @@ class AppBlockerService : BaseBlockingService() {
     private val handler = Handler(Looper.getMainLooper())
     private var updateRunnable: Runnable? = null
     private var lastPackage = ""
-    
+
     // Timers
     private var lastUrlCheckTime = 0L
-    
+
     // Browser Watchdog Manager
     private val browserWatchdog by lazy { BrowserWatchdog(this, serviceScope, handler) }
-    
+
     // System State Manager (DND, Bedtime, Sleep Sync)
     private val systemStateManager by lazy { SystemStateManager(this) }
-    
+
     // Settings Protection Manager (SettingsBox checks, Penalty Overlay)
     private val settingsProtectionManager by lazy { SettingsProtectionManager(this, serviceScope, handler) }
-    
+
     // Threading
     private val serviceScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default + kotlinx.coroutines.SupervisorJob())
-    
+
     // Anti-bypass tracking
     @Volatile private var lastBlockedPackage: String = ""
     @Volatile private var lastBlockTime: Long = 0L
-    
+
     // Settings Page Learning Manager
     private val settingsLearningManager by lazy { SettingsLearningManager(this) }
-    
+
     // === SETTINGS PAGE LEARNING ===
-    
+
     var lastWindowClassName: String = ""
     var lastWindowPackage: String = ""
     private var lastSettingsContentHash: String = ""  // Detects actual page change vs scroll
@@ -127,12 +127,12 @@ class AppBlockerService : BaseBlockingService() {
                 }
                 Intent.ACTION_USER_PRESENT -> {
                     isScreenOn = true
-                    
+
                     // Refresh cache on unlock - ensuring schedules are up to date
                     serviceScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                         com.neubofy.reality.utils.BlockCache.rebuildBox(applicationContext)
                     }
-                    
+
                     // Resume checking if needed
                     if (browserWatchdog.isWebsiteBlockActive()) {
                          browserWatchdog.startBrowserCheckTimer()
@@ -141,18 +141,18 @@ class AppBlockerService : BaseBlockingService() {
             }
         }
     }
-    
+
     private var isScreenOn = true
     private var isBlockingActive = true
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (!isScreenOn) return
         if (event == null) return
-        
+
         val eventType = event.eventType
         val packageName = event.packageName?.toString() ?: return
         if (packageName == this.packageName) return
-        
+
         // 1. Strict Event Type Filtering
         // Drop high-frequency events we don't care about immediately.
         if (eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
@@ -161,10 +161,10 @@ class AppBlockerService : BaseBlockingService() {
             eventType != AccessibilityEvent.TYPE_VIEW_FOCUSED) {
             return
         }
-        
+
         val isSettingsPackage = packageName.contains("settings") || packageName.contains("securitycenter")
         val isBrowser = com.neubofy.reality.utils.UrlDetector.isBrowser(packageName)
-        
+
         // 2. High-Frequency Event Dropping for Non-Target Apps
         // If it's not a settings app and not a browser, we only need to monitor app switching (TYPE_WINDOW_STATE_CHANGED).
         // This drops 99% of scrolling/typing events in regular apps (WhatsApp, Instagram, etc.) with zero overhead.
@@ -173,11 +173,11 @@ class AppBlockerService : BaseBlockingService() {
                 return
             }
         }
-        
+
         // Capture window class for learning mode and strict mode
         if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val className = event.className?.toString() ?: ""
-            
+
             // === SMART SETTINGS PROTECTION ===
             // Only wake protection system when:
             // 1. It's a settings package
@@ -185,35 +185,35 @@ class AppBlockerService : BaseBlockingService() {
             // 3. Strict mode protection is active (early exit if not!)
             // 4. Not in learning mode
             val isNewPage = className != lastWindowClassName || packageName != lastWindowPackage
-            
+
             lastWindowClassName = className
             lastWindowPackage = packageName
-            
+
             // === EARLY EXIT: Skip if no protection is active ===
             // This is the key optimization - don't do ANY work unless protection is ON
-            if (isSettingsPackage && isNewPage && !settingsLearningManager.isLearningMode && 
+            if (isSettingsPackage && isNewPage && !settingsLearningManager.isLearningMode &&
                 com.neubofy.reality.utils.SettingsBox.isAnyProtectionActive()) {
                 lastSettingsContentHash = "" // Reset content hash for new page
                 settingsProtectionManager.scheduleSettingsProtectionCheck(className, packageName)
             }
-            
+
             // Log only Settings-related packages (only if protection active)
             if (isSettingsPackage && com.neubofy.reality.utils.SettingsBox.isAnyProtectionActive()) {
                 com.neubofy.reality.utils.TerminalLogger.log("SETTINGS: ${className.substringAfterLast(".")}")
             }
-            
+
             // Update learning overlay when user navigates
             if (settingsLearningManager.isLearningMode && settingsLearningManager.learnOverlay != null) {
                 handler.post { settingsLearningManager.updateLearnOverlayText() }
             }
         }
-        
+
         // === CONTENT CHANGED: Catches SubSettings→SubSettings navigation ===
         // When navigating between pages that share the same class (SubSettings),
         // TYPE_WINDOW_STATE_CHANGED doesn't fire with a new className.
         // But TYPE_WINDOW_CONTENT_CHANGED fires when the content updates.
         if (eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-            if (isSettingsPackage && !settingsLearningManager.isLearningMode && 
+            if (isSettingsPackage && !settingsLearningManager.isLearningMode &&
                 com.neubofy.reality.utils.SettingsBox.isAnyProtectionActive()) {
                 // Debounce: max once per 500ms
                 val now = System.currentTimeMillis()
@@ -229,12 +229,12 @@ class AppBlockerService : BaseBlockingService() {
                 }
             }
         }
-        
+
         // === TOGGLE GUARDIAN REMOVED ===
         // Button interception logic removed as requested.
         // We now rely on robust page blocking.
 
-        
+
         // PERIODIC CHECK RESTORED
         // This is CRITICAL for scheduled/auto focus to detect when a session starts.
         // Manual focus works via intent, but scheduled focus needs this time-based check.
@@ -242,16 +242,16 @@ class AppBlockerService : BaseBlockingService() {
         // SMART BATTERY OPTIMIZATION:
         // Polling removed. We now rely on 'Screen On' broadcasts and 'HeartbeatWorker'.
         // 1. Browser Special Handling (Watchdog Trigger)
-        
+
         // Check if any blocking mode is active (Focus/Schedule/Calendar/Bedtime)
         val isAnyBlockingModeActive = browserWatchdog.isWebsiteBlockActive()
-        
+
         if (isBrowser) {
              // Browser is active - start/keep watchdog running if blocking is needed
              if (isAnyBlockingModeActive) {
                   browserWatchdog.startBrowserCheckTimer()
                   browserWatchdog.resetWatchdogRampUp()
-                  
+
                   // FIX: IMMEDIATE URL check on any browser event (catches URL/tab changes)
                   // Check on content changes, text changes, focus changes, window state changes
                   if (eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED ||
@@ -280,22 +280,22 @@ class AppBlockerService : BaseBlockingService() {
              // Left the browser - stop watchdog immediately to conserve battery
              browserWatchdog.stopBrowserCheckTimer()
         }
-        
+
         if (eventType == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) return
-        
+
         // 0. EMERGENCY MODE BYPASS (Highest Priority)
         // If Emergency Mode is active, bypass ALL app blocking checks.
         if (com.neubofy.reality.utils.BlockCache.emergencySessionEndTime > System.currentTimeMillis()) {
              return
         }
-        
+
         // Session Block Check (Fast path)
-        
+
         // NOTE: Removed 30-second polling for battery optimization.
         // Box rebuilds via: BlockCacheWorker (15 min), Screen ON, Settings changed.
         // The O(1) Box check below runs on EVERY app switch.
 
-        
+
         // Anti-bypass for apps
         if (packageName == lastBlockedPackage && System.currentTimeMillis() - lastBlockTime < 3000) {
             performGlobalAction(GLOBAL_ACTION_HOME)
@@ -303,7 +303,7 @@ class AppBlockerService : BaseBlockingService() {
         }
 
         lastPackage = packageName
-        
+
         // CONDITIONAL USAGE TRACKER
         // Only run the 15-minute polling worker if the user is actively using an app that has a usage limit.
         if (com.neubofy.reality.utils.BlockCache.monitoredApps.contains(packageName)) {
@@ -311,24 +311,24 @@ class AppBlockerService : BaseBlockingService() {
         } else {
             stopUsageTracker()
         }
-        
+
         // === THE BOX CHECK - SINGLE SOURCE OF TRUTH ===
         // No fallback. No calculations. Just check the box.
         val (shouldBlock, reasons) = com.neubofy.reality.utils.BlockCache.shouldBlock(packageName)
-        
+
         if (shouldBlock) {
             val reason = reasons.joinToString(", ")
             if (packageName == lastBlockedPackage && (System.currentTimeMillis() - lastBlockTime) < 60000) {
                  handleBlock(packageName, reason)
                  return
             }
-            if (packageName == currentWarnedPackage) return 
+            if (packageName == currentWarnedPackage) return
 
             // Show warning overlay before blocking
             if (android.provider.Settings.canDrawOverlays(this)) {
                 currentWarnedPackage = packageName
-                showWarningOverlay(5) 
-                
+                showWarningOverlay(5)
+
                 warningRunnable = Runnable {
                     handleBlock(packageName, reason)
                     removeWarningOverlay()
@@ -345,7 +345,7 @@ class AppBlockerService : BaseBlockingService() {
             }
         }
     }
-    
+
     private var currentWarnedPackage: String? = null
     private var warningOverlay: android.widget.TextView? = null
     private var warningRunnable: Runnable? = null
@@ -437,9 +437,9 @@ class AppBlockerService : BaseBlockingService() {
             return isSystem
         } catch (e: Exception) { return false }
     }
-    
 
-    
+
+
     /**
      * Helper: Check if any node in hierarchy contains specified keywords
      */
@@ -447,28 +447,28 @@ class AppBlockerService : BaseBlockingService() {
         try {
             val text = (node.text?.toString() ?: "").lowercase()
             val desc = (node.contentDescription?.toString() ?: "").lowercase()
-            
+
             if (keywords.any { text.contains(it) || desc.contains(it) }) {
                 return true
             }
-            
+
             for (i in 0 until node.childCount.coerceAtMost(10)) {
                 val child = node.getChild(i) ?: continue
                 val found = hasTextInHierarchy(child, keywords)
                 try { child.recycle() } catch (_: Exception) {}
                 if (found) return true
             }
-            
+
             return false
         } catch (e: Exception) {
             return false
         }
     }
-    
+
     // === STRICT MODE INSTANT BLOCKING ===
     private var strictOverlay: android.widget.TextView? = null
     private var lastStrictBlockTime = 0L
-    
+
     /**
      * Extracts a quick hash of the page's top-level text content.
      * Used to detect actual page changes (different content) vs scroll/click (same content).
@@ -476,7 +476,7 @@ class AppBlockerService : BaseBlockingService() {
      */
 
 
-    
+
     private fun showStrictLockOverlay(reason: String) {
         if (strictOverlay != null) return
         try {
@@ -485,12 +485,12 @@ class AppBlockerService : BaseBlockingService() {
                 android.view.WindowManager.LayoutParams.MATCH_PARENT,
                 android.view.WindowManager.LayoutParams.MATCH_PARENT,
                 android.os.Build.VERSION.SDK_INT.let { if (it >= 26) android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else android.view.WindowManager.LayoutParams.TYPE_PHONE },
-                android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or 
-                android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or 
+                android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
                 android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 android.graphics.PixelFormat.TRANSLUCENT
             )
-            
+
             strictOverlay = android.widget.TextView(this).apply {
                 text = "$reason\n\nStrict Mode Active"
                 textSize = 24f
@@ -502,7 +502,7 @@ class AppBlockerService : BaseBlockingService() {
             windowManager.addView(strictOverlay, params)
         } catch (e: Exception) {}
     }
-    
+
     private fun removeStrictOverlay() {
         try {
             strictOverlay?.let {
@@ -514,16 +514,16 @@ class AppBlockerService : BaseBlockingService() {
     }
 
 
-    
 
 
-    
+
+
 
 
     // Updated signature to control session persistence
     private fun handleBlock(packageName: String, reason: String? = null, addToSession: Boolean = true) {
         com.neubofy.reality.utils.TerminalLogger.log("ACTION: Blocking $packageName. Reason: ${reason ?: "N/A"}")
-        
+
         // Event-driven Sleep Mode Enforcement (Android 15+ Fix on bypass attempt)
         systemStateManager.forceSleepModeEnforcement()
 
@@ -532,10 +532,10 @@ class AppBlockerService : BaseBlockingService() {
              val am = getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager
              am.killBackgroundProcesses(packageName)
         } catch(e: Exception) {}
-        
+
         lastBlockedPackage = packageName
         lastBlockTime = System.currentTimeMillis()
-        
+
         // Launch Block Activity
         try {
             performGlobalAction(GLOBAL_ACTION_HOME) // Force app to background
@@ -554,26 +554,26 @@ class AppBlockerService : BaseBlockingService() {
             performGlobalAction(GLOBAL_ACTION_HOME)
             Toast.makeText(this, reason, Toast.LENGTH_SHORT).show()
         }
-        
+
         lastPackage = ""
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onServiceConnected() {
         super.onServiceConnected()
-        
+
         // Initialize Dynamic Browser Detection
         com.neubofy.reality.utils.UrlDetector.init(this)
-        
+
         // Load BlockCache from disk (survives RAM cleanup)
         com.neubofy.reality.utils.BlockCache.loadFromDisk(this)
-        
+
         // Initialize SettingsBox for military-grade settings protection
         com.neubofy.reality.utils.SettingsBox.rebuildBox(this)
-        
+
         // Load learned settings pages
         learnedSettingsPages = savedPreferencesLoader.getLearnedSettingsPages()
-        
+
         refreshSettings()
         val filter = IntentFilter().apply {
             addAction(INTENT_ACTION_REFRESH_FOCUS_MODE)
@@ -590,7 +590,7 @@ class AppBlockerService : BaseBlockingService() {
         } else {
             registerReceiver(refreshReceiver, filter)
         }
-        
+
         // Log service startup
         com.neubofy.reality.utils.TerminalLogger.log("SERVICE: Accessibility Service Started")
         com.neubofy.reality.utils.TerminalLogger.log("STATUS: Blocking=$isBlockingActive, StrictMode=${blocker.strictModeData?.isEnabled ?: false}")
@@ -608,18 +608,18 @@ class AppBlockerService : BaseBlockingService() {
         com.neubofy.reality.utils.getDefaultLauncherPackageName(packageManager)?.let { whitelist.add(it) }
         com.neubofy.reality.utils.getCurrentKeyboardPackageName(this)?.let { whitelist.add(it) }
         blocker.whitelistedPackages = whitelist
-        
+
         warningConfig = savedPreferencesLoader.loadAppBlockerWarningInfo()
         blocker.refreshSchedules(savedPreferencesLoader.loadAutoFocusHoursList())
         blocker.usageLimitData = savedPreferencesLoader.getUsageLimitData()
-        
+
         try {
             blocker.bedtimeData = savedPreferencesLoader.getBedtimeData()
         } catch (e: Exception) {
             blocker.bedtimeData = com.neubofy.reality.Constants.BedtimeData()
             com.neubofy.reality.utils.TerminalLogger.log("ERROR: Bedtime data load failed")
         }
-        
+
         try {
             blocker.emergencyData = savedPreferencesLoader.getEmergencyData()
             com.neubofy.reality.utils.BlockCache.emergencySessionEndTime = blocker.emergencyData.currentSessionEndTime
@@ -627,7 +627,7 @@ class AppBlockerService : BaseBlockingService() {
             blocker.emergencyData = com.neubofy.reality.Constants.EmergencyModeData()
             com.neubofy.reality.utils.TerminalLogger.log("ERROR: Emergency data load failed")
         }
-        
+
         try {
             blocker.strictModeData = savedPreferencesLoader.getStrictModeData()
             com.neubofy.reality.utils.TerminalLogger.log("STRICT: Loaded - enabled=${blocker.strictModeData.isEnabled}, mode=${blocker.strictModeData.modeType}")
@@ -635,20 +635,20 @@ class AppBlockerService : BaseBlockingService() {
             blocker.strictModeData = com.neubofy.reality.Constants.StrictModeData()
             com.neubofy.reality.utils.TerminalLogger.log("ERROR: Strict mode data load failed - ${e.message}")
         }
-        
+
         // === REBUILD THE BOX IMMEDIATELY ===
         serviceScope.launch(Dispatchers.IO) {
             try {
                 com.neubofy.reality.utils.BlockCache.rebuildBox(applicationContext)
-                
+
                 kotlinx.coroutines.withContext(Dispatchers.Main) {
                     val wasActive = isBlockingActive
-                    
+
                     isBlockingActive = com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive ||
                                        com.neubofy.reality.utils.BlockCache.getBlockedCount() > 0
-                    
+
                     val isAnyModeActive = com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive
-                    
+
                     // === NOTIFICATION MANAGEMENT ===
                     if (isAnyModeActive) {
                         // Focus/Schedule/Bedtime is running - show notification timer
@@ -657,21 +657,18 @@ class AppBlockerService : BaseBlockingService() {
                         // No blocking mode active - stop notification timer
                         com.neubofy.reality.utils.NotificationTimerManager(this@AppBlockerService).stopTimer()
                     }
-                    
+
                     // === DND & SLEEP MODE SYNC (Delegated to SystemStateManager) ===
                     systemStateManager.syncDndState(isAnyModeActive)
                     systemStateManager.syncSleepModeState()
-                    
-                    com.neubofy.reality.utils.TerminalLogger.log("BOX SYNC: Active=$isBlockingActive, DND=${com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive}")
 
-                    // Force check the current window after the box is completely rebuilt and isBlockingActive updated
-                    checkCurrentWindow()
+                    com.neubofy.reality.utils.TerminalLogger.log("BOX SYNC: Active=$isBlockingActive, DND=${com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive}")
                 }
             } catch (e: Exception) {
                 com.neubofy.reality.utils.TerminalLogger.log("REFRESH ERROR: ${e.message}")
             }
         }
-        
+
         // Load focus mode for website blocking and other legacy checks
         val data = savedPreferencesLoader.getFocusModeData()
         blocker.focusModeData = RealityBlocker.FocusModeData(
@@ -681,21 +678,24 @@ class AppBlockerService : BaseBlockingService() {
             modeType = data.modeType,
             blockedWebsites = data.blockedWebsites
         )
-                           
+
         com.neubofy.reality.utils.TerminalLogger.log("KERNEL: Config Loaded. BlockCache will be rebuilt.")
+
+        // Force check the current window
+        checkCurrentWindow()
     }
-    
+
     private fun checkCurrentWindow() {
         // Only run if blocking is active
         if (!isBlockingActive) return
-        
+
         try {
             val root = rootInActiveWindow ?: return
             val pkg = root.packageName?.toString() ?: return
-            
+
             // Avoid self-blocking system apps
             if (pkg == packageName || pkg == "com.android.systemui") return
-            
+
             // === CHECK THE BOX - SINGLE SOURCE OF TRUTH ===
             val (shouldBlock, reasons) = com.neubofy.reality.utils.BlockCache.shouldBlock(pkg)
             if (shouldBlock) {
@@ -707,7 +707,7 @@ class AppBlockerService : BaseBlockingService() {
             // Ignore - accessibility node might be invalid
         }
     }
-    
+
 
 
     private fun setUpForcedRefreshChecker(packageName: String, endMillis: Long) {
@@ -748,7 +748,7 @@ class AppBlockerService : BaseBlockingService() {
     private fun hasUsageStatsPermission(): Boolean {
         return try {
             val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-            val mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, 
+            val mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
                 android.os.Process.myUid(), packageName)
             mode == AppOpsManager.MODE_ALLOWED
         } catch (e: Exception) { false }
@@ -757,12 +757,12 @@ class AppBlockerService : BaseBlockingService() {
     // ==========================================
     // REMINDER SYSTEM (Unified)
     // ==========================================
-    
+
     private val reminderManager by lazy { com.neubofy.reality.ui.overlay.ReminderOverlayManager(this) }
-    
+
     // NOTE: Local scheduleNextAlarm() implementation REMOVED.
     // We now use the unified com.neubofy.reality.utils.ReminderScheduler for robust scheduling.
-    
+
     private suspend fun checkUpcomingSchedules() {
         // Delegate all alarm scheduling to unified ReminderScheduler
         com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(this)
@@ -771,24 +771,24 @@ class AppBlockerService : BaseBlockingService() {
     private fun sendReminderNotification(title: String, mins: Int) {
         val channelId = "reality_reminders"
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-        
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = android.app.NotificationChannel(channelId, "Reminders", android.app.NotificationManager.IMPORTANCE_HIGH)
             manager.createNotificationChannel(channel)
         }
-        
+
         val intent = Intent(this, com.neubofy.reality.ui.activity.MainActivity::class.java)
         val pendingIntent = android.app.PendingIntent.getActivity(this, 101, intent, android.app.PendingIntent.FLAG_IMMUTABLE)
-        
+
         val builder = androidx.core.app.NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm) 
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle("Upcoming Focus Session")
             .setContentText("$title starts in $mins minute.") // "1 minute"
             .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setDefaults(androidx.core.app.NotificationCompat.DEFAULT_ALL)
-            
+
         manager.notify(title.hashCode(), builder.build())
     }
 }

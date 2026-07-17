@@ -1,0 +1,22 @@
+--- app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt
++++ app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt
+@@ -658,6 +658,9 @@
+                     systemStateManager.syncSleepModeState()
+
+                     com.neubofy.reality.utils.TerminalLogger.log("BOX SYNC: Active=$isBlockingActive, DND=${com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive}")
++
++                    // Force check the current window after the box is completely rebuilt and isBlockingActive updated
++                    checkCurrentWindow()
+                 }
+             } catch (e: Exception) {
+                 com.neubofy.reality.utils.TerminalLogger.log("REFRESH ERROR: ${e.message}")
+@@ -680,9 +683,6 @@
+         )
+
+         com.neubofy.reality.utils.TerminalLogger.log("KERNEL: Config Loaded. BlockCache will be rebuilt.")
+-
+-        // Force check the current window
+-        checkCurrentWindow()
+     }
+
+     private fun checkCurrentWindow() {

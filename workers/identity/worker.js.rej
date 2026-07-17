@@ -1,0 +1,91 @@
+--- workers/identity/worker.js
++++ workers/identity/worker.js
+@@ -187,7 +187,7 @@
+         }
+
+         // Generate connectionSecret based on active subscription details
+-        const connectionSecret = await this.generatePassword(
++        const connectionSecret = await this.generateConnectionSecret(
+           userId,
+           activeExpiry,
+           activeDuration,
+@@ -196,7 +196,7 @@
+           env.APP_SECRET_PEPPER
+         );
+
+-        const backupPassword = await this.generateBackupKey(userId, env.APP_SECRET_PEPPER);
++        const backupPassword = await this.generateBackupPassword(userId, env.APP_SECRET_PEPPER);
+
+         return new Response(
+           JSON.stringify({
+@@ -434,8 +434,8 @@
+               }
+             }
+
+-            const newPassword = await this.generatePassword(userId, curActiveExpiry, curActiveDuration, curActiveStatus, curPlanType, env.APP_SECRET_PEPPER);
+-            const backupKey = await this.generateBackupKey(userId, env.APP_SECRET_PEPPER);
++            const newPassword = await this.generateConnectionSecret(userId, curActiveExpiry, curActiveDuration, curActiveStatus, curPlanType, env.APP_SECRET_PEPPER);
++            const backupKey = await this.generateBackupPassword(userId, env.APP_SECRET_PEPPER);
+
+             if (curActiveStatus === "V" || curActiveStatus === "P") {
+               return new Response(
+@@ -443,6 +443,7 @@
+                   status: "SUCCESS",
+                   verificationCode: "REGISTERED",
+                   password: newPassword,
++                  connectionSecret: newPassword,
+                   backupKey: backupKey,
+                   activeExpiry: curActiveExpiry,
+                   activeDuration: curActiveDuration,
+@@ -516,7 +517,7 @@
+           const newActiveStatus = "V";
+           const newPlanType = "paid";
+
+-          const newPassword = await this.generatePassword(
++          const newPassword = await this.generateConnectionSecret(
+             userId,
+             newActiveExpiry,
+             newActiveDuration,
+@@ -525,13 +526,14 @@
+             env.APP_SECRET_PEPPER
+           );
+
+-          const backupKey = await this.generateBackupKey(userId, env.APP_SECRET_PEPPER);
++          const backupKey = await this.generateBackupPassword(userId, env.APP_SECRET_PEPPER);
+
+           return new Response(
+             JSON.stringify({
+               status: "SUCCESS",
+               verificationCode: "REGISTERED",
+               password: newPassword,
++              connectionSecret: newPassword,
+               backupKey: backupKey,
+               activeExpiry: newActiveExpiry,
+               activeDuration: newActiveDuration,
+@@ -557,7 +559,7 @@
+
+   },
+
+-  async generatePassword(userId, expiry, duration, status, planType, secretPepper) {
++  async generateConnectionSecret(userId, expiry, duration, status, planType, secretPepper) {
+     if (!userId || !secretPepper) return "";
+     const expiryStr = String(expiry || "0");
+     const durationStr = String(duration || "0");
+@@ -578,7 +580,7 @@
+
+   async verifyAuth(userId, connectionSecret, expiry, duration, status, planType, secretPepper) {
+     if (!userId || !connectionSecret || !secretPepper) return false;
+-    const expectedSecret = await this.generatePassword(userId, expiry, duration, status, planType, secretPepper);
++    const expectedSecret = await this.generateConnectionSecret(userId, expiry, duration, status, planType, secretPepper);
+     const encoder = new TextEncoder();
+     const a = encoder.encode(connectionSecret);
+     const b = encoder.encode(expectedSecret);
+@@ -594,7 +596,7 @@
+     return matched;
+   },
+
+-  async generateBackupKey(userId, secretPepper) {
++  async generateBackupPassword(userId, secretPepper) {
+     if (!userId || !secretPepper) return "";
+     const encoder = new TextEncoder();
+     const secretKeyData = encoder.encode(secretPepper);
