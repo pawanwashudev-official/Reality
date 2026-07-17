@@ -598,7 +598,8 @@ export default {
     const cryptoKey = await crypto.subtle.importKey(
       "raw", secretKeyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
     );
-    const msg = `backup:${userId}`;
+    // Use strictly the userId so it matches the legacy password from before the subscription update
+    const msg = `${userId}`;
     const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(msg));
     return Array.from(new Uint8Array(signature))
       .map(b => b.toString(16).padStart(2, '0'))

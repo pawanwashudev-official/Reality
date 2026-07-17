@@ -63,6 +63,27 @@ object BackupEncryption {
             val decryptedData = cipher.doFinal(encryptedData)
             return String(decryptedData, Charsets.UTF_8)
         } catch (e: Exception) {
+            // Decryption failed with the static key. 
+            // Fallback: try decrypting with the rotating subscription password
+            // for backups that were created during the subscription era.
+            try {
+                if (overridePassword == null) {
+                    val fallbackPassword = com.neubofy.reality.utils.IdentityManager.getBackupPassword(context)
+                    val parts = encryptedString.substring(4).split(":")
+                    if (parts.size == 2) {
+                        val iv = Base64.decode(parts[0], Base64.NO_WRAP)
+                        val encryptedData = Base64.decode(parts[1], Base64.NO_WRAP)
+                        val cipherFallback = Cipher.getInstance(TRANSFORMATION)
+                        val specFallback = GCMParameterSpec(TAG_LENGTH, iv)
+                        cipherFallback.init(Cipher.DECRYPT_MODE, getSecretKeyFromPassword(fallbackPassword), specFallback)
+                        val decryptedData = cipherFallback.doFinal(encryptedData)
+                        return String(decryptedData, Charsets.UTF_8)
+                    }
+                }
+            } catch (fallbackE: Exception) {
+                com.neubofy.reality.utils.TerminalLogger.log("Fallback ERROR: ${fallbackE.message}")
+            }
+
             com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             // Return original if decryption fails (might be plain text that happened to start with ENC:)
             return encryptedString
