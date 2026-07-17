@@ -434,8 +434,8 @@ export default {
               }
             }
 
-            const newPassword = await this.generatePassword(userId, curActiveExpiry, curActiveDuration, curActiveStatus, curPlanType, env.APP_SECRET_PEPPER);
-            const backupKey = await this.generateBackupKey(userId, env.APP_SECRET_PEPPER);
+            const newPassword = await this.generateConnectionSecret(userId, curActiveExpiry, curActiveDuration, curActiveStatus, curPlanType, env.APP_SECRET_PEPPER);
+            const backupKey = await this.generateBackupPassword(userId, env.APP_SECRET_PEPPER);
 
             if (curActiveStatus === "V" || curActiveStatus === "P") {
               return new Response(
@@ -516,7 +516,7 @@ export default {
           const newActiveStatus = "V";
           const newPlanType = "paid";
 
-          const newPassword = await this.generatePassword(
+          const newPassword = await this.generateConnectionSecret(
             userId,
             newActiveExpiry,
             newActiveDuration,
@@ -525,7 +525,7 @@ export default {
             env.APP_SECRET_PEPPER
           );
 
-          const backupKey = await this.generateBackupKey(userId, env.APP_SECRET_PEPPER);
+          const backupKey = await this.generateBackupPassword(userId, env.APP_SECRET_PEPPER);
 
           return new Response(
             JSON.stringify({

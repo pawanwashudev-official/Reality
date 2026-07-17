@@ -1,7 +1,13 @@
-name: Build Pre-Release APK
+name: Build & Release APK
 
 on:
   workflow_dispatch:
+    inputs:
+      make_latest:
+        description: 'Make this build the LATEST release (instead of Pre-Release)'
+        required: false
+        type: boolean
+        default: false
   push:
     branches:
       - '**'
@@ -71,23 +77,52 @@ jobs:
       - name: Build Release APK
         run: ./gradlew assembleRelease
 
-      - name: Create Pre-Release & Upload APK
+      - name: Upload APK to Artifacts (Output)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Reality-APK
+          path: app/build_v4/outputs/apk/release/*.apk
+
+      - name: Create Release & Upload APK
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MAKE_LATEST: ${{ github.event.inputs.make_latest || 'false' }}
         run: |
           APK_PATH=$(find app/build_v4/outputs/apk/release -name "*.apk" | head -n 1)
           echo "Found APK at $APK_PATH"
           
-          # Target tag automatically appends -beta to guarantee it stays a Pre-Release page
-          TARGET_TAG="v${VERSION_NAME}-beta"
+          if [ "$MAKE_LATEST" = "true" ]; then
+            TARGET_TAG="v${VERSION_NAME}"
+          else
+            TARGET_TAG="v${VERSION_NAME}-beta"
+          fi
+          echo "Target tag: $TARGET_TAG"
           
           if gh release view "$TARGET_TAG" >/dev/null 2>&1; then
-            echo "Pre-release $TARGET_TAG already exists. Adding new unique APK asset..."
+            echo "Checking existing APK assets in release/pre-release $TARGET_TAG..."
+            gh release view "$TARGET_TAG" --json assets --jq '.assets[] | select(.name | endswith(".apk")) | "\(.name) \(.downloadCount)"' | while read -r name count; do
+              if [ -n "$name" ]; then
+                echo "Found existing APK asset: $name with download count: $count"
+                if [ "$count" -lt 5 ]; then
+                  echo "Download count is less than 5. Deleting $name..."
+                  gh release delete-asset "$TARGET_TAG" "$name" -y
+                else
+                  echo "Download count is $count (5 or more). Keeping $name."
+                fi
+              fi
+            done
+            echo "Uploading new APK to $TARGET_TAG..."
             gh release upload "$TARGET_TAG" "$APK_PATH"
           else
-            echo "Pre-release $TARGET_TAG does not exist. Creating a brand new Pre-Release page..."
-            gh release create "$TARGET_TAG" "$APK_PATH" \
-              --title "Pre-Release $TARGET_TAG" \
-              --notes "Automated early access build via GitHub Actions." \
-              --prerelease
+            echo "Release $TARGET_TAG does not exist. Creating..."
+            if [ "$MAKE_LATEST" = "true" ]; then
+              gh release create "$TARGET_TAG" "$APK_PATH" \
+                --title "Release $TARGET_TAG" \
+                --notes "Automated production release via GitHub Actions."
+            else
+              gh release create "$TARGET_TAG" "$APK_PATH" \
+                --title "Pre-Release $TARGET_TAG" \
+                --notes "Automated early access build via GitHub Actions." \
+                --prerelease
+            fi
           fi

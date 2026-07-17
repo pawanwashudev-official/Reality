@@ -144,6 +144,17 @@ class AppBlockerService : BaseBlockingService() {
     
     private var isScreenOn = true
     private var isBlockingActive = true
+    
+    // Minute-tick heartbeat receiver for bedtime/schedule enforcement
+    // Uses ACTION_TIME_TICK (fires every minute, OS-managed, zero battery cost)
+    // Only does an O(1) HashMap lookup — does NOT intercept scrolls/taps
+    private val timeTickReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_TIME_TICK && isScreenOn && isBlockingActive) {
+                checkCurrentWindow()
+            }
+        }
+    }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (!isScreenOn) return
@@ -285,7 +296,8 @@ class AppBlockerService : BaseBlockingService() {
         
         // 0. EMERGENCY MODE BYPASS (Highest Priority)
         // If Emergency Mode is active, bypass ALL app blocking checks.
-        if (com.neubofy.reality.utils.BlockCache.emergencySessionEndTime > System.currentTimeMillis()) {
+        // Uses SecureTimeProvider for tamper-proof duration counting (works offline via cached offset + monotonic clock)
+        if (com.neubofy.reality.utils.BlockCache.emergencySessionEndTime > com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this)) {
              return
         }
         
@@ -591,6 +603,12 @@ class AppBlockerService : BaseBlockingService() {
             registerReceiver(refreshReceiver, filter)
         }
         
+        // Register minute-tick heartbeat for bedtime/schedule enforcement
+        // This catches the case where a blocking mode activates while the user is already in a blocked app
+        // (e.g., scrolling YouTube Shorts when Bedtime starts). Zero battery cost — OS already fires this.
+        val tickFilter = IntentFilter(Intent.ACTION_TIME_TICK)
+        registerReceiver(timeTickReceiver, tickFilter)
+        
         // Log service startup
         com.neubofy.reality.utils.TerminalLogger.log("SERVICE: Accessibility Service Started")
         com.neubofy.reality.utils.TerminalLogger.log("STATUS: Blocking=$isBlockingActive, StrictMode=${blocker.strictModeData?.isEnabled ?: false}")
@@ -663,6 +681,15 @@ class AppBlockerService : BaseBlockingService() {
                     systemStateManager.syncSleepModeState()
                     
                     com.neubofy.reality.utils.TerminalLogger.log("BOX SYNC: Active=$isBlockingActive, DND=${com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive}")
+                    
+                    // === IMMEDIATE FOREGROUND CHECK ===
+                    // After box rebuild, check if the currently active app is now blocked.
+                    // This fixes the bypass where user is already inside a blocked app (e.g. scrolling 
+                    // YouTube Shorts) when a mode activates (e.g. Bedtime starts at 10 PM).
+                    // Without this, the block only triggers on the next TYPE_WINDOW_STATE_CHANGED event.
+                    if (isBlockingActive) {
+                        checkCurrentWindow()
+                    }
                 }
             } catch (e: Exception) {
                 com.neubofy.reality.utils.TerminalLogger.log("REFRESH ERROR: ${e.message}")
@@ -740,6 +767,7 @@ class AppBlockerService : BaseBlockingService() {
         try {
             browserWatchdog.stopBrowserCheckTimer()
         } catch (e: Exception) {}
+        try { unregisterReceiver(timeTickReceiver) } catch (e: Exception) {}
         try { unregisterReceiver(refreshReceiver) } catch (e: Exception) {}
     }
 
