@@ -1,11 +1,46 @@
 # About Reality
 
-Reality is an open, military-grade productivity operating system for Android, designed to eliminate digital distractions and enforce discipline. Rather than acting as a standard, easily-bypassed app blocker, Reality utilizes Android's native `AccessibilityService` ([AppBlockerService.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt)) alongside device administration ([StrictModeActivity.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/ui/activity/StrictModeActivity.kt)) to construct an impenetrable **Strict Mode** that blocks uninstallation, system settings tampering, and clock manipulation. 
+Reality is a military-grade productivity operating system designed to eliminate digital distractions and act as a relentless partner in achieving your goals. It is an intelligent, completely integrated local-first system that merges task management, calendar sync, screen-time control, sleep tracking, and agentic AI.
 
-Its ecosystem integrates:
-- **Tapasya (Neural Focus)** ([TapasyaService.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/services/TapasyaService.kt)) for deep, distraction-free work blocks.
-- **Nightly Protocol** ([NightlyWorker.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/workers/NightlyWorker.kt)) for structured evening planning, Google Workspace sync, and daily report generation.
-- **Wakeup Alarms** ([WakeupAlarmService.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/services/WakeupAlarmService.kt)) that scale math difficulty based on morning hours to prevent oversleeping.
-- **Reality Intelligence Assistant** ([AIChatActivity.kt](https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/ui/activity/AIChatActivity.kt)), a local-first, Jarvis-like agent for secure, private in-app automation.
+## Important Links
+- **Official Website (Architecture & Detail Info):** [https://reality.neubofy.in/](https://reality.neubofy.in/)
+- **Download Best/Latest Version:** [https://reality.neubofy.in/download](https://reality.neubofy.in/download)
+- **Privacy Policy:** [https://reality.neubofy.in/privacypolicy](https://reality.neubofy.in/privacypolicy)
+- **Terms of Service:** [https://reality.neubofy.in/termsofservice](https://reality.neubofy.in/termsofservice)
+- **Reality Elite Members:** [https://reality.neubofy.in/promembers](https://reality.neubofy.in/promembers)
 
-Everything is processed on-device, preserving total user privacy.
+## Core Features & Setup Guide
+
+### 1. 🚫 App Blocker & Strict Mode
+A zero-tamper blocking system using Android's native Accessibility Service and Device Admin permissions. It prevents uninstallation, system settings tampering, and clock manipulation to guarantee you stick to your focus rules.
+* **Setup:** Grant Accessibility and Device Admin permissions in the onboarding flow. Select apps to block in the "App Constraints" or "Grouped App limit" menus.
+
+### 2. ⚡ Tapasya (Neural Focus Timer)
+Enforces deep, uninterrupted focus blocks. Managed by a strict 15-minute chunk system. Opening unapproved apps voids your session.
+* **Setup:** Navigate to the Tapasya tab, set your session duration, and lock in. A custom AMOLED theme will prevent visual clutter.
+
+### 3. 🌙 Nightly Protocol & Analytics
+An automated evening reflection and planning workflow. AI reads your daily metrics, asks personalized questions, and autonomously drafts tomorrow's plan layout into your Google Drive, Tasks, and Calendar.
+* **Setup:** The Nightly Worker runs automatically in the evening. Complete the reflection diary to earn XP and generate your plan.
+
+### 4. 🛌 Smart Sleep & Bedtime
+A local Sleep and Bedtime manager optimized for circadian alignment, pulling daily metrics from Android Health Connect natively without external cloud wearables.
+* **Setup:** Grant Health Connect permissions. Swipe down for the Quick Settings tile to initiate bedtime routines instantly.
+
+### 5. 🔔 Math-Based Wakeup Alarms
+Alarms designed to prevent snoozing and sleep-inertia by rendering math problems whose difficulty scales based on how early the alarm rings.
+* **Setup:** Set alarms in the app. The Wakeup Alarm Service handles snooze restrictions automatically.
+
+### 6. 🤖 Reality Intelligence Assistant (Jarvis-Like AI)
+A local-first agent for secure, private in-app command execution (e.g., adding tasks, changing alarms) rather than a generic text-generation bot.
+* **Setup:** Requires Google Workspace Sync for full capability. Uses private, secure edge servers with Bring-Your-Own-Key (BYOK) support.
+
+### 7. ☁️ Google Workspace Sync & BYOC (Bring Your Own Cloud)
+Reality works completely without developer servers, syncing directly to your own Google Cloud.
+* **Setup (Your Own Key):**
+  1. Go to Google Cloud Console, enable **Calendar, Drive, Tasks, and Docs APIs**.
+  2. Create OAuth 2.0 Client ID for a **Desktop application**.
+  3. Enter the generated **Client ID** and **Client Secret** in Reality's Settings under Google Auth.
+  4. Once linked, Reality automatically syncs your Tasks, Calendar events, and Daily Report Sheets.
+
+Everything is processed on-device , preserving total user privacy.
