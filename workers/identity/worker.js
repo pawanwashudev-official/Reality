@@ -235,8 +235,8 @@ export default {
 
           if (customNote.length > 200) customNote = customNote.substring(0, 200);
 
-          const existingRow = await env.DB.prepare(
-            'SELECT date, status, expiryDate FROM "Reality Elite members management" WHERE userId = ?'
+           const existingRow = await env.DB.prepare(
+            'SELECT date, status, expiryDate, trial_plan FROM "Reality Elite members management" WHERE userId = ?'
           ).bind(userId).first();
 
           const durationMs = Math.floor(365 / 12) * months * 24 * 60 * 60 * 1000;
@@ -259,6 +259,18 @@ export default {
             }
           }
 
+          // If no active paid plan, check if there is an active trial plan to carry over remaining trial days
+          if (!isCurrentlyActive && existingRow && existingRow.trial_plan) {
+            const parts = existingRow.trial_plan.split("-");
+            if (parts.length === 2) {
+              const trialExpiryUnix = parseInt(parts[0], 10);
+              if (trialExpiryUnix > Date.now()) {
+                const trialRemainingMs = trialExpiryUnix - Date.now();
+                currentExpiry = Date.now() + trialRemainingMs;
+              }
+            }
+          }
+
           const newExpiryUnix = currentExpiry + durationMs;
           const expiryDateStr = `${newExpiryUnix}-${totalMonths}`;
 
@@ -266,12 +278,11 @@ export default {
             INSERT INTO "Reality Elite members management" (userId, date, status, transactionId, customNote, expiryDate)
             VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(userId) DO UPDATE SET 
-              date = CASE WHEN ? = 1 THEN date ELSE excluded.date END,
               transactionId = excluded.transactionId,
               customNote = excluded.customNote,
               expiryDate = excluded.expiryDate,
               status = excluded.status
-          `).bind(userId, new Date().toISOString(), "V", transactionId, customNote, expiryDateStr, isCurrentlyActive ? 1 : 0).run();
+          `).bind(userId, new Date().toISOString(), "V", transactionId, customNote, expiryDateStr).run();
 
           // Retrieve the updated, fully-aligned subscription details using the helper
           const identityData = await this.fetchUserIdentity(userId, env);
