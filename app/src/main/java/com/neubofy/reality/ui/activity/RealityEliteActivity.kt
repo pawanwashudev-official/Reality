@@ -73,16 +73,26 @@ class RealityEliteActivity : BaseActivity() {
             btnSyncIdentity.isEnabled = false
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
-                    IdentityManager.refreshIdentity(this@RealityEliteActivity)
-                } catch (e: Exception) {
-                    if (e.message != "RATE_LIMIT") {
-                        com.neubofy.reality.utils.TerminalLogger.log("Manual sync error: ${e.message}")
+                    val result = IdentityManager.refreshIdentity(this@RealityEliteActivity)
+                    withContext(Dispatchers.Main) {
+                        btnSyncIdentity.text = "Refresh Identity & Subscription"
+                        btnSyncIdentity.isEnabled = true
+                        updateStateUI()
+                        if (result != null) {
+                            showIdentityResultDialog(result)
+                        } else {
+                            Toast.makeText(this@RealityEliteActivity, "Identity sync failed. Please sign in first.", Toast.LENGTH_LONG).show()
+                        }
                     }
-                }
-                withContext(Dispatchers.Main) {
-                    btnSyncIdentity.text = "Sync Identity"
-                    btnSyncIdentity.isEnabled = true
-                    updateStateUI()
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        btnSyncIdentity.text = "Refresh Identity & Subscription"
+                        btnSyncIdentity.isEnabled = true
+                        if (e.message != "RATE_LIMIT") {
+                            Toast.makeText(this@RealityEliteActivity, "Sync error: ${e.message}", Toast.LENGTH_SHORT).show()
+                            com.neubofy.reality.utils.TerminalLogger.log("Manual sync error: ${e.message}")
+                        }
+                    }
                 }
             }
         }
@@ -338,6 +348,97 @@ class RealityEliteActivity : BaseActivity() {
         }
     }
 
-
+    private fun showIdentityResultDialog(result: IdentityManager.IdentityResult) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_identity_result, null)
+        
+        // User profile (already available from Google sign-in)
+        val ivPhoto = dialogView.findViewById<com.google.android.material.imageview.ShapeableImageView>(R.id.iv_user_photo)
+        val tvName = dialogView.findViewById<android.widget.TextView>(R.id.tv_user_name)
+        val tvEmail = dialogView.findViewById<android.widget.TextView>(R.id.tv_user_email)
+        val ivStatusIcon = dialogView.findViewById<android.widget.ImageView>(R.id.iv_status_icon)
+        
+        tvName.text = GoogleAuthManager.getUserName(this) ?: "User"
+        tvEmail.text = GoogleAuthManager.getUserEmail(this) ?: ""
+        
+        val photoUrl = GoogleAuthManager.getUserPhotoUrl(this)
+        if (!photoUrl.isNullOrEmpty()) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val bmp = android.graphics.BitmapFactory.decodeStream(java.net.URL(photoUrl).openStream())
+                    withContext(Dispatchers.Main) { ivPhoto.setImageBitmap(bmp) }
+                } catch (_: Exception) { }
+            }
+        }
+        
+        if (result.activeStatus == "V") {
+            ivStatusIcon.setColorFilter(android.graphics.Color.parseColor("#4CAF50"))
+        } else {
+            ivStatusIcon.setColorFilter(android.graphics.Color.parseColor("#FF9800"))
+            ivStatusIcon.setImageResource(R.drawable.baseline_error_outline_24)
+        }
+        
+        // Backup Password (static, visible, copyable)
+        val tvBackupPassword = dialogView.findViewById<android.widget.TextView>(R.id.tv_backup_password)
+        tvBackupPassword.text = result.backupPassword
+        
+        dialogView.findViewById<android.widget.ImageView>(R.id.btn_copy_backup_password).setOnClickListener {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Backup Password", result.backupPassword))
+            Toast.makeText(this, "Backup password copied", Toast.LENGTH_SHORT).show()
+        }
+        
+        // Connection Secret (rotating, fully masked — never exposed)
+        dialogView.findViewById<android.widget.TextView>(R.id.tv_connection_secret).text = result.connectionSecretMasked
+        
+        // Membership details
+        val tvPlanType = dialogView.findViewById<android.widget.TextView>(R.id.tv_plan_type)
+        val tvSubStatus = dialogView.findViewById<android.widget.TextView>(R.id.tv_sub_status)
+        val tvSubDuration = dialogView.findViewById<android.widget.TextView>(R.id.tv_sub_duration)
+        val tvSubStart = dialogView.findViewById<android.widget.TextView>(R.id.tv_sub_start)
+        val tvSubExpiry = dialogView.findViewById<android.widget.TextView>(R.id.tv_sub_expiry)
+        
+        val dateFormat = java.text.SimpleDateFormat("MMM dd, yyyy HH:mm", java.util.Locale.getDefault())
+        
+        tvPlanType.text = when (result.planType) {
+            "paid" -> "Elite Paid"
+            "trial" -> "Elite Trial"
+            else -> "No Active Plan"
+        }
+        
+        tvSubStatus.text = when (result.activeStatus) {
+            "V" -> "✅ Active"
+            "P" -> "⏳ Pending"
+            else -> "❌ Inactive"
+        }
+        
+        val durationVal = result.activeDuration.toLongOrNull() ?: 0
+        tvSubDuration.text = if (result.planType == "paid" && durationVal > 0) {
+            "$durationVal months"
+        } else if (result.planType == "trial" && durationVal > 0) {
+            "$durationVal days"
+        } else {
+            "—"
+        }
+        
+        val expiryMs = result.activeExpiry.toLongOrNull() ?: 0
+        if (expiryMs > 0) {
+            tvSubExpiry.text = dateFormat.format(java.util.Date(expiryMs))
+            val startMs = if (result.planType == "paid" && durationVal > 0) {
+                expiryMs - ((365L / 12) * durationVal * 24 * 60 * 60 * 1000)
+            } else if (result.planType == "trial" && durationVal > 0) {
+                expiryMs - (durationVal * 24 * 60 * 60 * 1000)
+            } else 0
+            tvSubStart.text = if (startMs > 0) dateFormat.format(java.util.Date(startMs)) else "—"
+        } else {
+            tvSubExpiry.text = "—"
+            tvSubStart.text = "—"
+        }
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Identity Synced Successfully")
+            .setView(dialogView)
+            .setPositiveButton("Done", null)
+            .show()
+    }
 
 }

@@ -365,7 +365,7 @@ Analyze the user's "Plan for Tomorrow" and extract actionable items with extreme
         if (apiUrl.isBlank()) throw Exception("AI endpoint is not configured (AI_URL is missing in build).")
 
         val userId = com.neubofy.reality.utils.IdentityManager.getUserId(context)
-        val password = com.neubofy.reality.utils.IdentityManager.getBackupPassword(context)
+        val connectionSecret = com.neubofy.reality.utils.IdentityManager.getConnectionSecret(context)
 
         val url = java.net.URL(apiUrl)
         val conn = url.openConnection() as java.net.HttpURLConnection
@@ -379,7 +379,7 @@ Analyze the user's "Plan for Tomorrow" and extract actionable items with extreme
                 val requestBody = JSONObject().apply {
             if (!isMeshModel) {
                 put("userId", userId)
-                put("password", password)
+                put("connectionSecret", connectionSecret)
                 put("activeExpiry", com.neubofy.reality.utils.IdentityManager.getActiveExpiry(context))
                 put("activeDuration", com.neubofy.reality.utils.IdentityManager.getActiveDuration(context))
                 put("activeStatus", com.neubofy.reality.utils.IdentityManager.getActiveStatus(context))

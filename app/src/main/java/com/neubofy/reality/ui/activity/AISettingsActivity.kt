@@ -112,13 +112,17 @@ class AISettingsActivity : BaseActivity() {
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     val userId = IdentityManager.getUserId(this@AISettingsActivity)
-                    val password = IdentityManager.getBackupPassword(this@AISettingsActivity)
+                    val connectionSecret = IdentityManager.getConnectionSecret(this@AISettingsActivity)
                     
                     val aiUrl = com.neubofy.reality.BuildConfig.AI_URL
                     
                     val json = JSONObject().apply {
                         put("userId", userId)
-                        put("password", password)
+                        put("connectionSecret", connectionSecret)
+                        put("activeExpiry", IdentityManager.getActiveExpiry(this@AISettingsActivity))
+                        put("activeDuration", IdentityManager.getActiveDuration(this@AISettingsActivity))
+                        put("activeStatus", IdentityManager.getActiveStatus(this@AISettingsActivity))
+                        put("planType", IdentityManager.getActivePlanType(this@AISettingsActivity))
                         put("action", "get_usage")
                     }
                     

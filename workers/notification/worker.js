@@ -39,18 +39,19 @@ export default {
         return jsonError("Invalid JSON body", 400);
       }
 
-      const { userId, backupPassword, fcmToken } = body;
+      const { userId, connectionSecret, backupPassword, fcmToken } = body;
+      const finalSecret = connectionSecret || backupPassword;
       const activeExpiry = body.activeExpiry || "0";
       const activeDuration = body.activeDuration || "0";
       const activeStatus = body.activeStatus || "N";
       const planType = body.planType || "none";
 
-      if (!userId || !backupPassword || !fcmToken) {
-        return jsonError("Missing required fields: userId, backupPassword, fcmToken", 400);
+      if (!userId || !finalSecret || !fcmToken) {
+        return jsonError("Missing required fields: userId, connectionSecret, fcmToken", 400);
       }
 
       // Verify credentials using same HMAC logic as proxy worker
-      const verified = await verifyUserCredentials(userId, backupPassword, activeExpiry, activeDuration, activeStatus, planType, env);
+      const verified = await verifyUserCredentials(userId, finalSecret, activeExpiry, activeDuration, activeStatus, planType, env);
       if (!verified) {
         return jsonError("Invalid credentials", 401);
       }
@@ -147,7 +148,7 @@ export default {
 // ============================================================
 // HELPER: Verify userId + backupPassword (same HMAC as proxy worker)
 // ============================================================
-async function generatePassword(userId, expiry, duration, status, planType, env) {
+async function generateConnectionSecret(userId, expiry, duration, status, planType, env) {
   if (!userId || !env.APP_SECRET_PEPPER) return "";
   const expiryStr = String(expiry || "0");
   const durationStr = String(duration || "0");
@@ -166,12 +167,12 @@ async function generatePassword(userId, expiry, duration, status, planType, env)
     .join('').substring(0, 32);
 }
 
-async function verifyUserCredentials(userId, backupPassword, expiry, duration, status, planType, env) {
-  if (!userId || !backupPassword || !env.APP_SECRET_PEPPER) return false;
-  const expectedPassword = await generatePassword(userId, expiry, duration, status, planType, env);
+async function verifyUserCredentials(userId, connectionSecret, expiry, duration, status, planType, env) {
+  if (!userId || !connectionSecret || !env.APP_SECRET_PEPPER) return false;
+  const expectedSecret = await generateConnectionSecret(userId, expiry, duration, status, planType, env);
   const encoder = new TextEncoder();
-  const a = encoder.encode(backupPassword);
-  const b = encoder.encode(expectedPassword);
+  const a = encoder.encode(connectionSecret);
+  const b = encoder.encode(expectedSecret);
   
   let matched = false;
   if (a.byteLength === b.byteLength) {

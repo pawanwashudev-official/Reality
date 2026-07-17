@@ -26,7 +26,7 @@ object BackupEncryption {
     }
 
     private fun getSecretKey(context: android.content.Context): SecretKey {
-        val password = com.neubofy.reality.utils.IdentityManager.getBackupKey(context)
+        val password = com.neubofy.reality.utils.IdentityManager.getBackupPassword(context)
         return getSecretKeyFromPassword(password)
     }
 
@@ -64,11 +64,11 @@ object BackupEncryption {
             return String(decryptedData, Charsets.UTF_8)
         } catch (e: Exception) {
             // Decryption failed with the static key. 
-            // Fallback: try decrypting with the rotating subscription password
+            // Fallback: try decrypting with the rotating subscription password (connectionSecret)
             // for backups that were created during the subscription era.
             try {
                 if (overridePassword == null) {
-                    val fallbackPassword = com.neubofy.reality.utils.IdentityManager.getBackupPassword(context)
+                    val fallbackPassword = com.neubofy.reality.utils.IdentityManager.getConnectionSecret(context)
                     val parts = encryptedString.substring(4).split(":")
                     if (parts.size == 2) {
                         val iv = Base64.decode(parts[0], Base64.NO_WRAP)

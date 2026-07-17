@@ -41,14 +41,14 @@ class RealityFCMService : FirebaseMessagingService() {
             context: android.content.Context,
             notificationWorkerUrl: String,
             userId: String,
-            backupPassword: String,
+            connectionSecret: String,
             fcmToken: String
         ) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val json = JSONObject().apply {
                         put("userId", userId)
-                        put("backupPassword", backupPassword)
+                        put("connectionSecret", connectionSecret)
                         put("activeExpiry", com.neubofy.reality.utils.IdentityManager.getActiveExpiry(context))
                         put("activeDuration", com.neubofy.reality.utils.IdentityManager.getActiveDuration(context))
                         put("activeStatus", com.neubofy.reality.utils.IdentityManager.getActiveStatus(context))
@@ -151,14 +151,14 @@ class RealityFCMService : FirebaseMessagingService() {
         // Re-register with notification worker if user is already authenticated
         val isSignedIn = com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)
         val userId = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getUserId(this) else null
-        val backupPassword = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getBackupPassword(this) else null
+        val connectionSecret = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getConnectionSecret(this) else null
         val workerUrl = com.neubofy.reality.BuildConfig.NOTIFICATION_WORKER_URL
         val isRealTimeSyncEnabled = prefs.getBoolean("calendar_realtime_sync_enabled", false)
 
-        if (!userId.isNullOrEmpty() && !backupPassword.isNullOrEmpty()
+        if (!userId.isNullOrEmpty() && !connectionSecret.isNullOrEmpty()
             && workerUrl.isNotEmpty() && isRealTimeSyncEnabled
         ) {
-            registerTokenWithWorker(applicationContext, workerUrl, userId, backupPassword, token)
+            registerTokenWithWorker(applicationContext, workerUrl, userId, connectionSecret, token)
         }
     }
 

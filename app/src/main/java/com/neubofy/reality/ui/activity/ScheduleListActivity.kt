@@ -611,7 +611,7 @@ class ScheduleListActivity : BaseActivity() {
             if (isChecked) {
                 val isSignedIn = com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)
                 val userId = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getUserId(this) else null
-                val backupPassword = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getBackupPassword(this) else null
+                val connectionSecret = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getConnectionSecret(this) else null
                 val fcmToken = getSharedPreferences("reality_prefs", android.content.Context.MODE_PRIVATE)
                     .getString(com.neubofy.reality.services.RealityFCMService.PREF_FCM_TOKEN, null)
                 val workerUrl = com.neubofy.reality.BuildConfig.NOTIFICATION_WORKER_URL
@@ -620,7 +620,7 @@ class ScheduleListActivity : BaseActivity() {
                 val googleAuthPrefs = com.neubofy.reality.utils.SecurePreferences.get(this, "google_auth_prefs")
                 val googleAccessToken = googleAuthPrefs.getString("access_token", null)
 
-                if (userId.isNullOrEmpty() || backupPassword.isNullOrEmpty() || googleAccessToken.isNullOrEmpty()) {
+                if (userId.isNullOrEmpty() || connectionSecret.isNullOrEmpty() || googleAccessToken.isNullOrEmpty()) {
                     android.widget.Toast.makeText(this, "Sign in to your Google/Reality account first.", android.widget.Toast.LENGTH_SHORT).show()
                     switchAutoSync.isChecked = false
                     return@setOnCheckedChangeListener
@@ -638,7 +638,7 @@ class ScheduleListActivity : BaseActivity() {
                 }
 
                 // 1. Register FCM token with notification worker
-                com.neubofy.reality.services.RealityFCMService.registerTokenWithWorker(applicationContext, workerUrl, userId, backupPassword, fcmToken)
+                com.neubofy.reality.services.RealityFCMService.registerTokenWithWorker(applicationContext, workerUrl, userId, connectionSecret, fcmToken)
                 
                 // 2. Register Webhook Watch channel with Google Calendar API
                 com.neubofy.reality.services.RealityFCMService.registerCalendarWebhook(applicationContext, workerUrl, userId, googleAccessToken)

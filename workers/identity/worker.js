@@ -186,8 +186,8 @@ export default {
           }
         }
 
-        // Generate backupPassword based on active subscription details
-        const backupPassword = await this.generatePassword(
+        // Generate connectionSecret based on active subscription details
+        const connectionSecret = await this.generateConnectionSecret(
           userId,
           activeExpiry,
           activeDuration,
@@ -196,13 +196,16 @@ export default {
           env.APP_SECRET_PEPPER
         );
 
-        const backupKey = await this.generateBackupKey(userId, env.APP_SECRET_PEPPER);
+        const backupPassword = await this.generateBackupPassword(userId, env.APP_SECRET_PEPPER);
 
         return new Response(
           JSON.stringify({
             userId: userId,
+            connectionSecret: connectionSecret,
             backupPassword: backupPassword,
-            backupKey: backupKey,
+            // Keep legacy keys for backward compatibility
+            backupPassword_legacy: connectionSecret, // legacy mapping
+            backupKey: backupPassword, // legacy mapping
             date: userDate,
             status: userStatus,
             expiryDate: userExpiryDate,
@@ -554,7 +557,7 @@ export default {
 
   },
 
-  async generatePassword(userId, expiry, duration, status, planType, secretPepper) {
+  async generateConnectionSecret(userId, expiry, duration, status, planType, secretPepper) {
     if (!userId || !secretPepper) return "";
     const expiryStr = String(expiry || "0");
     const durationStr = String(duration || "0");
@@ -573,12 +576,12 @@ export default {
       .join('').substring(0, 32);
   },
 
-  async verifyAuth(userId, providedPassword, expiry, duration, status, planType, secretPepper) {
-    if (!userId || !providedPassword || !secretPepper) return false;
-    const expectedPassword = await this.generatePassword(userId, expiry, duration, status, planType, secretPepper);
+  async verifyAuth(userId, connectionSecret, expiry, duration, status, planType, secretPepper) {
+    if (!userId || !connectionSecret || !secretPepper) return false;
+    const expectedSecret = await this.generateConnectionSecret(userId, expiry, duration, status, planType, secretPepper);
     const encoder = new TextEncoder();
-    const a = encoder.encode(providedPassword);
-    const b = encoder.encode(expectedPassword);
+    const a = encoder.encode(connectionSecret);
+    const b = encoder.encode(expectedSecret);
     
     let matched = false;
     if (a.byteLength === b.byteLength) {
@@ -591,7 +594,7 @@ export default {
     return matched;
   },
 
-  async generateBackupKey(userId, secretPepper) {
+  async generateBackupPassword(userId, secretPepper) {
     if (!userId || !secretPepper) return "";
     const encoder = new TextEncoder();
     const secretKeyData = encoder.encode(secretPepper);

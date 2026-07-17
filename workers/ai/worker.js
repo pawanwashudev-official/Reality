@@ -42,21 +42,21 @@ export default {
     try {
       const body = await request.json();
       const userId = body.userId;
-      const password = body.password;
+      const connectionSecret = body.connectionSecret || body.password;
       const activeExpiry = body.activeExpiry || "0";
       const activeDuration = body.activeDuration || "0";
       const activeStatus = body.activeStatus || "N";
       const planType = body.planType || "none";
 
-      // Extract and verify userId and password
-      if (!userId || !password) {
+      // Extract and verify userId and connectionSecret
+      if (!userId || !connectionSecret) {
         return new Response(JSON.stringify({ error: "Missing authentication fields." }), {
             status: 401,
             headers: { "Content-Type": "application/json", ...corsHeaders },
         });
       }
 
-      const isAuthorized = await this.verifyAuth(userId, password, activeExpiry, activeDuration, activeStatus, planType, env.APP_SECRET_PEPPER);
+      const isAuthorized = await this.verifyAuth(userId, connectionSecret, activeExpiry, activeDuration, activeStatus, planType, env.APP_SECRET_PEPPER);
       if (!isAuthorized) {
         return new Response(JSON.stringify({ error: "Unauthorized. Invalid credentials." }), {
             status: 401,
@@ -168,7 +168,7 @@ export default {
     }
   },
 
-  async generatePassword(userId, expiry, duration, status, planType, secretPepper) {
+  async generateConnectionSecret(userId, expiry, duration, status, planType, secretPepper) {
     if (!userId || !secretPepper) return "";
     const expiryStr = String(expiry || "0");
     const durationStr = String(duration || "0");
@@ -187,12 +187,12 @@ export default {
       .join('').substring(0, 32);
   },
 
-  async verifyAuth(userId, providedPassword, expiry, duration, status, planType, secretPepper) {
-    if (!userId || !providedPassword || !secretPepper) return false;
-    const expectedPassword = await this.generatePassword(userId, expiry, duration, status, planType, secretPepper);
+  async verifyAuth(userId, connectionSecret, expiry, duration, status, planType, secretPepper) {
+    if (!userId || !connectionSecret || !secretPepper) return false;
+    const expectedSecret = await this.generateConnectionSecret(userId, expiry, duration, status, planType, secretPepper);
     const encoder = new TextEncoder();
-    const a = encoder.encode(providedPassword);
-    const b = encoder.encode(expectedPassword);
+    const a = encoder.encode(connectionSecret);
+    const b = encoder.encode(expectedSecret);
     
     let matched = false;
     if (a.byteLength === b.byteLength) {

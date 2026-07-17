@@ -14,9 +14,20 @@ import android.widget.Toast
 
 object IdentityManager {
 
+    data class IdentityResult(
+        val userId: String,
+        val backupPassword: String,
+        val connectionSecretMasked: String,
+        val activeExpiry: String,
+        val activeDuration: String,
+        val activeStatus: String,
+        val planType: String
+    )
+
     private const val PREFS_NAME = "reality_identity_prefs"
     private const val KEY_USER_ID = "user_id"
-    private const val KEY_BACKUP_PASSWORD = "backup_password"
+    private const val KEY_CONNECTION_SECRET = "backup_password" // stored key unchanged for backward compat
+    private const val KEY_BACKUP_PASSWORD = "backup_key" // stored key unchanged for backward compat
     private const val KEY_ACTIVE_EXPIRY = "active_expiry"
     private const val KEY_ACTIVE_DURATION = "active_duration"
     private const val KEY_ACTIVE_STATUS = "active_status"
@@ -40,8 +51,8 @@ object IdentityManager {
 
     fun updateCredentials(
         context: Context,
-        newPassword: String,
-        newBackupKey: String,
+        newConnectionSecret: String,
+        newBackupPassword: String,
         activeExpiry: String,
         activeDuration: String,
         activeStatus: String,
@@ -49,9 +60,9 @@ object IdentityManager {
     ) {
         val prefs = SecurePreferences.get(context, PREFS_NAME)
         val editor = prefs.edit()
-        editor.putString(KEY_BACKUP_PASSWORD, newPassword)
-        if (newBackupKey.isNotEmpty()) {
-            editor.putString("backup_key", newBackupKey)
+        editor.putString(KEY_CONNECTION_SECRET, newConnectionSecret)
+        if (newBackupPassword.isNotEmpty()) {
+            editor.putString(KEY_BACKUP_PASSWORD, newBackupPassword)
         }
         editor.putString(KEY_ACTIVE_EXPIRY, activeExpiry)
         editor.putString(KEY_ACTIVE_DURATION, activeDuration)
@@ -77,26 +88,27 @@ object IdentityManager {
     }
 
     /**
-     * Fetches the static backup key used for Google Drive encryption.
-     * Falls back to getBackupPassword() for backward compatibility if not found.
-     */
-    fun getBackupKey(context: Context): String {
-        val prefs = SecurePreferences.get(context, PREFS_NAME)
-        val backupKey = prefs.getString("backup_key", null)
-        if (!backupKey.isNullOrEmpty()) {
-            return backupKey
-        }
-        return getBackupPassword(context)
-    }
-
-    /**
-     * Fetches the cached backupPassword. If it doesn't exist, synchronously calls the API to generate and cache it.
+     * Static backup password used for Google Drive encryption.
+     * Unique per user, never changes. Falls back to connectionSecret for backward compat.
      */
     fun getBackupPassword(context: Context): String {
         val prefs = SecurePreferences.get(context, PREFS_NAME)
-        val cachedPassword = prefs.getString(KEY_BACKUP_PASSWORD, null)
-        if (cachedPassword != null) {
-            return cachedPassword
+        val cached = prefs.getString(KEY_BACKUP_PASSWORD, null)
+        if (!cached.isNullOrEmpty()) {
+            return cached
+        }
+        return getConnectionSecret(context)
+    }
+
+    /**
+     * Rotating connection secret (HMAC hash) used for secure app-to-server auth.
+     * Auto-rotates when membership state changes. Never expose to user.
+     */
+    fun getConnectionSecret(context: Context): String {
+        val prefs = SecurePreferences.get(context, PREFS_NAME)
+        val cached = prefs.getString(KEY_CONNECTION_SECRET, null)
+        if (cached != null) {
+            return cached
         }
 
         // Use applicationContext to prevent Activity leak from fire-and-forget coroutine
@@ -105,11 +117,11 @@ object IdentityManager {
         return ""
     }
 
-    suspend fun refreshIdentity(context: Context) {
+    suspend fun refreshIdentity(context: Context): IdentityResult? {
         if (!checkRateLimit(context)) {
             throw Exception("RATE_LIMIT")
         }
-        generateAndCacheIdentity(context)
+        return generateAndCacheIdentity(context)
     }
 
     private suspend fun checkRateLimit(context: Context): Boolean {
@@ -155,8 +167,8 @@ object IdentityManager {
         return true
     }
 
-    private suspend fun generateAndCacheIdentity(context: Context) {
-        withContext(Dispatchers.IO) {
+    private suspend fun generateAndCacheIdentity(context: Context): IdentityResult? {
+        return withContext(Dispatchers.IO) {
             val email = GoogleAuthManager.getUserEmail(context) ?: ""
             val isSignedIn = GoogleAuthManager.isSignedIn(context) && email.isNotEmpty()
             val idToken = GoogleAuthManager.getIdToken(context)
@@ -180,7 +192,7 @@ object IdentityManager {
                 proEditor.apply()
                 
                 clearIdentity(context)
-                return@withContext
+                return@withContext null
             }
 
             try {
@@ -207,8 +219,13 @@ object IdentityManager {
                     val responseJson = JSONObject(responseStr)
 
                     val userId = responseJson.optString("userId")
-                    val backupPassword = responseJson.optString("backupPassword").takeIf { it.isNotEmpty() } ?: responseJson.optString("password")
-                    val backupKey = responseJson.optString("backupKey", "")
+                    // connectionSecret = rotating HMAC (server field: "connectionSecret" or legacy "backupPassword"/"password")
+                    val connectionSecret = responseJson.optString("connectionSecret").takeIf { it.isNotEmpty() }
+                        ?: responseJson.optString("backupPassword").takeIf { it.isNotEmpty() }
+                        ?: responseJson.optString("password")
+                    // backupPassword = static key (server field: "backupPassword" in new, "backupKey" in legacy)
+                    val backupPassword = responseJson.optString("backupPassword").takeIf { it.isNotEmpty() }
+                        ?: responseJson.optString("backupKey", "")
                     val status = responseJson.optString("status")
                     val activeExpiry = responseJson.optString("activeExpiry", "0")
                     val activeDuration = responseJson.optString("activeDuration", "0")
@@ -219,11 +236,11 @@ object IdentityManager {
                         val prefs = SecurePreferences.get(context, PREFS_NAME)
                         val editor = prefs.edit()
                         editor.putString(KEY_USER_ID, userId)
+                        if (connectionSecret.isNotEmpty()) {
+                            editor.putString(KEY_CONNECTION_SECRET, connectionSecret)
+                        }
                         if (backupPassword.isNotEmpty()) {
                             editor.putString(KEY_BACKUP_PASSWORD, backupPassword)
-                        }
-                        if (backupKey.isNotEmpty()) {
-                            editor.putString("backup_key", backupKey)
                         }
                         editor.putString(KEY_ACTIVE_EXPIRY, activeExpiry)
                         editor.putString(KEY_ACTIVE_DURATION, activeDuration)
@@ -277,11 +294,22 @@ object IdentityManager {
 
                         featuresEditor.apply()
                         proEditor.apply()
+
+                        return@withContext IdentityResult(
+                            userId = userId,
+                            backupPassword = backupPassword.ifEmpty { connectionSecret },
+                            connectionSecretMasked = "•".repeat(32),
+                            activeExpiry = activeExpiry,
+                            activeDuration = activeDuration,
+                            activeStatus = activeStatus,
+                            planType = planType
+                        )
                     }
                 }
             } catch (e: Exception) {
                 com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
             }
+            null
         }
     }
 

@@ -164,7 +164,7 @@ class PaymentVerificationActivity : BaseActivity() {
 
                 val jsonBody = JSONObject()
                 jsonBody.put("userId", userId)
-                jsonBody.put("password", IdentityManager.getBackupPassword(this@PaymentVerificationActivity))
+                jsonBody.put("connectionSecret", IdentityManager.getConnectionSecret(this@PaymentVerificationActivity))
                 jsonBody.put("activeExpiry", IdentityManager.getActiveExpiry(this@PaymentVerificationActivity))
                 jsonBody.put("activeDuration", IdentityManager.getActiveDuration(this@PaymentVerificationActivity))
                 jsonBody.put("activeStatus", IdentityManager.getActiveStatus(this@PaymentVerificationActivity))
