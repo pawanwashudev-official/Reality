@@ -26,7 +26,7 @@ object BackupEncryption {
     }
 
     private fun getSecretKey(context: android.content.Context): SecretKey {
-        val password = com.neubofy.reality.utils.IdentityManager.getBackupPassword(context)
+        val password = com.neubofy.reality.utils.IdentityManager.getBackupKey(context)
         return getSecretKeyFromPassword(password)
     }
 

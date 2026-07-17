@@ -408,6 +408,7 @@ class RealityEliteActivity : BaseActivity() {
                             val status = jsonResponse.optString("status", "")
                             if (status.equals("SUCCESS", ignoreCase = true)) {
                                 val newPassword = jsonResponse.optString("password", "")
+                                val newBackupKey = jsonResponse.optString("backupKey", "")
                                 val newActiveExpiry = jsonResponse.optString("activeExpiry", "0")
                                 val newActiveDuration = jsonResponse.optString("activeDuration", "0")
                                 val newActiveStatus = jsonResponse.optString("activeStatus", "N")
@@ -417,6 +418,7 @@ class RealityEliteActivity : BaseActivity() {
                                     IdentityManager.updateCredentials(
                                         this@RealityEliteActivity,
                                         newPassword,
+                                        newBackupKey,
                                         newActiveExpiry,
                                         newActiveDuration,
                                         newActiveStatus,

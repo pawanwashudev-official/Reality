@@ -148,6 +148,29 @@ class MainActivity : BaseActivity() {
         
         // Staggered Entry Animation (Run only once on create to avoid scroll lag)
         startStaggeredAnimation()
+        
+        // Passive identity refresh on app update
+        try {
+            val pInfo = packageManager.getPackageInfo(packageName, 0)
+            val currentVersionCode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                pInfo.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                pInfo.versionCode.toLong()
+            }
+            val lastVersionCode = prefs.getLong("last_version_code", -1L)
+            if (lastVersionCode != currentVersionCode && lastVersionCode != -1L) {
+                if (com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)) {
+                    val appContext = applicationContext
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                        com.neubofy.reality.utils.IdentityManager.refreshIdentity(appContext)
+                    }
+                }
+            }
+            prefs.edit().putLong("last_version_code", currentVersionCode).apply()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
     
     private fun handleIntentAction(intent: Intent?) {
@@ -196,21 +219,12 @@ class MainActivity : BaseActivity() {
     }
     
     private fun applyFeatureToggles() {
-        val featureManager = com.neubofy.reality.utils.FeatureManager(this)
-
-        val isRealityProEnabled = featureManager.isRealityProEnabled()
-
-        // Reality Elite Member (Gamification + Google Workspace related navigation)
-        binding.cardReflection.visibility = if (isRealityProEnabled) android.view.View.VISIBLE else android.view.View.GONE
-
-        // Reminder
-        binding.btnReminders.visibility = if (featureManager.isReminderEnabled()) android.view.View.VISIBLE else android.view.View.GONE
-
-        // AI
-        binding.fabAiChat.visibility = if (featureManager.isAiEnabled()) android.view.View.VISIBLE else android.view.View.GONE
-        
-        // Tapasya Home Card
-        binding.cardTapasyaHome.visibility = if (featureManager.isTapasyaEnabled()) android.view.View.VISIBLE else android.view.View.GONE
+        // Features are now always visible on the home screen.
+        // Pro access is strictly checked only when the user taps on these cards to open the pages.
+        binding.cardReflection.visibility = android.view.View.VISIBLE
+        binding.btnReminders.visibility = android.view.View.VISIBLE
+        binding.fabAiChat.visibility = android.view.View.VISIBLE
+        binding.cardTapasyaHome.visibility = android.view.View.VISIBLE
     }
 
     // New Staggered Animation Logic
@@ -520,25 +534,8 @@ class MainActivity : BaseActivity() {
     }
 
     private fun checkNightlyTimeWindow() {
-        val featureManager = com.neubofy.reality.utils.FeatureManager(this)
-        if (!featureManager.isRealityProEnabled()) {
-            binding.cardNightlyHome.visibility = android.view.View.GONE
-            return
-        }
-        
-        val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
-        val startMin = prefs.getInt("nightly_start_time", 22 * 60)
-        val endMin = prefs.getInt("nightly_end_time", 23 * 60 + 59)
-        val calendar = java.util.Calendar.getInstance()
-        val currentMins = calendar.get(java.util.Calendar.HOUR_OF_DAY) * 60 + calendar.get(java.util.Calendar.MINUTE)
-        
-        val isInNightlyWindow = if (startMin < endMin) {
-            currentMins in startMin..endMin
-        } else {
-            currentMins >= startMin || currentMins <= endMin
-        }
-        
-        binding.cardNightlyHome.visibility = if (isInNightlyWindow) android.view.View.VISIBLE else android.view.View.GONE
+        // User requested to completely remove the Nightly card from the home page
+        binding.cardNightlyHome.visibility = android.view.View.GONE
     }
 
     private fun updateStepDot(dotView: ImageView, step: com.neubofy.reality.data.db.NightlyStep?) {

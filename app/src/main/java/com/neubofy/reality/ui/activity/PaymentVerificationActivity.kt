@@ -201,6 +201,7 @@ class PaymentVerificationActivity : BaseActivity() {
 
                             if (status.equals("SUCCESS", ignoreCase = true)) {
                                 val newPassword = jsonResponse.optString("password", "")
+                                val newBackupKey = jsonResponse.optString("backupKey", "")
                                 val newActiveExpiry = jsonResponse.optString("activeExpiry", "0")
                                 val newActiveDuration = jsonResponse.optString("activeDuration", "0")
                                 val newActiveStatus = jsonResponse.optString("activeStatus", "N")
@@ -210,6 +211,7 @@ class PaymentVerificationActivity : BaseActivity() {
                                     IdentityManager.updateCredentials(
                                         this@PaymentVerificationActivity,
                                         newPassword,
+                                        newBackupKey,
                                         newActiveExpiry,
                                         newActiveDuration,
                                         newActiveStatus,

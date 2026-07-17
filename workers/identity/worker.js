@@ -196,10 +196,13 @@ export default {
           env.APP_SECRET_PEPPER
         );
 
+        const backupKey = await this.generateBackupKey(userId, env.APP_SECRET_PEPPER);
+
         return new Response(
           JSON.stringify({
             userId: userId,
             backupPassword: backupPassword,
+            backupKey: backupKey,
             date: userDate,
             status: userStatus,
             expiryDate: userExpiryDate,
@@ -429,6 +432,7 @@ export default {
             }
 
             const newPassword = await this.generatePassword(userId, curActiveExpiry, curActiveDuration, curActiveStatus, curPlanType, env.APP_SECRET_PEPPER);
+            const backupKey = await this.generateBackupKey(userId, env.APP_SECRET_PEPPER);
 
             if (curActiveStatus === "V" || curActiveStatus === "P") {
               return new Response(
@@ -436,6 +440,7 @@ export default {
                   status: "SUCCESS",
                   verificationCode: "REGISTERED",
                   password: newPassword,
+                  backupKey: backupKey,
                   activeExpiry: curActiveExpiry,
                   activeDuration: curActiveDuration,
                   activeStatus: curActiveStatus,
@@ -517,11 +522,14 @@ export default {
             env.APP_SECRET_PEPPER
           );
 
+          const backupKey = await this.generateBackupKey(userId, env.APP_SECRET_PEPPER);
+
           return new Response(
             JSON.stringify({
               status: "SUCCESS",
               verificationCode: "REGISTERED",
               password: newPassword,
+              backupKey: backupKey,
               activeExpiry: newActiveExpiry,
               activeDuration: newActiveDuration,
               activeStatus: newActiveStatus,
@@ -581,5 +589,19 @@ export default {
       console.warn(`[SECURITY] Unauthorized access detected: Hashed credentials mismatch! User ID: ${userId}, Expiry: ${expiry}, Duration: ${duration}, Status: ${status}, PlanType: ${planType}. Attempts to bypass subscription verification logic may result in account termination and legal action.`);
     }
     return matched;
+  },
+
+  async generateBackupKey(userId, secretPepper) {
+    if (!userId || !secretPepper) return "";
+    const encoder = new TextEncoder();
+    const secretKeyData = encoder.encode(secretPepper);
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw", secretKeyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+    );
+    const msg = `backup:${userId}`;
+    const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(msg));
+    return Array.from(new Uint8Array(signature))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('').substring(0, 32);
   }
 };

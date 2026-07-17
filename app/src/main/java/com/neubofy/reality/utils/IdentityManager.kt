@@ -39,20 +39,24 @@ object IdentityManager {
 
     fun updateCredentials(
         context: Context,
-        password: String,
+        newPassword: String,
+        newBackupKey: String,
         activeExpiry: String,
         activeDuration: String,
         activeStatus: String,
-        activePlanType: String
+        planType: String
     ) {
-        SecurePreferences.get(context, PREFS_NAME).edit().apply {
-            putString(KEY_BACKUP_PASSWORD, password)
-            putString(KEY_ACTIVE_EXPIRY, activeExpiry)
-            putString(KEY_ACTIVE_DURATION, activeDuration)
-            putString(KEY_ACTIVE_STATUS, activeStatus)
-            putString(KEY_ACTIVE_PLAN_TYPE, activePlanType)
-            apply()
+        val prefs = SecurePreferences.get(context, PREFS_NAME)
+        val editor = prefs.edit()
+        editor.putString(KEY_BACKUP_PASSWORD, newPassword)
+        if (newBackupKey.isNotEmpty()) {
+            editor.putString("backup_key", newBackupKey)
         }
+        editor.putString(KEY_ACTIVE_EXPIRY, activeExpiry)
+        editor.putString(KEY_ACTIVE_DURATION, activeDuration)
+        editor.putString(KEY_ACTIVE_STATUS, activeStatus)
+        editor.putString(KEY_ACTIVE_PLAN_TYPE, planType)
+        editor.apply()
     }
 
     /**
@@ -69,6 +73,19 @@ object IdentityManager {
         val appContext = context.applicationContext
         kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { generateAndCacheIdentity(appContext) }
         return ""
+    }
+
+    /**
+     * Fetches the static backup key used for Google Drive encryption.
+     * Falls back to getBackupPassword() for backward compatibility if not found.
+     */
+    fun getBackupKey(context: Context): String {
+        val prefs = SecurePreferences.get(context, PREFS_NAME)
+        val backupKey = prefs.getString("backup_key", null)
+        if (!backupKey.isNullOrEmpty()) {
+            return backupKey
+        }
+        return getBackupPassword(context)
     }
 
     /**
@@ -144,22 +161,28 @@ object IdentityManager {
 
                     val userId = responseJson.optString("userId")
                     val backupPassword = responseJson.optString("backupPassword")
+                    val backupKey = responseJson.optString("backupKey", "")
                     val status = responseJson.optString("status")
                     val activeExpiry = responseJson.optString("activeExpiry", "0")
                     val activeDuration = responseJson.optString("activeDuration", "0")
                     val activeStatus = responseJson.optString("activeStatus", "N")
                     val planType = responseJson.optString("planType", "none")
 
-                    if (userId.isNotEmpty() && backupPassword.isNotEmpty()) {
-                        SecurePreferences.get(context, PREFS_NAME).edit().apply {
-                            putString(KEY_USER_ID, userId)
-                            putString(KEY_BACKUP_PASSWORD, backupPassword)
-                            putString(KEY_ACTIVE_EXPIRY, activeExpiry)
-                            putString(KEY_ACTIVE_DURATION, activeDuration)
-                            putString(KEY_ACTIVE_STATUS, activeStatus)
-                            putString(KEY_ACTIVE_PLAN_TYPE, planType)
-                            apply()
+                    if (userId.isNotEmpty()) {
+                        val prefs = SecurePreferences.get(context, PREFS_NAME)
+                        val editor = prefs.edit()
+                        editor.putString(KEY_USER_ID, userId)
+                        if (backupPassword.isNotEmpty()) {
+                            editor.putString(KEY_BACKUP_PASSWORD, backupPassword)
                         }
+                        if (backupKey.isNotEmpty()) {
+                            editor.putString("backup_key", backupKey)
+                        }
+                        editor.putString(KEY_ACTIVE_EXPIRY, activeExpiry)
+                        editor.putString(KEY_ACTIVE_DURATION, activeDuration)
+                        editor.putString(KEY_ACTIVE_STATUS, activeStatus)
+                        editor.putString(KEY_ACTIVE_PLAN_TYPE, planType)
+                        editor.apply()
 
                         val featuresPrefs = SecurePreferences.get(context, "reality_features")
                         val featuresEditor = featuresPrefs.edit()
