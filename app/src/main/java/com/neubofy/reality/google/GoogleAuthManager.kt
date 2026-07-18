@@ -22,6 +22,7 @@ import com.google.api.services.tasks.TasksScopes
 import com.neubofy.reality.utils.TerminalLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -139,6 +140,7 @@ object GoogleAuthManager {
         val redirectUri = "http://127.0.0.1:$port/Callback"
 
         if (!clientId.isNullOrBlank()) {
+            TerminalLogger.log("GOOGLE AUTH: Using developer/user cloud credential through no-knowledge architecture secure Google login.")
             return GoogleAuthorizationCodeRequestUrl(
                 clientId,
                 redirectUri,
@@ -147,6 +149,7 @@ object GoogleAuthManager {
             .setAccessType("offline")
             .build()
         } else if (workerUrl.isNotBlank()) {
+             TerminalLogger.log("GOOGLE AUTH: No cloud credential found. Falling back to secure worker OAuth flow.")
              val scopeStr = scopes.joinToString(" ")
              val encodedScopeStr = java.net.URLEncoder.encode(scopeStr, "UTF-8").replace("+", "%20")
              val cleanWorkerUrl = workerUrl.removeSuffix("/")
@@ -427,7 +430,31 @@ object GoogleAuthManager {
         com.neubofy.reality.utils.IdentityManager.clearIdentity(context)
         TerminalLogger.log("GOOGLE AUTH: Signed out and cleared connections")
     }
-    
+
+    private var lastAuthFailureTime = 0L
+
+    fun handleAuthFailure(context: Context) {
+        if (!isSignedIn(context)) return
+        
+        val now = System.currentTimeMillis()
+        if (now - lastAuthFailureTime < 5000) return // Prevent multiple redirects
+        lastAuthFailureTime = now
+
+        TerminalLogger.log("GOOGLE AUTH: Token missing or invalid. Forcing sign out and redirecting to Profile.")
+        
+        signOut(context)
+        
+        val intent = android.content.Intent(context, com.neubofy.reality.ui.activity.ProfileActivity::class.java).apply {
+            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("reconnect_google", true)
+        }
+        context.startActivity(intent)
+        
+        kotlinx.coroutines.CoroutineScope(Dispatchers.Main).launch {
+            android.widget.Toast.makeText(context, "Google Session Expired. Please reconnect your Workspace.", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
     fun getGoogleCredential(context: Context): Credential? {
         val accessToken = getPrefs(context).getString(KEY_ACCESS_TOKEN, null)
         val refreshToken = getPrefs(context).getString(KEY_REFRESH_TOKEN, null)
@@ -436,6 +463,7 @@ object GoogleAuthManager {
         val workerUrl = com.neubofy.reality.BuildConfig.WORKER_URL
         
         if (accessToken.isNullOrBlank()) {
+            handleAuthFailure(context)
             return null
         }
 
@@ -479,6 +507,7 @@ object GoogleAuthManager {
                 tokenErrorResponse: com.google.api.client.auth.oauth2.TokenErrorResponse
             ) {
                 TerminalLogger.log("GOOGLE AUTH: Failed to refresh token silently - ${tokenErrorResponse.error}")
+                handleAuthFailure(context)
             }
         })
 

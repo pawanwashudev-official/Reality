@@ -63,6 +63,18 @@ class ProfileActivity : BaseActivity() {
         updateUI()
         loadSetupData()
         setupRefreshReceiver()
+
+        findViewById<android.widget.ImageButton>(R.id.btn_cloud_settings)?.setOnClickListener {
+            com.neubofy.reality.google.GoogleSignInHelper.showCloudKeySettings(this)
+        }
+
+        if (intent.getBooleanExtra("reconnect_google", false)) {
+            intent.removeExtra("reconnect_google")
+            lifecycleScope.launch(Dispatchers.Main) {
+                delay(500)
+                binding.btnSignInOut.performClick()
+            }
+        }
     }
 
 

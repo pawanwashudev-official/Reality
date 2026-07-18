@@ -18,27 +18,15 @@ import java.net.URLDecoder
 object GoogleSignInHelper {
 
     fun startSignInFlow(activity: AppCompatActivity, isAllConnected: Boolean = false, forceBasicScope: Boolean? = null, skipDialog: Boolean = false, onSuccess: () -> Unit) {
-        if (skipDialog && forceBasicScope != null) {
-            performSignIn(activity, fullScopes = !forceBasicScope, onSuccess)
-            return
-        }
+        // As per new requirements, completely bypass the "Sign In Option" dialog and scope selection.
+        // If forceBasicScope is true (Elite page), use basic scopes. 
+        // If forceBasicScope is false or null (Profile page), use full scopes.
+        val fullScopes = (forceBasicScope != true)
+        performSignIn(activity, fullScopes, onSuccess)
+    }
 
-        MaterialAlertDialogBuilder(activity)
-            .setTitle("Sign In Option")
-            .setMessage(if (isAllConnected) "Use your own Google Cloud credentials or use Developer Default keys." else "Use your own Google Cloud credentials or use Developer Default keys. Login to connect with all full scope connections.")
-            .setPositiveButton(if (isAllConnected) "Default Key" else "Connect All") { _, _ ->
-                if (forceBasicScope == true) {
-                    performSignIn(activity, fullScopes = false, onSuccess)
-                } else if (forceBasicScope == false) {
-                    performSignIn(activity, fullScopes = true, onSuccess)
-                } else {
-                    showScopeSelectionDialog(activity, onSuccess, defaultFullScope = true)
-                }
-            }
-            .setNeutralButton("Own Key") { _, _ ->
-                showCustomKeyDialog(activity, forceBasicScope, onSuccess)
-            }
-            .show()
+    fun showCloudKeySettings(activity: AppCompatActivity) {
+        showCustomKeyDialog(activity, null) {}
     }
 
     private fun showScopeSelectionDialog(activity: AppCompatActivity, onSuccess: () -> Unit, defaultFullScope: Boolean) {
@@ -88,13 +76,12 @@ object GoogleSignInHelper {
                 val clientSecret = etClientSecret.text.toString().trim()
                 GoogleAuthManager.saveCloudCredentials(activity, clientId, clientSecret)
                 Toast.makeText(activity, "Credentials saved", Toast.LENGTH_SHORT).show()
-                if (forceBasicScope == true) {
-                    performSignIn(activity, fullScopes = false, onSuccess)
-                } else if (forceBasicScope == false) {
-                    performSignIn(activity, fullScopes = true, onSuccess)
-                } else {
-                    showScopeSelectionDialog(activity, onSuccess, defaultFullScope = false)
-                }
+                onSuccess()
+            }
+            .setNeutralButton("Clear") { _, _ ->
+                GoogleAuthManager.saveCloudCredentials(activity, "", "")
+                Toast.makeText(activity, "Credentials cleared", Toast.LENGTH_SHORT).show()
+                onSuccess()
             }
             .setNegativeButton("Cancel", null)
             .show()

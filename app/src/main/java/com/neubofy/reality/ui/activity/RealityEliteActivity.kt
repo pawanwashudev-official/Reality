@@ -116,6 +116,10 @@ class RealityEliteActivity : BaseActivity() {
             }
         })
 
+        findViewById<android.widget.ImageButton>(R.id.btn_cloud_settings)?.setOnClickListener {
+            com.neubofy.reality.google.GoogleSignInHelper.showCloudKeySettings(this)
+        }
+
         btnCancel.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
