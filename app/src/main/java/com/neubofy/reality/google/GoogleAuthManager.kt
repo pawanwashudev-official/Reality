@@ -216,22 +216,8 @@ object GoogleAuthManager {
     suspend fun refreshTokenIfNeeded(context: Context): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val credential = getGoogleCredential(context)
-                if (credential != null && credential.refreshToken != null) {
-                    val success = credential.refreshToken()
-                    if (success) {
-                        getPrefs(context).edit().apply {
-                            putString(KEY_ACCESS_TOKEN, credential.accessToken)
-                            // Note: GoogleCredential does not expose a refreshed ID token easily if we just use Credential.
-                            // But for now, we'll save the access token. We may need a manual token request for ID token if it fails.
-                            apply()
-                        }
-                        TerminalLogger.log("GOOGLE AUTH: Token refreshed successfully via API Client")
-                        return@withContext true
-                    }
-                }
-                
-                // If API client fails or no credential, let's try direct exchange if we have a refresh token
+                // To properly refresh the id_token (required for Identity Worker), we MUST use the manual 
+                // direct exchange because GoogleCredential.refreshToken() only returns an access_token.
                 val refreshToken = getPrefs(context).getString(KEY_REFRESH_TOKEN, null)
                 val clientId = getClientId(context)
                 val clientSecret = getClientSecret(context)

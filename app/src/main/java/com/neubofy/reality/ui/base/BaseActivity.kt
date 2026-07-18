@@ -40,41 +40,7 @@ open class BaseActivity : AppCompatActivity() {
         override fun onReceive(context: android.content.Context?, intent: android.content.Intent?) {
             if (intent == null || isFinishing || isDestroyed) return
             
-            val userId = intent.getStringExtra("userId") ?: ""
-            val activeExpiry = intent.getStringExtra("activeExpiry") ?: "0"
-            val activeDuration = intent.getStringExtra("activeDuration") ?: "0"
-            val activeStatus = intent.getStringExtra("activeStatus") ?: "N"
-            val planType = intent.getStringExtra("planType") ?: "none"
-
             onIdentityUpdated()
-
-            val statusLabel = when {
-                activeStatus == "V" && planType == "paid" -> "Elite Pro Member (Paid)"
-                activeStatus == "V" && planType == "trial" -> "Trial Plan (Active)"
-                activeStatus == "N" || planType == "none" -> "Expired Elite / Standard Plan"
-                else -> "Standard Plan"
-            }
-
-            val expiryFormatted = try {
-                val expiryUnix = activeExpiry.toLong()
-                if (expiryUnix > 0) {
-                    val sdf = java.text.SimpleDateFormat("MMM dd, yyyy HH:mm", java.util.Locale.getDefault())
-                    sdf.format(java.util.Date(expiryUnix))
-                } else {
-                    "No Expiry"
-                }
-            } catch (e: Exception) {
-                "No Expiry"
-            }
-
-            com.google.android.material.dialog.MaterialAlertDialogBuilder(this@BaseActivity)
-                .setTitle("Identity Synced")
-                .setMessage("Your profile and subscription parameters are synced:\n\n" +
-                        "• User ID: $userId\n" +
-                        "• Plan: $statusLabel\n" +
-                        "• Valid Until: $expiryFormatted")
-                .setPositiveButton("OK", null)
-                .show()
         }
     }
 

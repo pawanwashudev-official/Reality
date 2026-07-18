@@ -17,7 +17,12 @@ import java.net.URLDecoder
 
 object GoogleSignInHelper {
 
-    fun startSignInFlow(activity: AppCompatActivity, isAllConnected: Boolean = false, forceBasicScope: Boolean? = null, onSuccess: () -> Unit) {
+    fun startSignInFlow(activity: AppCompatActivity, isAllConnected: Boolean = false, forceBasicScope: Boolean? = null, skipDialog: Boolean = false, onSuccess: () -> Unit) {
+        if (skipDialog && forceBasicScope != null) {
+            performSignIn(activity, fullScopes = !forceBasicScope, onSuccess)
+            return
+        }
+
         MaterialAlertDialogBuilder(activity)
             .setTitle("Sign In Option")
             .setMessage(if (isAllConnected) "Use your own Google Cloud credentials or use Developer Default keys." else "Use your own Google Cloud credentials or use Developer Default keys. Login to connect with all full scope connections.")
