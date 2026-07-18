@@ -11,6 +11,13 @@ class UsageTrackerWorker(appContext: Context, workerParams: WorkerParameters) : 
         try {
             TerminalLogger.log("TRACKER: Checking app usage limits...")
             BlockCache.rebuildBox(applicationContext)
+            
+            // Notify AppBlockerService to reload/refresh settings and block immediately
+            val intent = android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE).apply {
+                setPackage(applicationContext.packageName)
+            }
+            applicationContext.sendBroadcast(intent)
+            
             return Result.success()
         } catch (e: Exception) {
             TerminalLogger.log("TRACKER ERROR: ${e.message}")

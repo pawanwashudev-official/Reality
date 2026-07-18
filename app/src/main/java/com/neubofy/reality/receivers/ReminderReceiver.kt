@@ -6,6 +6,7 @@ import android.content.Intent
 import com.neubofy.reality.utils.TerminalLogger
 import android.os.PowerManager
 import com.neubofy.reality.services.ReminderAlarmService
+import com.neubofy.reality.services.AppBlockerService
 import com.neubofy.reality.utils.ReminderScheduler
 import com.neubofy.reality.utils.FiredEventsCache
 import kotlinx.coroutines.launch
@@ -44,6 +45,12 @@ class ReminderReceiver : BroadcastReceiver() {
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             try {
                 com.neubofy.reality.utils.BlockCache.rebuildBox(context)
+                
+                // Notify AppBlockerService to reload/refresh settings and block immediately
+                val refreshIntent = Intent(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE).apply {
+                    setPackage(context.packageName)
+                }
+                context.sendBroadcast(refreshIntent)
             } catch (e: Exception) {
                 TerminalLogger.log("ERROR rebuilding box: ${e.message}")
             }

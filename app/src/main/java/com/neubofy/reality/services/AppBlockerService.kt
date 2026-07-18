@@ -128,10 +128,8 @@ class AppBlockerService : BaseBlockingService() {
                 Intent.ACTION_USER_PRESENT -> {
                     isScreenOn = true
                     
-                    // Refresh cache on unlock - ensuring schedules are up to date
-                    serviceScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                        com.neubofy.reality.utils.BlockCache.rebuildBox(applicationContext)
-                    }
+                    // Full settings refresh on unlock - ensures schedules are loaded and evaluated immediately
+                    refreshSettings()
                     
                     // Resume checking if needed
                     if (browserWatchdog.isWebsiteBlockActive()) {

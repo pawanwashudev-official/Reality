@@ -444,12 +444,6 @@ class ScheduleListActivity : BaseActivity() {
     @android.annotation.SuppressLint("SetTextI18n")
     private fun showAddScheduleDialog() {
         try {
-            // Check Strict Mode first
-            if (!com.neubofy.reality.utils.StrictLockUtils.isModificationAllowedFor(this, com.neubofy.reality.utils.StrictLockUtils.FeatureType.SCHEDULE)) {
-                android.widget.Toast.makeText(this, "🔒 Locked by Strict Mode. Edit allowed 00:00-00:10 daily.", android.widget.Toast.LENGTH_LONG).show()
-                return
-            }
-            
             dialogBinding = com.neubofy.reality.databinding.DialogAddTimedActionBinding.inflate(layoutInflater)
             dialogBinding.timedTitle.text = "Add Schedule"
             dialogBinding.btnSelectUnblockedApps.visibility = View.GONE
