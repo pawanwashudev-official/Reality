@@ -31,6 +31,11 @@ class NightlyWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         val mode = inputData.getString(KEY_MODE) ?: MODE_CREATION
         TerminalLogger.log("NIGHTLY_WORKER: Starting in $mode mode")
 
+        if (!com.neubofy.reality.google.GoogleAuthManager.isFullWorkspaceConnected(applicationContext)) {
+            TerminalLogger.log("NIGHTLY_WORKER: Skipped - Google Workspace connection required.")
+            return Result.failure()
+        }
+
         return withContext(Dispatchers.IO) {
             try {
                 val silentListener = object : NightlyProtocolExecutor.NightlyProgressListener {

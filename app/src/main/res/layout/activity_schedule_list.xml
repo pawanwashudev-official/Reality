@@ -84,71 +84,76 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            >
+            android:fillViewport="true">
 
-            <!-- Timeline Container: FrameLayout to overlay events on hour grid -->
             <FrameLayout
-                android:id="@+id/timeline_container"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="1440dp">
+                android:layout_height="match_parent">
 
-                <!-- Hour Grid (24 hours x 60dp each = 1440dp) -->
-                <LinearLayout
-                    android:id="@+id/hour_grid"
+                <!-- Timeline Container: FrameLayout to overlay events on hour grid -->
+                <FrameLayout
+                    android:id="@+id/timeline_container"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
-                    <!-- Hours will be added programmatically -->
-                </LinearLayout>
+                    android:minHeight="1440dp">
 
-                <!-- Events Overlay Container -->
-                <FrameLayout
-                    android:id="@+id/events_container"
+                    <!-- Hour Grid (24 hours x 60dp each = 1440dp) -->
+                    <LinearLayout
+                        android:id="@+id/hour_grid"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                        <!-- Hours will be added programmatically -->
+                    </LinearLayout>
+
+                    <!-- Events Overlay Container -->
+                    <FrameLayout
+                        android:id="@+id/events_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="60dp">
+                        <!-- Event cards will be added programmatically with absolute positioning -->
+                    </FrameLayout>
+
+                </FrameLayout>
+
+                <!-- Empty State -->
+                <LinearLayout
+                    android:id="@+id/layout_empty_state"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:layout_marginStart="60dp">
-                    <!-- Event cards will be added programmatically with absolute positioning -->
-                </FrameLayout>
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:src="@drawable/baseline_schedule_24"
+                        app:tint="?attr/colorOutline"
+                        android:alpha="0.5"/>
+
+                    <TextView
+                        android:id="@+id/tv_empty"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="No schedules for today"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="16sp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Pull down to refresh or tap + to add"
+                        android:textColor="?attr/colorOutline"
+                        android:textSize="14sp"/>
+                </LinearLayout>
 
             </FrameLayout>
         </androidx.core.widget.NestedScrollView>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-
-    <!-- Empty State -->
-    <LinearLayout
-        android:id="@+id/layout_empty_state"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:visibility="gone"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
-
-        <ImageView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:src="@drawable/baseline_schedule_24"
-            app:tint="?attr/colorOutline"
-            android:alpha="0.5"/>
-
-        <TextView
-            android:id="@+id/tv_empty"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="No schedules for today"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="16sp"/>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Pull down to refresh or tap + to add"
-            android:textColor="?attr/colorOutline"
-            android:textSize="14sp"/>
-    </LinearLayout>
 
     <!-- FAB -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton

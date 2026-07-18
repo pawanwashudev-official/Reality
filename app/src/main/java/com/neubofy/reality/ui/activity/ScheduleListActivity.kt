@@ -98,6 +98,21 @@ class ScheduleListActivity : BaseActivity() {
     }
 
     private fun triggerManualSync() {
+        if (!com.neubofy.reality.google.GoogleAuthManager.isFullWorkspaceConnected(this)) {
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("Full Connection Required")
+                .setMessage("Your account is connected with basic identity only. To sync your calendar, please go to the Profile page, sign out, and sign in again with Full Connection.")
+                .setPositiveButton("Go to Profile") { _, _ ->
+                    val intent = android.content.Intent(this, ProfileActivity::class.java)
+                    intent.flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    startActivity(intent)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+            binding.swipeRefresh.isRefreshing = false
+            return
+        }
+
         android.widget.Toast.makeText(this, "\uD83D\uDCC5 Syncing calendar...", android.widget.Toast.LENGTH_SHORT).show()
 
         // Always trigger sync regardless of auto-sync toggle (pull = explicit user intent)
@@ -117,10 +132,9 @@ class ScheduleListActivity : BaseActivity() {
             ) {
                 loadSchedules()
                 binding.swipeRefresh.isRefreshing = false
-                
-                if (info.state == androidx.work.WorkInfo.State.FAILED) {
-                    val errorMsg = info.outputData.getString("error") ?: "Sync failed."
-                    if (errorMsg.contains("Not signed in") || errorMsg.contains("Unauthorized") || errorMsg.contains("401")) {
+                                if (info.state == androidx.work.WorkInfo.State.FAILED) {
+                        val errorMsg = info.outputData.getString("error") ?: "Sync failed."
+                        if (errorMsg.contains("Not signed in") || errorMsg.contains("Unauthorized") || errorMsg.contains("401") || errorMsg.contains("Workspace connection") || errorMsg.contains("connection required")) {
                         com.google.android.material.dialog.MaterialAlertDialogBuilder(this@ScheduleListActivity)
                             .setTitle("Authentication Error")
                             .setMessage("Your Google Workspace session is missing or expired. Please go to the Profile page to sign in again.")
@@ -241,7 +255,7 @@ class ScheduleListActivity : BaseActivity() {
                 
                 val isEmpty = displayItems.isEmpty()
                 binding.layoutEmptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
-                binding.scrollView.visibility = if (isEmpty) View.GONE else View.VISIBLE
+                binding.timelineContainer.visibility = if (isEmpty) View.GONE else View.VISIBLE
             }
         }
     }
@@ -643,9 +657,22 @@ class ScheduleListActivity : BaseActivity() {
 
         // Auto-sync toggle (enables 15-min heartbeat sync AND sets up real-time sync on toggle ON)
         switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
-            prefs.saveBoolean("calendar_sync_auto_enabled", isChecked)
-
             if (isChecked) {
+                if (!com.neubofy.reality.google.GoogleAuthManager.isFullWorkspaceConnected(this)) {
+                    com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                        .setTitle("Full Connection Required")
+                        .setMessage("Auto-Sync requires a full connection to Google Calendar. Please go to the Profile page, sign out, and sign in again with Full Connection.")
+                        .setPositiveButton("Go to Profile") { _, _ ->
+                            val intent = android.content.Intent(this, ProfileActivity::class.java)
+                            intent.flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            startActivity(intent)
+                        }
+                        .setNegativeButton("Cancel", null)
+                        .show()
+                    switchAutoSync.isChecked = false
+                    return@setOnCheckedChangeListener
+                }
+                prefs.saveBoolean("calendar_sync_auto_enabled", true)
                 val isSignedIn = com.neubofy.reality.google.GoogleAuthManager.isSignedIn(this)
                 val userId = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getUserId(this) else null
                 val connectionSecret = if (isSignedIn) com.neubofy.reality.utils.IdentityManager.getConnectionSecret(this) else null
@@ -681,6 +708,8 @@ class ScheduleListActivity : BaseActivity() {
                 com.neubofy.reality.services.RealityFCMService.registerCalendarWebhook(applicationContext, workerUrl, userId, googleAccessToken)
 
                 android.widget.Toast.makeText(this, "\uD83D\uDD14 Real-time sync setup started...", android.widget.Toast.LENGTH_SHORT).show()
+            } else {
+                prefs.saveBoolean("calendar_sync_auto_enabled", false)
             }
         }
     }
@@ -701,7 +730,7 @@ class ScheduleListActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
-        com.neubofy.reality.utils.PermissionHelper.checkAndPromptForCore(this)
+        com.neubofy.reality.utils.PermissionHelper.checkAndPromptForCore(this, checkAccessibility = false)
         loadSchedules()
     }
 

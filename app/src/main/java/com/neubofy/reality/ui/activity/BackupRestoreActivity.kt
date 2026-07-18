@@ -154,7 +154,7 @@ class BackupRestoreActivity : BaseActivity() {
     }
 
     private fun checkSignInStatus() {
-        val signedIn = GoogleAuthManager.isSignedIn(this)
+        val signedIn = GoogleAuthManager.isFullWorkspaceConnected(this)
         binding.cardSignIn.visibility = if (signedIn) View.GONE else View.VISIBLE
         binding.btnBackupNow.isEnabled = signedIn
         binding.btnRestoreNow.isEnabled = signedIn
@@ -169,7 +169,7 @@ class BackupRestoreActivity : BaseActivity() {
     }
 
     private fun loadBackupInfo() {
-        if (!GoogleAuthManager.isSignedIn(this)) return
+        if (!GoogleAuthManager.isFullWorkspaceConnected(this)) return
 
         binding.tvNoBackup.visibility = View.GONE
         binding.layoutBackupInfo.visibility = View.GONE

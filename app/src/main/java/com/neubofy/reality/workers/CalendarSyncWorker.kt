@@ -35,6 +35,12 @@ class CalendarSyncWorker(context: Context, params: WorkerParameters) : Coroutine
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
+            if (!com.neubofy.reality.google.GoogleAuthManager.isFullWorkspaceConnected(applicationContext)) {
+                TerminalLogger.log("CALENDAR SYNC: Skipped - Google Workspace connection required.")
+                return@withContext Result.failure(androidx.work.workDataOf(
+                    "error" to "Google Workspace Connection required. Please go to the Profile page and Sign In with Full Connection."
+                ))
+            }
             val prefs = applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
             val selectedCalendarIds = prefs.getStringSet("selected_calendar_ids", emptySet()) ?: emptySet()
             val finalCalendarIds = if (selectedCalendarIds.isEmpty()) setOf("primary") else selectedCalendarIds

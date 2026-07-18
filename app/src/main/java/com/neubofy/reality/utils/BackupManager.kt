@@ -114,8 +114,8 @@ object BackupManager {
         return withContext(Dispatchers.IO) {
             try {
                 // Check sign-in
-                if (!GoogleAuthManager.isSignedIn(context)) {
-                    return@withContext BackupResult(false, "Please sign in with Google first")
+                if (!GoogleAuthManager.isFullWorkspaceConnected(context)) {
+                    return@withContext BackupResult(false, "Google Workspace Connection required. Please connect in Profile page.")
                 }
 
                 onProgress(0.05f, "Preparing backup...")
@@ -270,8 +270,8 @@ object BackupManager {
 
         return withContext(Dispatchers.IO) {
             try {
-                if (!GoogleAuthManager.isSignedIn(context)) {
-                    return@withContext BackupResult(false, "Please sign in with Google first")
+                if (!GoogleAuthManager.isFullWorkspaceConnected(context)) {
+                    return@withContext BackupResult(false, "Google Workspace Connection required. Please connect in Profile page.")
                 }
 
                 onProgress(0.05f, "Searching for backup...")
@@ -445,7 +445,7 @@ object BackupManager {
     suspend fun getBackupInfo(context: Context): BackupInfo {
         return withContext(Dispatchers.IO) {
             try {
-                if (!GoogleAuthManager.isSignedIn(context)) {
+                if (!GoogleAuthManager.isFullWorkspaceConnected(context)) {
                     return@withContext BackupInfo(false)
                 }
 

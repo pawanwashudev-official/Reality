@@ -455,6 +455,13 @@ object GoogleAuthManager {
         }
     }
 
+    fun isFullWorkspaceConnected(context: Context): Boolean {
+        if (!isSignedIn(context)) return false
+        val isBasicSignIn = com.neubofy.reality.utils.SecurePreferences.get(context, "reality_features")
+            .getBoolean("reality_pro_basic_sign_in", false)
+        return !isBasicSignIn
+    }
+
     fun getGoogleCredential(context: Context): Credential? {
         val accessToken = getPrefs(context).getString(KEY_ACCESS_TOKEN, null)
         val refreshToken = getPrefs(context).getString(KEY_REFRESH_TOKEN, null)
@@ -464,6 +471,13 @@ object GoogleAuthManager {
         
         if (accessToken.isNullOrBlank()) {
             handleAuthFailure(context)
+            return null
+        }
+
+        val isBasicSignIn = com.neubofy.reality.utils.SecurePreferences.get(context, "reality_features")
+            .getBoolean("reality_pro_basic_sign_in", false)
+        if (isBasicSignIn) {
+            TerminalLogger.log("GOOGLE AUTH: Workspace connection denied - basic scope only.")
             return null
         }
 

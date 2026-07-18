@@ -391,6 +391,20 @@ class NightlyActivity : BaseActivity(), NightlyProtocolExecutor.NightlyProgressL
         binding.btnStartNightly.setOnClickListener {
             if (isExecuting) return@setOnClickListener
             
+            if (!com.neubofy.reality.google.GoogleAuthManager.isFullWorkspaceConnected(this)) {
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle("Full Connection Required")
+                    .setMessage("The Nightly Protocol requires a full connection to Google Workspace. Please go to the Profile page, sign out, and sign in again with Full Connection.")
+                    .setPositiveButton("Go to Profile") { _, _ ->
+                        val intent = android.content.Intent(this, ProfileActivity::class.java)
+                        intent.flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        startActivity(intent)
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+                return@setOnClickListener
+            }
+            
             com.neubofy.reality.utils.NetworkUtils.checkInternetAndShowDialog(this) {
                 val prefs = getSharedPreferences("nightly_prefs", MODE_PRIVATE)
                 val currentState = prefs.getInt("protocol_state", NightlyProtocolExecutor.STATE_IDLE)
