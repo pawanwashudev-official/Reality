@@ -92,9 +92,19 @@ export default {
       if (env.RATE_LIMIT) {
         try {
           const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-          const rateLimitKey = `ai_rate:${userId}:${today}`;
-          const currentCountStr = await env.RATE_LIMIT.get(rateLimitKey);
-          const currentCount = currentCountStr ? parseInt(currentCountStr, 10) : 0;
+          const rateLimitKey = `ai_rate:${userId}`;
+          const rateLimitDataStr = await env.RATE_LIMIT.get(rateLimitKey);
+          let currentCount = 0;
+          if (rateLimitDataStr) {
+            try {
+              const data = JSON.parse(rateLimitDataStr);
+              if (data.date === today) {
+                currentCount = parseInt(data.count, 10) || 0;
+              }
+            } catch (e) {
+              // Ignore parsing errors and fallback to 0
+            }
+          }
 
           if (body.action === "get_usage") {
             return new Response(JSON.stringify({ usage: currentCount, limit: DAILY_LIMIT }), {
@@ -110,8 +120,13 @@ export default {
             });
           }
 
-          // Increment count with 24h TTL (auto-cleanup)
-          await env.RATE_LIMIT.put(rateLimitKey, String(currentCount + requestCost), { expirationTtl: 86400 });
+          // Increment count and store as JSON (with 7-day TTL to clean up inactive users)
+          const newCount = currentCount + requestCost;
+          await env.RATE_LIMIT.put(
+            rateLimitKey,
+            JSON.stringify({ date: today, count: newCount }),
+            { expirationTtl: 604800 }
+          );
         } catch (e) {
           // KV error — allow request but log
           console.error("Rate limit KV error:", e.message);
