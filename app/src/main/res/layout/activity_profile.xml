@@ -143,16 +143,7 @@
                         app:icon="@drawable/baseline_account_circle_24"
                         app:iconGravity="textStart"/>
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_refresh_identity"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Refresh Identity &amp; Subscription"
-                        android:visibility="gone"
-                        app:icon="@drawable/baseline_refresh_24"
-                        app:iconGravity="textStart"/>
+
 
                 </LinearLayout>
 

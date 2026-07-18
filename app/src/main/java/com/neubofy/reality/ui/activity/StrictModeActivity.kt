@@ -179,7 +179,7 @@ class StrictModeActivity : BaseActivity() {
                     startTimerCountdown()
                 }
                 Constants.StrictModeData.MODE_PASSWORD -> {
-                    val currentTime = com.neubofy.reality.utils.InternetTime.getTime()
+                    val currentTime = com.neubofy.reality.utils.InternetTime.getTime(this@StrictModeActivity)
                     // Check if forgot password timer is active
                     if (strictData.forgotPasswordTimerEndTime > currentTime) {
                         binding.tvStatusDesc.text = "Forgot password cooldown active"
@@ -471,7 +471,7 @@ class StrictModeActivity : BaseActivity() {
                 
                 lifecycleScope.launch(Dispatchers.Main) {
                     strictData.modeType = Constants.StrictModeData.MODE_TIMER
-                    strictData.timerEndTime = com.neubofy.reality.utils.InternetTime.getTime() + durationMs
+                    strictData.timerEndTime = com.neubofy.reality.utils.InternetTime.getTime(this@StrictModeActivity) + durationMs
                     strictData.isEnabled = true
                     strictData.passwordHash = ""
                     saveSettings()
@@ -532,7 +532,7 @@ class StrictModeActivity : BaseActivity() {
                 }
                 Constants.StrictModeData.MODE_TIMER -> {
                     // Check if timer expired
-                    val currentTime = com.neubofy.reality.utils.InternetTime.getTime()
+                    val currentTime = com.neubofy.reality.utils.InternetTime.getTime(this@StrictModeActivity)
                     if (currentTime >= strictData.timerEndTime) {
                         deactivateStrictMode()
                     } else {
@@ -544,7 +544,7 @@ class StrictModeActivity : BaseActivity() {
                 }
                 Constants.StrictModeData.MODE_PASSWORD -> {
                     // Check if forgot password cooldown is active
-                    val currentTime = com.neubofy.reality.utils.InternetTime.getTime()
+                    val currentTime = com.neubofy.reality.utils.InternetTime.getTime(this@StrictModeActivity)
                     if (strictData.forgotPasswordTimerEndTime > 0) {
                         val remaining = strictData.forgotPasswordTimerEndTime - currentTime
                         if (remaining <= 0) {
@@ -604,7 +604,7 @@ class StrictModeActivity : BaseActivity() {
             .setMessage("This will start a 24-hour waiting period. After 24 hours, Strict Mode will be automatically deactivated.\n\nAre you sure?")
             .setPositiveButton("Start 24hr Wait") { _, _ ->
                 lifecycleScope.launch(Dispatchers.Main) {
-                    strictData.forgotPasswordTimerEndTime = com.neubofy.reality.utils.InternetTime.getTime() + FORGOT_PASSWORD_WAIT_MS
+                    strictData.forgotPasswordTimerEndTime = com.neubofy.reality.utils.InternetTime.getTime(this@StrictModeActivity) + FORGOT_PASSWORD_WAIT_MS
                     saveSettings()
                     updateUIState()
                     Toast.makeText(this@StrictModeActivity, "24-hour cooldown started", Toast.LENGTH_SHORT).show()
@@ -631,7 +631,7 @@ class StrictModeActivity : BaseActivity() {
     private suspend fun startTimerCountdown() {
         countdownTimer?.cancel()
         
-        val currentTime = com.neubofy.reality.utils.InternetTime.getTime()
+        val currentTime = com.neubofy.reality.utils.InternetTime.getTime(this@StrictModeActivity)
         var remaining = strictData.timerEndTime - currentTime
         if (remaining <= 0) {
             deactivateStrictMode()
@@ -661,7 +661,7 @@ class StrictModeActivity : BaseActivity() {
     private suspend fun startForgotPasswordCountdown() {
         countdownTimer?.cancel()
         
-        val currentTime = com.neubofy.reality.utils.InternetTime.getTime()
+        val currentTime = com.neubofy.reality.utils.InternetTime.getTime(this@StrictModeActivity)
         var remaining = strictData.forgotPasswordTimerEndTime - currentTime
         if (remaining <= 0) {
             deactivateStrictMode()

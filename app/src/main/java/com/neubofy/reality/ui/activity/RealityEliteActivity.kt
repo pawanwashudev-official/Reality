@@ -65,7 +65,17 @@ class RealityEliteActivity : BaseActivity() {
 
 
         btnUnifiedSignin.setOnClickListener {
-            showKeySelectionDialog()
+            if (GoogleAuthManager.isSignedIn(this)) {
+                GoogleAuthManager.signOut(this)
+                SecurePreferences.get(this, "reality_features").edit()
+                    .putBoolean("reality_pro_basic_sign_in", false).apply()
+                updateStateUI()
+                Toast.makeText(this, "Signed out", Toast.LENGTH_SHORT).show()
+            } else {
+                com.neubofy.reality.google.GoogleSignInHelper.startSignInFlow(this, false, forceBasicScope = true) {
+                    updateStateUI()
+                }
+            }
         }
 
         btnSyncIdentity.setOnClickListener {
@@ -73,7 +83,7 @@ class RealityEliteActivity : BaseActivity() {
             btnSyncIdentity.isEnabled = false
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
-                    val result = IdentityManager.refreshIdentity(this@RealityEliteActivity)
+                    val result = IdentityManager.refreshIdentity(this@RealityEliteActivity, isManualTrigger = true)
                     withContext(Dispatchers.Main) {
                         btnSyncIdentity.text = "Refresh Identity & Subscription"
                         btnSyncIdentity.isEnabled = true
@@ -114,101 +124,7 @@ class RealityEliteActivity : BaseActivity() {
         }
     }
 
-    private fun showKeySelectionDialog() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Sign In Option")
-            .setMessage("Use your own Google Cloud credentials or use Developer Default keys.")
-            .setPositiveButton("Default Key") { _, _ ->
-                showScopeSelectionDialog()
-            }
-            .setNeutralButton("Own Key") { _, _ ->
-                showCustomKeyDialog()
-            }
-            .show()
-    }
 
-    private fun showScopeSelectionDialog() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Sign-In Scope")
-            .setMessage("Do you want to sign in only for verifying user identity to get user ID, or sign in with full connections for Google Workspace?")
-            .setPositiveButton("Verify Identity") { _, _ ->
-                performSignIn(fullScopes = false)
-            }
-            .setNegativeButton("Full Connection") { _, _ ->
-                performSignIn(fullScopes = true)
-            }
-            .show()
-    }
-
-    private fun showCustomKeyDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_cloud_settings, null)
-        val etClientId = dialogView.findViewById<android.widget.EditText>(R.id.et_client_id)
-        val etClientSecret = dialogView.findViewById<android.widget.EditText>(R.id.et_client_secret)
-
-        val customId = GoogleAuthManager.getCustomClientId(this)
-        val customSecret = GoogleAuthManager.getCustomClientSecret(this)
-
-        if (!customId.isNullOrBlank()) {
-            etClientId.setText(customId)
-        } else {
-            etClientId.setText("")
-            if (GoogleAuthManager.getClientId(this) != null) {
-                etClientId.hint = "Developer Default Key In Use"
-            }
-        }
-
-        if (!customSecret.isNullOrBlank()) {
-            etClientSecret.setText(customSecret)
-        } else {
-            etClientSecret.setText("")
-            if (GoogleAuthManager.getClientSecret(this) != null) {
-                etClientSecret.hint = "Developer Default Key In Use"
-            }
-        }
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Google Cloud Setup")
-            .setView(dialogView)
-            .setPositiveButton("Save") { _, _ ->
-                val clientId = etClientId.text.toString().trim()
-                val clientSecret = etClientSecret.text.toString().trim()
-                GoogleAuthManager.saveCloudCredentials(this, clientId, clientSecret)
-                Toast.makeText(this, "Credentials saved", Toast.LENGTH_SHORT).show()
-                showScopeSelectionDialog()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun performSignIn(fullScopes: Boolean = false) {
-        val url = GoogleAuthManager.getAuthUrl(this, basicOnly = !fullScopes)
-        if (url != null) {
-            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
-            startActivity(intent)
-
-            lifecycleScope.launch {
-                val autoCode = GoogleAuthManager.startLocalServerAndGetCode()
-
-                if (autoCode != null) {
-                    val success = GoogleAuthManager.exchangeCodeForTokens(this@RealityEliteActivity, autoCode)
-                    if (success) {
-                        withContext(Dispatchers.Main) {
-                            com.neubofy.reality.utils.SecurePreferences.get(this@RealityEliteActivity, "reality_features").edit()
-                                .putBoolean("reality_pro_basic_sign_in", true).apply()
-                            Toast.makeText(this@RealityEliteActivity, "Sign-in successful!", Toast.LENGTH_SHORT).show()
-                            updateStateUI()
-                        }
-                    } else {
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(this@RealityEliteActivity, "Sign-in failed. Check credentials.", Toast.LENGTH_LONG).show()
-                        }
-                    }
-                }
-            }
-        } else {
-            Toast.makeText(this, "Error generating Auth URL. Check Keys.", Toast.LENGTH_LONG).show()
-        }
-    }
 
     override fun onResume() {
         super.onResume()
@@ -246,13 +162,13 @@ class RealityEliteActivity : BaseActivity() {
 
         // Unified Sign In Logic
         if (isSignedIn && userId != null) {
-            btnUnifiedSignin.text = "Signed In"
-            btnUnifiedSignin.isEnabled = false
+            btnUnifiedSignin.text = "Sign Out"
+            btnUnifiedSignin.isEnabled = true
             btnSyncIdentity.visibility = android.view.View.VISIBLE
             btnSyncIdentity.text = "Refresh Identity & Subscription"
         } else if (isSignedIn && userIdString.isEmpty()) {
-            btnUnifiedSignin.text = "Signed In (Identity Missing)"
-            btnUnifiedSignin.isEnabled = false
+            btnUnifiedSignin.text = "Sign Out (Identity Missing)"
+            btnUnifiedSignin.isEnabled = true
             btnSyncIdentity.visibility = android.view.View.VISIBLE
             btnSyncIdentity.text = "Sync Identity"
         } else {

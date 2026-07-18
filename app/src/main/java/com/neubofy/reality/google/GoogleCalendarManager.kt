@@ -69,20 +69,52 @@ object GoogleCalendarManager {
             }
         }
     }
+    private suspend fun <T> retryWithBackoff(
+        times: Int = 3,
+        initialDelay: Long = 1000L,
+        maxDelay: Long = 8000L,
+        factor: Double = 2.0,
+        block: suspend () -> T
+    ): T {
+        var currentDelay = initialDelay
+        for (i in 0 until times - 1) {
+            try {
+                return block()
+            } catch (e: Exception) {
+                val isQuotaError = e.message?.contains("429") == true || 
+                                   e.message?.contains("503") == true || 
+                                   e.message?.contains("quota") == true || 
+                                   e.message?.contains("rateLimit") == true
+                
+                if (!isQuotaError && e !is java.io.IOException) {
+                    throw e
+                }
+                
+                TerminalLogger.log("API: Retry ${i+1}/$times due to ${e.message} in ${currentDelay}ms")
+                kotlinx.coroutines.delay(currentDelay)
+                currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelay)
+            }
+        }
+        return block()
+    }
+
     /**
      * Get events for a specific day from Google Calendar API.
+     * Uses exponential backoff for rate limits.
      */
     suspend fun getEvents(context: Context, startTimeMs: Long, endTimeMs: Long, calendarId: String = "primary"): List<Event> {
         return withContext(Dispatchers.IO) {
             try {
                 val service = getCalendarService(context) ?: return@withContext emptyList()
                 
-                val events = service.events().list(calendarId)
-                    .setTimeMin(DateTime(Date(startTimeMs)))
-                    .setTimeMax(DateTime(Date(endTimeMs)))
-                    .setSingleEvents(true)
-                    .setOrderBy("startTime")
-                    .execute()
+                val events = retryWithBackoff {
+                    service.events().list(calendarId)
+                        .setTimeMin(DateTime(Date(startTimeMs)))
+                        .setTimeMax(DateTime(Date(endTimeMs)))
+                        .setSingleEvents(true)
+                        .setOrderBy("startTime")
+                        .execute()
+                }
                 
                 TerminalLogger.log("CALENDAR API: Fetched ${events.items?.size ?: 0} events")
                 
@@ -95,7 +127,7 @@ object GoogleCalendarManager {
                 } ?: emptyList()
             } catch (e: Exception) {
                 TerminalLogger.log("CALENDAR API: Error fetching events - ${e.message}")
-                emptyList()
+                throw e // CRITICAL: Throw the error so the Worker knows it failed and doesn't wipe the local database!
             }
         }
     }

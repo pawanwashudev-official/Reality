@@ -3,6 +3,7 @@ package com.neubofy.reality.ui.activity
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.content.Context
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -183,11 +184,30 @@ class ScheduleListActivity : BaseActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(applicationContext)
             
+            // Check if data is expired (from yesterday)
+            val cal = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val todayStart = cal.timeInMillis
+            val todayEnd = todayStart + (24 * 60 * 60 * 1000)
+            
+            val lastSyncDate = getSharedPreferences("calendar_sync", Context.MODE_PRIVATE).getLong("last_sync_date_millis", 0L)
+            if (lastSyncDate < todayStart) {
+                // Data is expired! Auto-refresh the UI data from Google Calendar
+                withContext(Dispatchers.Main) {
+                    binding.swipeRefresh.isRefreshing = true
+                    triggerManualSync()
+                }
+            }
+            
             // 1. Load Custom Schedules
             val customSchedules = prefs.loadAutoFocusHoursList()
             
-            // 2. Load Synced Events
-            val allDbEvents = db.calendarEventDao().getAllEvents()
+            // 2. Load Synced Events for TODAY ONLY (prevents yesterday's events bleeding over)
+            val allDbEvents = db.calendarEventDao().getEventsInRange(todayStart, todayEnd)
 
 
             withContext(Dispatchers.Main) {

@@ -598,9 +598,9 @@ class AppBlockerService : BaseBlockingService() {
             addAction(Intent.ACTION_USER_PRESENT)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(refreshReceiver, filter, Context.RECEIVER_EXPORTED)
+            registerReceiver(refreshReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
-            registerReceiver(refreshReceiver, filter)
+            androidx.core.content.ContextCompat.registerReceiver(this, refreshReceiver, filter, androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
         }
         
         // Register minute-tick heartbeat for bedtime/schedule enforcement

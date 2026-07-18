@@ -213,6 +213,90 @@ object GoogleAuthManager {
         }
     }
 
+    suspend fun refreshTokenIfNeeded(context: Context): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val credential = getGoogleCredential(context)
+                if (credential != null && credential.refreshToken != null) {
+                    val success = credential.refreshToken()
+                    if (success) {
+                        getPrefs(context).edit().apply {
+                            putString(KEY_ACCESS_TOKEN, credential.accessToken)
+                            // Note: GoogleCredential does not expose a refreshed ID token easily if we just use Credential.
+                            // But for now, we'll save the access token. We may need a manual token request for ID token if it fails.
+                            apply()
+                        }
+                        TerminalLogger.log("GOOGLE AUTH: Token refreshed successfully via API Client")
+                        return@withContext true
+                    }
+                }
+                
+                // If API client fails or no credential, let's try direct exchange if we have a refresh token
+                val refreshToken = getPrefs(context).getString(KEY_REFRESH_TOKEN, null)
+                val clientId = getClientId(context)
+                val clientSecret = getClientSecret(context)
+                val workerUrl = com.neubofy.reality.BuildConfig.WORKER_URL
+
+                if (refreshToken != null) {
+                    val accessToken: String?
+                    val idToken: String?
+                    
+                    if (!clientId.isNullOrBlank() && !clientSecret.isNullOrBlank()) {
+                        val tokenResponse = com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest(
+                            getHttpTransport(),
+                            getJsonFactory(),
+                            refreshToken,
+                            clientId,
+                            clientSecret
+                        ).execute()
+                        accessToken = tokenResponse.accessToken
+                        idToken = tokenResponse.idToken
+                    } else {
+                         val cleanWorkerUrl = workerUrl.removeSuffix("/")
+                         val url = URL("$cleanWorkerUrl/oauth/token")
+                         val conn = url.openConnection() as HttpURLConnection
+                         conn.requestMethod = "POST"
+                         conn.setRequestProperty("Content-Type", "application/json")
+                         conn.doOutput = true
+
+                         val jsonBody = JSONObject()
+                         jsonBody.put("refresh_token", refreshToken)
+                         jsonBody.put("grant_type", "refresh_token")
+
+                         java.io.OutputStreamWriter(conn.outputStream).use { writer ->
+                             writer.write(jsonBody.toString())
+                         }
+
+                         if (conn.responseCode == 200) {
+                             val response = conn.inputStream.bufferedReader().use { it.readText() }
+                             val json = JSONObject(response)
+                             accessToken = json.optString("access_token", null)
+                             idToken = json.optString("id_token", null)
+                         } else {
+                             accessToken = null
+                             idToken = null
+                         }
+                    }
+                    
+                    if (accessToken != null) {
+                        getPrefs(context).edit().apply {
+                            putString(KEY_ACCESS_TOKEN, accessToken)
+                            if (idToken != null) {
+                                putString(KEY_ID_TOKEN, idToken)
+                            }
+                            apply()
+                        }
+                        TerminalLogger.log("GOOGLE AUTH: Token refreshed successfully via direct exchange")
+                        return@withContext true
+                    }
+                }
+            } catch (e: Exception) {
+                TerminalLogger.log("GOOGLE AUTH: Token refresh failed - ${e.message}")
+            }
+            return@withContext false
+        }
+    }
+
     suspend fun exchangeCodeForTokens(context: Context, code: String): Boolean {
         return withContext(Dispatchers.IO) {
             val clientId = getClientId(context)
@@ -388,6 +472,29 @@ object GoogleAuthManager {
             // Provide a dummy client authentication to satisfy the Java client requirement. The worker doesn't need them.
             builder.setClientAuthentication(ClientParametersAuthentication("dummy_id", "dummy_secret"))
         }
+
+        builder.addRefreshListener(object : com.google.api.client.auth.oauth2.CredentialRefreshListener {
+            override fun onTokenResponse(
+                credential: Credential,
+                tokenResponse: com.google.api.client.auth.oauth2.TokenResponse
+            ) {
+                getPrefs(context).edit().apply {
+                    putString(KEY_ACCESS_TOKEN, credential.accessToken)
+                    if (credential.refreshToken != null) {
+                        putString(KEY_REFRESH_TOKEN, credential.refreshToken)
+                    }
+                    apply()
+                }
+                TerminalLogger.log("GOOGLE AUTH: Access token refreshed automatically and saved")
+            }
+
+            override fun onTokenErrorResponse(
+                credential: Credential,
+                tokenErrorResponse: com.google.api.client.auth.oauth2.TokenErrorResponse
+            ) {
+                TerminalLogger.log("GOOGLE AUTH: Failed to refresh token silently - ${tokenErrorResponse.error}")
+            }
+        })
 
         return builder.build()
             .setAccessToken(accessToken)

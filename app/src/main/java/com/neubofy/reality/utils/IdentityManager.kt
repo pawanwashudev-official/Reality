@@ -117,9 +117,11 @@ object IdentityManager {
         return ""
     }
 
-    suspend fun refreshIdentity(context: Context): IdentityResult? {
-        if (!checkRateLimit(context)) {
-            throw Exception("RATE_LIMIT")
+    suspend fun refreshIdentity(context: Context, isManualTrigger: Boolean = false): IdentityResult? {
+        if (isManualTrigger) {
+            if (!checkRateLimit(context)) {
+                throw Exception("RATE_LIMIT")
+            }
         }
         return generateAndCacheIdentity(context)
     }
@@ -171,6 +173,12 @@ object IdentityManager {
         return withContext(Dispatchers.IO) {
             val email = GoogleAuthManager.getUserEmail(context) ?: ""
             val isSignedIn = GoogleAuthManager.isSignedIn(context) && email.isNotEmpty()
+            
+            // Refresh token before fetching identity
+            if (isSignedIn) {
+                GoogleAuthManager.refreshTokenIfNeeded(context)
+            }
+            
             val idToken = GoogleAuthManager.getIdToken(context)
             
             if (!isSignedIn || idToken.isNullOrBlank()) {

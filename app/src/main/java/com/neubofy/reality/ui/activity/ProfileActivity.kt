@@ -124,147 +124,15 @@ class ProfileActivity : BaseActivity() {
                 TerminalLogger.log("PROFILE: Signed out")
                 Toast.makeText(this, "Signed out", Toast.LENGTH_SHORT).show()
             } else {
-                performSignIn()
-            }
-        }
-    }
-    
-    private fun performSignIn() {
-        val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "google_connector_prefs")
-        val tasksConnected = prefs.getBoolean(KEY_TASKS_CONNECTED, false)
-        val driveConnected = prefs.getBoolean(KEY_DRIVE_CONNECTED, false)
-        val docsConnected = prefs.getBoolean(KEY_DOCS_CONNECTED, false)
-        val calendarConnected = prefs.getBoolean(KEY_CALENDAR_CONNECTED, false)
-        val isAllConnected = tasksConnected && driveConnected && docsConnected && calendarConnected
-
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-            .setTitle("Sign In Option")
-            .setMessage(if (isAllConnected) "Use your own Google Cloud credentials or use Developer Default keys." else "Use your own Google Cloud credentials or use Developer Default keys. Login to connect with all full scope connections.")
-            .setPositiveButton(if (isAllConnected) "Default Key" else "Connect All") { _, _ ->
-                executeSignIn(basicOnly = false)
-            }
-            .setNeutralButton("Own Key") { _, _ ->
-                showCustomKeyDialog()
-            }
-            .show()
-    }
-
-    private fun showCustomKeyDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_cloud_settings, null)
-        val etClientId = dialogView.findViewById<android.widget.EditText>(R.id.et_client_id)
-        val etClientSecret = dialogView.findViewById<android.widget.EditText>(R.id.et_client_secret)
-
-        val customId = GoogleAuthManager.getCustomClientId(this)
-        val customSecret = GoogleAuthManager.getCustomClientSecret(this)
-
-        if (!customId.isNullOrBlank()) {
-            etClientId.setText(customId)
-        } else {
-            etClientId.setText("")
-            if (GoogleAuthManager.getClientId(this) != null) {
-                etClientId.hint = "Developer Default Key In Use"
-            }
-        }
-
-        if (!customSecret.isNullOrBlank()) {
-            etClientSecret.setText(customSecret)
-        } else {
-            etClientSecret.setText("")
-            if (GoogleAuthManager.getClientSecret(this) != null) {
-                etClientSecret.hint = "Developer Default Key In Use"
-            }
-        }
-
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-            .setTitle("Google Cloud Setup")
-            .setView(dialogView)
-            .setPositiveButton("Save") { _, _ ->
-                val clientId = etClientId.text.toString().trim()
-                val clientSecret = etClientSecret.text.toString().trim()
-                GoogleAuthManager.saveCloudCredentials(this, clientId, clientSecret)
-                android.widget.Toast.makeText(this, "Credentials saved", android.widget.Toast.LENGTH_SHORT).show()
-                executeSignIn(basicOnly = false)
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun executeSignIn(basicOnly: Boolean = false) {
-        if (!GoogleAuthManager.hasCloudCredentials(this)) {
-            android.widget.Toast.makeText(this, "Please setup Google Cloud Project first via Settings", android.widget.Toast.LENGTH_LONG).show()
-            return
-        }
-
-        val url = GoogleAuthManager.getAuthUrl(this, basicOnly)
-        if (url != null) {
-            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
-            startActivity(intent)
-
-            // Start local server to listen for redirect (Auto-catching)
-            lifecycleScope.launch {
-                val autoCode = GoogleAuthManager.startLocalServerAndGetCode()
-
-                var success = false
-                if (autoCode != null) {
-                    success = GoogleAuthManager.exchangeCodeForTokens(this@ProfileActivity, autoCode)
-                    if (success) {
-                        withContext(Dispatchers.Main) {
-                            com.neubofy.reality.utils.SecurePreferences.get(this@ProfileActivity, "reality_features").edit()
-                                .putBoolean("reality_pro_basic_sign_in", basicOnly).apply()
-                            TerminalLogger.log("PROFILE: Auto-Signed in successfully")
-                            android.widget.Toast.makeText(this@ProfileActivity, "Sign-in successful!", android.widget.Toast.LENGTH_SHORT).show()
-                            updateUI()
-                        }
-                    } else {
-                        TerminalLogger.log("PROFILE: Auto-Sign-in token exchange failed. Falling back to manual entry.")
-                    }
-                }
-
-                if (!success) {
-                    // Fallback to manual entry if server timed out or failed to catch/exchange
-                    withContext(Dispatchers.Main) {
-                        val input = android.widget.EditText(this@ProfileActivity)
-                        input.hint = "Paste URL or Code here"
-
-                        com.google.android.material.dialog.MaterialAlertDialogBuilder(this@ProfileActivity)
-                            .setTitle("Enter Auth Code or URL")
-                            .setMessage("Auto-catch timed out or failed. If the browser shows 'Site can't be reached', copy the entire URL from the address bar and paste it here.")
-                            .setView(input)
-                            .setPositiveButton("Submit") { _, _ ->
-                                var code = input.text.toString().trim()
-                                if (code.contains("code=")) {
-                                    try {
-                                        val uri = android.net.Uri.parse(code)
-                                        code = uri.getQueryParameter("code") ?: code
-                                    } catch (e: Exception) {
-                                        val match = Regex("code=([^&]+)").find(code)
-                                        if (match != null) {
-                                            code = match.groupValues[1]
-                                            try {
-                                                code = java.net.URLDecoder.decode(code, "UTF-8")
-                                            } catch (e2: Exception) {}
-                                        }
-                                    }
-                                }
-                                if (code.isNotEmpty()) {
-                                    lifecycleScope.launch {
-                                        val manualSuccess = GoogleAuthManager.exchangeCodeForTokens(this@ProfileActivity, code)
-                                        withContext(Dispatchers.Main) {
-                                            if (manualSuccess) {
-                                                com.neubofy.reality.utils.SecurePreferences.get(this@ProfileActivity, "reality_features").edit()
-                                                    .putBoolean("reality_pro_basic_sign_in", basicOnly).apply()
-                                                android.widget.Toast.makeText(this@ProfileActivity, "Sign-in successful!", android.widget.Toast.LENGTH_SHORT).show()
-                                                updateUI()
-                                            } else {
-                                                android.widget.Toast.makeText(this@ProfileActivity, "Sign-in failed. Check credentials.", android.widget.Toast.LENGTH_LONG).show()
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            .setNegativeButton("Cancel", null)
-                            .show()
-                    }
+                val prefs = com.neubofy.reality.utils.SecurePreferences.get(this, "google_connector_prefs")
+                val tasksConnected = prefs.getBoolean(KEY_TASKS_CONNECTED, false)
+                val driveConnected = prefs.getBoolean(KEY_DRIVE_CONNECTED, false)
+                val docsConnected = prefs.getBoolean(KEY_DOCS_CONNECTED, false)
+                val calendarConnected = prefs.getBoolean(KEY_CALENDAR_CONNECTED, false)
+                val isAllConnected = tasksConnected && driveConnected && docsConnected && calendarConnected
+                
+                com.neubofy.reality.google.GoogleSignInHelper.startSignInFlow(this, isAllConnected, forceBasicScope = false) {
+                    updateUI()
                 }
             }
         }
@@ -375,8 +243,11 @@ class ProfileActivity : BaseActivity() {
                 .getBoolean("reality_pro_basic_sign_in", false)
 
             if (isBasicSignIn) {
-                TerminalLogger.log("PROFILE: $serviceName - Only basic signed in. Connecting full scope...")
-                executeSignIn(basicOnly = false)
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(this@ProfileActivity)
+                    .setTitle("Full Connection Required")
+                    .setMessage("You are currently signed in with basic identity only. To connect Google services, you need to sign out and sign in again with Full Connection from this page.")
+                    .setPositiveButton("OK", null)
+                    .show()
                 return
             }
             
@@ -434,7 +305,6 @@ class ProfileActivity : BaseActivity() {
         val isAllConnected = tasksConnected && driveConnected && docsConnected && calendarConnected
 
         val cardSecureIdentity = findViewById<com.google.android.material.card.MaterialCardView>(R.id.card_secure_identity)
-        val btnRefreshIdentity = findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_refresh_identity)
         if (isSignedIn && email.isNotEmpty()) {
             val userId = com.neubofy.reality.utils.IdentityManager.getUserId(this)
 
@@ -444,29 +314,6 @@ class ProfileActivity : BaseActivity() {
             tvUserId?.text = userId
             cardSecureIdentity?.visibility = View.VISIBLE
             
-            btnRefreshIdentity?.visibility = View.VISIBLE
-            btnRefreshIdentity?.setOnClickListener {
-                Toast.makeText(this, "Refreshing Identity & Subscription...", Toast.LENGTH_SHORT).show()
-                btnRefreshIdentity.isEnabled = false
-                lifecycleScope.launch {
-                    try {
-                        com.neubofy.reality.utils.IdentityManager.refreshIdentity(this@ProfileActivity)
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(this@ProfileActivity, "Refresh Complete", Toast.LENGTH_SHORT).show()
-                            btnRefreshIdentity.isEnabled = true
-                            updateUI()
-                        }
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            btnRefreshIdentity.isEnabled = true
-                            if (e.message != "RATE_LIMIT") {
-                                Toast.makeText(this@ProfileActivity, "Refresh Failed: ${e.message}", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    }
-                }
-            }
-
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
 
             val copyIdAction = View.OnClickListener {
@@ -478,7 +325,6 @@ class ProfileActivity : BaseActivity() {
             btnCopyId?.setOnClickListener(copyIdAction)
         } else {
             cardSecureIdentity?.visibility = View.GONE
-            btnRefreshIdentity?.visibility = View.GONE
         }
 
         if (isSignedIn) {
@@ -1083,7 +929,7 @@ class ProfileActivity : BaseActivity() {
     private fun startSheetSetup() {
 
         if (!GoogleAuthManager.isSignedIn(this)) {
-            performSignIn()
+            com.neubofy.reality.google.GoogleSignInHelper.startSignInFlow(this, false, forceBasicScope = false) { updateUI() }
             return
         }
 
