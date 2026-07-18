@@ -105,7 +105,7 @@ object GoogleCalendarManager {
     suspend fun getEvents(context: Context, startTimeMs: Long, endTimeMs: Long, calendarId: String = "primary"): List<Event> {
         return withContext(Dispatchers.IO) {
             try {
-                val service = getCalendarService(context) ?: return@withContext emptyList()
+                val service = getCalendarService(context) ?: throw Exception("Not signed in to Google Workspace")
                 
                 val events = retryWithBackoff {
                     service.events().list(calendarId)

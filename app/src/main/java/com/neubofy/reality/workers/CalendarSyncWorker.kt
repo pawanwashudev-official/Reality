@@ -120,7 +120,14 @@ class CalendarSyncWorker(context: Context, params: WorkerParameters) : Coroutine
         } catch (e: Exception) {
             TerminalLogger.log("CALENDAR SYNC ERROR: ${e.message}")
             com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
-            Result.retry()
+            
+            // Send failure broadcast so the UI knows
+            val errorIntent = android.content.Intent("com.neubofy.reality.CALENDAR_SYNC_ERROR")
+            errorIntent.putExtra("error_message", e.message)
+            applicationContext.sendBroadcast(errorIntent)
+            
+            // Return failure so it doesn't get stuck in a loop
+            Result.failure(androidx.work.workDataOf("error" to (e.message ?: "Unknown error")))
         }
     }
     

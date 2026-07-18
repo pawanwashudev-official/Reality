@@ -109,7 +109,6 @@ class ScheduleListActivity : BaseActivity() {
         val workManager = androidx.work.WorkManager.getInstance(applicationContext)
         workManager.enqueue(workRequest)
 
-        // Observe work state and reload UI when done
         workManager.getWorkInfosByTagLiveData(tag).observe(this) { workInfos ->
             val info = workInfos?.firstOrNull() ?: return@observe
             if (info.state == androidx.work.WorkInfo.State.SUCCEEDED ||
@@ -118,6 +117,24 @@ class ScheduleListActivity : BaseActivity() {
             ) {
                 loadSchedules()
                 binding.swipeRefresh.isRefreshing = false
+                
+                if (info.state == androidx.work.WorkInfo.State.FAILED) {
+                    val errorMsg = info.outputData.getString("error") ?: "Sync failed."
+                    if (errorMsg.contains("Not signed in") || errorMsg.contains("Unauthorized") || errorMsg.contains("401")) {
+                        com.google.android.material.dialog.MaterialAlertDialogBuilder(this@ScheduleListActivity)
+                            .setTitle("Authentication Error")
+                            .setMessage("Your Google Workspace session is missing or expired. Please go to the Profile page to sign in again.")
+                            .setPositiveButton("Go to Profile") { _, _ ->
+                                val intent = android.content.Intent(this@ScheduleListActivity, ProfileActivity::class.java)
+                                intent.flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                startActivity(intent)
+                            }
+                            .setNegativeButton("Cancel", null)
+                            .show()
+                    } else {
+                        android.widget.Toast.makeText(this@ScheduleListActivity, "Error: $errorMsg", android.widget.Toast.LENGTH_LONG).show()
+                    }
+                }
             }
         }
     }

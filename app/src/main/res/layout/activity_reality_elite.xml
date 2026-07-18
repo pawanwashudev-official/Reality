@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     >
 
     <!-- Gradient Glow -->
@@ -13,18 +14,6 @@
         android:background="@drawable/dialog_gradient_background"
         android:alpha="0.2"
         app:layout_constraintTop_toTopOf="parent"/>
-
-    <ImageButton
-        android:id="@+id/btn_cloud_settings"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:src="@drawable/baseline_settings_24"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        app:tint="?attr/colorOnSurface"
-        android:contentDescription="Cloud Settings"
-        android:layout_margin="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
 
     <ScrollView
         android:id="@+id/scroll_view"
@@ -196,16 +185,6 @@
                         android:textSize="14sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="License Terms: Your Reality Elite Member license is valid for the duration you selected. If you legitimately logout and log back in, access is restored."
-                        android:textSize="12sp"
-                        android:lineSpacingMultiplier="1.2"
-                        android:textColor="?attr/colorError"
-                        android:layout_marginTop="16dp"
-                        android:layout_marginBottom="8dp"/>
                         
                     <TextView
                         android:id="@+id/tv_refresh_prompt"
@@ -224,9 +203,11 @@
                         android:layout_height="wrap_content"
                         android:text="Enroll as Elite Member"
                         android:paddingVertical="12dp"
-                        android:layout_marginBottom="16dp"/>            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_cancel"
-                style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_marginBottom="16dp"/>
+                        
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_cancel"
+                        style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Cancel &amp; Go Home"
@@ -234,5 +215,18 @@
 
         </LinearLayout>
     </ScrollView>
+
+    <ImageButton
+        android:id="@+id/btn_cloud_settings"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/baseline_settings_24"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        app:tint="?attr/colorOnSurface"
+        android:contentDescription="Cloud Settings"
+        android:layout_margin="16dp"
+        android:elevation="10dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
