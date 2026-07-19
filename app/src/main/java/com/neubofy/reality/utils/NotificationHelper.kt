@@ -77,7 +77,7 @@ object NotificationHelper {
      */
     fun showScheduleStartedNotification(context: Context, event: com.neubofy.reality.data.db.CalendarEvent) {
         // Skip if Tapasya already active
-        val state = com.neubofy.reality.utils.TapasyaManager.getCurrentState(context)
+        val state = com.neubofy.reality.services.TapasyaManager.getCurrentState(context)
         if (state.isSessionActive) return
 
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -116,7 +116,7 @@ object NotificationHelper {
     fun showInfoNotification(context: Context, title: String, message: String) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createChannels(context)
-        val notification = NotificationCompat.Builder(context, CHANNEL_APP_UPDATES)
+        val notification = NotificationCompat.Builder(context, CHANNEL_SMART_ALERTS)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(message)

@@ -416,7 +416,7 @@ class ScheduleListActivity : BaseActivity() {
                 
                 // Parse days
                 val chipGroup = dialogBinding.root.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chip_days)
-                val days = eventToEdit.repeatRule.split(",").mapNotNull { it.toIntOrNull() }
+                val days = eventToEdit.repeatRule?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
                 if (days.contains(1)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_sun).isChecked = true
                 if (days.contains(2)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_mon).isChecked = true
                 if (days.contains(3)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_tue).isChecked = true
