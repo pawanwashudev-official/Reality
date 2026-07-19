@@ -117,6 +117,10 @@ class CalendarSyncWorker(context: Context, params: WorkerParameters) : Coroutine
             // Trigger smart alarm manager
             com.neubofy.reality.utils.SmartScheduleManager.scheduleNextTransition(applicationContext)
             
+            if (inserted > 0 || updated > 0 || deleted > 0) {
+                com.neubofy.reality.utils.NotificationHelper.showInfoNotification(applicationContext, "Calendar Synced", "Synced: $inserted new, $updated updated, $deleted removed.")
+            }
+            
             // Notify AppBlockerService to refresh
             val intent = android.content.Intent("com.neubofy.reality.refresh.focus_mode")
             intent.setPackage(applicationContext.packageName)

@@ -134,6 +134,7 @@ class AppBlockerService : BaseBlockingService() {
                     
                     // Full settings refresh on unlock - ensures schedules are loaded and evaluated immediately
                     refreshSettings()
+                    com.neubofy.reality.utils.SmartScheduleManager.scheduleNextTransition(applicationContext)
                     
                     // Resume checking if needed
                     if (browserWatchdog.isWebsiteBlockActive()) {
@@ -310,9 +311,23 @@ class AppBlockerService : BaseBlockingService() {
         // The O(1) Box check below runs on EVERY app switch.
 
         
-        // Anti-bypass for apps
+        // Anti-bypass for apps (PiP & Rapid Switch Defense)
         if (packageName == lastBlockedPackage && System.currentTimeMillis() - lastBlockTime < 3000) {
-            performGlobalAction(GLOBAL_ACTION_HOME)
+            // Prevent System UI crash by rate-limiting to 1 second
+            if (System.currentTimeMillis() - lastBlockTime < 1000) return
+            
+            // Best effort kill to remove PiP or background tasks
+            try {
+                val am = getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+                am.killBackgroundProcesses(packageName)
+            } catch (e: Exception) {}
+
+            val (shouldBlock, reasons) = com.neubofy.reality.utils.BlockCache.shouldBlock(packageName)
+            if (shouldBlock) {
+                handleBlock(packageName, reasons.joinToString(", "))
+            } else {
+                performGlobalAction(GLOBAL_ACTION_HOME)
+            }
             return
         }
 

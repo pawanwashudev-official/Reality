@@ -74,6 +74,8 @@ object TapasyaManager {
             .putInt("last_completed_fragment", 0)
             .putLong("last_updated", now)
             .apply()
+            
+        com.neubofy.reality.utils.NotificationHelper.showInfoNotification(ctx, "Tapasya Started", "Focus session '$name' is now active.")
         
         // Enable focus mode if blocker setting is enabled
         val tapasyaPrefs = ctx.getSharedPreferences("tapasya_prefs", Context.MODE_PRIVATE)

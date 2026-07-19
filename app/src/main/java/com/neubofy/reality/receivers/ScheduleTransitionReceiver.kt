@@ -65,7 +65,7 @@ class ScheduleTransitionReceiver : BroadcastReceiver() {
                     for (event in activeEvents) {
                         // If it started within the last minute, consider it "just started"
                         if (now - event.startTime < 60000) {
-                            NotificationHelper.showScheduleStartedNotification(context, event.title)
+                            NotificationHelper.showScheduleStartedNotification(context, event)
                         }
                     }
 

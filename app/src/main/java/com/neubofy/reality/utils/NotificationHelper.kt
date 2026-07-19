@@ -75,32 +75,54 @@ object NotificationHelper {
     /**
      * Post a high-priority notification for when a schedule/session starts.
      */
-    fun showScheduleStartedNotification(context: Context, sessionTitle: String) {
+    fun showScheduleStartedNotification(context: Context, event: com.neubofy.reality.data.db.CalendarEvent) {
+        // Skip if Tapasya already active
+        val state = com.neubofy.reality.utils.TapasyaManager.getCurrentState(context)
+        if (state.isSessionActive) return
+
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createChannels(context)
+
+        val durationMins = ((event.endTime - event.startTime) / 60000).toInt()
 
         // Intent to start Tapasya
         val tapasyaIntent = Intent(context, com.neubofy.reality.ui.activity.TapasyaActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             putExtra("auto_start", true)
+            putExtra("session_name", event.title)
+            putExtra("target_duration_mins", durationMins)
         }
         val pendingTapasyaIntent = PendingIntent.getActivity(
-            context, 100, tapasyaIntent,
+            context, event.eventId.hashCode(), tapasyaIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_SMART_ALERTS)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Session Started: $sessionTitle")
+            .setContentTitle("Session Started: ${event.title}")
             .setContentText("Your productive session has begun. Distracting apps are blocked.")
             .setStyle(NotificationCompat.BigTextStyle().bigText("Your productive session has begun. Distracting apps are blocked."))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .addAction(R.drawable.baseline_bolt_24, "Start Tapasya", pendingTapasyaIntent)
+            .setFullScreenIntent(pendingTapasyaIntent, true)
             .setOngoing(true) // Optional: user requested persistent if possible, but auto cancel is usually better. We will set ongoing but allow user to swipe it away if they want.
             .build()
 
-        manager.notify(sessionTitle.hashCode(), notification)
-        TerminalLogger.log("NOTIF: Session started '$sessionTitle'")
+        manager.notify(event.eventId.hashCode(), notification)
+        TerminalLogger.log("NOTIF: Session started '${event.title}'")
+    }
+
+    fun showInfoNotification(context: Context, title: String, message: String) {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        createChannels(context)
+        val notification = NotificationCompat.Builder(context, CHANNEL_APP_UPDATES)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setAutoCancel(true)
+            .build()
+        manager.notify(message.hashCode(), notification)
     }
 }

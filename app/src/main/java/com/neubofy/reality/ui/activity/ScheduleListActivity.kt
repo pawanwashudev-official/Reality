@@ -366,44 +366,79 @@ class ScheduleListActivity : BaseActivity() {
                 val event = item.event
                 val dateFormat = java.text.SimpleDateFormat("MMM dd, hh:mm a", java.util.Locale.getDefault())
                 
-                com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.GlassDialog)
+                val builder = com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.GlassDialog)
                     .setTitle("📆 ${event.title}")
-                    .setMessage("Start: ${dateFormat.format(java.util.Date(event.startTime))}\nEnd: ${dateFormat.format(java.util.Date(event.endTime))}\nStatus: ${if (event.isEnabled) "Blocking Enabled" else "Disabled"}")
-                    .setPositiveButton(if (event.isEnabled) "Disable" else "Enable") { _, _ ->
-                        toggleSyncedEvent(event)
+                    .setMessage("Start: ${dateFormat.format(java.util.Date(event.startTime))}\nEnd: ${dateFormat.format(java.util.Date(event.endTime))}")
+                
+                if (com.neubofy.reality.utils.StrictLockUtils.isModificationAllowedFor(this, com.neubofy.reality.utils.StrictLockUtils.FeatureType.SCHEDULE)) {
+                    builder.setPositiveButton("Delete") { _, _ ->
+                        deleteSyncedEvent(event)
                     }
-                    .setNegativeButton("Close", null)
-                    .show()
+                    if (event.calendarId == "IN_APP" || event.source == "IN_APP") {
+                        builder.setNeutralButton("Edit") { _, _ ->
+                            showAddScheduleDialog(event)
+                        }
+                    }
+                } else {
+                    builder.setPositiveButton("Locked by Strict Mode", null)
+                }
+                
+                builder.setNegativeButton("Close", null)
+                builder.show()
             }
         }
     }
 
-        private fun toggleSyncedEvent(event: CalendarEvent) {
-        val updatedEvent = event.copy(isEnabled = !event.isEnabled)
+    private fun deleteSyncedEvent(event: CalendarEvent) {
         lifecycleScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(applicationContext)
-            db.calendarEventDao().updateEvent(updatedEvent)
+            db.calendarEventDao().deleteByEventId(event.eventId)
             sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
-            withContext(Dispatchers.Main) { loadSchedules() }
+            com.neubofy.reality.utils.SmartScheduleManager.scheduleNextTransition(this@ScheduleListActivity)
+            withContext(Dispatchers.Main) { 
+                loadSchedules() 
+                android.widget.Toast.makeText(this@ScheduleListActivity, "Schedule Deleted", android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
     // ============ DIALOG LOGIC (Unchanged from original) ============
     
     @android.annotation.SuppressLint("SetTextI18n")
-    private fun showAddScheduleDialog() {
+    private fun showAddScheduleDialog(eventToEdit: CalendarEvent? = null) {
         try {
             dialogBinding = com.neubofy.reality.databinding.DialogAddTimedActionBinding.inflate(layoutInflater)
-            dialogBinding.timedTitle.text = "Add Schedule"
+            dialogBinding.timedTitle.text = if (eventToEdit != null) "Edit Schedule" else "Add Schedule"
             dialogBinding.btnSelectUnblockedApps.visibility = View.GONE
 
-            
-            var startTimeMins = 540 // 9:00 AM
-            var endTimeMins = 1020 // 5:00 PM
+            if (eventToEdit != null) {
+                dialogBinding.cheatHourTitle.setText(eventToEdit.title)
+                
+                // Parse days
+                val chipGroup = dialogBinding.root.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chip_days)
+                val days = eventToEdit.repeatRule.split(",").mapNotNull { it.toIntOrNull() }
+                if (days.contains(1)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_sun).isChecked = true
+                if (days.contains(2)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_mon).isChecked = true
+                if (days.contains(3)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_tue).isChecked = true
+                if (days.contains(4)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_wed).isChecked = true
+                if (days.contains(5)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_thu).isChecked = true
+                if (days.contains(6)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_fri).isChecked = true
+                if (days.contains(7)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_sat).isChecked = true
+            }
+
+            val calStart = java.util.Calendar.getInstance()
+            if (eventToEdit != null) calStart.timeInMillis = eventToEdit.startTime
+            var startTimeMins = calStart.get(java.util.Calendar.HOUR_OF_DAY) * 60 + calStart.get(java.util.Calendar.MINUTE)
+            if (eventToEdit == null) startTimeMins = 540 // 9:00 AM
+
+            val calEnd = java.util.Calendar.getInstance()
+            if (eventToEdit != null) calEnd.timeInMillis = eventToEdit.endTime
+            var endTimeMins = calEnd.get(java.util.Calendar.HOUR_OF_DAY) * 60 + calEnd.get(java.util.Calendar.MINUTE)
+            if (eventToEdit == null) endTimeMins = 1020 // 5:00 PM
             
             dialogBinding.fromTime.text = String.format("%02d:%02d", startTimeMins / 60, startTimeMins % 60)
             dialogBinding.endTime.text = String.format("%02d:%02d", endTimeMins / 60, endTimeMins % 60)
-            dialogBinding.cbReminder.isChecked = true
+            dialogBinding.cbReminder.visibility = View.GONE
             
             dialogBinding.fromTime.setOnClickListener {
                 showMaterialTimePicker("Start Time", startTimeMins / 60, startTimeMins % 60) { h, m ->
@@ -441,7 +476,7 @@ class ScheduleListActivity : BaseActivity() {
                              return@setPositiveButton
                         }
                     
-                        val isReminder = dialogBinding.cbReminder.isChecked
+                        val isReminder = false // Deprecated
                         
                         val startMs = java.util.Calendar.getInstance().apply {
                             set(java.util.Calendar.HOUR_OF_DAY, startTimeMins / 60)
@@ -460,19 +495,25 @@ class ScheduleListActivity : BaseActivity() {
                         val finalEndMs = if (endMs <= startMs) endMs + 86400000L else endMs
 
                         val newItem = com.neubofy.reality.data.db.CalendarEvent(
-                            eventId = java.util.UUID.randomUUID().toString(),
+                            eventId = eventToEdit?.eventId ?: java.util.UUID.randomUUID().toString(),
                             title = title,
                             startTime = startMs,
                             endTime = finalEndMs,
                             calendarId = "IN_APP",
                             source = "IN_APP",
-                            isEnabled = true,
+                            isEnabled = eventToEdit?.isEnabled ?: true,
                             repeatRule = days.joinToString(",")
                         )
                         
                         lifecycleScope.launch(Dispatchers.IO) {
                             val db = AppDatabase.getDatabase(applicationContext)
-                            db.calendarEventDao().insertAll(listOf(newItem))
+                            if (eventToEdit != null) {
+                                db.calendarEventDao().updateEvent(newItem)
+                                com.neubofy.reality.utils.NotificationHelper.showInfoNotification(applicationContext, "Schedule Updated", "Your productive session '${title}' has been updated.")
+                            } else {
+                                db.calendarEventDao().insertAll(listOf(newItem))
+                                com.neubofy.reality.utils.NotificationHelper.showInfoNotification(applicationContext, "Schedule Created", "Your productive session '${title}' has been scheduled.")
+                            }
                             sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
                             com.neubofy.reality.utils.SmartScheduleManager.scheduleNextTransition(this@ScheduleListActivity)
                             withContext(Dispatchers.Main) {
