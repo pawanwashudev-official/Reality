@@ -125,6 +125,12 @@ class AppBlockerService : BaseBlockingService() {
                     isScreenOn = false
                     browserWatchdog.stopBrowserCheckTimer() // Save battery when screen off
                 }
+                Intent.ACTION_SCREEN_ON -> {
+                    isScreenOn = true
+                    if (isBlockingActive) {
+                        checkCurrentWindow()
+                    }
+                }
                 Intent.ACTION_USER_PRESENT -> {
                     isScreenOn = true
                     
@@ -350,7 +356,7 @@ class AppBlockerService : BaseBlockingService() {
             }
 
         } else {
-            if (currentWarnedPackage == packageName) {
+            if (currentWarnedPackage != null && packageName != "com.android.systemui") {
                 cancelWarning()
             }
         }
@@ -592,7 +598,7 @@ class AppBlockerService : BaseBlockingService() {
             addAction(INTENT_ACTION_STOP_LEARNING)
             addAction(INTENT_ACTION_START_CUSTOM_PAGE_LEARNING)
             addAction(Intent.ACTION_SCREEN_OFF)
-
+            addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_USER_PRESENT)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
