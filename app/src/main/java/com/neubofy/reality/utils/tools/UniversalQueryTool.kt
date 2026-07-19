@@ -218,29 +218,6 @@ class UniversalQueryTool : AgentTool {
                         })
                     }
 
-                    "reminders" -> {
-                        val prefs = SavedPreferencesLoader(context)
-                        val reminders = prefs.loadCustomReminders().filter { it.isEnabled }
-
-                        val filtered = if (searchQuery.isNotEmpty()) {
-                            reminders.filter { it.title.contains(searchQuery, ignoreCase = true) }
-                        } else reminders
-
-                        val arr = JSONArray()
-                        filtered.take(limit).forEach { r ->
-                            arr.put(JSONObject().apply {
-                                put("title", r.title)
-                                put("time", String.format("%02d:%02d", r.hour, r.minute))
-                                put("repeat_days", JSONArray(r.repeatDays))
-                            })
-                        }
-
-                        results.put("reminders", JSONObject().apply {
-                            put("total_active", filtered.size)
-                            if (format != "stats") put("reminders", arr)
-                        })
-                    }
-
                     "health" -> {
                         val prefs = SecurePreferences.get(context, "ai_prefs")
                         if (!prefs.getBoolean("health_access_enabled", false)) {

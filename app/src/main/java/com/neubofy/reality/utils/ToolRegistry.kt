@@ -49,7 +49,7 @@ object ToolRegistry {
         TasksTool(),
         StudySessionsTool(),
         UsageStatsTool(),
-        RemindersTool(),
+
         AppBlockerTool(),
         NightlyTool(),
         HealthTool(),
@@ -63,12 +63,11 @@ object ToolRegistry {
         // Action Tools
         AddTaskTool(),
         CompleteTaskTool(),
-        AddReminderTool(),
+
         SetAlarmTool(),
         StartFocusTool(),
         StartTapasyaTool(),
-        AddMissedTapasyaTool(),
-        ScheduleNotificationTool()
+        AddMissedTapasyaTool()
     )
 
     val ALL_TOOLS: List<ToolMeta> = toolsList.map {

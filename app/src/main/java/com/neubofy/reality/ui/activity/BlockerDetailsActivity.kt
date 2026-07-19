@@ -131,33 +131,6 @@ class BlockerDetailsActivity : BaseActivity() {
             hasAnyBlocker = true
         }
 
-        // Schedules
-        val schedules = savedPreferencesLoader.loadAutoFocusHoursList()
-        schedules.forEach { item ->
-            val runsToday = item.repeatDays.isEmpty() || item.repeatDays.contains(currentDay)
-            if (runsToday) {
-                val start = item.startTimeInMins
-                val end = item.endTimeInMins
-                var isScheduleActive = false
-                if (start < end) {
-                    if (currentMins in start until end) isScheduleActive = true
-                } else if (start > end) {
-                    if (currentMins >= start || currentMins < end) isScheduleActive = true
-                }
-                
-                if (isScheduleActive) {
-                    val endStr = formatMinsToTime(end)
-                    addActiveBlockerCard(
-                        title = "Schedule: ${item.title}",
-                        reason = "Automated schedule blocker is currently active.",
-                        endTimeStr = "Ends at $endStr",
-                        colorHex = "#4CAF50" // Green
-                    )
-                    hasAnyBlocker = true
-                }
-            }
-        }
-
         if (!hasAnyBlocker) {
             val noBlockerText = TextView(this).apply {
                 text = "No active blocker sessions right now."

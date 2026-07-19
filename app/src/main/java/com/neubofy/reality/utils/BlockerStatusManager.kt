@@ -74,37 +74,6 @@ class BlockerStatusManager(private val context: Context) {
             return BlockerStatus(true, BlockerType.CALENDAR, event.endTime, event.title)
         }
 
-        // 4. Manual Schedules
-        val schedules = prefs.loadAutoFocusHoursList()
-        schedules.forEach { item ->
-            // Check Repeat Days - empty means every day (consistent with BlockCache)
-            val runsToday = item.repeatDays.isEmpty() || item.repeatDays.contains(currentDay)
-            if (runsToday) {
-                val start = item.startTimeInMins
-                val end = item.endTimeInMins
-                var isScheduleActive = false
-                var schedEndTimeMs = 0L
-                
-                if (start < end) {
-                    if (currentMins in start until end) {
-                        isScheduleActive = true
-                        schedEndTimeMs = getTimeToday(now, end)
-                    }
-                } else if (start > end) {
-                    if (currentMins >= start) {
-                        isScheduleActive = true
-                        schedEndTimeMs = getTimeTomorrow(now, end)
-                    } else if (currentMins < end) {
-                        isScheduleActive = true
-                        schedEndTimeMs = getTimeToday(now, end)
-                    }
-                }
-                
-                if (isScheduleActive) {
-                    return BlockerStatus(true, BlockerType.SCHEDULE, schedEndTimeMs, item.title)
-                }
-            }
-        }
 
         return BlockerStatus(false, BlockerType.NONE, 0, "")
     }

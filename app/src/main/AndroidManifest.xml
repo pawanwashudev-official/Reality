@@ -437,7 +437,7 @@
         </receiver>
 
         <receiver
-            android:name=".receivers.ReminderReceiver"
+            android:name=".receivers.ScheduleTransitionReceiver"
             android:exported="false" />
 
         <receiver

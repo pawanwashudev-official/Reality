@@ -22,9 +22,8 @@ class BootReceiver : BroadcastReceiver() {
             
             // 2. CRITICAL: Reschedule reminders (AlarmManager alarms are lost on reboot)
             try {
-                com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(context)
+                com.neubofy.reality.utils.SmartScheduleManager.scheduleNextTransition(context)
                 com.neubofy.reality.utils.BedtimeAlarmScheduler.scheduleNextBedtimeAlarm(context)
-                com.neubofy.reality.utils.ReminderScheduler.scheduleMidnightReset(context)
                 TerminalLogger.log("BOOT: Alarms rescheduled successfully")
             } catch (e: Exception) {
                 TerminalLogger.log("BOOT ERROR: Failed to reschedule alarms: ${e.message}")

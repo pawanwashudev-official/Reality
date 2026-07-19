@@ -83,12 +83,7 @@ class SettingsActivity : BaseActivity() {
             startActivity(Intent(this, BlockMessagesActivity::class.java))
         }
 
-        // Reminder Settings (Opens ReminderActivity with settings dialog)
-        binding.cardSettingsReminders.setOnClickListener {
-            val intent = Intent(this, ReminderActivity::class.java)
-            intent.putExtra("OPEN_SETTINGS", true)
-            startActivity(intent)
-        }
+
 
         binding.cardPermissionManager.setOnClickListener {
             val intent = Intent(this, PermissionManagerActivity::class.java)
@@ -372,7 +367,7 @@ class SettingsActivity : BaseActivity() {
 
         binding.cardAiSettings.visibility = if (featureManager.isAiEnabled()) android.view.View.VISIBLE else android.view.View.GONE
         binding.cardTapasyaSettings.visibility = if (featureManager.isTapasyaEnabled()) android.view.View.VISIBLE else android.view.View.GONE
-        binding.cardSettingsReminders.visibility = if (featureManager.isReminderEnabled()) android.view.View.VISIBLE else android.view.View.GONE
+
 
         // Encryption Status
         val encPrefs = com.neubofy.reality.utils.SecurePreferences.get(this, "reality_encryption_prefs")

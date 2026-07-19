@@ -18,8 +18,6 @@ import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
 import android.provider.Settings
 import com.neubofy.reality.R
-import com.neubofy.reality.data.ScheduleManager
-import com.neubofy.reality.ui.overlay.ReminderOverlayManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.cancelChildren
@@ -632,7 +630,7 @@ class AppBlockerService : BaseBlockingService() {
         blocker.whitelistedPackages = whitelist
         
         warningConfig = savedPreferencesLoader.loadAppBlockerWarningInfo()
-        blocker.refreshSchedules(savedPreferencesLoader.loadAutoFocusHoursList())
+
         blocker.usageLimitData = savedPreferencesLoader.getUsageLimitData()
         
         try {
@@ -786,41 +784,5 @@ class AppBlockerService : BaseBlockingService() {
         } catch (e: Exception) { false }
     }
 
-    // ==========================================
-    // REMINDER SYSTEM (Unified)
-    // ==========================================
-    
-    private val reminderManager by lazy { com.neubofy.reality.ui.overlay.ReminderOverlayManager(this) }
-    
-    // NOTE: Local scheduleNextAlarm() implementation REMOVED.
-    // We now use the unified com.neubofy.reality.utils.ReminderScheduler for robust scheduling.
-    
-    private suspend fun checkUpcomingSchedules() {
-        // Delegate all alarm scheduling to unified ReminderScheduler
-        com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(this)
-    }
 
-    private fun sendReminderNotification(title: String, mins: Int) {
-        val channelId = "reality_reminders"
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = android.app.NotificationChannel(channelId, "Reminders", android.app.NotificationManager.IMPORTANCE_HIGH)
-            manager.createNotificationChannel(channel)
-        }
-        
-        val intent = Intent(this, com.neubofy.reality.ui.activity.MainActivity::class.java)
-        val pendingIntent = android.app.PendingIntent.getActivity(this, 101, intent, android.app.PendingIntent.FLAG_IMMUTABLE)
-        
-        val builder = androidx.core.app.NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm) 
-            .setContentTitle("Upcoming Focus Session")
-            .setContentText("$title starts in $mins minute.") // "1 minute"
-            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .setDefaults(androidx.core.app.NotificationCompat.DEFAULT_ALL)
-            
-        manager.notify(title.hashCode(), builder.build())
-    }
 }

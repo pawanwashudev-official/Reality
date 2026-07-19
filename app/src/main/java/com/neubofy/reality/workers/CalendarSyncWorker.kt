@@ -54,9 +54,9 @@ class CalendarSyncWorker(context: Context, params: WorkerParameters) : Coroutine
             val isDayChanged = lastSyncDate < todayStart
             
             if (isDayChanged) {
-                // New day → Fresh start: delete ALL events
-                dao.clearAll()
-                TerminalLogger.log("CALENDAR SYNC: Day changed - cleared all events")
+                // New day → Fresh start: delete ALL GOOGLE events
+                dao.clearGoogleEvents()
+                TerminalLogger.log("CALENDAR SYNC: Day changed - cleared all google events")
             }
             
             // Update last sync timestamp (OVERWRITE, not accumulate)
@@ -72,7 +72,7 @@ class CalendarSyncWorker(context: Context, params: WorkerParameters) : Coroutine
                 TerminalLogger.log("CALENDAR SYNC: Fresh sync - inserted ${fetchedEvents.size} events")
             } else {
                 // Smart diff sync
-                val existingEvents = dao.getAllEvents()
+                val existingEvents = dao.getGoogleEvents()
                 val existingMap = existingEvents.associateBy { it.eventId }
                 
                 var inserted = 0
@@ -114,8 +114,8 @@ class CalendarSyncWorker(context: Context, params: WorkerParameters) : Coroutine
                 TerminalLogger.log("CALENDAR SYNC: Smart sync - I:$inserted U:$updated D:$deleted")
             }
             
-            // Trigger reminders refresh
-            com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(applicationContext)
+            // Trigger smart alarm manager
+            com.neubofy.reality.utils.SmartScheduleManager.scheduleNextTransition(applicationContext)
             
             // Notify AppBlockerService to refresh
             val intent = android.content.Intent("com.neubofy.reality.refresh.focus_mode")
@@ -162,7 +162,7 @@ class CalendarSyncWorker(context: Context, params: WorkerParameters) : Coroutine
                 val start = gEvent.start.dateTime?.value ?: startTime
                 val end = gEvent.end.dateTime?.value ?: endTime
                 
-                events.add(CalendarEvent(eventId, title, start, end, calId, isEnabled = true))
+                events.add(CalendarEvent(eventId, title, start, end, calId, isEnabled = true, source = "GOOGLE"))
             }
         }
         

@@ -10,21 +10,6 @@ class SavedPreferencesLoader(private val context: Context) {
 
     private val gson = Gson()
 
-    fun saveAutoFocusHoursList(list: List<Constants.AutoTimedActionItem>) {
-        val sharedPreferences = context.getSharedPreferences("auto_focus_hours", Context.MODE_PRIVATE)
-        sharedPreferences.edit().putString("auto_focus_list", gson.toJson(list)).apply()
-    }
-
-    fun loadAutoFocusHoursList(): MutableList<Constants.AutoTimedActionItem> {
-        val sharedPreferences = context.getSharedPreferences("auto_focus_hours", Context.MODE_PRIVATE)
-        val json = sharedPreferences.getString("auto_focus_list", null)
-        if (json.isNullOrEmpty()) return mutableListOf()
-        return try {
-            val type = object : TypeToken<MutableList<Constants.AutoTimedActionItem>>() {}.type
-            gson.fromJson(json, type) ?: mutableListOf()
-        } catch (e: Exception) { mutableListOf() }
-    }
-
     fun saveAppBlockerWarningInfo(warningData: Constants.WarningData) {
         val sharedPreferences = context.getSharedPreferences("warning_data", Context.MODE_PRIVATE)
         sharedPreferences.edit().putString("app_blocker", gson.toJson(warningData)).apply()
@@ -241,24 +226,7 @@ class SavedPreferencesLoader(private val context: Context) {
             gson.fromJson(json, type) ?: mutableListOf()
         } catch (e: Exception) { mutableListOf() }
     }
-    // Custom Reminders
-    fun saveCustomReminders(list: List<com.neubofy.reality.data.CustomReminder>) {
-        val sharedPreferences = context.getSharedPreferences("custom_reminders", Context.MODE_PRIVATE)
-        sharedPreferences.edit().putString("reminders_list", gson.toJson(list)).apply()
-    }
 
-    fun loadCustomReminders(): MutableList<com.neubofy.reality.data.CustomReminder> {
-        val sharedPreferences = context.getSharedPreferences("custom_reminders", Context.MODE_PRIVATE)
-        val json = sharedPreferences.getString("reminders_list", null)
-        if (json.isNullOrEmpty()) return mutableListOf()
-        return try {
-            val type = object : TypeToken<MutableList<com.neubofy.reality.data.CustomReminder>>() {}.type
-            gson.fromJson(json, type) ?: mutableListOf()
-        } catch (e: Exception) {
-            com.neubofy.reality.utils.TerminalLogger.log("DATA ERROR: Failed to load reminders - ${e.message}")
-            mutableListOf()
-        }
-    }
 
     fun saveWakeupAlarms(list: List<com.neubofy.reality.data.model.WakeupAlarm>) {
         val sharedPreferences = context.getSharedPreferences("wakeup_alarms", Context.MODE_PRIVATE)

@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [CalendarEvent::class, AppGroupEntity::class, AppLimitEntity::class, ChatSession::class, ChatMessageEntity::class, TapasyaSession::class, DailyStats::class, NightlySession::class, NightlyStep::class, TaskListConfig::class], version = 14, exportSchema = false)
+@Database(entities = [CalendarEvent::class, AppGroupEntity::class, AppLimitEntity::class, ChatSession::class, ChatMessageEntity::class, TapasyaSession::class, DailyStats::class, NightlySession::class, NightlyStep::class, TaskListConfig::class], version = 15, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun calendarEventDao(): CalendarEventDao
     abstract fun appGroupDao(): AppGroupDao
@@ -33,6 +33,13 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_13_14 = object : androidx.room.migration.Migration(13, 14) {
             override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
                 database.execSQL("CREATE TABLE IF NOT EXISTS `task_list_configs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `googleListId` TEXT NOT NULL, `displayName` TEXT NOT NULL, `description` TEXT NOT NULL)")
+            }
+        }
+
+        val MIGRATION_14_15 = object : androidx.room.migration.Migration(14, 15) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE calendar_events ADD COLUMN source TEXT NOT NULL DEFAULT 'GOOGLE'")
+                database.execSQL("ALTER TABLE calendar_events ADD COLUMN repeatRule TEXT")
             }
         }
 
@@ -82,7 +89,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "reality_database"
                 )
-                .addMigrations(MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
+                .addMigrations(MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

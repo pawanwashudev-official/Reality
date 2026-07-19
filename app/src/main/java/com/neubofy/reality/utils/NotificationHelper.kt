@@ -72,4 +72,35 @@ object NotificationHelper {
         manager.notify(id, notification)
         TerminalLogger.log("NOTIF: Posted '$title'")
     }
+    /**
+     * Post a high-priority notification for when a schedule/session starts.
+     */
+    fun showScheduleStartedNotification(context: Context, sessionTitle: String) {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        createChannels(context)
+
+        // Intent to start Tapasya
+        val tapasyaIntent = Intent(context, com.neubofy.reality.ui.activity.TapasyaActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("auto_start", true)
+        }
+        val pendingTapasyaIntent = PendingIntent.getActivity(
+            context, 100, tapasyaIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_SMART_ALERTS)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("Session Started: $sessionTitle")
+            .setContentText("Your productive session has begun. Distracting apps are blocked.")
+            .setStyle(NotificationCompat.BigTextStyle().bigText("Your productive session has begun. Distracting apps are blocked."))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .addAction(R.drawable.baseline_bolt_24, "Start Tapasya", pendingTapasyaIntent)
+            .setOngoing(true) // Optional: user requested persistent if possible, but auto cancel is usually better. We will set ongoing but allow user to swipe it away if they want.
+            .build()
+
+        manager.notify(sessionTitle.hashCode(), notification)
+        TerminalLogger.log("NOTIF: Session started '$sessionTitle'")
+    }
 }

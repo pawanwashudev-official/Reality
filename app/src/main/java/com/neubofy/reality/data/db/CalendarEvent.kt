@@ -10,5 +10,7 @@ data class CalendarEvent(
     val startTime: Long,
     val endTime: Long,
     val calendarId: String,
-    val isEnabled: Boolean = true
+    val isEnabled: Boolean = true,
+    val source: String = "GOOGLE",
+    val repeatRule: String? = null
 )

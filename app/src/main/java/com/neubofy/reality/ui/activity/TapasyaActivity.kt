@@ -510,9 +510,9 @@ class TapasyaActivity : BaseActivity() {
         }
     }
 
-    // Fetch from ScheduleManager (App's Auto Focus / Internal DB)
+    // Fetch from AppDatabase (App's Auto Focus / Internal DB)
     private suspend fun loadInternalEvents(): List<com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent> {
-        val unifiedEvents = com.neubofy.reality.data.ScheduleManager.getUnifiedEventsForToday(this)
+        val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(this)
         
         val cal = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0)
@@ -521,17 +521,20 @@ class TapasyaActivity : BaseActivity() {
             set(Calendar.MILLISECOND, 0)
         }
         val todayStart = cal.timeInMillis
+        val todayEnd = todayStart + (24 * 60 * 60 * 1000)
+        
+        val unifiedEvents = db.calendarEventDao().getEventsInRange(todayStart, todayEnd)
         
         return unifiedEvents.map { uEvent ->
             com.neubofy.reality.data.repository.CalendarRepository.CalendarEvent(
-                id = uEvent.originalId.hashCode().toLong(),
+                id = uEvent.eventId.hashCode().toLong(),
                 title = uEvent.title,
                 description = "Source: ${uEvent.source}",
-                startTime = todayStart + (uEvent.startTimeMins * 60 * 1000L),
-                endTime = todayStart + (uEvent.endTimeMins * 60 * 1000L),
-                color = if (uEvent.source == com.neubofy.reality.data.EventSource.MANUAL) 
-                            ThemeManager.getSuccessColor(this@TapasyaActivity) ?: android.graphics.Color.parseColor("#4CAF50")
-                        else ThemeManager.getInfoColor(this@TapasyaActivity) ?: android.graphics.Color.parseColor("#2196F3"),
+                startTime = uEvent.startTime,
+                endTime = uEvent.endTime,
+                color = if (uEvent.source == "IN_APP") 
+                            com.neubofy.reality.utils.ThemeManager.getSuccessColor(this@TapasyaActivity) ?: android.graphics.Color.parseColor("#4CAF50")
+                        else com.neubofy.reality.utils.ThemeManager.getInfoColor(this@TapasyaActivity) ?: android.graphics.Color.parseColor("#2196F3"),
                 location = null,
                 isInternal = true
             )

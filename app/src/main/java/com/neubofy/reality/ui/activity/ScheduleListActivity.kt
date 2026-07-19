@@ -32,7 +32,7 @@ class ScheduleListActivity : BaseActivity() {
     private val prefs by lazy { com.neubofy.reality.utils.SavedPreferencesLoader(this) }
     
     // Manual Schedule Logic
-    private var manualList: MutableList<Constants.AutoTimedActionItem> = mutableListOf()
+    
     private lateinit var dialogBinding: com.neubofy.reality.databinding.DialogAddTimedActionBinding
     
 
@@ -235,7 +235,7 @@ class ScheduleListActivity : BaseActivity() {
             }
             
             // 1. Load Custom Schedules
-            val customSchedules = prefs.loadAutoFocusHoursList()
+            
             
             // 2. Load Synced Events for TODAY ONLY (prevents yesterday's events bleeding over)
             val allDbEvents = db.calendarEventDao().getEventsInRange(todayStart, todayEnd)
@@ -245,7 +245,7 @@ class ScheduleListActivity : BaseActivity() {
                 displayItems.clear()
                 
                 // Add Custom
-                displayItems.addAll(customSchedules.map { ScheduleDisplayItem.Custom(it) })
+                
                 
                 // Add Synced
                 displayItems.addAll(allDbEvents.map { ScheduleDisplayItem.Synced(it) })
@@ -267,15 +267,10 @@ class ScheduleListActivity : BaseActivity() {
         val nowMs = System.currentTimeMillis()
 
         for (item in displayItems) {
-            val isCustom = item is ScheduleDisplayItem.Custom
+            val isCustom = (item as ScheduleDisplayItem.Synced).event.source == "IN_APP"
             
             val (startMins, endMins, title, isActiveNow) = when (item) {
-                is ScheduleDisplayItem.Custom -> {
-                    val start = item.item.startTimeInMins
-                    val end = item.item.endTimeInMins
-                    val active = if (start <= end) nowMins in start..end else nowMins >= start || nowMins <= end
-                    Quadruple(start, end, item.item.title, active)
-                }
+                
                 is ScheduleDisplayItem.Synced -> {
                     val cal = Calendar.getInstance()
                     cal.timeInMillis = item.event.startTime
@@ -367,24 +362,6 @@ class ScheduleListActivity : BaseActivity() {
 
     private fun showScheduleDetailsPopup(item: ScheduleDisplayItem) {
         when (item) {
-            is ScheduleDisplayItem.Custom -> {
-                val schedule = item.item
-                val startStr = String.format("%02d:%02d", schedule.startTimeInMins / 60, schedule.startTimeInMins % 60)
-                val endStr = String.format("%02d:%02d", schedule.endTimeInMins / 60, schedule.endTimeInMins % 60)
-                val daysStr = if (schedule.repeatDays.size == 7) "Every Day" else "Selected Days"
-                
-                com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.GlassDialog)
-                    .setTitle("📅 ${schedule.title}")
-                    .setMessage("Time: $startStr - $endStr\nRepeat: $daysStr\nReminder: ${if (schedule.isReminderEnabled) "On" else "Off"}")
-                    .setPositiveButton("Edit") { _, _ ->
-                        showEditScheduleDialog(schedule)
-                    }
-                    .setNegativeButton("Delete") { _, _ ->
-                        deleteManualItem(schedule)
-                    }
-                    .setNeutralButton("Close", null)
-                    .show()
-            }
             is ScheduleDisplayItem.Synced -> {
                 val event = item.event
                 val dateFormat = java.text.SimpleDateFormat("MMM dd, hh:mm a", java.util.Locale.getDefault())
@@ -401,35 +378,7 @@ class ScheduleListActivity : BaseActivity() {
         }
     }
 
-    private fun deleteManualItem(itemToDelete: Constants.AutoTimedActionItem) {
-        val strict = prefs.getStrictModeData()
-        val isStrictLocked = strict.isEnabled && !com.neubofy.reality.utils.StrictLockUtils.isMaintenanceWindow()
-        
-        if (isStrictLocked) {
-            android.widget.Toast.makeText(this, "Locked by Strict Mode", android.widget.Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        android.app.AlertDialog.Builder(this)
-            .setTitle("Delete Schedule")
-            .setMessage("Are you sure you want to delete '${itemToDelete.title}'?")
-            .setPositiveButton("Delete") { _, _ ->
-                manualList = prefs.loadAutoFocusHoursList()
-                val found = manualList.find { it.title == itemToDelete.title && it.startTimeInMins == itemToDelete.startTimeInMins }
-                if (found != null) {
-                    manualList.remove(found)
-                    prefs.saveAutoFocusHoursList(manualList)
-                    sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
-                    // Reschedule reminders since schedule changed
-                    com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(this)
-                    loadSchedules()
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun toggleSyncedEvent(event: CalendarEvent) {
+        private fun toggleSyncedEvent(event: CalendarEvent) {
         val updatedEvent = event.copy(isEnabled = !event.isEnabled)
         lifecycleScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(applicationContext)
@@ -493,17 +442,44 @@ class ScheduleListActivity : BaseActivity() {
                         }
                     
                         val isReminder = dialogBinding.cbReminder.isChecked
-                        val newItem = Constants.AutoTimedActionItem(title, startTimeMins, endTimeMins, arrayListOf(), repeatDays = days, isReminderEnabled = isReminder)
                         
-                        manualList = prefs.loadAutoFocusHoursList()
-                        manualList.add(newItem)
-                        prefs.saveAutoFocusHoursList(manualList)
+                        val startMs = java.util.Calendar.getInstance().apply {
+                            set(java.util.Calendar.HOUR_OF_DAY, startTimeMins / 60)
+                            set(java.util.Calendar.MINUTE, startTimeMins % 60)
+                            set(java.util.Calendar.SECOND, 0)
+                            set(java.util.Calendar.MILLISECOND, 0)
+                        }.timeInMillis
                         
-                        sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
-                        // Reschedule reminders since new schedule added
-                        com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(this)
-                        loadSchedules()
-                        dialog.dismiss()
+                        val endMs = java.util.Calendar.getInstance().apply {
+                            set(java.util.Calendar.HOUR_OF_DAY, endTimeMins / 60)
+                            set(java.util.Calendar.MINUTE, endTimeMins % 60)
+                            set(java.util.Calendar.SECOND, 0)
+                            set(java.util.Calendar.MILLISECOND, 0)
+                        }.timeInMillis
+                        
+                        val finalEndMs = if (endMs <= startMs) endMs + 86400000L else endMs
+
+                        val newItem = com.neubofy.reality.data.db.CalendarEvent(
+                            eventId = java.util.UUID.randomUUID().toString(),
+                            title = title,
+                            startTime = startMs,
+                            endTime = finalEndMs,
+                            calendarId = "IN_APP",
+                            source = "IN_APP",
+                            isEnabled = true,
+                            repeatRule = days.joinToString(",")
+                        )
+                        
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            val db = AppDatabase.getDatabase(applicationContext)
+                            db.calendarEventDao().insertAll(listOf(newItem))
+                            sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
+                            com.neubofy.reality.utils.SmartScheduleManager.scheduleNextTransition(this@ScheduleListActivity)
+                            withContext(Dispatchers.Main) {
+                                loadSchedules()
+                                dialog.dismiss()
+                            }
+                        }
                     }
                 }
                 .setNegativeButton("Cancel", null)
@@ -514,102 +490,6 @@ class ScheduleListActivity : BaseActivity() {
         }
     }
 
-    @android.annotation.SuppressLint("SetTextI18n")
-    private fun showEditScheduleDialog(existing: Constants.AutoTimedActionItem) {
-        // Check Strict Mode
-        if (!com.neubofy.reality.utils.StrictLockUtils.isModificationAllowedFor(this, com.neubofy.reality.utils.StrictLockUtils.FeatureType.SCHEDULE)) {
-            android.widget.Toast.makeText(this, "Locked by Strict Mode. Edit allowed 00:00-00:10 daily.", android.widget.Toast.LENGTH_LONG).show()
-            return
-        }
-        
-        dialogBinding = com.neubofy.reality.databinding.DialogAddTimedActionBinding.inflate(layoutInflater)
-        dialogBinding.timedTitle.text = "Edit Schedule"
-        dialogBinding.btnSelectUnblockedApps.visibility = View.GONE
-
-        
-        // Pre-fill with existing values
-        dialogBinding.cheatHourTitle.setText(existing.title)
-        var startTimeMins = existing.startTimeInMins
-        var endTimeMins = existing.endTimeInMins
-        
-        dialogBinding.fromTime.text = String.format("%02d:%02d", startTimeMins / 60, startTimeMins % 60)
-        dialogBinding.endTime.text = String.format("%02d:%02d", endTimeMins / 60, endTimeMins % 60)
-        dialogBinding.cbReminder.isChecked = existing.isReminderEnabled
-        
-        // Pre-select days
-        val chipGroup = dialogBinding.root.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chip_days)
-        if (existing.repeatDays.contains(1)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_sun).isChecked = true
-        if (existing.repeatDays.contains(2)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_mon).isChecked = true
-        if (existing.repeatDays.contains(3)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_tue).isChecked = true
-        if (existing.repeatDays.contains(4)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_wed).isChecked = true
-        if (existing.repeatDays.contains(5)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_thu).isChecked = true
-        if (existing.repeatDays.contains(6)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_fri).isChecked = true
-        if (existing.repeatDays.contains(7)) chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_sat).isChecked = true
-        
-        dialogBinding.fromTime.setOnClickListener {
-            showMaterialTimePicker("Start Time", startTimeMins / 60, startTimeMins % 60) { h, m ->
-                startTimeMins = h * 60 + m
-                dialogBinding.fromTime.text = String.format("%02d:%02d", h, m)
-            }
-        }
-        
-        dialogBinding.endTime.setOnClickListener {
-            showMaterialTimePicker("End Time", endTimeMins / 60, endTimeMins % 60) { h, m ->
-                endTimeMins = h * 60 + m
-                dialogBinding.endTime.text = String.format("%02d:%02d", h, m)
-            }
-        }
-
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(this, R.style.GlassDialog)
-            .setView(dialogBinding.root)
-            .setPositiveButton("Save") { dialog, _ ->
-                val title = dialogBinding.cheatHourTitle.text.toString()
-                if (title.isEmpty()) {
-                    android.widget.Toast.makeText(this, "Enter a title", android.widget.Toast.LENGTH_SHORT).show()
-                } else {
-                    val days = ArrayList<Int>()
-                    if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_sun).isChecked) days.add(1)
-                    if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_mon).isChecked) days.add(2)
-                    if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_tue).isChecked) days.add(3)
-                    if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_wed).isChecked) days.add(4)
-                    if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_thu).isChecked) days.add(5)
-                    if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_fri).isChecked) days.add(6)
-                    if (chipGroup.findViewById<com.google.android.material.chip.Chip>(R.id.chip_sat).isChecked) days.add(7)
-                    
-                    if (days.isEmpty()) {
-                         android.widget.Toast.makeText(this, "Select days", android.widget.Toast.LENGTH_SHORT).show()
-                         return@setPositiveButton
-                    }
-                
-                    val isReminder = dialogBinding.cbReminder.isChecked
-                    
-                    // ALWAYS reset dismissal when editing - any edit should allow reminder to fire again
-                    val newLastDismissed = 0L
-                    
-                    val updatedItem = Constants.AutoTimedActionItem(title, startTimeMins, endTimeMins, arrayListOf(), repeatDays = days, isReminderEnabled = isReminder, lastDismissedDate = newLastDismissed)
-                    
-                    // Remove old and add updated
-                    manualList = prefs.loadAutoFocusHoursList()
-                    val found = manualList.find { it.title == existing.title && it.startTimeInMins == existing.startTimeInMins }
-                    if (found != null) manualList.remove(found)
-                    manualList.add(updatedItem)
-                    prefs.saveAutoFocusHoursList(manualList)
-                    
-                    sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
-                    
-                    // Clear from fired cache to allow edited schedule to fire again
-                    val oldScheduleId = "sched_${existing.title}_${existing.startTimeInMins}_${existing.endTimeInMins}"
-                    com.neubofy.reality.utils.FiredEventsCache.clearFired(this, oldScheduleId)
-                    
-                    // Reschedule reminders since schedule edited
-                    com.neubofy.reality.utils.ReminderScheduler.scheduleNextAlarm(this)
-                    loadSchedules()
-                    dialog.dismiss()
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
     
     private fun showMaterialTimePicker(title: String, initialHour: Int, initialMinute: Int, onTimeSet: (Int, Int) -> Unit) {
         val picker = com.google.android.material.timepicker.MaterialTimePicker.Builder()
@@ -733,6 +613,6 @@ class ScheduleListActivity : BaseActivity() {
 }
 
 sealed class ScheduleDisplayItem {
-    data class Custom(val item: com.neubofy.reality.Constants.AutoTimedActionItem) : ScheduleDisplayItem()
+    
     data class Synced(val event: com.neubofy.reality.data.db.CalendarEvent) : ScheduleDisplayItem()
 }

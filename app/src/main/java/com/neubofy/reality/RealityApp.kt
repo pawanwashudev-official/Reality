@@ -21,7 +21,7 @@ class RealityApp: Application() {
     Thread.setDefaultUncaughtExceptionHandler(CrashLogger(this))
     
     // Kickstart the Midnight Reset alarm
-    com.neubofy.reality.utils.ReminderScheduler.scheduleMidnightReset(this)
+    com.neubofy.reality.utils.SmartScheduleManager.scheduleNextTransition(this)
     
     // BlockCacheWorker periodic 3-min polling removed per user request
     

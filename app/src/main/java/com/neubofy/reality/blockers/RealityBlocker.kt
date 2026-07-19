@@ -32,7 +32,7 @@ class RealityBlocker {
     var bedtimeData = Constants.BedtimeData()
     var emergencyData = Constants.EmergencyModeData()
     var usageLimitData = Constants.UsageLimitData()
-    private var schedules: MutableList<Constants.AutoTimedActionItem> = mutableListOf()
+    
     // REMOVED: Cooldown bypass logic removed as per user request
     private var calendarEvents: List<Pair<Long, Long>> = emptyList()
     var appGroups: List<com.neubofy.reality.data.db.AppGroupEntity> = emptyList()
@@ -186,69 +186,25 @@ class RealityBlocker {
         }
     }
 
-    private fun getScheduleEndTime(packageName: String): Long? {
-        val currentTime = Calendar.getInstance()
-        val currentMinutes = TimeTools.convertToMinutesFromMidnight(
-            currentTime.get(Calendar.HOUR_OF_DAY),
-            currentTime.get(Calendar.MINUTE)
-        )
-        val uptimeNow = SystemClock.uptimeMillis()
-
-        schedules.forEach { item ->
-            // Check if schedule is active
-            val start = item.startTimeInMins
-            val end = item.endTimeInMins
-            
-            val isActive = (start <= end && currentMinutes in start until end) ||
-                          (start > end && (currentMinutes >= start || currentMinutes < end))
-            
-            if (isActive) {
-                // UNIVERSAL BLOCKLIST ENFORCED: Ignore item.packages, use Universal List
-                if (shouldBlockPackage(packageName)) {
-                    var dayOffset = 0
-                    if (start > end && currentMinutes > end) dayOffset = 1440
-                    val diff = end + dayOffset - currentMinutes
-                    return uptimeNow + (diff * 60 * 1000)
-                }
-            }
-        }
-        return null
-    }
+    private fun getScheduleEndTime(packageName: String): Long? { return null }
 
     // REMOVED: putCooldown function removed - no more Proceed Anyway bypass
 
-    fun refreshSchedules(newList: List<Constants.AutoTimedActionItem>) {
-        schedules.clear()
-        schedules.addAll(newList)
-    }
+    
 
     fun refreshCalendarEvents(events: List<Pair<Long, Long>>) {
         calendarEvents = events
     }
     
-    fun hasActiveSchedules(): Boolean = schedules.isNotEmpty()
+    fun hasActiveSchedules(): Boolean = false
     fun hasActiveCalendarEvents(): Boolean = calendarEvents.isNotEmpty()
     
     fun isAnyScheduleActive(): Boolean {
-        val currentTime = Calendar.getInstance()
-        val currentMinutes = TimeTools.convertToMinutesFromMidnight(
-            currentTime.get(Calendar.HOUR_OF_DAY),
-            currentTime.get(Calendar.MINUTE)
-        )
-        schedules.forEach { item ->
-            val start = item.startTimeInMins
-            val end = item.endTimeInMins
-            val isActive = (start <= end && currentMinutes in start until end) ||
-                          (start > end && (currentMinutes >= start || currentMinutes < end))
-            if (isActive) return true
-        }
-        
         // Also check Calendar Events
         val nowMs = System.currentTimeMillis()
         calendarEvents.forEach { (start, end) ->
             if (nowMs in start..end) return true
         }
-        
         return false
     }
 

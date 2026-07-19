@@ -205,12 +205,7 @@ object BlockCache {
                 // === STEP 1: Check if any blocking mode is active ===
                 val focusData = prefs.getFocusModeData()
                 val bedtimeData = prefs.getBedtimeData()
-                val schedules = prefs.loadAutoFocusHoursList()
-                val calendarEvents = if (context.getSharedPreferences("reality_prefs", Context.MODE_PRIVATE).getBoolean("reminder_source_calendar", true)) {
-                    db.calendarEventDao().getCurrentEvents(now)
-                } else {
-                    emptyList()
-                }
+                val calendarEvents = db.calendarEventDao().getCurrentEvents(now)
                 
                 val isFocusActiveRaw = focusData.isTurnedOn && focusData.endTime > now
                 val isTapasyaActive = isFocusActiveRaw && focusData.isTapasyaTriggered
@@ -224,11 +219,9 @@ object BlockCache {
                 }
                 
                 val isBedtimeActive = bedtimeData.isEnabled && isBedtimeNow(bedtimeData, currentMins)
-                val isScheduleActive = isAnyScheduleActive(schedules, currentMins, currentDay)
-                val isCalendarEventActive = calendarEvents.isNotEmpty()
+                val isScheduleActive = calendarEvents.isNotEmpty()
                 
-                isAnyBlockingModeActive = isFocusActiveRaw || isBedtimeActive ||
-                                          isScheduleActive || isCalendarEventActive
+                isAnyBlockingModeActive = isFocusActiveRaw || isBedtimeActive || isScheduleActive
                 isBedtimeCurrentlyActive = isBedtimeActive
                 
                 // === STEP 2: Add apps from blocklist if ANY mode is active ===
@@ -261,7 +254,7 @@ object BlockCache {
                                 if (isBedtimeActive && config.blockInBedtime) {
                                     addToBox(newBox, pkg, "Bedtime Mode")
                                 }
-                                if ((isScheduleActive || isCalendarEventActive) && config.blockInAutoFocus) {
+                                if (isScheduleActive && config.blockInAutoFocus) {
                                     addToBox(newBox, pkg, "Scheduled Block")
                                 }
                             }
@@ -461,30 +454,7 @@ object BlockCache {
         }
     }
     
-    private fun isAnyScheduleActive(
-        schedules: List<com.neubofy.reality.Constants.AutoTimedActionItem>,
-        currentMins: Int,
-        currentDay: Int
-    ): Boolean {
-        for (item in schedules) {
-            val runsToday = item.repeatDays.isEmpty() || item.repeatDays.contains(currentDay)
-            if (runsToday) {
-                val start = item.startTimeInMins
-                val end = item.endTimeInMins
-                
-                if (start < end) {
-                    if (currentMins in start until end) {
-                        return true
-                    }
-                } else if (start > end) {
-                    if (currentMins >= start || currentMins < end) {
-                        return true
-                    }
-                }
-            }
-        }
-        return false
-    }
+
     
     private fun isWithinActivePeriod(json: String, currentMins: Int): Boolean {
         if (json.length < 5) return true

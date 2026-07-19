@@ -226,7 +226,6 @@ class MainActivity : BaseActivity() {
         // Features are now always visible on the home screen.
         // Pro access is strictly checked only when the user taps on these cards to open the pages.
         binding.cardReflection.visibility = android.view.View.VISIBLE
-        binding.btnReminders.visibility = android.view.View.VISIBLE
         binding.fabAiChat.visibility = android.view.View.VISIBLE
         binding.cardTapasyaHome.visibility = android.view.View.VISIBLE
     }
@@ -694,70 +693,66 @@ class MainActivity : BaseActivity() {
             startActivity(intent, options.toBundle())
         }
         
-        // Menu Button - Show menu with options
+        // Menu Button - Show modern bottom sheet menu
         binding.btnInfo.setOnClickListener { view ->
-            val popup = android.widget.PopupMenu(this, view)
             val featureManager = com.neubofy.reality.utils.FeatureManager(this)
-
-            if (featureManager.isHealthConnectEnabled()) {
-                popup.menu.add(0, 5, 0, "❤️ Health Dashboard")
-            }
-            popup.menu.add(0, 6, 1, "🎨 Appearance")
-            if (featureManager.isRealityProEnabled()) {
-                popup.menu.add(0, 7, 2, "☁️ Backup & Restore")
-                popup.menu.add(0, 9, 5, "🌙 Nightly Protocol")
-            }
-            popup.menu.add(0, 3, 3, "📱 About Reality")
-            popup.menu.add(0, 8, 4, "⏰ Sleep & Alarm")
-            popup.menu.add(0, 1, 6, "🌐 Reality Website")
+            val bottomSheetDialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+            val sheetView = LayoutInflater.from(this).inflate(R.layout.layout_home_menu, null)
+            val container = sheetView.findViewById<android.widget.LinearLayout>(R.id.ll_menu_container)
             
-            popup.setOnMenuItemClickListener { item ->
-                when (item.itemId) {
-                    8 -> {
-                        startActivity(Intent(this, SmartSleepActivity::class.java))
-                        true
-                    }
-                    9 -> {
-                        startActivity(Intent(this, NightlyActivity::class.java))
-                        true
-                    }
-                    1 -> {
-                        // Reality Website
-                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://reality.neubofy.in"))
-                        startActivity(intent)
-                        true
-                    }
-                    5 -> {
-                        startActivity(Intent(this, HealthDashboardActivity::class.java))
-                        true
-                    }
-                    6 -> {
-                        // Appearance Page
-                        startActivity(Intent(this, AppearanceActivity::class.java))
-                        true
-                    }
-                    7 -> {
-                        // Backup & Restore
-                        startActivity(Intent(this, BackupRestoreActivity::class.java))
-                        true
-                    }
-
-                    3 -> {
-                        startActivity(Intent(this, AboutActivity::class.java))
-                        true
-                    }
-                    else -> false
-                }
+            data class MenuItem(val icon: Int, val title: String, val action: () -> Unit)
+            
+            val menuItems = mutableListOf<MenuItem>()
+            
+            menuItems.add(MenuItem(R.drawable.baseline_settings_24, "Settings") {
+                startActivity(Intent(this, SettingsActivity::class.java), options.toBundle())
+            })
+            
+            if (featureManager.isHealthConnectEnabled()) {
+                menuItems.add(MenuItem(R.drawable.baseline_favorite_24, "Health Dashboard") {
+                    startActivity(Intent(this, HealthDashboardActivity::class.java))
+                })
             }
-            popup.show()
-        }
-        
-        binding.btnReminders.setOnClickListener {
-            startActivity(Intent(this, ReminderActivity::class.java))
-        }
-        
-        binding.btnSettings.setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java), options.toBundle())
+            menuItems.add(MenuItem(R.drawable.baseline_settings_24, "Appearance") {
+                startActivity(Intent(this, AppearanceActivity::class.java))
+            })
+            if (featureManager.isRealityProEnabled()) {
+                menuItems.add(MenuItem(R.drawable.baseline_restore_24, "Backup & Restore") {
+                    startActivity(Intent(this, BackupRestoreActivity::class.java))
+                })
+                menuItems.add(MenuItem(R.drawable.baseline_bedtime_24, "Nightly Protocol") {
+                    startActivity(Intent(this, NightlyActivity::class.java))
+                })
+            }
+            menuItems.add(MenuItem(R.drawable.baseline_info_24, "About Reality") {
+                startActivity(Intent(this, AboutActivity::class.java))
+            })
+            menuItems.add(MenuItem(R.drawable.baseline_schedule_24, "Sleep & Alarm") {
+                startActivity(Intent(this, SmartSleepActivity::class.java))
+            })
+            menuItems.add(MenuItem(R.drawable.baseline_public_24, "Reality Website") {
+                val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://reality.neubofy.in"))
+                startActivity(intent)
+            })
+
+            for (item in menuItems) {
+                val itemView = LayoutInflater.from(this).inflate(R.layout.item_home_menu, container, false)
+                val ivIcon = itemView.findViewById<ImageView>(R.id.iv_icon)
+                val tvTitle = itemView.findViewById<TextView>(R.id.tv_title)
+                
+                ivIcon.setImageResource(item.icon)
+                tvTitle.text = item.title
+                
+                itemView.setOnClickListener {
+                    bottomSheetDialog.dismiss()
+                    item.action()
+                }
+                
+                container.addView(itemView)
+            }
+            
+            bottomSheetDialog.setContentView(sheetView)
+            bottomSheetDialog.show()
         }
         
         // Digital Life - Statistics with 7-Day Graphs
