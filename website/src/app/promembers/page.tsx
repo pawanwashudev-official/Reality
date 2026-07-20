@@ -147,8 +147,16 @@ export default async function ProMembersPage({ searchParams }: PageProps) {
         }
       }
     }
+    let displayUserId = m.userId;
+    // Only reveal full ID if it was an exact search match
+    const isExactSearch = searchQuery.length === 16 && searchQuery === m.userId.toLowerCase();
+    
+    if (!isExactSearch && displayUserId.length >= 8) {
+      displayUserId = displayUserId.substring(0, 4) + '********' + displayUserId.substring(displayUserId.length - 4);
+    }
+
     return {
-      userId: m.userId,
+      userId: displayUserId,
       dateJoined: m.dateJoined,
       status: computedStatus
     };

@@ -78,7 +78,7 @@ export async function fetchSensitiveMemberData(
         };
     }
     
-    return { isAdmin: isAdmin, data: result, totalMembers: data?.totalMembers || 0 };
+    return { isAdmin: isAdmin, data: result, members: members, totalMembers: data?.totalMembers || 0 };
 
   } catch (error: any) {
     return { error: error.message };

@@ -46,6 +46,7 @@ export default function ProMembersClient({
   const [adminError, setAdminError] = useState('');
   const [isVerifyingAdmin, setIsVerifyingAdmin] = useState(false);
 
+  const [members, setMembers] = useState<ProMember[]>(initialMembers);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedUserIdForCard, setSelectedUserIdForCard] = useState<string | null>(null);
   const [sensitiveData, setSensitiveData] = useState<Record<string, { status: string | null, expiryDate: string | null }>>({});
@@ -54,6 +55,13 @@ export default function ProMembersClient({
   useEffect(() => {
     setSearchInput(initialSearch);
   }, [initialSearch]);
+
+  // Sync members for non-admins when initialMembers (page) changes
+  useEffect(() => {
+    if (!isAdmin) {
+      setMembers(initialMembers);
+    }
+  }, [initialMembers, isAdmin]);
 
   // Fetch sensitive details for searched member ONLY when search query is exactly 16 characters (full ID)
   useEffect(() => {
@@ -88,8 +96,17 @@ export default function ProMembersClient({
             pageSize,
             (initialPage - 1) * pageSize
           );
-          if (response && !response.error && response.data) {
+          if (response && !response.error && response.data && response.members) {
             setSensitiveData(response.data);
+            const adminMembers = response.members.map((m: any) => ({
+              userId: m.userId,
+              dateJoined: m.date,
+              hasAccess: m.status === 'V' || (m.trial_plan && !m.status),
+              status: m.status || null,
+              expiryDate: m.expiryDate || null,
+              trial_plan: m.trial_plan || null
+            }));
+            setMembers(adminMembers);
           }
         } catch (err) {
           console.error("Error fetching admin data on page change:", err);
@@ -147,8 +164,17 @@ export default function ProMembersClient({
         pageSize,
         (initialPage - 1) * pageSize
       );
-      if (response && !response.error && response.data) {
+      if (response && !response.error && response.data && response.members) {
         setSensitiveData(response.data);
+        const adminMembers = response.members.map((m: any) => ({
+          userId: m.userId,
+          dateJoined: m.date,
+          hasAccess: m.status === 'V' || (m.trial_plan && !m.status),
+          status: m.status || null,
+          expiryDate: m.expiryDate || null,
+          trial_plan: m.trial_plan || null
+        }));
+        setMembers(adminMembers);
         setIsAdmin(true);
         setAdminError('');
       } else {
@@ -279,7 +305,7 @@ export default function ProMembersClient({
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {initialMembers.map((member, index) => (
+                {members.map((member, index) => (
                   <MemberCard
                      key={`${member.userId}-${index}`}
                      member={{...member, ...sensitiveData[member.userId]}}
