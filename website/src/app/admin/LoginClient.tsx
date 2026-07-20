@@ -34,21 +34,25 @@ export default function LoginClient() {
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm bg-neural-card/30 border border-gray-800 p-6 rounded-2xl backdrop-blur-sm space-y-4">
         <div>
-          <label className="sr-only">Username</label>
+          <label htmlFor="username" className="sr-only">Username</label>
           <input
+            id="username"
             name="username"
             type="text"
             required
+            autoComplete="username"
             placeholder="Username"
             className="w-full bg-black/40 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neural-cyan focus:ring-1 focus:ring-neural-cyan transition-all"
           />
         </div>
         <div>
-          <label className="sr-only">Password</label>
+          <label htmlFor="password" className="sr-only">Password</label>
           <input
+            id="password"
             name="password"
             type="password"
             required
+            autoComplete="current-password"
             placeholder="Password"
             className="w-full bg-black/40 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neural-cyan focus:ring-1 focus:ring-neural-cyan transition-all"
           />

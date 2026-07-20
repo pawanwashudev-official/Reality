@@ -56,8 +56,10 @@ export default function AdminDashboard() {
       <form onSubmit={handleSend} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300 font-mono">Worker URL</label>
+            <label htmlFor="workerUrl" className="text-sm font-medium text-gray-300 font-mono">Worker URL</label>
             <input
+              id="workerUrl"
+              name="workerUrl"
               type="url"
               required
               value={workerUrl}
@@ -66,10 +68,13 @@ export default function AdminDashboard() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300 font-mono">Notification Secret</label>
+            <label htmlFor="notificationSecret" className="text-sm font-medium text-gray-300 font-mono">Notification Secret</label>
             <input
+              id="notificationSecret"
+              name="notificationSecret"
               type="password"
               required
+              autoComplete="off"
               value={secret}
               onChange={(e) => setSecret(e.target.value)}
               className="w-full bg-black/40 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neural-cyan focus:ring-1 focus:ring-neural-cyan transition-all"
@@ -78,10 +83,13 @@ export default function AdminDashboard() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-300 font-mono">Target User ID</label>
+          <label htmlFor="targetUserId" className="text-sm font-medium text-gray-300 font-mono">Target User ID</label>
           <input
+            id="targetUserId"
+            name="targetUserId"
             type="text"
             required
+            autoComplete="off"
             value={userId}
             onChange={(e) => setUserId(e.target.value)}
             placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
@@ -90,10 +98,13 @@ export default function AdminDashboard() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-300 font-mono">Notification Title</label>
+          <label htmlFor="notificationTitle" className="text-sm font-medium text-gray-300 font-mono">Notification Title</label>
           <input
+            id="notificationTitle"
+            name="notificationTitle"
             type="text"
             required
+            autoComplete="off"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Reality Update"
@@ -102,9 +113,12 @@ export default function AdminDashboard() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-300 font-mono">Notification Message</label>
+          <label htmlFor="notificationMessage" className="text-sm font-medium text-gray-300 font-mono">Notification Message</label>
           <textarea
+            id="notificationMessage"
+            name="notificationMessage"
             required
+            autoComplete="off"
             rows={4}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
