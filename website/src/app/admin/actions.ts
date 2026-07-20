@@ -6,14 +6,15 @@ export async function loginAction(formData: FormData) {
   const username = formData.get('username') as string;
   const password = formData.get('password') as string;
 
-  const validUsername = process.env.ADMIN_USERNAME || '';
-  const validPassword = process.env.ADMIN_PASSWORD || '';
+  const adminSecret = process.env.ADMIN || '';
+  const expectedAdminUsername = adminSecret.substring(0, 16);
+  const expectedAdminPassword = adminSecret.substring(16);
 
   if (
     username &&
     password &&
-    username === validUsername &&
-    password === validPassword
+    username === expectedAdminUsername &&
+    password === expectedAdminPassword
   ) {
     // Basic session cookie
     const cookieStore = await cookies();
