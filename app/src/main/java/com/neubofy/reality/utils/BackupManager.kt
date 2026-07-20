@@ -48,7 +48,9 @@ object BackupManager {
         APP_LIMITS("Per-App Limits", "📊"),
         TAPASYA("Tapasya Sessions", "🧘"),
         DAILY_STATS("Daily Stats", "📈"),
-        BLOCKED_APP_CONFIGS("App Blocking Modes", "⚙️")
+        BLOCKED_APP_CONFIGS("App Blocking Modes", "⚙️"),
+        TASK_LISTS("Task Lists", "📋"),
+        CHAT_HISTORY("AI Chat History", "💬")
     }
 
     // === DATA STRUCTURES ===
@@ -88,7 +90,9 @@ object BackupManager {
         BackupCategory.THEME to listOf("reality_theme_prefs"),
         BackupCategory.BLOCK_MESSAGES to listOf("block_messages"),
         BackupCategory.REMINDERS to listOf("custom_reminders"),
-        BackupCategory.BLOCKED_APP_CONFIGS to listOf("blocked_app_configs")
+        BackupCategory.BLOCKED_APP_CONFIGS to listOf("blocked_app_configs"),
+        BackupCategory.TASK_LISTS to emptyList(),
+        BackupCategory.CHAT_HISTORY to emptyList()
     )
 
     // ===================================
@@ -187,6 +191,21 @@ object BackupManager {
                             val db = AppDatabase.getDatabase(context)
                             val stats = db.dailyStatsDao().getAllStats()
                             categoryJson.put("db_daily_stats", gson.toJson(stats))
+                        }
+                        BackupCategory.TASK_LISTS -> {
+                            val db = AppDatabase.getDatabase(context)
+                            val lists = db.taskListConfigDao().getAll()
+                            categoryJson.put("db_task_lists", gson.toJson(lists))
+                        }
+                        BackupCategory.CHAT_HISTORY -> {
+                            val db = AppDatabase.getDatabase(context)
+                            val sessions = db.chatDao().getAllSessions()
+                            categoryJson.put("db_chat_sessions", gson.toJson(sessions))
+                            val allMessages = mutableListOf<com.neubofy.reality.data.db.ChatMessageEntity>()
+                            for (session in sessions) {
+                                allMessages.addAll(db.chatDao().getMessagesForSession(session.id))
+                            }
+                            categoryJson.put("db_chat_messages", gson.toJson(allMessages))
                         }
                         else -> { /* No DB data for other categories */ }
                     }
@@ -411,6 +430,37 @@ object BackupManager {
                                 val db = AppDatabase.getDatabase(context)
                                 for (stat in stats) {
                                     db.dailyStatsDao().insertStats(stat)
+                                }
+                            }
+                        }
+                        BackupCategory.TASK_LISTS -> {
+                            val json = categoryJson.optString("db_task_lists", "")
+                            if (json.isNotEmpty()) {
+                                val type = object : TypeToken<List<com.neubofy.reality.data.db.TaskListConfig>>() {}.type
+                                val lists: List<com.neubofy.reality.data.db.TaskListConfig> = gson.fromJson(json, type)
+                                val db = AppDatabase.getDatabase(context)
+                                for (list in lists) {
+                                    db.taskListConfigDao().insert(list)
+                                }
+                            }
+                        }
+                        BackupCategory.CHAT_HISTORY -> {
+                            val sessionsJson = categoryJson.optString("db_chat_sessions", "")
+                            if (sessionsJson.isNotEmpty()) {
+                                val type = object : TypeToken<List<com.neubofy.reality.data.db.ChatSession>>() {}.type
+                                val sessions: List<com.neubofy.reality.data.db.ChatSession> = gson.fromJson(sessionsJson, type)
+                                val db = AppDatabase.getDatabase(context)
+                                for (session in sessions) {
+                                    db.chatDao().insertSession(session)
+                                }
+                            }
+                            val messagesJson = categoryJson.optString("db_chat_messages", "")
+                            if (messagesJson.isNotEmpty()) {
+                                val type = object : TypeToken<List<com.neubofy.reality.data.db.ChatMessageEntity>>() {}.type
+                                val messages: List<com.neubofy.reality.data.db.ChatMessageEntity> = gson.fromJson(messagesJson, type)
+                                val db = AppDatabase.getDatabase(context)
+                                for (message in messages) {
+                                    db.chatDao().insertMessage(message)
                                 }
                             }
                         }

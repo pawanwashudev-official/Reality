@@ -20,6 +20,7 @@ import android.provider.Settings
 import com.neubofy.reality.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
 import com.neubofy.reality.Constants
 import com.neubofy.reality.blockers.RealityBlocker
@@ -283,7 +284,7 @@ class AppBlockerService : BaseBlockingService() {
                                   } catch (e: Exception) {
                                      com.neubofy.reality.utils.TerminalLogger.log("ERROR: ${e.message}")
                                   } finally {
-                                     try { rootNode.recycle() } catch (e: Exception) {}
+                                      // AccessibilityNodeInfo recycling is deprecated and handled by GC in modern Android.
                                   }
                               }
                           }
@@ -385,6 +386,7 @@ class AppBlockerService : BaseBlockingService() {
         currentWarnedPackage = null
     }
 
+    @Suppress("DEPRECATION")
     private fun showWarningOverlay(seconds: Int) {
         try {
             if (warningOverlay != null) return // Already showing
@@ -484,7 +486,6 @@ class AppBlockerService : BaseBlockingService() {
             for (i in 0 until node.childCount.coerceAtMost(10)) {
                 val child = node.getChild(i) ?: continue
                 val found = hasTextInHierarchy(child, keywords)
-                try { child.recycle() } catch (_: Exception) {}
                 if (found) return true
             }
             
@@ -506,6 +507,7 @@ class AppBlockerService : BaseBlockingService() {
 
 
     
+    @Suppress("DEPRECATION")
     private fun showStrictLockOverlay(reason: String) {
         if (strictOverlay != null) return
         try {
@@ -550,7 +552,7 @@ class AppBlockerService : BaseBlockingService() {
 
 
     // Updated signature to control session persistence
-    private fun handleBlock(packageName: String, reason: String? = null, addToSession: Boolean = true) {
+    private fun handleBlock(packageName: String, reason: String? = null) {
         com.neubofy.reality.utils.TerminalLogger.log("ACTION: Blocking $packageName. Reason: ${reason ?: "N/A"}")
         
         // Event-driven Sleep Mode Enforcement (Android 15+ Fix on bypass attempt)
@@ -628,7 +630,7 @@ class AppBlockerService : BaseBlockingService() {
         
         // Log service startup
         com.neubofy.reality.utils.TerminalLogger.log("SERVICE: Accessibility Service Started")
-        com.neubofy.reality.utils.TerminalLogger.log("STATUS: Blocking=$isBlockingActive, StrictMode=${blocker.strictModeData?.isEnabled ?: false}")
+        com.neubofy.reality.utils.TerminalLogger.log("STATUS: Blocking=$isBlockingActive, StrictMode=${blocker.strictModeData.isEnabled}")
     }
 
     private fun refreshSettings() {
@@ -677,7 +679,6 @@ class AppBlockerService : BaseBlockingService() {
                 com.neubofy.reality.utils.BlockCache.rebuildBox(applicationContext)
                 
                 kotlinx.coroutines.withContext(Dispatchers.Main) {
-                    val wasActive = isBlockingActive
                     
                     isBlockingActive = com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive ||
                                        com.neubofy.reality.utils.BlockCache.getBlockedCount() > 0
@@ -767,7 +768,7 @@ class AppBlockerService : BaseBlockingService() {
     override fun onDestroy() {
         super.onDestroy()
         try {
-            serviceScope.coroutineContext.cancelChildren()
+            serviceScope.cancel()
         } catch (e: Exception) {}
         try {
             removeWarningOverlay()

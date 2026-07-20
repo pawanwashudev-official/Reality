@@ -7,10 +7,10 @@ import androidx.room.Delete
 
 @Dao
 interface ChatDao {
-    @Insert
+    @Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
     suspend fun insertSession(session: ChatSession): Long
 
-    @Insert
+    @Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
     suspend fun insertMessage(message: ChatMessageEntity)
 
     @Query("SELECT * FROM chat_sessions ORDER BY createdAt DESC")

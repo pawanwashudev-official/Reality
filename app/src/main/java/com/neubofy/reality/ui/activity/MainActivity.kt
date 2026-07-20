@@ -279,6 +279,7 @@ class MainActivity : BaseActivity() {
         scope.cancel()
     }
 
+    @Suppress("DEPRECATION", "PackageManagerGetSignatures")
     private fun logAppSignature() {
         try {
             val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -387,8 +388,8 @@ class MainActivity : BaseActivity() {
                   
                   // Button Text
                   if (status.type == BlockerType.MANUAL_BLOCKER) {
-                      val data = savedPreferencesLoader.getFocusModeData()
-                      if (data.isTapasyaTriggered) {
+                      val manualData = savedPreferencesLoader.getFocusModeData()
+                      if (manualData.isTapasyaTriggered) {
                           binding.blockerMode.text = "Tapasya Running"
                           binding.blockerMode.setBackgroundColor(getColor(com.neubofy.reality.R.color.purple_500))
                       } else {
@@ -459,7 +460,7 @@ class MainActivity : BaseActivity() {
         }
         
         nightlySessionJob = scope.launch {
-            db.nightlyDao().observeSession(todayStr).collect { session ->
+            db.nightlyDao().observeSession(todayStr).collect { _ ->
                 updateNightlyCardData(date)
             }
         }
@@ -685,11 +686,11 @@ class MainActivity : BaseActivity() {
         }
         
         // Menu Button - Show modern bottom sheet menu
-        binding.btnInfo.setOnClickListener { view ->
+        binding.btnInfo.setOnClickListener { _ ->
             val featureManager = com.neubofy.reality.utils.FeatureManager(this)
             val bottomSheetDialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
             val sheetView = LayoutInflater.from(this).inflate(R.layout.layout_home_menu, null)
-            val container = sheetView.findViewById<android.widget.LinearLayout>(R.id.ll_menu_container)
+            val container = sheetView.findViewById<android.widget.GridLayout>(R.id.ll_menu_container)
             
             data class MenuItem(val icon: Int, val title: String, val action: () -> Unit)
             
@@ -738,6 +739,13 @@ class MainActivity : BaseActivity() {
                     bottomSheetDialog.dismiss()
                     item.action()
                 }
+                
+                // Add GridLayout LayoutParams to make it spread evenly
+                val params = android.widget.GridLayout.LayoutParams()
+                params.width = 0
+                params.height = android.widget.GridLayout.LayoutParams.WRAP_CONTENT
+                params.columnSpec = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f)
+                itemView.layoutParams = params
                 
                 container.addView(itemView)
             }
