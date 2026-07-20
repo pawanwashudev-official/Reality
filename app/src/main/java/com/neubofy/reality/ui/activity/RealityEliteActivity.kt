@@ -31,7 +31,14 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 
+data class ElitePlan(val id: String, val name: String, val months: Int, val price: Int)
+
 class RealityEliteActivity : BaseActivity() {
+
+    private var availablePlans: List<ElitePlan> = listOf(
+        ElitePlan("monthly", "1 Month", 1, 20),
+        ElitePlan("yearly", "12 Months (Best Value)", 12, 240)
+    )
 
     private lateinit var btnUnifiedSignin: MaterialButton
     private lateinit var btnCancel: MaterialButton
@@ -44,6 +51,8 @@ class RealityEliteActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_reality_elite)
+        
+        fetchPricingPlans()
 
         findViewById<android.view.View>(R.id.btn_view_pro_members)?.setOnClickListener {
             val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://reality.neubofy.in/promembers"))
@@ -237,37 +246,72 @@ class RealityEliteActivity : BaseActivity() {
         }
     }
 
+    private fun fetchPricingPlans() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val workerUrl = BuildConfig.WORKER_URL.removeSuffix("/")
+                val url = URL("$workerUrl/api/pricing")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                
+                if (connection.responseCode == 200) {
+                    val response = connection.inputStream.bufferedReader().readText()
+                    val json = JSONObject(response)
+                    val plansArray = json.getJSONArray("plans")
+                    val fetchedPlans = mutableListOf<ElitePlan>()
+                    for (i in 0 until plansArray.length()) {
+                        val planObj = plansArray.getJSONObject(i)
+                        fetchedPlans.add(ElitePlan(
+                            id = planObj.getString("id"),
+                            name = planObj.getString("name"),
+                            months = planObj.getInt("months"),
+                            price = planObj.getInt("price")
+                        ))
+                    }
+                    if (fetchedPlans.isNotEmpty()) {
+                        availablePlans = fetchedPlans
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     private fun showPaymentPopup() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_payment_method, null)
         val spinnerDurationPopup = dialogView.findViewById<android.widget.AutoCompleteTextView>(R.id.spinner_duration)
         val btnPayUpiPopup = dialogView.findViewById<MaterialButton>(R.id.btn_pay_upi)
         
-        var popupSelectedMonths = 12
-        val monthsOptions = (1..36).map { "$it Months" }.toTypedArray()
-        val adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, monthsOptions)
+        var selectedPlan = availablePlans.lastOrNull() ?: ElitePlan("yearly", "12 Months", 12, 240)
+        
+        val planNames = availablePlans.map { it.name }.toTypedArray()
+        val adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, planNames)
         spinnerDurationPopup.setAdapter(adapter)
-        spinnerDurationPopup.setText("12 Months", false)
+        spinnerDurationPopup.setText(selectedPlan.name, false)
 
         val updateUpiPrice = {
-            val price = ((99.0 / 12.0) * popupSelectedMonths).roundToInt()
-            btnPayUpiPopup.text = "UPI (₹$price)"
+            btnPayUpiPopup.text = "Pay via UPI (₹${selectedPlan.price})"
         }
         updateUpiPrice()
 
         spinnerDurationPopup.setOnItemClickListener { _, _, position, _ ->
-            popupSelectedMonths = position + 1
+            selectedPlan = availablePlans[position]
             updateUpiPrice()
         }
 
         val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle("Select Subscription Duration")
+            .setTitle("Select Subscription Plan")
             .setView(dialogView)
             .show()
 
         btnPayUpiPopup.setOnClickListener {
             dialog.dismiss()
             val intent = Intent(this, PaymentVerificationActivity::class.java)
-            intent.putExtra("months", popupSelectedMonths)
+            intent.putExtra("months", selectedPlan.months)
+            intent.putExtra("price", selectedPlan.price)
             startActivity(intent)
         }
     }

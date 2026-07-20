@@ -66,12 +66,6 @@ export default function RootLayout({
               "name": "Reality",
               "operatingSystem": "Android, Web",
               "applicationCategory": "ProductivityApplication",
-              "offers": {
-                "@type": "Offer",
-                "price": "1.00",
-                "priceCurrency": "USD",
-                "description": "Very cheap subscription since normal crowdfunding couldn't sustain development."
-              },
               "author": {
                 "@type": "Organization",
                 "name": "Neubofy",

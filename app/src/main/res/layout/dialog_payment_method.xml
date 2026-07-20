@@ -25,14 +25,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="none"
-            android:text="12 Months" />
+            android:hint="Select Plan" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_pay_upi"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="UPI (₹99)"
+        android:text="Pay via UPI"
         android:paddingVertical="12dp"
         android:layout_marginBottom="8dp"/>
 

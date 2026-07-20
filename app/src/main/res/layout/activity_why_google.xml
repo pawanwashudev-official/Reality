@@ -84,7 +84,7 @@
                 android:layout_height="wrap_content"
                 android:lineSpacingExtra="4dp"
                 android:fontFamily="sans-serif-light"
-                android:text="Because we don't have to pay massive cloud storage and server bills to hold millions of users' data, our subscription cost is incredibly low—starting at less than $0.10 USD per month! You get the ultimate private productivity OS directly on your phone."
+                android:text="Because we don't have to pay massive cloud storage and server bills to hold millions of users' data, our subscription cost is incredibly low. You get the ultimate private productivity OS directly on your phone."
                 android:layout_marginBottom="16dp"/>
 
         </LinearLayout>

@@ -15,7 +15,10 @@ import {
   EyeOff,
   Cloud,
   Globe,
-  Code
+  Code,
+  ArrowRight,
+  Clock,
+  Server
 } from 'lucide-react';
 
 // Reusable animated flowchart node
@@ -47,11 +50,10 @@ const FlowNode = ({
   </div>
 );
 
-// Reusable animated connection line (Horizontal)
-const FlowConnector = ({ color = "bg-gray-600", animated = false }) => (
-  <div className="flex-1 h-0.5 relative z-0 flex items-center justify-center mx-2 min-w-[30px]">
-    <div className={`absolute w-full h-full ${color}`}></div>
-    {animated && <div className={`w-3 h-3 rounded-full ${color} animate-ping absolute`}></div>}
+// Reusable animated connection line (Directional Arrow)
+const FlowConnector = ({ colorClass = "text-gray-600", animated = false }) => (
+  <div className="flex-1 relative z-0 flex items-center justify-center mx-2 min-w-[30px]">
+    <ArrowRight className={`${colorClass} ${animated ? 'animate-pulse' : ''}`} size={24} />
   </div>
 );
 
@@ -76,10 +78,10 @@ export default function ArchitectureBlueprints() {
             </h3>
             <div className="grid lg:grid-cols-2 gap-8 items-center relative z-10">
               <div className="space-y-4 text-sm text-gray-400">
-                <p>Reality secures your focus using two distinct system hooks:</p>
+                <p>Reality secures your focus using a combination of local system hooks and remote verification to prevent tampering:</p>
                 <ul className="space-y-2">
                   <li><strong className="text-white">Accessibility Watchdog:</strong> Instantly hooks layout update triggers to scan package titles against forbidden paths.</li>
-                  <li><strong className="text-white">Device Admin Safeguard:</strong> Rejects deactivation attempts and shields settings menus from de-authorization hooks.</li>
+                  <li><strong className="text-white">Secure Time Verification:</strong> Reality requires an internet connection to sync with Cloudflare NTP, ensuring users cannot bypass blocks by changing device time.</li>
                 </ul>
                 <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2">
                   <a href="https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/services/AppBlockerService.kt" target="_blank" rel="noopener noreferrer" className="text-neural-cyan hover:underline font-mono text-xs flex items-center gap-1">AppBlockerService.kt <ArrowUpRight size={12}/></a>
@@ -88,9 +90,9 @@ export default function ArchitectureBlueprints() {
               </div>
               <div className="bg-black/60 p-6 rounded-xl border border-gray-800 flex items-center justify-between overflow-x-auto">
                 <FlowNode title="Window Callback" icon={Smartphone} borderColor="border-neural-purple" colorClass="text-neural-purple" shadowColor="shadow-[0_0_15px_rgba(123,97,255,0.3)]" />
-                <FlowConnector color="bg-neural-purple" animated />
-                <FlowNode title="AppBlockerService" subtitles={["O(1) SettingsBox Map", "Clock Tamper Audit", "Device Admin check"]} icon={Shield} borderColor="border-neural-cyan" colorClass="text-neural-cyan" shadowColor="shadow-[0_0_20px_rgba(0,229,255,0.4)]" className="mx-2" />
-                <FlowConnector color="bg-neural-cyan" animated />
+                <FlowConnector colorClass="text-neural-purple" animated />
+                <FlowNode title="AppBlockerService" subtitles={["O(1) SettingsBox", "Cloudflare NTP Time", "Device Admin"]} icon={Shield} borderColor="border-neural-cyan" colorClass="text-neural-cyan" shadowColor="shadow-[0_0_20px_rgba(0,229,255,0.4)]" className="mx-2" />
+                <FlowConnector colorClass="text-neural-cyan" animated />
                 <FlowNode title="Render Lockscreen" icon={EyeOff} borderColor="border-red-500" colorClass="text-red-500" shadowColor="shadow-[0_0_15px_rgba(239,68,68,0.3)]" />
               </div>
             </div>
@@ -104,10 +106,10 @@ export default function ArchitectureBlueprints() {
             </h3>
             <div className="grid lg:grid-cols-2 gap-8 items-center relative z-10">
               <div className="space-y-4 text-sm text-gray-400">
-                <p>Reality maintains strict offline-first integrity. All records are persisted using Room ORM mapping directly to an isolated database file on Android:</p>
+                <p>Reality records local state using Room ORM mapping directly to an isolated database file, while relying on cloud connectivity for secure AI features and verifiable time syncs:</p>
                 <ul className="space-y-2">
                   <li><strong className="text-white">Alarms & Tasks:</strong> Store scheduled times, snooze counts, and bidirectional task identifiers.</li>
-                  <li><strong className="text-white">AI Memories & Reflections:</strong> Log sliding-window facts, user introduction variables, and performance deltas.</li>
+                  <li><strong className="text-white">AI Memories & Reflections:</strong> Log sliding-window facts and user introduction variables required for remote AI processing.</li>
                 </ul>
                 <div className="pt-2">
                   <a href="https://github.com/pawanwashudev-official/Reality/blob/main/app/src/main/java/com/neubofy/reality/data/" target="_blank" rel="noopener noreferrer" className="text-neural-cyan hover:underline font-mono text-xs flex items-center gap-1">Reality Room Database Package <ArrowUpRight size={12}/></a>
@@ -146,9 +148,9 @@ export default function ArchitectureBlueprints() {
               </div>
               <div className="bg-black/60 p-6 rounded-xl border border-gray-800 flex items-center justify-between overflow-x-auto">
                 <FlowNode title="Local SQLite" subtitles={["+ Preferences"]} icon={Database} borderColor="border-neural-purple" colorClass="text-white" />
-                <FlowConnector color="bg-neural-purple" animated />
+                <FlowConnector colorClass="text-neural-purple" animated />
                 <FlowNode title="JIT Encryption" subtitles={["(AES key seed)"]} icon={Lock} borderColor="border-neural-cyan" colorClass="text-neural-cyan" shadowColor="shadow-[0_0_20px_rgba(0,229,255,0.4)]" className="mx-2" />
-                <FlowConnector color="bg-neural-cyan" animated />
+                <FlowConnector colorClass="text-neural-cyan" animated />
                 <FlowNode title="Google Drive" subtitles={["(/appDataFolder)"]} icon={Cloud} borderColor="border-neural-purple" colorClass="text-white" />
               </div>
             </div>
@@ -174,9 +176,9 @@ export default function ArchitectureBlueprints() {
               </div>
               <div className="bg-black/60 p-6 rounded-xl border border-gray-800 flex items-center justify-between overflow-x-auto">
                 <FlowNode title="Reality App" icon={Smartphone} borderColor="border-neural-purple" colorClass="text-white" />
-                <FlowConnector color="bg-neural-purple" animated />
+                <FlowConnector colorClass="text-neural-purple" animated />
                 <FlowNode title="Google Server" subtitles={["OAuth 2.0 Auth", "Access/Refresh"]} icon={Globe} borderColor="border-neural-cyan" colorClass="text-neural-cyan" shadowColor="shadow-[0_0_20px_rgba(0,229,255,0.4)]" className="mx-2" />
-                <FlowConnector color="bg-neural-cyan" animated />
+                <FlowConnector colorClass="text-neural-cyan" animated />
                 <FlowNode title="Workspace API" subtitles={["Calendar / Tasks"]} icon={RefreshCw} borderColor="border-neural-purple" colorClass="text-white" />
               </div>
             </div>
@@ -186,25 +188,26 @@ export default function ArchitectureBlueprints() {
           <div className="bg-neural-card border border-gray-800 p-4 sm:p-8 rounded-2xl relative overflow-hidden group">
             <div className="absolute -inset-10 bg-neural-cyan/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition duration-1000"></div>
             <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2 relative z-10">
-              <Cpu className="text-neural-cyan" size={24}/> Cloudflare Worker Edge JIT Identity
+              <Server className="text-neural-cyan" size={24}/> Cloudflare Edge: Secure Time & AI Model
             </h3>
             <div className="grid lg:grid-cols-2 gap-8 items-center relative z-10">
               <div className="space-y-4 text-sm text-gray-400">
-                <p>Protects key seeds against client-side exploitation. Both user-specific identifier maps and database encryption keys are processed JIT on Cloudflare Workers edge nodes:</p>
+                <p>Provides critical cloud infrastructure for Reality, ensuring high performance, security, and tamper resistance:</p>
                 <ul className="space-y-2">
-                  <li><strong className="text-white">Edge Node calculations:</strong> Runs server-side HMAC-SHA256 operations using private secret string peppers.</li>
-                  <li><strong className="text-white">Encrypted Injection:</strong> Directly writes verified variables into Android&apos;s EncryptedSharedPreferences container.</li>
+                  <li><strong className="text-white">Secure Edge AI Model:</strong> Runs the Reality Intelligence Assistant securely on Cloudflare Workers with generous usage limits, protecting prompt logic.</li>
+                  <li><strong className="text-white">Cryptographic JIT Identity:</strong> Processes user-specific identity maps via server-side HMAC-SHA256, protecting AES key seeds from client-side exploitation.</li>
+                  <li><strong className="text-white">Time Verification:</strong> Uses Cloudflare NTP to guarantee accurate session times independent of the device clock.</li>
                 </ul>
                 <div className="pt-2">
                   <a href="https://github.com/pawanwashudev-official/Reality/blob/main/workers/identity/worker.js" target="_blank" rel="noopener noreferrer" className="text-neural-cyan hover:underline font-mono text-xs flex items-center gap-1">workers/identity/worker.js <ArrowUpRight size={12}/></a>
                 </div>
               </div>
               <div className="bg-black/60 p-6 rounded-xl border border-gray-800 flex items-center justify-between overflow-x-auto">
-                <FlowNode title="Google Login" subtitles={["(OAuth Callback)"]} icon={Globe} borderColor="border-neural-purple" colorClass="text-white" />
-                <FlowConnector color="bg-neural-purple" animated />
-                <FlowNode title="Cloudflare Edge" subtitles={["HMAC-SHA256 JIT", "Deterministic Keys"]} icon={Cpu} borderColor="border-neural-cyan" colorClass="text-neural-cyan" shadowColor="shadow-[0_0_20px_rgba(0,229,255,0.4)]" className="mx-2" />
-                <FlowConnector color="bg-neural-cyan" animated />
-                <FlowNode title="Encrypted" subtitles={["SharedPrefs"]} icon={FolderLock} borderColor="border-neural-purple" colorClass="text-white" />
+                <FlowNode title="Reality App" subtitles={["(Device)"]} icon={Smartphone} borderColor="border-neural-purple" colorClass="text-white" />
+                <FlowConnector colorClass="text-neural-purple" animated />
+                <FlowNode title="Cloudflare Edge" subtitles={["Secure AI Model", "HMAC-SHA256", "NTP Verification"]} icon={Server} borderColor="border-neural-cyan" colorClass="text-neural-cyan" shadowColor="shadow-[0_0_20px_rgba(0,229,255,0.4)]" className="mx-2" />
+                <FlowConnector colorClass="text-neural-cyan" animated />
+                <FlowNode title="AI/Time Response" subtitles={["Verified Data"]} icon={FolderLock} borderColor="border-neural-purple" colorClass="text-white" />
               </div>
             </div>
           </div>
@@ -228,9 +231,9 @@ export default function ArchitectureBlueprints() {
               </div>
               <div className="bg-black/60 p-6 rounded-xl border border-gray-800 flex items-center justify-between overflow-x-auto">
                 <FlowNode title="Focus Start" icon={Zap} borderColor="border-neural-purple" colorClass="text-white" />
-                <FlowConnector color="bg-neural-purple" animated />
+                <FlowConnector colorClass="text-neural-purple" animated />
                 <FlowNode title="TapasyaManager" subtitles={["15-min segment math", "App-switch checks"]} icon={Code} borderColor="border-neural-cyan" colorClass="text-neural-cyan" shadowColor="shadow-[0_0_20px_rgba(0,229,255,0.4)]" className="mx-2" />
-                <FlowConnector color="bg-neural-cyan" animated />
+                <FlowConnector colorClass="text-neural-cyan" animated />
                 <FlowNode title="Grade / Penalty" icon={Shield} borderColor="border-neural-purple" colorClass="text-white" />
               </div>
             </div>
@@ -255,9 +258,9 @@ export default function ArchitectureBlueprints() {
               </div>
               <div className="bg-black/60 p-6 rounded-xl border border-gray-800 flex items-center justify-between overflow-x-auto">
                 <FlowNode title="Alarm Ring" subtitles={["(Triggered)"]} icon={SmartphoneCharging} borderColor="border-neural-purple" colorClass="text-white" />
-                <FlowConnector color="bg-neural-purple" animated />
+                <FlowConnector colorClass="text-neural-purple" animated />
                 <FlowNode title="Hour Checker" subtitles={["4-6 AM (Hard)", "7-9 AM (Normal)"]} icon={Cpu} borderColor="border-neural-cyan" colorClass="text-neural-cyan" shadowColor="shadow-[0_0_20px_rgba(0,229,255,0.4)]" className="mx-2" />
-                <FlowConnector color="bg-neural-cyan" animated />
+                <FlowConnector colorClass="text-neural-cyan" animated />
                 <FlowNode title="Math Challenge" icon={Code} borderColor="border-neural-purple" colorClass="text-white" />
               </div>
             </div>
@@ -282,9 +285,9 @@ export default function ArchitectureBlueprints() {
               </div>
               <div className="bg-black/60 p-6 rounded-xl border border-gray-800 flex items-center justify-between overflow-x-auto">
                 <FlowNode title="User Prompt" subtitles={["Voice / Text"]} icon={Brain} borderColor="border-neural-purple" colorClass="text-white" />
-                <FlowConnector color="bg-neural-purple" animated />
+                <FlowConnector colorClass="text-neural-purple" animated />
                 <FlowNode title="ToolRegistry" subtitles={["Schema validation", "get_tool_schema"]} icon={Code} borderColor="border-neural-cyan" colorClass="text-neural-cyan" shadowColor="shadow-[0_0_20px_rgba(0,229,255,0.4)]" className="mx-2" />
-                <FlowConnector color="bg-neural-cyan" animated />
+                <FlowConnector colorClass="text-neural-cyan" animated />
                 <FlowNode title="App Block / Alarm" icon={Shield} borderColor="border-neural-purple" colorClass="text-white" />
               </div>
             </div>
@@ -309,9 +312,9 @@ export default function ArchitectureBlueprints() {
               </div>
               <div className="bg-black/60 p-6 rounded-xl border border-gray-800 flex items-center justify-between overflow-x-auto">
                 <FlowNode title="Theme Selection" icon={Layout} borderColor="border-neural-purple" colorClass="text-white" />
-                <FlowConnector color="bg-neural-purple" animated />
+                <FlowConnector colorClass="text-neural-purple" animated />
                 <FlowNode title="Appearance Engine" subtitles={["Load custom fonts", "Map XML colors"]} icon={Code} borderColor="border-neural-cyan" colorClass="text-neural-cyan" shadowColor="shadow-[0_0_20px_rgba(0,229,255,0.4)]" className="mx-2" />
-                <FlowConnector color="bg-neural-cyan" animated />
+                <FlowConnector colorClass="text-neural-cyan" animated />
                 <FlowNode title="Cinematic UI" icon={Smartphone} borderColor="border-neural-purple" colorClass="text-white" />
               </div>
             </div>

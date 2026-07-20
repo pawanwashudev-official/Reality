@@ -81,7 +81,7 @@ class PaymentVerificationActivity : BaseActivity() {
         userId = userIdCheck
 
         selectedMonths = intent.getIntExtra("months", 12)
-        price = Math.round((99.0 / 12.0) * selectedMonths).toInt()
+        price = intent.getIntExtra("price", 240)
 
 
         btnUpiDeeplink = findViewById(R.id.btn_upi_deeplink)

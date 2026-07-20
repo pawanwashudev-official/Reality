@@ -95,6 +95,25 @@ export default {
 
 
       // ============================================================
+      // ROUTE: DYNAMIC PRICING API
+      // ============================================================
+      if (url.pathname === "/api/pricing" && request.method === "GET") {
+        const pricingConfig = {
+          currency: "INR",
+          symbol: "₹",
+          plans: [
+            { id: "monthly", name: "1 Month", months: 1, price: 20 },
+            { id: "yearly", name: "12 Months (Best Value)", months: 12, price: 240 }
+          ]
+        };
+        
+        return new Response(JSON.stringify(pricingConfig), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
+        });
+      }
+
+      // ============================================================
       // ROUTE: GOOGLE OAUTH AUTH URL
       // ============================================================
       if (url.pathname === "/oauth/auth" && request.method === "GET") {
