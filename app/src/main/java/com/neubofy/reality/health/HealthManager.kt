@@ -83,7 +83,7 @@ class HealthManager(private val context: Context) {
         val dayStart = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         val dayEnd = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         
-        return response.records.filter { record ->
+        val validSessions = response.records.filter { record ->
              val startMs = record.startTime.toEpochMilli()
              val endMs = record.endTime.toEpochMilli()
              val duration = endMs - startMs
@@ -94,6 +94,28 @@ class HealthManager(private val context: Context) {
              
              overlap > (duration / 2) // Majority Rule for attribution
         }.sortedBy { it.startTime }.map { it.startTime to it.endTime }
+        
+        if (validSessions.isEmpty()) return emptyList()
+        
+        val merged = mutableListOf<Pair<Instant, Instant>>()
+        var currentStart = validSessions[0].first
+        var currentEnd = validSessions[0].second
+        
+        for (i in 1 until validSessions.size) {
+            val session = validSessions[i]
+            if (session.first.isBefore(currentEnd) || session.first == currentEnd) {
+                if (session.second.isAfter(currentEnd)) {
+                    currentEnd = session.second
+                }
+            } else {
+                merged.add(currentStart to currentEnd)
+                currentStart = session.first
+                currentEnd = session.second
+            }
+        }
+        merged.add(currentStart to currentEnd)
+        
+        return merged
     }
 
     suspend fun findOverlappingSessions(startTime: Instant, endTime: Instant, excludeStartTime: Instant? = null): List<Pair<Instant, Instant>> {

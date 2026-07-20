@@ -98,8 +98,10 @@ class SmartSleepActivity : BaseActivity() {
                 SleepSegmentRequest.getDefaultSleepSegmentRequest()
             ).addOnSuccessListener {
                 com.neubofy.reality.utils.TerminalLogger.log("Google Sleep API successfully registered.")
+                Toast.makeText(this, "Google Sleep Detection Enabled", Toast.LENGTH_SHORT).show()
             }.addOnFailureListener { e ->
                 com.neubofy.reality.utils.TerminalLogger.log("Failed to register Google Sleep API: ${e.message}")
+                Toast.makeText(this, "Failed to enable: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         } catch (e: SecurityException) {
             com.neubofy.reality.utils.TerminalLogger.log("SecurityException registering Sleep API: ${e.message}")
@@ -116,8 +118,10 @@ class SmartSleepActivity : BaseActivity() {
         try {
             ActivityRecognition.getClient(this).removeSleepSegmentUpdates(pendingIntent)
             com.neubofy.reality.utils.TerminalLogger.log("Google Sleep API unregistered.")
+            Toast.makeText(this, "Google Sleep Detection Disabled", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             com.neubofy.reality.utils.TerminalLogger.log("Error unregistering Sleep API: ${e.message}")
+            Toast.makeText(this, "Failed to disable: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -201,9 +205,13 @@ class SmartSleepActivity : BaseActivity() {
         adapter = SleepSessionAdapter(
             onEditStart = { model -> showTimePicker(model, true) },
             onEditEnd = { model -> showTimePicker(model, false) },
-            onConfirm = { model -> confirmSession(model) }
+            onConfirm = { model -> confirmSession(model) },
+            onReject = { model -> rejectSession(model) }
         )
         binding.rvSleepSessions.adapter = adapter
+        binding.btnViewHealth.setOnClickListener {
+            startActivity(android.content.Intent(this, com.neubofy.reality.ui.activity.HealthDashboardActivity::class.java))
+        }
     }
 
     private fun setupUI() {
@@ -246,12 +254,6 @@ class SmartSleepActivity : BaseActivity() {
                 if (googleStart > 0 && googleEnd > 0) {
                     // Use Google's highly accurate AI sleep detection
                     sessions.add(SleepSessionUiModel(Instant.ofEpochMilli(googleStart), Instant.ofEpochMilli(googleEnd)))
-                } else {
-                    // Fallback to our own screen-gap inference
-                    val inferred = SleepInferenceHelper.inferSleepSession(this@SmartSleepActivity, today, force = true)
-                    if (inferred != null) {
-                        sessions.add(SleepSessionUiModel(inferred.first, inferred.second))
-                    }
                 }
             } else {
                 healthSessions.forEach { (s, e) ->
@@ -649,11 +651,7 @@ class SmartSleepActivity : BaseActivity() {
         if (endI.isBefore(startI)) endI = endI.plus(Duration.ofDays(1))
 
         lifecycleScope.launch {
-            val suggestion = SleepInferenceHelper.refineSleepWindow(this@SmartSleepActivity, startI, endI)
-            val finalStart = suggestion?.first ?: startI
-            val finalEnd = suggestion?.second ?: endI
-            
-            val newModel = SleepSessionUiModel(finalStart, finalEnd)
+            val newModel = SleepSessionUiModel(startI, endI)
             sessions.add(newModel)
             updateUiState()
         }
@@ -692,6 +690,13 @@ class SmartSleepActivity : BaseActivity() {
                 }
                 healthManager.writeSleepSession(model.start, model.end)
                 Toast.makeText(this@SmartSleepActivity, "Sleep Synced!", Toast.LENGTH_SHORT).show()
+                
+                // Clear Google Sleep data so it doesn't prompt again
+                if (model.isNew) {
+                    val sleepPrefs = getSharedPreferences("reality_sleep_prefs", Context.MODE_PRIVATE)
+                    sleepPrefs.edit().remove("google_sleep_start").remove("google_sleep_end").apply()
+                }
+                
                 loadSessions() // Reload to refresh states
             } catch (e: Exception) {
                 Toast.makeText(this@SmartSleepActivity, "Sync Failed: ${e.message}", Toast.LENGTH_LONG).show()
@@ -701,11 +706,21 @@ class SmartSleepActivity : BaseActivity() {
         }
     }
 
+    private fun rejectSession(model: SleepSessionUiModel) {
+        if (model.isNew) {
+            val sleepPrefs = getSharedPreferences("reality_sleep_prefs", Context.MODE_PRIVATE)
+            sleepPrefs.edit().remove("google_sleep_start").remove("google_sleep_end").apply()
+            sessions.remove(model)
+            updateUiState()
+        }
+    }
+
     // --- ADAPTER ---
     private inner class SleepSessionAdapter(
         private val onEditStart: (SleepSessionUiModel) -> Unit,
         private val onEditEnd: (SleepSessionUiModel) -> Unit,
-        private val onConfirm: (SleepSessionUiModel) -> Unit
+        private val onConfirm: (SleepSessionUiModel) -> Unit,
+        private val onReject: (SleepSessionUiModel) -> Unit
     ) : androidx.recyclerview.widget.ListAdapter<SleepSessionUiModel, SleepSessionAdapter.ViewHolder>(DiffCallback()) {
 
         inner class ViewHolder(val bindingItem: com.neubofy.reality.databinding.ItemSmartSleepCardBinding) : androidx.recyclerview.widget.RecyclerView.ViewHolder(bindingItem.root)
@@ -739,6 +754,15 @@ class SmartSleepActivity : BaseActivity() {
                 else -> "Update"
             }
             b.btnCardConfirm.setOnClickListener { onConfirm(model) }
+            
+            // Allow rejection for new un-synced sessions
+            if (model.isNew) {
+                b.btnDelete.visibility = android.view.View.VISIBLE
+                b.btnDelete.setOnClickListener { onReject(model) }
+            } else {
+                b.btnDelete.visibility = android.view.View.GONE
+                b.btnDelete.setOnClickListener(null)
+            }
         }
     }
 

@@ -355,9 +355,12 @@ class HealthDashboardActivity : BaseActivity() {
             // ALWAYS check Health Connect directly, no local storage for "confirmed" state
             if (healthManager.isSleepSyncedToday(today)) return@launch
 
-            val session = com.neubofy.reality.utils.SleepInferenceHelper.inferSleepSession(this@HealthDashboardActivity, today)
-            if (session != null) {
-                showSleepVerificationDialog(session.first, session.second)
+            val sleepPrefs = getSharedPreferences("reality_sleep_prefs", android.content.Context.MODE_PRIVATE)
+            val googleStart = sleepPrefs.getLong("google_sleep_start", 0L)
+            val googleEnd = sleepPrefs.getLong("google_sleep_end", 0L)
+            
+            if (googleStart > 0 && googleEnd > 0) {
+                showSleepVerificationDialog(Instant.ofEpochMilli(googleStart), Instant.ofEpochMilli(googleEnd))
             }
         }
     }
