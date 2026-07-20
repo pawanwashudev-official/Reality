@@ -3,6 +3,7 @@
 // Routes:
 //   POST /api/register-fcm-token  → App registers device FCM token
 //   POST /webhook/calendar        → Google Calendar change webhook
+//   POST /api/send-notification   → Send custom push notification
 // ============================================================
 
 const CORS_ORIGIN = "https://reality.neubofy.in";
@@ -77,6 +78,54 @@ export default {
     }
 
     // ============================================================
+    // ROUTE: Send Custom Notification
+    // POST /api/send-notification
+    // Body: { notificationSecret, userId, title, message }
+    // ============================================================
+    if (url.pathname === "/api/send-notification" && request.method === "POST") {
+      let body = {};
+      try {
+        body = await request.json();
+      } catch {
+        return jsonError("Invalid JSON body", 400);
+      }
+
+      const { notificationSecret, userId, title, message } = body;
+
+      if (!notificationSecret || !userId || !title || !message) {
+        return jsonError("Missing required fields: notificationSecret, userId, title, message", 400);
+      }
+
+      if (!env.NOTIFICATION_SECRET || notificationSecret !== env.NOTIFICATION_SECRET) {
+        return jsonError("Unauthorized: Invalid notificationSecret", 401);
+      }
+
+      if (!env.DB) return jsonError("DB not configured", 500);
+
+      let userRow;
+      try {
+        userRow = await env.DB.prepare(
+          'SELECT fcmToken FROM "Reality Elite members management" WHERE userId = ?'
+        ).bind(userId).first();
+      } catch (e) {
+        return jsonError("DB lookup error: " + e.message, 500);
+      }
+
+      if (!userRow || !userRow.fcmToken) {
+        return jsonError("No FCM token found for this user", 404);
+      }
+
+      try {
+        await sendFcmPush(userRow.fcmToken, { title: String(title), message: String(message) }, env);
+        console.log(`Custom notification sent for userId: ${userId.substring(0, 8)}...`);
+      } catch (e) {
+        return jsonError("FCM send failed: " + e.message, 500);
+      }
+
+      return jsonResponse({ success: true, message: "Custom notification sent successfully" });
+    }
+
+    // ============================================================
     // ROUTE: Google Calendar Webhook
     // POST /webhook/calendar
     // Google sends x-goog-channel-token = userId
@@ -131,7 +180,7 @@ export default {
 
       // Send silent FCM push notification
       try {
-        await sendFcmPush(userRow.fcmToken, env);
+        await sendFcmPush(userRow.fcmToken, { action: "SYNC_CALENDAR" }, env);
         console.log(`FCM calendar sync push sent for userId: ${userId.substring(0, 8)}...`);
       } catch (e) {
         console.error("FCM send failed:", e.message);
@@ -188,7 +237,7 @@ async function verifyUserCredentials(userId, connectionSecret, expiry, duration,
 // ============================================================
 // HELPER: Send silent FCM push using Firebase HTTP v1 API
 // ============================================================
-async function sendFcmPush(fcmToken, env) {
+async function sendFcmPush(fcmToken, dataPayload, env) {
   if (!env.FIREBASE_SERVICE_ACCOUNT) {
     throw new Error("FIREBASE_SERVICE_ACCOUNT secret is not configured in the Cloudflare Dashboard settings for this Worker.");
   }
@@ -201,9 +250,7 @@ async function sendFcmPush(fcmToken, env) {
   const payload = {
     message: {
       token: fcmToken,
-      data: {
-        action: "SYNC_CALENDAR"
-      },
+      data: dataPayload,
       android: {
         priority: "high"
       }
