@@ -1,6 +1,5 @@
 'use server';
 
-import { cookies } from 'next/headers';
 
 export async function loginAction(formData: FormData) {
   const username = formData.get('username') as string;
@@ -16,14 +15,6 @@ export async function loginAction(formData: FormData) {
     username === expectedAdminUsername &&
     password === expectedAdminPassword
   ) {
-    // Basic session cookie
-    const cookieStore = await cookies();
-    cookieStore.set('admin_session', 'authenticated', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24, // 1 day
-      path: '/',
-    });
     return { success: true };
   } else {
     return { success: false, error: 'Invalid credentials' };

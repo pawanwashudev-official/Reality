@@ -76,6 +76,29 @@ export default function ProMembersClient({
     fetchSearchedDetail();
   }, [initialSearch, initialMembers]);
 
+  // Fetch admin data on page change if currently logged in as admin
+  useEffect(() => {
+    if (isAdmin && adminUserIdInput && adminPasswordInput) {
+      const fetchAdminData = async () => {
+        try {
+          const response = await fetchSensitiveMemberData(
+            undefined,
+            adminUserIdInput.trim(),
+            adminPasswordInput.trim(),
+            pageSize,
+            (initialPage - 1) * pageSize
+          );
+          if (response && !response.error && response.data) {
+            setSensitiveData(response.data);
+          }
+        } catch (err) {
+          console.error("Error fetching admin data on page change:", err);
+        }
+      };
+      fetchAdminData();
+    }
+  }, [initialPage, initialSearch, isAdmin]);
+
   // Search submit handler (updates URL)
   const handleSearchSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -120,7 +143,9 @@ export default function ProMembersClient({
       const response = await fetchSensitiveMemberData(
         undefined,
         adminUserIdInput.trim(),
-        adminPasswordInput.trim()
+        adminPasswordInput.trim(),
+        pageSize,
+        (initialPage - 1) * pageSize
       );
       if (response && !response.error && response.data) {
         setSensitiveData(response.data);

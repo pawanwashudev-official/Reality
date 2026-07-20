@@ -1,16 +1,10 @@
 import React from 'react';
-import { cookies } from 'next/headers';
-import AdminDashboard from './AdminDashboard';
-import LoginClient from './LoginClient';
 import { ShieldAlert } from 'lucide-react';
+import AdminClient from './AdminClient';
 
 export const revalidate = 0; // Ensure this page is completely dynamic and never cached by Vercel
 
-export default async function AdminPage() {
-  const cookieStore = await cookies();
-  const session = cookieStore.get('admin_session');
-  const isAuthenticated = session?.value === 'authenticated';
-
+export default function AdminPage() {
   return (
     <div className="min-h-screen bg-neural-bg font-outfit selection:bg-neural-cyan selection:text-black pt-24 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neural-cyan/5 via-neural-bg to-neural-bg opacity-50 z-0 pointer-events-none"></div>
@@ -23,7 +17,7 @@ export default async function AdminPage() {
           </h1>
         </div>
 
-        {isAuthenticated ? <AdminDashboard /> : <LoginClient />}
+        <AdminClient />
       </div>
     </div>
   );

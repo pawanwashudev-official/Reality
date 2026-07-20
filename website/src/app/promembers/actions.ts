@@ -3,13 +3,15 @@
 export async function fetchSensitiveMemberData(
   userId?: string,
   adminUserId?: string,
-  adminPassword?: string
+  adminPassword?: string,
+  limit: number = 10,
+  offset: number = 0
 ) {
   const baseUrl = process.env.Pro_Members_DB_URL;
   if (!baseUrl) {
     return { error: "Pro_Members_DB_URL not defined" };
   }
-  const dbUrl = baseUrl.replace(/\/+$/, '') + '/api/pro-members';
+  let dbUrl = baseUrl.replace(/\/+$/, '') + '/api/pro-members';
   const workerSecret = process.env.WORKER_CONNECTION_SECRET || '';
 
   let isAdmin = false;
@@ -24,10 +26,16 @@ export async function fetchSensitiveMemberData(
     }
   }
 
-
   // If not admin and no userId is provided, unauthorized
   if (!isAdmin && !userId) {
      return { error: "Unauthorized" };
+  }
+
+  // Append query params
+  if (userId && !isAdmin) {
+    dbUrl += `?userId=${encodeURIComponent(userId)}`;
+  } else if (isAdmin) {
+    dbUrl += `?limit=${limit}&offset=${offset}`;
   }
 
   try {
@@ -62,30 +70,15 @@ export async function fetchSensitiveMemberData(
     // Filter to build a dictionary of sensitive data
     const result: Record<string, { status: string | null, expiryDate: string | null, trial_plan: string | null }> = {};
 
-    if (isAdmin) {
-       // Return all
-       for (const m of members) {
-           result[m.userId] = {
-               status: m.status || null,
-               expiryDate: m.expiryDate || null,
-               trial_plan: m.trial_plan || null
-           };
-       }
-       return { isAdmin: true, data: result };
-    } else if (userId) {
-       // Return only one exact match
-       const m = members.find((user: any) => user.userId.toLowerCase() === userId.toLowerCase());
-       if (m) {
-           result[m.userId] = {
-               status: m.status || null,
-               expiryDate: m.expiryDate || null,
-               trial_plan: m.trial_plan || null
-           };
-       }
-       return { isAdmin: false, data: result };
+    for (const m of members) {
+        result[m.userId] = {
+            status: m.status || null,
+            expiryDate: m.expiryDate || null,
+            trial_plan: m.trial_plan || null
+        };
     }
-
-    return { error: "Not found" };
+    
+    return { isAdmin: isAdmin, data: result, totalMembers: data?.totalMembers || 0 };
 
   } catch (error: any) {
     return { error: error.message };
@@ -101,7 +94,7 @@ export async function verifyMemberId(userId: string) {
   if (!baseUrl) {
     return { error: "Pro_Members_DB_URL not defined" };
   }
-  const dbUrl = baseUrl.replace(/\/+$/, '') + '/api/pro-members';
+  const dbUrl = baseUrl.replace(/\/+$/, '') + '/api/pro-members?userId=' + encodeURIComponent(userId.trim());
   const workerSecret = process.env.WORKER_CONNECTION_SECRET || '';
 
   try {

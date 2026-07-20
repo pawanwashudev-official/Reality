@@ -19,15 +19,21 @@ interface MembersResponse {
   total: number;
 }
 
-async function getProMembers(): Promise<MembersResponse | null> {
+async function getProMembers(limit: number, offset: number, userId?: string): Promise<MembersResponse | null> {
   const baseUrl = process.env.Pro_Members_DB_URL;
   if (!baseUrl) {
     console.error("Pro_Members_DB_URL environment variable is not defined.");
     return null;
   }
 
-  // Remove trailing slashes and append the endpoint path
-  const dbUrl = baseUrl.replace(/\/+$/, '') + '/api/pro-members';
+  // Build the URL with query parameters
+  let dbUrl = baseUrl.replace(/\/+$/, '') + '/api/pro-members';
+  if (userId) {
+    dbUrl += `?userId=${encodeURIComponent(userId)}`;
+  } else {
+    dbUrl += `?limit=${limit}&offset=${offset}`;
+  }
+
   const workerSecret = process.env.WORKER_CONNECTION_SECRET || '';
 
   try {
@@ -52,7 +58,7 @@ async function getProMembers(): Promise<MembersResponse | null> {
         });
       }
     } else if (!res.ok) {
-      // Fallback to default follow behavior if manual redirect failed to catch it
+      // Fallback
       res = await fetch(dbUrl, {
         method: 'GET',
         headers: {
@@ -109,23 +115,16 @@ interface PageProps {
 }
 
 export default async function ProMembersPage({ searchParams }: PageProps) {
-  const data = await getProMembers();
-  const allMembers = data?.members || [];
-  const totalActive = data?.total || 0;
-
-  // Server-side filtering, sorting, and pagination
   const rawSearch = searchParams?.search || '';
   const searchQuery = rawSearch.trim().toLowerCase();
   const sortOrder = (searchParams?.sort || 'latest') as 'latest' | 'oldest';
   const currentPage = parseInt(searchParams?.page || '1', 10);
-  const pageSize = 50;
+  const pageSize = 10;
+  const offset = (currentPage - 1) * pageSize;
 
-  // Helper to score plan priority for sorting
-  const getPlanScore = (status: string) => {
-    if (status === 'ELITE') return 2;
-    if (status === 'TRIAL') return 1;
-    return 0;
-  };
+  const data = await getProMembers(pageSize, offset, searchQuery);
+  const allMembers = data?.members || [];
+  const totalActive = data?.total || 0;
 
   // Map and compute status securely on the server
   const classifiedMembers = allMembers.map(m => {
@@ -155,14 +154,15 @@ export default async function ProMembersPage({ searchParams }: PageProps) {
     };
   });
 
-  // 1. Filter
-  let filtered = classifiedMembers;
-  if (searchQuery) {
-    filtered = classifiedMembers.filter(m => m.userId.toLowerCase().includes(searchQuery));
-  }
+  // Sort is already handled by the worker if no search query. If search query, it's just 1 user.
+  // We can still sort locally just in case.
+  const getPlanScore = (status: string) => {
+    if (status === 'ELITE') return 2;
+    if (status === 'TRIAL') return 1;
+    return 0;
+  };
 
-  // 2. Sort: prioritize Paid (ELITE), then Trial (TRIAL), then Standard
-  filtered.sort((a, b) => {
+  classifiedMembers.sort((a, b) => {
     const scoreA = getPlanScore(a.status);
     const scoreB = getPlanScore(b.status);
     if (scoreA !== scoreB) {
@@ -174,13 +174,7 @@ export default async function ProMembersPage({ searchParams }: PageProps) {
     return sortOrder === 'latest' ? dateB - dateA : dateA - dateB;
   });
 
-  // 3. Paginate
-  const totalFiltered = filtered.length;
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginated = filtered.slice(startIndex, startIndex + pageSize);
-
-  // Strip sensitive parameters; send only safe computed status to user browser
-  const safeMembers = paginated;
+  const safeMembers = classifiedMembers;
 
   return (
     <div className="min-h-screen bg-neural-bg font-outfit text-gray-100 selection:bg-neural-cyan selection:text-black">
@@ -228,7 +222,7 @@ export default async function ProMembersPage({ searchParams }: PageProps) {
       <Suspense fallback={<div className="text-center py-20 font-mono text-gray-500">Loading members directory...</div>}>
         <ProMembersClient
           initialMembers={safeMembers}
-          totalFiltered={totalFiltered}
+          totalFiltered={searchQuery ? safeMembers.length : totalActive}
           initialSearch={rawSearch}
           initialSort={sortOrder}
           initialPage={currentPage}
@@ -238,4 +232,3 @@ export default async function ProMembersPage({ searchParams }: PageProps) {
     </div>
   );
 }
-

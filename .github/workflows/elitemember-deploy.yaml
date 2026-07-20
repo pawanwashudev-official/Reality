@@ -1,0 +1,28 @@
+name: Deploy Elite Member Worker
+
+on:
+  push:
+    paths:
+      - 'workers/elitemember/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      # 1. Inject the secret DB_ID from GitHub secrets into wrangler.toml before deploying
+      - name: Inject D1 Database ID
+        run: |
+          sed -i 's/database_id = ""/database_id = "${{ secrets.DB_ID }}"/g' workers/elitemember/wrangler.toml
+
+      - name: Install latest Wrangler
+        run: npm install -g wrangler@latest
+        
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'workers/elitemember'

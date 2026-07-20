@@ -149,33 +149,6 @@ export default {
         });
       }
 
-      // ============================================================
-      // ROUTE: WEBSITE PUBLIC PRO MEMBERS LIST
-      // ============================================================
-      if (url.pathname === "/api/pro-members" && request.method === "GET") {
-        const secretHeader = request.headers.get("x-worker-secret");
-        if (!secretHeader || secretHeader !== env.WORKER_CONNECTION_SECRET) {
-          return new Response(JSON.stringify({ error: "Unauthorized access" }), {
-            status: 401,
-            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
-          });
-        }
-
-        // Fetch only safe, shareable details from D1
-        const { results } = await env.DB.prepare(
-          'SELECT userId, date, status, expiryDate, trial_plan FROM "Reality Elite members management" ORDER BY date DESC'
-        ).all();
-
-        const totalMembers = results.length;
-
-        return new Response(
-          JSON.stringify({ totalMembers, members: results }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": CORS_ORIGIN }
-          }
-        );
-      }
 
       // ============================================================
       // ROUTE: NATIVE SUBSCRIPTION MANAGEMENT

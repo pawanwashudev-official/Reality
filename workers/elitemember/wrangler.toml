@@ -1,7 +1,6 @@
-name = "realityproxy"
+name = "elitemember"
 main = "worker.js"
-compatibility_date = "2026-07-02"
-workers_dev = false
+compatibility_date = "2026-07-20"
 
 # Records every request and console.log in the dashboard
 [observability.logs]
