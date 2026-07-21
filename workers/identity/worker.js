@@ -103,7 +103,7 @@ export default {
           symbol: "₹",
           plans: [
             { id: "monthly", name: "1 Month", months: 1, price: 20 },
-            { id: "yearly", name: "12 Months (Best Value)", months: 12, price: 240 }
+            { id: "yearly", name: "12 Months (Best Value)", months: 12, price: 200 }
           ]
         };
         
