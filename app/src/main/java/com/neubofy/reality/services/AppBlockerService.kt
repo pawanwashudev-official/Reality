@@ -302,7 +302,7 @@ class AppBlockerService : BaseBlockingService() {
         // 0. EMERGENCY MODE BYPASS (Highest Priority)
         // If Emergency Mode is active, bypass ALL app blocking checks.
         // Uses SecureTimeProvider for tamper-proof duration counting (works offline via cached offset + monotonic clock)
-        if (com.neubofy.reality.utils.BlockCache.emergencySessionEndTime > com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this)) {
+        if (com.neubofy.reality.utils.BlockCache.emergencySessionEndTime > System.currentTimeMillis()) {
              return
         }
         

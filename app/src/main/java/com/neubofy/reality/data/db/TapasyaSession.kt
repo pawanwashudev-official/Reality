@@ -9,7 +9,7 @@ import androidx.room.PrimaryKey
  * Stores completed Tapasya meditation/focus sessions.
  * ID format: {startTime}_{endTime} for uniqueness
  */
-@Entity(tableName = "tapasya_sessions")
+@Entity(tableName = "tapasya_sessions", indices = [androidx.room.Index(value = ["startTime"])])
 data class TapasyaSession(
     @PrimaryKey
     val sessionId: String, // Format: startTime_endTime (unique)

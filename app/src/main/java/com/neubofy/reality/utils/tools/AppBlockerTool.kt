@@ -32,7 +32,7 @@ class AppBlockerTool : AgentTool {
 
         val isStrict = prefs.isStrictModeEnabled()
         val focusData = prefs.getFocusModeData()
-        val isFocus = focusData.endTime > SecureTimeProvider.currentTimeMillis(context)
+        val isFocus = focusData.endTime > System.currentTimeMillis()
 
         val json = JSONObject().apply {
             put("strict_mode", isStrict)

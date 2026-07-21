@@ -20,7 +20,7 @@ class BlockerStatusManager(private val context: Context) {
     private val db = AppDatabase.getDatabase(context)
 
     suspend fun getCurrentStatus(): BlockerStatus {
-        val now = SecureTimeProvider.currentTimeMillis(context)
+        val now = System.currentTimeMillis()
         val cal = Calendar.getInstance()
         cal.timeInMillis = now
         val currentMins = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)

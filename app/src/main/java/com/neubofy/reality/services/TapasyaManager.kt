@@ -340,7 +340,7 @@ object TapasyaManager {
         val pauseLimitMs = tapasyaPrefs.getLong("pause_limit", 15 * 60 * 1000L)
         val maxDurationMs = targetMs + pauseLimitMs
         
-        data.endTime = SecureTimeProvider.currentTimeMillis(ctx) + maxDurationMs
+        data.endTime = System.currentTimeMillis() + maxDurationMs
         data.isTapasyaTriggered = true
         prefs.saveFocusModeData(data)
         

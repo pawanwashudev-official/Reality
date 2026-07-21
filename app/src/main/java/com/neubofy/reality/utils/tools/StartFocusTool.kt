@@ -26,7 +26,7 @@ class StartFocusTool : AgentTool {
         val durationMins = args.optInt("duration_mins", 25)
 
         val prefs = SavedPreferencesLoader(context)
-        val endTime = SecureTimeProvider.currentTimeMillis(context) + (durationMins * 60 * 1000L)
+        val endTime = System.currentTimeMillis() + (durationMins * 60 * 1000L)
 
         val currentData = prefs.getFocusModeData()
         val newData = RealityBlocker.FocusModeData(

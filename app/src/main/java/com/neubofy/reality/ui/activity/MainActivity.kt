@@ -352,7 +352,7 @@ class MainActivity : BaseActivity() {
         
         withContext(Dispatchers.Main) {
              if (status.isActive) {
-                  val remaining = status.endTime - com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this@MainActivity)
+                  val remaining = status.endTime - System.currentTimeMillis()
                   binding.tvBlockerCardTitle.text = status.title
 
                   // Breathing Glow Animation (Only start if not already animating)
@@ -958,7 +958,7 @@ class MainActivity : BaseActivity() {
         val emergencyData = savedPreferencesLoader.getEmergencyData()
         
         // Check if already in emergency session
-        val secureNow = com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this)
+        val secureNow = System.currentTimeMillis()
         if (emergencyData.currentSessionEndTime > secureNow) {
             val remainingMins = (emergencyData.currentSessionEndTime - secureNow) / 60000
             Toast.makeText(this, "Emergency mode active for $remainingMins more minutes", Toast.LENGTH_SHORT).show()
@@ -1002,7 +1002,7 @@ class MainActivity : BaseActivity() {
         dialogBinding.btnActivate.setOnClickListener {
             // Activate emergency mode
             emergencyData.usesRemaining--
-            emergencyData.currentSessionEndTime = com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this@MainActivity) + Constants.EMERGENCY_DURATION_MS
+            emergencyData.currentSessionEndTime = System.currentTimeMillis() + Constants.EMERGENCY_DURATION_MS
             savedPreferencesLoader.saveEmergencyData(emergencyData)
             
             // Update blocker
@@ -1027,7 +1027,7 @@ class MainActivity : BaseActivity() {
         sb.append("Current Status:\n\n")
 
         // Strict Mode
-        val secureNow2 = com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this)
+        val secureNow2 = System.currentTimeMillis()
         sb.append("• Strict Mode: ")
         if (strictData.isEnabled) {
             sb.append("Active (${strictData.modeType})\n")
@@ -1063,12 +1063,12 @@ class MainActivity : BaseActivity() {
         calendar.timeInMillis = emergencyData.lastResetDate
         val lastResetDay = calendar.get(java.util.Calendar.DAY_OF_YEAR)
         
-        calendar.timeInMillis = com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this)
+        calendar.timeInMillis = System.currentTimeMillis()
         val currentDay = calendar.get(java.util.Calendar.DAY_OF_YEAR)
         
         if (currentDay != lastResetDay) {
             emergencyData.usesRemaining = emergencyData.maxUses
-            emergencyData.lastResetDate = com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this)
+            emergencyData.lastResetDate = System.currentTimeMillis()
             savedPreferencesLoader.saveEmergencyData(emergencyData)
         }
         
@@ -1232,7 +1232,7 @@ class MainActivity : BaseActivity() {
         }
         
         if (data.modeType == Constants.StrictModeData.MODE_TIMER) {
-            val remaining = data.timerEndTime - com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this)
+            val remaining = data.timerEndTime - System.currentTimeMillis()
             if (remaining > 0) {
                  val hours = remaining / (1000 * 60 * 60)
                  val mins = (remaining % (1000 * 60 * 60)) / (1000 * 60)
@@ -1271,7 +1271,7 @@ class MainActivity : BaseActivity() {
                 .setNeutralButton("Forgot Password") { _, _ ->
                      // Recovery: Switch to 24h Timer
                      data.modeType = Constants.StrictModeData.MODE_TIMER
-                     data.timerEndTime = com.neubofy.reality.utils.SecureTimeProvider.currentTimeMillis(this@MainActivity) + (24 * 60 * 60 * 1000L)
+                     data.timerEndTime = System.currentTimeMillis() + (24 * 60 * 60 * 1000L)
                      savedPreferencesLoader.saveStrictModeData(data)
                      
                      MaterialAlertDialogBuilder(this)

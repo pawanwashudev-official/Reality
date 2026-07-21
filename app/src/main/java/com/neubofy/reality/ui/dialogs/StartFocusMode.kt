@@ -38,7 +38,7 @@ class StartFocusMode(private val loader: SavedPreferencesLoader, private val onP
                 val totalMs = (binding.focusModeHoursPicker.getValue() * 3600000L) + (binding.focusModeMinsPicker.getValue() * 60000L)
                 val newData = RealityBlocker.FocusModeData(
                     isTurnedOn = true,
-                    endTime = SecureTimeProvider.currentTimeMillis(requireContext()) + totalMs,
+                    endTime = System.currentTimeMillis() + totalMs,
                     modeType = selectedMode,
                     selectedApps = data.selectedApps,
                     blockedWebsites = data.blockedWebsites

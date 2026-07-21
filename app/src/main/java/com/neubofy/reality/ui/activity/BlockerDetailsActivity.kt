@@ -84,7 +84,7 @@ class BlockerDetailsActivity : BaseActivity() {
 
         // 2. Load Active Blocker Sessions
         layoutActiveBlockers.removeAllViews()
-        val now = SecureTimeProvider.currentTimeMillis(this)
+        val now = System.currentTimeMillis()
         val cal = Calendar.getInstance()
         cal.timeInMillis = now
         val currentMins = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
@@ -291,7 +291,7 @@ class BlockerDetailsActivity : BaseActivity() {
     private fun isBedtimeActiveNow(bedtime: com.neubofy.reality.Constants.BedtimeData): Boolean {
         if (!bedtime.isEnabled) return false
         val cal = Calendar.getInstance()
-        cal.timeInMillis = SecureTimeProvider.currentTimeMillis(this)
+        cal.timeInMillis = System.currentTimeMillis()
         val currentMins = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
         val start = bedtime.startTimeInMins
         val end = bedtime.endTimeInMins

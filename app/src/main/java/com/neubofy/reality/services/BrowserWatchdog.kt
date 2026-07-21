@@ -29,7 +29,7 @@ class BrowserWatchdog(
 
     fun isWebsiteBlockActive(): Boolean {
         // GLOBAL EMERGENCY BYPASS
-        if (BlockCache.emergencySessionEndTime > SecureTimeProvider.currentTimeMillis(service)) {
+        if (BlockCache.emergencySessionEndTime > System.currentTimeMillis()) {
             return false
         }
 

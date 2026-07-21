@@ -3,7 +3,7 @@ package com.neubofy.reality.data.db
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "calendar_events")
+@Entity(tableName = "calendar_events", indices = [androidx.room.Index(value = ["startTime", "endTime"])])
 data class CalendarEvent(
     @PrimaryKey val eventId: String,
     val title: String,

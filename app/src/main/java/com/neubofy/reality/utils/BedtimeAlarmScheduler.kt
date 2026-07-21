@@ -33,7 +33,7 @@ object BedtimeAlarmScheduler {
             return
         }
 
-        val now = SecureTimeProvider.currentTimeMillis(context)
+        val now = System.currentTimeMillis()
         val nextTransitionMillis = getNextTransitionMillis(bedtime, now)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

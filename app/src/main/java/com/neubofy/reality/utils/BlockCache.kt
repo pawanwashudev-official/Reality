@@ -74,7 +74,7 @@ object BlockCache {
      */
     fun shouldBlock(packageName: String): Pair<Boolean, List<String>> {
         val context = appContext
-        val now = if (context != null) SecureTimeProvider.currentTimeMillis(context) else System.currentTimeMillis()
+        val now = System.currentTimeMillis()
         
 
 
@@ -104,7 +104,7 @@ object BlockCache {
      */
     fun shouldBlockWebsite(url: String): String? {
         val context = appContext
-        val now = if (context != null) SecureTimeProvider.currentTimeMillis(context) else System.currentTimeMillis()
+        val now = System.currentTimeMillis()
         if (emergencySessionEndTime > now) return null
         if (!isAnyBlockingModeActive) return null
         if (StrictLockUtils.isMaintenanceWindow(context)) return null
@@ -179,7 +179,7 @@ object BlockCache {
                 val prefs = SavedPreferencesLoader(context)
                 // Get DB reference OUTSIDE the mutex to avoid holding the lock during DB initialization
                 val db = com.neubofy.reality.data.db.AppDatabase.getDatabase(context)
-                val now = SecureTimeProvider.currentTimeMillis(context)
+                val now = System.currentTimeMillis()
                 
                 // CRITICAL FIX: Reload emergency status immediately
                 val emergencyData = prefs.getEmergencyData()
@@ -340,7 +340,7 @@ object BlockCache {
                     }
                 }
                 
-                lastUpdateTime = SecureTimeProvider.currentTimeMillis(context)
+                lastUpdateTime = System.currentTimeMillis()
                 
                 // === ATOMIC SWAP ===
                 // We replace the old box with the new one instantly.
@@ -391,7 +391,7 @@ object BlockCache {
             val prefs = context.getSharedPreferences("block_cache", Context.MODE_PRIVATE)
             val jsonStr = prefs.getString("blocked_apps", null) ?: return
             val savedTime = prefs.getLong("last_update", 0L)
-            val now = SecureTimeProvider.currentTimeMillis(context)
+            val now = System.currentTimeMillis()
             
             // Only use disk data if it's less than 5 minutes old
             if (now - savedTime > 5 * 60 * 1000) {
