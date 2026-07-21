@@ -192,6 +192,7 @@ class AppBlockerService : BaseBlockingService() {
         // Capture window class for learning mode and strict mode
         if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val className = event.className?.toString() ?: ""
+            lastPackage = packageName
             
             // === SMART SETTINGS PROTECTION ===
             // Only wake protection system when:
@@ -726,8 +727,8 @@ class AppBlockerService : BaseBlockingService() {
                            
         com.neubofy.reality.utils.TerminalLogger.log("KERNEL: Config Loaded. BlockCache will be rebuilt.")
         
-        // Force check the current window
-        checkCurrentWindow()
+        // Removed forced checkCurrentWindow() here because it runs on the old box state
+        // before BlockCache.rebuildBox finishes on the IO thread.
     }
     
     private fun checkCurrentWindow() {
@@ -735,8 +736,12 @@ class AppBlockerService : BaseBlockingService() {
         if (!isBlockingActive) return
         
         try {
-            val root = rootInActiveWindow ?: return
-            val pkg = root.packageName?.toString() ?: return
+            var pkg = rootInActiveWindow?.packageName?.toString()
+            if (pkg == null) {
+                // Fallback to the last known foreground package if root is null (e.g., full screen media)
+                pkg = lastPackage
+            }
+            if (pkg.isEmpty()) return
             
             // Avoid self-blocking system apps
             if (pkg == packageName || pkg == "com.android.systemui") return

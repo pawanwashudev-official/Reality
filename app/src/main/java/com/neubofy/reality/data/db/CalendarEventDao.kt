@@ -19,7 +19,7 @@ interface CalendarEventDao {
     @Query("SELECT * FROM calendar_events WHERE source = 'GOOGLE'")
     suspend fun getGoogleEvents(): List<CalendarEvent>
 
-    @Query("SELECT * FROM calendar_events WHERE startTime <= :currentTime AND endTime >= :currentTime AND isEnabled = 1")
+    @Query("SELECT * FROM calendar_events WHERE startTime <= :currentTime + 5000 AND endTime >= :currentTime AND isEnabled = 1")
     suspend fun getCurrentEvents(currentTime: Long): List<CalendarEvent>
 
     @Query("SELECT MIN(time) FROM (SELECT startTime AS time FROM calendar_events WHERE startTime > :currentTime AND isEnabled = 1 UNION SELECT endTime AS time FROM calendar_events WHERE endTime > :currentTime AND isEnabled = 1)")
