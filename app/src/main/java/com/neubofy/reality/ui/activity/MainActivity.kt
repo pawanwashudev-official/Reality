@@ -690,7 +690,7 @@ class MainActivity : BaseActivity() {
             val featureManager = com.neubofy.reality.utils.FeatureManager(this)
             val bottomSheetDialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
             val sheetView = LayoutInflater.from(this).inflate(R.layout.layout_home_menu, null)
-            val container = sheetView.findViewById<android.widget.GridLayout>(R.id.ll_menu_container)
+            val container = sheetView.findViewById<android.widget.LinearLayout>(R.id.ll_menu_container)
             
             data class MenuItem(val icon: Int, val title: String, val action: () -> Unit)
             
@@ -740,11 +740,11 @@ class MainActivity : BaseActivity() {
                     item.action()
                 }
                 
-                // Add GridLayout LayoutParams to make it spread evenly
-                val params = android.widget.GridLayout.LayoutParams()
-                params.width = 0
-                params.height = android.widget.GridLayout.LayoutParams.WRAP_CONTENT
-                params.columnSpec = android.widget.GridLayout.spec(android.widget.GridLayout.UNDEFINED, 1f)
+                // Add LinearLayout LayoutParams to make it match parent width
+                val params = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                )
                 itemView.layoutParams = params
                 
                 container.addView(itemView)

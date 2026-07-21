@@ -28,15 +28,13 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
-        <GridLayout
+        <LinearLayout
             android:id="@+id/ll_menu_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:columnCount="2"
-            android:useDefaultMargins="false"
+            android:orientation="vertical"
             android:paddingBottom="16dp"
-            android:clipToPadding="false"
-            android:alignmentMode="alignBounds" />
+            android:clipToPadding="false" />
     </ScrollView>
 
 </LinearLayout>
