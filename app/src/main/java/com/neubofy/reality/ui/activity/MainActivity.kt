@@ -705,7 +705,7 @@ class MainActivity : BaseActivity() {
                     startActivity(Intent(this, HealthDashboardActivity::class.java))
                 })
             }
-            menuItems.add(MenuItem(R.drawable.baseline_settings_24, "Appearance") {
+            menuItems.add(MenuItem(R.drawable.ic_palette, "Appearance") {
                 startActivity(Intent(this, AppearanceActivity::class.java))
             })
             if (featureManager.isRealityProEnabled()) {
