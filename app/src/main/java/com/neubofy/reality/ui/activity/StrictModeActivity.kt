@@ -769,7 +769,7 @@ class StrictModeActivity : BaseActivity() {
                 // Send broadcast to start learning mode
                 val intent = Intent(AppBlockerService.INTENT_ACTION_START_LEARNING)
                 intent.putExtra(AppBlockerService.EXTRA_PAGE_TYPE, pageType.name)
-                sendBroadcast(intent)
+                sendBroadcast(intent.apply { setPackage(packageName) })
                 
                 // Open the settings page
                 try {
@@ -1001,7 +1001,7 @@ class StrictModeActivity : BaseActivity() {
                     .setPositiveButton("Start") { _, _ ->
                         val intent = Intent(AppBlockerService.INTENT_ACTION_START_CUSTOM_PAGE_LEARNING)
                         intent.putExtra("custom_name", pageName)
-                        sendBroadcast(intent)
+                        sendBroadcast(intent.apply { setPackage(packageName) })
                         
                         try {
                             startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
@@ -1129,7 +1129,7 @@ class StrictModeActivity : BaseActivity() {
                      
                      prefsLoader.saveLearnedSettingsPages(learnedPages)
                      // Trigger service reload
-                     sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL))
+                     sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL).apply { setPackage(packageName) })
                 }
                 
                 row.addView(toggle)
@@ -1153,7 +1153,7 @@ class StrictModeActivity : BaseActivity() {
                             .setPositiveButton("Delete") { _, _ ->
                                 items.remove(originalString)
                                 prefsLoader.saveLearnedSettingsPages(learnedPages)
-                                sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL))
+                                sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_ANTI_UNINSTALL).apply { setPackage(packageName) })
                                 container.removeView(row) // Remove row visually
                                 updateLearningStatus() // Update count
                             }
