@@ -134,10 +134,6 @@ class AppBlockerService : BaseBlockingService() {
                 Intent.ACTION_USER_PRESENT -> {
                     isScreenOn = true
                     
-                    // Full settings refresh on unlock - ensures schedules are loaded and evaluated immediately
-                    refreshSettings()
-                    com.neubofy.reality.utils.SmartScheduleManager.scheduleNextTransition(applicationContext)
-                    
                     // Resume checking if needed
                     if (browserWatchdog.isWebsiteBlockActive()) {
                          browserWatchdog.startBrowserCheckTimer()

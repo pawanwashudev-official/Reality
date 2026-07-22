@@ -344,7 +344,7 @@ object TapasyaManager {
         data.isTapasyaTriggered = true
         prefs.saveFocusModeData(data)
         
-        ctx.sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE).apply {
+        ctx.sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE).apply {
             setPackage(ctx.packageName)
         })
     }
@@ -356,7 +356,7 @@ object TapasyaManager {
         data.isTapasyaTriggered = false
         prefs.saveFocusModeData(data)
         
-        ctx.sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE).apply {
+        ctx.sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE).apply {
             setPackage(ctx.packageName)
         })
     }

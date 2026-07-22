@@ -255,7 +255,7 @@ class GroupsFragment : Fragment() {
                     val db = AppDatabase.getDatabase(requireContext())
                     db.appGroupDao().insert(newGroup)
                     
-                    requireContext().sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
+                    requireContext().sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE).apply { setPackage(requireContext().packageName) })
                     loadGroups()
                 }
             }
@@ -295,7 +295,7 @@ class GroupsFragment : Fragment() {
         scope.launch(Dispatchers.IO) {
              val db = AppDatabase.getDatabase(requireContext())
              db.appGroupDao().delete(group)
-             requireContext().sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
+             requireContext().sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE).apply { setPackage(requireContext().packageName) })
              loadGroups()
         }
     }

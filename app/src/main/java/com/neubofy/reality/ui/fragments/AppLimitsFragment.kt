@@ -339,7 +339,7 @@ class AppLimitsFragment : Fragment() {
                     }
                     
                     withContext(Dispatchers.Main) {
-                        context.sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
+                        context.sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE).apply { setPackage(context.packageName) })
                         loadLimits()
                     }
                 }
@@ -368,7 +368,7 @@ class AppLimitsFragment : Fragment() {
                     savedPreferencesLoader.saveUsageLimitData(usageData)
                     
                     withContext(Dispatchers.Main) {
-                        context.sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
+                        context.sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE).apply { setPackage(context.packageName) })
                         loadLimits()
                     }
                 }

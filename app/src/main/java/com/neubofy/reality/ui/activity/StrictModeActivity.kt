@@ -688,7 +688,7 @@ class StrictModeActivity : BaseActivity() {
     private fun saveSettings() {
         prefsLoader.saveStrictModeData(strictData)
         // Optimization: Send single broadcast. Service handles both Strict Mode and Focus Mode updates with this.
-        sendBroadcast(Intent(AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
+        sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE).apply { setPackage(packageName) })
     }
     
     private fun hashPassword(password: String): String {

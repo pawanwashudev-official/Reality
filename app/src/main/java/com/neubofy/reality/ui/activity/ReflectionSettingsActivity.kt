@@ -353,6 +353,11 @@ class ReflectionSettingsActivity : BaseActivity() {
             binding.layoutViewLimit.visibility = View.VISIBLE
 
             Toast.makeText(this, "Screen time limit saved", Toast.LENGTH_SHORT).show()
+
+            // Notify blocker service immediately
+            val intent = android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE)
+            intent.setPackage(packageName)
+            sendBroadcast(intent)
         }
 
         // Setup switch_block_after_limit

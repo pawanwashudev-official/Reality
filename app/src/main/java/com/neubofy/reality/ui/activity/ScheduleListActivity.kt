@@ -393,7 +393,7 @@ class ScheduleListActivity : BaseActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(applicationContext)
             db.calendarEventDao().deleteByEventId(event.eventId)
-            sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
+            sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE).apply { setPackage(packageName) })
             com.neubofy.reality.utils.SmartScheduleManager.scheduleNextTransition(this@ScheduleListActivity)
             withContext(Dispatchers.Main) { 
                 loadSchedules() 
@@ -514,7 +514,7 @@ class ScheduleListActivity : BaseActivity() {
                                 db.calendarEventDao().insertAll(listOf(newItem))
                                 com.neubofy.reality.utils.NotificationHelper.showInfoNotification(applicationContext, "Schedule Created", "Your productive session '${title}' has been scheduled.")
                             }
-                            sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE))
+                            sendBroadcast(android.content.Intent(com.neubofy.reality.services.AppBlockerService.INTENT_ACTION_REFRESH_FOCUS_MODE).apply { setPackage(packageName) })
                             com.neubofy.reality.utils.SmartScheduleManager.scheduleNextTransition(this@ScheduleListActivity)
                             withContext(Dispatchers.Main) {
                                 loadSchedules()
