@@ -30,7 +30,6 @@ const SCREENS: ScreenItem[] = [
   { id: 'tapasya', title: 'Tapasya Focus Timer', img: '/tapasya_timer_mockup.png', desc: 'Rigid focus screen enforcing Amoled DND parameters and tracking Effective Focus in 15-minute segments.', icon: Zap },
   { id: 'nightly', title: 'Nightly Protocol', img: '/nightly_protocol_mockup.png', desc: 'The step-by-step evening checklist interface managing Google workspace enqueues.', icon: Moon },
   { id: 'settings', title: 'Settings Console', img: '/settings_mockup.png', desc: 'Clean menu categorizing features, blocking configurations, sleep mode, and AI setups.', icon: Settings },
-  { id: 'reminders', title: 'Alarms & Reminders', img: '/reminders_mockup.png', desc: 'Setup for notifications and task schedules linked directly with Google accounts.', icon: Bell },
   { id: 'usage', title: 'Usage Statistics', img: '/usage_stats_mockup.png', desc: 'Real-time on-device analytics tracking todays and 7-day screen limits per package.', icon: Activity },
   { id: 'progress', title: 'XP Analytics', img: '/progress_mockup.png', desc: 'Visualized user level metrics showing progression histories and focus segments.', icon: TrendingUp },
   { id: 'profile', title: 'Google Profile Sync', img: '/profile_mockup.png', desc: 'Status trackers for Google Calendar, Docs, Tasks, Drive integration and Cloudflare Secure IDs.', icon: User },

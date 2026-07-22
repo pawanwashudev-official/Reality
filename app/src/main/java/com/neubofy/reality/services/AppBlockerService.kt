@@ -13,6 +13,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
@@ -191,6 +192,7 @@ class AppBlockerService : BaseBlockingService() {
         
         // Capture window class for learning mode and strict mode
         if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            updateDynamicAccessibilityEvents(packageName)
             val className = event.className?.toString() ?: ""
             lastPackage = packageName
             
@@ -634,6 +636,37 @@ class AppBlockerService : BaseBlockingService() {
         com.neubofy.reality.utils.TerminalLogger.log("STATUS: Blocking=$isBlockingActive, StrictMode=${blocker.strictModeData.isEnabled}")
     }
 
+    private fun updateDynamicAccessibilityEvents(packageName: String?) {
+        try {
+            val info = serviceInfo ?: return
+
+            // Base events we ALWAYS need for core functionality (app switching detection)
+            var events = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+
+            val isSettingsPackage = packageName?.let { it.contains("settings") || it.contains("securitycenter") } ?: false
+            val isBrowser = packageName?.let { com.neubofy.reality.utils.UrlDetector.isBrowser(it) } ?: false
+
+            // Check if we need content parsing for the currently active package
+            val needsContentChecks = (isBrowser && browserWatchdog.isWebsiteBlockActive()) ||
+                                     (isSettingsPackage && com.neubofy.reality.utils.SettingsBox.isAnyProtectionActive()) ||
+                                     settingsLearningManager.isLearningMode
+
+            if (needsContentChecks) {
+                events = events or AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED or
+                         AccessibilityEvent.TYPE_VIEW_FOCUSED or
+                         AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED
+            }
+
+            if (info.eventTypes != events) {
+                info.eventTypes = events
+                serviceInfo = info
+                com.neubofy.reality.utils.TerminalLogger.log("A11Y: Updated dynamic events mask to $events for pkg $packageName")
+            }
+        } catch (e: Exception) {
+            com.neubofy.reality.utils.TerminalLogger.log("A11Y Update Error: ${e.message}")
+        }
+    }
+
     private fun refreshSettings() {
         // Universal Whitelist - These apps should NEVER be blocked
         val whitelist = hashSetOf<String>()
@@ -681,6 +714,8 @@ class AppBlockerService : BaseBlockingService() {
                 
                 kotlinx.coroutines.withContext(Dispatchers.Main) {
                     
+                    updateDynamicAccessibilityEvents(lastPackage)
+
                     isBlockingActive = com.neubofy.reality.utils.BlockCache.isAnyBlockingModeActive ||
                                        com.neubofy.reality.utils.BlockCache.getBlockedCount() > 0
                     
