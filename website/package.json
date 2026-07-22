@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.20",
+    "@vercel/analytics": "^2.0.1",
     "html-to-image": "^1.11.13",
     "jose": "^6.2.3",
     "lucide-react": "^1.18.0",
