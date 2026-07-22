@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import Link from 'next/link';
 import { Crown } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/next';
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -138,6 +139,7 @@ export default function RootLayout({
                 <p className="text-gray-600 text-sm font-mono">&copy; {new Date().getFullYear()} Neubofy. All rights reserved.</p>
             </div>
         </footer>
+        <Analytics />
       </body>
     </html>
   );
