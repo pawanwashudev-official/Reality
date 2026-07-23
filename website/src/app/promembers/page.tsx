@@ -106,19 +106,18 @@ async function getProMembers(limit: number, offset: number, userId?: string): Pr
   }
 }
 
+type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>
+
 interface PageProps {
-  searchParams: {
-    page?: string;
-    search?: string;
-    sort?: string;
-  };
+  searchParams: SearchParams;
 }
 
 export default async function ProMembersPage({ searchParams }: PageProps) {
-  const rawSearch = searchParams?.search || '';
+  const resolvedSearchParams = await searchParams;
+  const rawSearch = (resolvedSearchParams?.search as string) || '';
   const searchQuery = rawSearch.trim().toLowerCase();
-  const sortOrder = (searchParams?.sort || 'latest') as 'latest' | 'oldest';
-  const currentPage = parseInt(searchParams?.page || '1', 10);
+  const sortOrder = (resolvedSearchParams?.sort || 'latest') as 'latest' | 'oldest';
+  const currentPage = parseInt((resolvedSearchParams?.page as string) || '1', 10);
   const pageSize = 10;
   const offset = (currentPage - 1) * pageSize;
 
