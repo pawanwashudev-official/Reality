@@ -47,6 +47,7 @@ export default function ProMembersClient({
   const [isVerifyingAdmin, setIsVerifyingAdmin] = useState(false);
 
   const [members, setMembers] = useState<ProMember[]>(initialMembers);
+  const [adminCache, setAdminCache] = useState<Record<number, ProMember[]>>({ 1: initialMembers });
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedUserIdForCard, setSelectedUserIdForCard] = useState<string | null>(null);
   const [sensitiveData, setSensitiveData] = useState<Record<string, { status: string | null, expiryDate: string | null }>>({});
@@ -87,6 +88,10 @@ export default function ProMembersClient({
   // Fetch admin data on page change if currently logged in as admin
   useEffect(() => {
     if (isAdmin && adminUserIdInput && adminPasswordInput) {
+      if (adminCache[initialPage]) {
+        setMembers(adminCache[initialPage]);
+        return;
+      }
       const fetchAdminData = async () => {
         try {
           const response = await fetchSensitiveMemberData(
@@ -97,7 +102,7 @@ export default function ProMembersClient({
             (initialPage - 1) * pageSize
           );
           if (response && !response.error && response.data && response.members) {
-            setSensitiveData(response.data);
+            setSensitiveData(prev => ({ ...prev, ...response.data }));
             const adminMembers = response.members.map((m: any) => ({
               userId: m.userId,
               dateJoined: m.date,
@@ -107,6 +112,7 @@ export default function ProMembersClient({
               trial_plan: m.trial_plan || null
             }));
             setMembers(adminMembers);
+            setAdminCache(prev => ({ ...prev, [initialPage]: adminMembers }));
           }
         } catch (err) {
           console.error("Error fetching admin data on page change:", err);
@@ -114,7 +120,7 @@ export default function ProMembersClient({
       };
       fetchAdminData();
     }
-  }, [initialPage, initialSearch, isAdmin]);
+  }, [initialPage, initialSearch, isAdmin, adminUserIdInput, adminPasswordInput, pageSize, adminCache]);
 
   // Search submit handler (updates URL)
   const handleSearchSubmit = (e?: React.FormEvent) => {
@@ -139,6 +145,10 @@ export default function ProMembersClient({
 
   // Pagination handler
   const handlePageChange = (newPage: number) => {
+    if (!isAdmin) {
+      alert("This feature is only available for the Neubofy team to view the detailed directory.");
+      return;
+    }
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', newPage.toString());
     router.push(`${pathname}?${params.toString()}`);
@@ -162,10 +172,10 @@ export default function ProMembersClient({
         adminUserIdInput.trim(),
         adminPasswordInput.trim(),
         pageSize,
-        (initialPage - 1) * pageSize
+        0
       );
       if (response && !response.error && response.data && response.members) {
-        setSensitiveData(response.data);
+        setSensitiveData(prev => ({ ...prev, ...response.data }));
         const adminMembers = response.members.map((m: any) => ({
           userId: m.userId,
           dateJoined: m.date,
@@ -175,8 +185,14 @@ export default function ProMembersClient({
           trial_plan: m.trial_plan || null
         }));
         setMembers(adminMembers);
+        setAdminCache({ 1: adminMembers });
         setIsAdmin(true);
         setAdminError('');
+
+        // Push back to page 1 to start from beginning
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('page', '1');
+        router.push(`${pathname}?${params.toString()}`);
       } else {
         setAdminError(response?.error || 'Invalid admin credentials.');
         setIsAdmin(false);

@@ -3,7 +3,7 @@ import { Crown, Database, Heart } from 'lucide-react';
 import { Suspense } from 'react';
 import ProMembersClient from './ProMembersClient';
 
-export const revalidate = 60;
+export const revalidate = 600;
 
 interface ProMember {
   userId: string;
@@ -43,7 +43,7 @@ async function getProMembers(limit: number, offset: number, userId?: string): Pr
         'x-worker-secret': workerSecret
       },
       redirect: 'manual',
-      next: { revalidate: 60 }
+      next: { revalidate: 600 }
     });
 
     if (res.status === 302 || res.status === 303 || res.status === 307 || res.status === 308) {
@@ -54,7 +54,7 @@ async function getProMembers(limit: number, offset: number, userId?: string): Pr
           headers: {
             'x-worker-secret': workerSecret
           },
-          next: { revalidate: 60 }
+          next: { revalidate: 600 }
         });
       }
     } else if (!res.ok) {
@@ -64,7 +64,7 @@ async function getProMembers(limit: number, offset: number, userId?: string): Pr
         headers: {
           'x-worker-secret': workerSecret
         },
-        next: { revalidate: 60 }
+        next: { revalidate: 600 }
       });
     }
 
@@ -163,19 +163,8 @@ export default async function ProMembersPage({ searchParams }: PageProps) {
   });
 
   // Sort is already handled by the worker if no search query. If search query, it's just 1 user.
-  // We can still sort locally just in case.
-  const getPlanScore = (status: string) => {
-    if (status === 'ELITE') return 2;
-    if (status === 'TRIAL') return 1;
-    return 0;
-  };
-
+  // We strictly sort locally by date as requested.
   classifiedMembers.sort((a, b) => {
-    const scoreA = getPlanScore(a.status);
-    const scoreB = getPlanScore(b.status);
-    if (scoreA !== scoreB) {
-      return scoreB - scoreA;
-    }
     const dateA = new Date(a.dateJoined).getTime();
     const dateB = new Date(b.dateJoined).getTime();
     if (isNaN(dateA) || isNaN(dateB)) return 0;

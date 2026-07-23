@@ -44,7 +44,7 @@ export async function fetchSensitiveMemberData(
       headers: {
         'x-worker-secret': workerSecret
       },
-      next: { revalidate: 60 } // Cache this fetch so we don't spam the DB worker
+      next: { revalidate: 600 } // Cache this fetch so we don't spam the DB worker
     });
 
     if (res.status === 302 || res.status === 303 || res.status === 307 || res.status === 308) {
@@ -55,7 +55,7 @@ export async function fetchSensitiveMemberData(
           headers: {
             'x-worker-secret': workerSecret
           },
-          next: { revalidate: 60 }
+          next: { revalidate: 600 }
         });
       }
     }
@@ -103,7 +103,7 @@ export async function verifyMemberId(userId: string) {
       headers: {
         'x-worker-secret': workerSecret
       },
-      next: { revalidate: 60 }
+      next: { revalidate: 600 }
     });
 
     if (res.status === 302 || res.status === 303 || res.status === 307 || res.status === 308) {
@@ -114,7 +114,7 @@ export async function verifyMemberId(userId: string) {
           headers: {
             'x-worker-secret': workerSecret
           },
-          next: { revalidate: 60 }
+          next: { revalidate: 600 }
         });
       }
     }
